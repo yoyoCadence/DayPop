@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=DotGothic16&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{background:radial-gradient(120% 120% at 50% 0%,#d6d8de 0%,#bbbdc6 55%,#a9abb6 100%);font-family:'Noto Sans TC',sans-serif;}
+input,select,textarea,button{font-family:inherit;font-size:inherit;color:inherit;}
+button{border:none;background:none;cursor:pointer;padding:0;}
+input,textarea,select{outline:none;}
+a{color:var(--accent);text-decoration:none;}
+a:hover{opacity:.75;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:rgba(128,128,128,.3);border-radius:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+@keyframes cpblink{0%,90%,100%{transform:scaleY(1);}95%{transform:scaleY(.12);}}
+@keyframes cppop{0%{transform:scale(.55);opacity:0;}62%{transform:scale(1.06);}100%{transform:scale(1);opacity:1;}}
+@keyframes cpspin{to{transform:rotate(360deg);}}
+@keyframes cpfadeup{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+@keyframes cpflash{0%,100%{opacity:0;}20%,55%{opacity:1;}}
+@keyframes cptail{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(10deg);}}
+</style>
+</helmet>
+<div style="min-height:100dvh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 16px;">
+
+  <!-- ===================== PHONE ===================== -->
+  <div style="position:relative;width:404px;height:824px;background:#0a0a0c;border-radius:56px;padding:10px;box-shadow:0 2px 0 2px #26262b,0 44px 80px -24px rgba(0,0,0,.55),inset 0 0 0 2px #000;flex:none;">
+    <div style="{{ rootStyle }} position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;display:flex;flex-direction:column;">
+
+      <!-- scanline / texture overlay -->
+      <div style="position:absolute;inset:0;background-image:var(--scanline);background-size:100% 3px;pointer-events:none;z-index:38;"></div>
+      <!-- notch -->
+      <div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);width:118px;height:32px;background:#0a0a0c;border-radius:20px;z-index:37;"></div>
+
+      <!-- status bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 26px 6px;height:44px;color:var(--fg);z-index:36;font-family:var(--font-body);">
+        <div style="font-size:14px;font-weight:700;letter-spacing:.5px;">9:41</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;">
+          <span style="opacity:.9;">5G</span>
+          <div style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative;opacity:.9;"><div style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1px;"></div></div>
+        </div>
+      </div>
+
+      <!-- app body -->
+      <div data-swipe="app" style="flex:1;min-height:0;position:relative;">
+
+        <!-- ============ CALENDAR SCREEN ============ -->
+        <sc-if value="{{ isCal }}" hint-placeholder-val="{{ true }}">
+        <div data-screen-label="日曆" style="position:absolute;inset:0;display:flex;flex-direction:column;">
+
+          <!-- header -->
+          <div style="flex:none;padding:8px 16px 12px;background:var(--surface);border-bottom:var(--bd) solid var(--border);background-image:var(--halftone);background-size:7px 7px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+              <div style="min-width:0;">
+                <div style="font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:700;">{{ todayFull }}</div>
+                <div style="font-family:var(--font-head);font-size:30px;line-height:1.02;color:var(--fg);text-transform:var(--title-tt);letter-spacing:var(--title-ls);margin-top:3px;">{{ periodLabel }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex:none;">
+                <button onClick="{{ onToday }}" style="padding:6px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--chip);color:var(--fg);font-size:12px;font-weight:700;">今天</button>
+                <button onClick="{{ goSearch }}" style="width:36px;height:36px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--chip);color:var(--fg);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></button>
+              </div>
+            </div>
+
+            <!-- nav + segmented -->
+            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+              <button onClick="{{ onPrev }}" style="width:30px;height:32px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--chip);color:var(--fg);font-size:18px;line-height:1;font-weight:800;">‹</button>
+              <button onClick="{{ onNext }}" style="width:30px;height:32px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--chip);color:var(--fg);font-size:18px;line-height:1;font-weight:800;">›</button>
+              <div style="flex:1;display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--radius);border:var(--bd) solid var(--border);">
+                <button onClick="{{ setMonth }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:13px;font-weight:700;background:{{ monthBg }};color:{{ monthFg }};">月</button>
+                <button onClick="{{ setWeek }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:13px;font-weight:700;background:{{ weekBg }};color:{{ weekFg }};">週</button>
+                <button onClick="{{ setAgenda }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:13px;font-weight:700;background:{{ agBg }};color:{{ agFg }};">列表</button>
+              </div>
+            </div>
+
+            <!-- quick add -->
+            <div style="display:flex;gap:6px;margin-top:10px;">
+              <input value="{{ quick }}" onInput="{{ onQuick }}" placeholder="快速新增：明天下午3點 開會 @會議室A 提前15分" style="flex:1;padding:8px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:12.5px;"/>
+              <button onClick="{{ runQuick }}" style="padding:0 14px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--accent);color:var(--accent-fg);font-weight:800;font-size:16px;">{{ quickBtnLabel }}</button>
+            </div>
+          </div>
+
+          <!-- view area -->
+          <div style="flex:1;min-height:0;position:relative;">
+
+            <!-- MONTH -->
+            <sc-if value="{{ isMonth }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);flex:none;padding:6px 0;background:var(--surface);border-bottom:1px solid var(--line);">
+                <sc-for list="{{ weekHead }}" as="w" hint-placeholder-count="7"><div style="text-align:center;font-size:11px;font-weight:700;color:{{ w.color }};">{{ w.label }}</div></sc-for>
+              </div>
+              <div data-month-scroll onScroll="{{ onMonthScroll }}" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+                <sc-for list="{{ monthWeeks }}" as="wk" hint-placeholder-count="8">
+                  <div style="display:grid;grid-template-columns:repeat(7,1fr);height:{{ rowH }}px;">
+                    <sc-for list="{{ wk.cells }}" as="c" hint-placeholder-count="7">
+                      <div onClick="{{ c.onTap }}" style="border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 3px 2px;display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;background:{{ c.bg }};position:relative;">
+                        <div style="font-size:12px;line-height:1.1;text-align:right;padding-right:2px;color:{{ c.numColor }};font-weight:{{ c.numWeight }};">{{ c.day }}</div><div style="font-size:8px;line-height:1;text-align:right;padding-right:2px;color:{{ c.lunarColor }};font-weight:{{ c.lunarWeight }};white-space:nowrap;overflow:hidden;">{{ c.lunarText }}</div>
+                        <sc-if value="{{ c.isTodayFlash }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:1px;border:2.5px solid var(--accent);border-radius:6px;pointer-events:none;animation:cpflash 1.3s ease-out;z-index:3;"></div></sc-if>
+                        <sc-if value="{{ c.hasConflict }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:3px;left:3px;width:6px;height:6px;border-radius:50%;background:#e4002b;"></div></sc-if>
+                        <sc-for list="{{ c.events }}" as="e" hint-placeholder-count="0"><div onClick="{{ e.onTap }}" style="font-size:8.5px;line-height:1.25;padding:1px 3px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:{{ e.color }};color:{{ e.textColor }};font-weight:600;">{{ e.title }}</div></sc-for>
+                        <sc-if value="{{ c.hasMore }}" hint-placeholder-val="{{ false }}"><div style="font-size:8px;color:var(--muted);padding-left:2px;font-weight:700;">{{ c.more }}</div></sc-if>
+                        <sc-if value="{{ c.hasStickers }}" hint-placeholder-val="{{ false }}"><div style="margin-top:auto;display:flex;justify-content:center;align-items:flex-end;gap:2px;flex-wrap:wrap;line-height:1;padding-bottom:1px;font-size:{{ c.stkSize }}px;"><sc-for list="{{ c.stickers }}" as="s" hint-placeholder-count="0"><span>{{ s.glyph }}</span></sc-for></div></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- WEEK -->
+            <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;overflow:auto;background:var(--bg);">
+              <div style="min-width:456px;">
+                <div style="display:flex;position:sticky;top:0;z-index:6;background:var(--surface);border-bottom:var(--bd) solid var(--border);">
+                  <div style="width:36px;flex:none;"></div>
+                  <sc-for list="{{ weekCols }}" as="col" hint-placeholder-count="7"><div style="width:60px;flex:none;text-align:center;padding:6px 0;background:{{ col.headBg }};"><div style="font-size:10px;color:var(--muted);font-weight:700;">{{ col.label }}</div><div style="font-size:16px;font-weight:800;color:{{ col.headFg }};font-family:var(--font-head);">{{ col.dateNum }}</div></div></sc-for>
+                </div>
+                <div style="display:flex;position:relative;padding-top:4px;">
+                  <div style="width:36px;flex:none;position:relative;">
+                    <sc-for list="{{ weekHours }}" as="h" hint-placeholder-count="16"><div style="position:absolute;left:0;right:2px;text-align:right;font-size:9px;color:var(--faint);transform:translateY(-6px);top:{{ h.top }}px;">{{ h.label }}</div></sc-for>
+                  </div>
+                  <div data-week-grid style="flex:1;position:relative;height:{{ weekGridH }}px;">
+                    <sc-for list="{{ weekHours }}" as="h" hint-placeholder-count="16"><div style="position:absolute;left:0;right:0;border-top:1px solid var(--line);top:{{ h.top }}px;"></div></sc-for>
+                    <div style="position:absolute;inset:0;display:flex;">
+                      <sc-for list="{{ weekCols }}" as="col" hint-placeholder-count="7">
+                        <div style="width:60px;flex:none;position:relative;border-right:1px solid var(--line);">
+                          <sc-for list="{{ col.timed }}" as="e" hint-placeholder-count="0"><div onPointerDown="{{ e.onDown }}" style="position:absolute;left:2px;right:2px;border-radius:5px;padding:2px 4px;overflow:hidden;cursor:grab;touch-action:none;top:{{ e.top }}px;height:{{ e.height }}px;background:{{ e.color }};color:{{ e.textColor }};border-left:3px solid rgba(0,0,0,.22);box-shadow:{{ e.dragShadow }};z-index:{{ e.dragZ }};"><div style="font-size:9px;font-weight:800;line-height:1.1;">{{ e.timeLabel }}</div><div style="font-size:9px;line-height:1.15;overflow:hidden;">{{ e.title }}</div><div onPointerDown="{{ e.onResize }}" style="position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;touch-action:none;"></div></div></sc-for>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ showNow }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;right:0;height:2px;background:#ff3b30;z-index:5;top:{{ nowTop }}px;"><div style="position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ff3b30;"></div></div></sc-if>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- AGENDA -->
+            <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);padding:10px 14px 20px;">
+              <sc-for list="{{ agendaDays }}" as="d" hint-placeholder-count="4">
+                <div style="margin-bottom:14px;">
+                  <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:7px;">
+                    <div style="font-family:var(--font-head);font-size:19px;color:{{ d.headColor }};letter-spacing:var(--title-ls);">{{ d.dateLabel }}</div>
+                    <div style="font-size:12px;font-weight:700;color:var(--muted);">{{ d.weekdayLabel }}</div>
+                    <div style="flex:1;"></div>
+                    <div style="font-size:11px;color:var(--faint);font-weight:600;">{{ d.weather }}</div>
+                  </div>
+                  <sc-if value="{{ d.empty }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--faint);padding:8px 2px;">沒有安排</div></sc-if>
+                  <sc-for list="{{ d.items }}" as="it" hint-placeholder-count="0">
+                    <div onClick="{{ it.onTap }}" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:6px;border-radius:var(--radius);background:var(--surface);border:var(--bd) solid var(--border);box-shadow:var(--shadow);cursor:pointer;">
+                      <div style="width:5px;align-self:stretch;border-radius:3px;background:{{ it.color }};flex:none;"></div>
+                      <div style="width:46px;flex:none;font-size:11px;font-weight:800;color:var(--muted);">{{ it.time }}</div>
+                      <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:{{ it.titleColor }};text-decoration:{{ it.strike }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.title }}</div><sc-if value="{{ it.hasLoc }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--faint);">{{ it.loc }}</div></sc-if></div>
+                      <div style="font-size:14px;color:{{ it.checkColor }};flex:none;">{{ it.check }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ SEARCH SCREEN ============ -->
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="搜尋" style="position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);">
+          <div style="flex:none;padding:12px 16px;background:var(--surface);border-bottom:var(--bd) solid var(--border);">
+            <div style="font-family:var(--font-head);font-size:26px;color:var(--fg);text-transform:var(--title-tt);letter-spacing:var(--title-ls);margin-bottom:10px;">搜尋</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--bg);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+              <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="搜尋事件、地點、待辦…" style="flex:1;background:none;border:none;font-size:14px;color:var(--fg);"/>
+            </div>
+          </div>
+          <div style="flex:none;display:flex;gap:6px;overflow-x:auto;padding:10px 16px 4px;background:var(--surface);border-bottom:var(--bd) solid var(--border);"><sc-for list="{{ searchCalChips }}" as="ch" hint-placeholder-count="3"><button onClick="{{ ch.onTap }}" style="flex:none;display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:16px;border:1.5px solid {{ ch.bd }};background:{{ ch.bg }};color:{{ ch.fg }};font-size:12px;font-weight:800;white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ ch.dot }};"></span>{{ ch.label }}</button></sc-for></div>
+          <div style="flex:1;overflow-y:auto;padding:12px 16px 20px;">
+            <sc-if value="{{ searchEmpty }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;color:var(--faint);font-size:13px;margin-top:40px;">找不到「{{ search }}」的相關結果</div></sc-if>
+            <sc-if value="{{ searchIdle }}" hint-placeholder-val="{{ true }}"><div style="text-align:center;color:var(--faint);font-size:13px;margin-top:40px;">輸入關鍵字開始搜尋<br/>試試「客戶」「評審」「報銷」</div></sc-if>
+            <sc-for list="{{ searchResults }}" as="r" hint-placeholder-count="0">
+              <div onClick="{{ r.onTap }}" style="display:flex;align-items:center;gap:11px;padding:11px;margin-bottom:7px;border-radius:var(--radius);background:var(--surface);border:var(--bd) solid var(--border);box-shadow:var(--shadow);cursor:pointer;">
+                <div style="width:10px;height:10px;border-radius:50%;background:{{ r.color }};flex:none;"></div>
+                <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--fg);">{{ r.title }}</div><div style="font-size:11px;color:var(--faint);margin-top:1px;">{{ r.sub }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ OVERVIEW SCREEN ============ -->
+        <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="綜覽" style="position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);">
+          <div style="flex:none;padding:12px 16px 10px;background:var(--surface);border-bottom:var(--bd) solid var(--border);background-image:var(--halftone);background-size:7px 7px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-family:var(--font-head);font-size:26px;color:var(--fg);text-transform:var(--title-tt);letter-spacing:var(--title-ls);">綜覽</div>
+              <div style="font-size:11px;color:var(--muted);font-weight:700;">共 {{ ovTotal }} 筆</div>
+            </div>
+            <div style="display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--radius);border:var(--bd) solid var(--border);margin-top:10px;">
+              <button onClick="{{ ovSetEvents }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:12.5px;font-weight:700;background:{{ ovTypeEvBg }};color:{{ ovTypeEvFg }};">行程</button>
+              <button onClick="{{ ovSetTodos }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:12.5px;font-weight:700;background:{{ ovTypeTdBg }};color:{{ ovTypeTdFg }};">待辦</button>
+              <button onClick="{{ ovSetStickers }}" style="flex:1;padding:6px 0;border-radius:calc(var(--radius) - 4px);font-size:12.5px;font-weight:700;background:{{ ovTypeStBg }};color:{{ ovTypeStFg }};">貼圖</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+              <button onClick="{{ ovPrev }}" style="width:30px;height:32px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--chip);color:var(--fg);font-size:18px;font-weight:800;line-height:1;">‹</button>
+              <div style="flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--fg);">{{ ovLabel }}</div>
+              <button onClick="{{ ovNext }}" style="width:30px;height:32px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--chip);color:var(--fg);font-size:18px;font-weight:800;line-height:1;">›</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:9px;align-items:center;">
+              <div style="flex:1;display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--radius);border:var(--bd) solid var(--border);">
+                <button onClick="{{ ovSetYear }}" style="flex:1;padding:5px 0;border-radius:calc(var(--radius) - 4px);font-size:12px;font-weight:700;background:{{ ovPYBg }};color:{{ ovPYFg }};">年</button>
+                <button onClick="{{ ovSetMonth }}" style="flex:1;padding:5px 0;border-radius:calc(var(--radius) - 4px);font-size:12px;font-weight:700;background:{{ ovPMBg }};color:{{ ovPMFg }};">月</button>
+                <button onClick="{{ ovSetWeek }}" style="flex:1;padding:5px 0;border-radius:calc(var(--radius) - 4px);font-size:12px;font-weight:700;background:{{ ovPWBg }};color:{{ ovPWFg }};">週</button>
+              </div>
+              <button onClick="{{ ovToday }}" style="padding:7px 12px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--chip);color:var(--fg);font-size:12px;font-weight:700;">今天</button>
+            </div>
+            <sc-if value="{{ ovIsYear }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;margin-top:9px;"><button onClick="{{ ovCollapseAll }}" style="flex:1;padding:6px 0;border:1.5px solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;">– 全部收合</button><button onClick="{{ ovExpandAll }}" style="flex:1;padding:6px 0;border:1.5px solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;">+ 全部展開</button></div></sc-if>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:12px 14px 20px;">
+            <sc-if value="{{ ovEmpty }}" hint-placeholder-val="{{ true }}"><div style="text-align:center;color:var(--faint);font-size:13px;margin-top:44px;line-height:1.7;">這個區間沒有資料<br/>試著切換年/月/週或行程/待辦/貼圖</div></sc-if>
+            <sc-for list="{{ ovGroups }}" as="g" hint-placeholder-count="4">
+              <div style="margin-bottom:10px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface);overflow:hidden;box-shadow:var(--shadow);">
+                <div onClick="{{ g.onToggle }}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:var(--surface-2);">
+                  <span style="font-size:12px;color:var(--muted);width:12px;text-align:center;">{{ g.chevron }}</span>
+                  <span style="font-family:var(--font-head);font-size:16px;color:var(--fg);letter-spacing:var(--title-ls);">{{ g.title }}</span>
+                  <span style="font-size:11px;color:var(--muted);font-weight:700;">{{ g.sub }}</span>
+                  <div style="flex:1;"></div>
+                  <span style="font-size:11px;color:var(--faint);font-weight:700;">{{ g.count }}</span>
+                </div>
+                <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:5px 10px 8px;">
+                  <sc-for list="{{ g.days }}" as="day" hint-placeholder-count="1">
+                    <sc-if value="{{ day.hasLabel }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;font-weight:800;color:var(--muted);margin:7px 2px 3px;">{{ day.dayLabel }}</div></sc-if>
+                    <sc-for list="{{ day.items }}" as="it" hint-placeholder-count="2">
+                      <div onClick="{{ it.onTap }}" style="display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:calc(var(--radius) - 4px);cursor:pointer;">
+                        <sc-if value="{{ it.hasGlyph }}" hint-placeholder-val="{{ false }}"><span style="font-size:23px;line-height:1;width:26px;text-align:center;flex:none;">{{ it.glyph }}</span></sc-if>
+                        <sc-if value="{{ it.hasBar }}" hint-placeholder-val="{{ true }}"><div style="width:4px;align-self:stretch;min-height:22px;border-radius:3px;background:{{ it.color }};flex:none;"></div></sc-if>
+                        <div style="width:44px;flex:none;font-size:11px;font-weight:800;color:var(--muted);">{{ it.time }}</div>
+                        <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:var(--fg);text-decoration:{{ it.strike }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ it.title }}</div><sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--faint);">{{ it.sub }}</div></sc-if></div>
+                        <sc-if value="{{ it.hasRight }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:{{ it.rightColor }};flex:none;">{{ it.right }}</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ SETTINGS SCREEN ============ -->
+        <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="設定" style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);">
+          <div style="padding:14px 16px 8px;background:var(--surface);border-bottom:var(--bd) solid var(--border);position:sticky;top:0;z-index:4;background-image:var(--halftone);background-size:7px 7px;">
+            <div style="font-family:var(--font-head);font-size:28px;color:var(--fg);text-transform:var(--title-tt);letter-spacing:var(--title-ls);">設定</div>
+          </div>
+          <div style="padding:16px;">
+
+            <!-- appearance -->
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">外觀主題</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;">
+              <sc-for list="{{ themeCards }}" as="t" hint-placeholder-count="6">
+                <div onClick="{{ t.onTap }}" style="border:2.5px solid {{ t.borderCol }};border-radius:var(--radius);padding:9px;background:var(--surface);cursor:pointer;box-shadow:{{ t.shadow }};">
+                  <div style="display:flex;gap:5px;margin-bottom:7px;">
+                    <div style="width:26px;height:34px;border-radius:5px;border:2px solid {{ t.c3 }};background:{{ t.c1 }};position:relative;overflow:hidden;"><div style="position:absolute;left:0;right:0;bottom:0;height:11px;background:{{ t.c2 }};"></div></div>
+                    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;"><div style="height:5px;width:80%;border-radius:2px;background:{{ t.c3 }};opacity:.85;"></div><div style="height:5px;width:55%;border-radius:2px;background:{{ t.c2 }};"></div><div style="height:5px;width:68%;border-radius:2px;background:{{ t.c3 }};opacity:.4;"></div></div>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;font-weight:800;color:var(--fg);">{{ t.name }}</span><span style="font-size:13px;color:var(--accent);">{{ t.tick }}</span></div>
+                  <div style="font-size:10px;color:var(--faint);margin-top:1px;line-height:1.3;">{{ t.desc }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:var(--radius);border:var(--bd) solid var(--border);margin-bottom:18px;">
+              <button onClick="{{ setLight }}" style="flex:1;padding:9px 0;border-radius:calc(var(--radius) - 4px);font-size:13px;font-weight:700;background:{{ lightBg }};color:{{ lightFg }};">☀ 淺色</button>
+              <button onClick="{{ setDark }}" style="flex:1;padding:9px 0;border-radius:calc(var(--radius) - 4px);font-size:13px;font-weight:700;background:{{ darkBg }};color:{{ darkFg }};">☾ 深色</button>
+            </div>
+
+            <!-- AI assistant -->
+            <div style="display:flex;align-items:center;gap:7px;margin:2px 0 9px;"><span style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">AI 助理</span><button onClick="{{ toggleAiInfo }}" style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;line-height:1;">!</button></div>
+            <sc-if value="{{ aiInfoOpen }}" hint-placeholder-val="{{ false }}"><div style="background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 13px;margin-bottom:10px;font-size:12px;line-height:1.8;color:var(--fg);">桑寵 AI 能幫你：<br/>・讀取近 7 天行程與待辦，找出過滿或衝突的時段<br/>・建議會議之間的緩衝與休息時間<br/>・把最急的待辦排進今天的空檔<br/>・提醒逐期未完成的事項<br/><span style="color:var(--faint);">＊填入下方 API Key 可用自己的模型，留空則用內建。</span></div></sc-if>
+            <div style="background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:18px;box-shadow:var(--shadow);">
+              <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:3px;">API Key（選填）</div>
+              <div style="font-size:11px;color:var(--faint);margin-bottom:9px;line-height:1.4;">供桌寵讀取近期行程、產生排程建議，並讓【快速新增】的自然語言解析更準。留空則使用內建解析（仍可用）。</div>
+              <input value="{{ aiKey }}" onInput="{{ onAiKey }}" type="password" placeholder="sk-..." style="width:100%;padding:9px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--bg);color:var(--fg);font-size:13px;letter-spacing:1px;"/>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;"><span style="font-size:13px;color:var(--fg);">連線狀態</span><span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:{{ aiPillBg }};color:{{ aiPillFg }};">{{ aiStatus }}</span></div>
+            </div>
+
+            <!-- calendars -->
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">我的日曆</div>
+            <div style="background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:9px;box-shadow:var(--shadow);">
+              <sc-for list="{{ calRows }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line);">
+                  <div onClick="{{ c.onEdit }}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0;cursor:pointer;">
+                    <div style="width:14px;height:14px;border-radius:4px;background:{{ c.color }};flex:none;border:1.5px solid rgba(0,0,0,.15);"></div>
+                    <div style="flex:1;font-size:14px;color:var(--fg);font-weight:600;">{{ c.name }}</div>
+                    <span style="font-size:12px;color:var(--faint);font-weight:700;">編輯</span>
+                  </div>
+                  <div onClick="{{ c.onToggle }}" style="width:40px;height:23px;border-radius:20px;background:{{ c.trackBg }};position:relative;transition:background .2s;flex:none;cursor:pointer;"><div style="position:absolute;top:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;left:{{ c.knobLeft }};"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <button onClick="{{ addCalendar }}" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-size:13px;font-weight:700;margin-bottom:18px;background:none;">＋ 新增日曆</button>
+
+            <!-- pet -->
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">桌寵</div>
+            <div style="background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:18px;box-shadow:var(--shadow);">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 11px;margin-bottom:11px;border-radius:var(--radius);background:var(--surface-2);border:1.5px solid var(--border);"><div style="font-size:22px;">{{ petAccDisp }}</div><div style="flex:1;"><div style="font-size:13px;font-weight:800;color:var(--fg);">等級・{{ petTierName }}</div><div style="font-size:11px;color:var(--muted);">已完成 {{ petXP }} 項待辦{{ petNextText }}</div></div><button onClick="{{ toggleLevelInfo }}" style="width:23px;height:23px;flex:none;border-radius:50%;border:2px solid var(--border);background:var(--surface);color:var(--fg);font-size:13px;font-weight:900;font-style:italic;">!</button></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;"><span style="font-size:14px;font-weight:700;color:var(--fg);">顯示桌寵</span><button onClick="{{ togglePet }}" style="width:44px;height:25px;border-radius:20px;background:{{ petTrackBg }};position:relative;"><div style="position:absolute;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;left:{{ petKnobLeft }};"></div></button></div>
+              <div style="font-size:13px;color:var(--fg);margin-bottom:5px;">寵物名字</div>
+              <input value="{{ petName }}" onInput="{{ onPetName }}" placeholder="幫牠取名" style="width:100%;padding:9px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 3px);background:var(--bg);color:var(--fg);font-size:13px;margin-bottom:5px;"/>
+              <div style="font-size:11px;color:var(--faint);line-height:1.5;">牠會在角落走動，用漫畫對話框提醒你今日與明日的待辦，也能直接透過牠新增待辦或請牠給行程建議。</div>
+              <div style="font-size:13px;color:var(--fg);margin:12px 0 6px;">選擇夥伴</div>
+              <div style="display:flex;gap:6px;"><sc-for list="{{ petKinds }}" as="p" hint-placeholder-count="4"><button onClick="{{ p.onTap }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;border:2px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }};"><span style="font-size:20px;line-height:1;">{{ p.emo }}</span><span style="font-size:11px;font-weight:800;">{{ p.name }}</span></button></sc-for></div>
+            </div>
+
+            <!-- general -->
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">一般</div>
+            <div style="background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);">
+              <div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">月檢視週數</span><div style="display:flex;gap:3px;background:var(--surface-2);padding:3px;border-radius:10px;"><button onClick="{{ setW4 }}" style="padding:4px 11px;border-radius:8px;font-size:12px;font-weight:700;background:{{ w4Bg }};color:{{ w4Fg }};">4</button><button onClick="{{ setW5 }}" style="padding:4px 11px;border-radius:8px;font-size:12px;font-weight:700;background:{{ w5Bg }};color:{{ w5Fg }};">5</button><button onClick="{{ setW6 }}" style="padding:4px 11px;border-radius:8px;font-size:12px;font-weight:700;background:{{ w6Bg }};color:{{ w6Fg }};">6</button></div></div><div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">每週起始日</span><div style="display:flex;gap:3px;background:var(--surface-2);padding:3px;border-radius:10px;"><button onClick="{{ wkSun }}" style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:{{ sunBg }};color:{{ sunFg }};">日</button><button onClick="{{ wkMon }}" style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:{{ monBg }};color:{{ monFg }};">一</button></div></div>
+              <div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">預設時區</span><select value="{{ tzVal }}" onChange="{{ setTz }}" style="padding:7px 9px;border:var(--bd) solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg);font-size:13px;max-width:172px;"><option value="Asia/Taipei">台北 (GMT+8)</option><option value="Asia/Tokyo">東京 (GMT+9)</option><option value="Asia/Shanghai">上海 (GMT+8)</option><option value="Asia/Hong_Kong">香港 (GMT+8)</option><option value="Asia/Singapore">新加坡 (GMT+8)</option><option value="Asia/Seoul">首爾 (GMT+9)</option><option value="America/Los_Angeles">洛杉矶 (GMT-8)</option><option value="America/New_York">紐約 (GMT-5)</option><option value="Europe/London">倫敦 (GMT+0)</option><option value="Australia/Sydney">雪梨 (GMT+11)</option><option value="UTC">UTC</option></select></div>
+              <div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">左右滑動翻頁</span><div style="display:flex;gap:3px;background:var(--surface-2);padding:3px;border-radius:10px;"><button onClick="{{ setSwipeV }}" style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:{{ swipeVBg }};color:{{ swipeVFg }};">關</button><button onClick="{{ setSwipeH }}" style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:{{ swipeHBg }};color:{{ swipeHFg }};">開</button></div></div>
+              <div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">預設提醒</span><select value="{{ defaultRemVal }}" onChange="{{ setDefaultRem }}" style="padding:7px 9px;border:var(--bd) solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg);font-size:13px;"><option value="none">無</option><option value="0">準時</option><option value="5">5 分鐘前</option><option value="10">10 分鐘前</option><option value="15">15 分鐘前</option><option value="30">30 分鐘前</option><option value="60">1 小時前</option><option value="1440">1 天前</option></select></div>
+              <div style="display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line);"><span style="flex:1;font-size:14px;color:var(--fg);">通知提醒</span><button onClick="{{ toggleNotify }}" style="width:44px;height:25px;border-radius:20px;background:{{ notifyTrackBg }};position:relative;"><div style="position:absolute;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;left:{{ notifyKnob }};"></div></button></div>
+              <div style="display:flex;align-items:center;padding:11px 13px;"><span style="flex:1;font-size:14px;color:var(--fg);">雲端同步</span><span style="font-size:12px;color:#17b26a;font-weight:800;">● {{ syncLabel }}</span></div>
+            </div>
+
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">資料備份</div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <button onClick="{{ exportData }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font-size:13px;font-weight:800;box-shadow:var(--shadow);">⬇ 匯出資料</button>
+              <label style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font-size:13px;font-weight:800;box-shadow:var(--shadow);text-align:center;cursor:pointer;">⬆ 匯入資料<input type="file" accept="application/json,.json" onChange="{{ onImportFile }}" style="display:none;"/></label>
+            </div>
+            <div style="font-size:11px;color:var(--faint);line-height:1.5;margin-bottom:16px;">匯出成 JSON 存到裝置；換手機或清除瀏覽器資料前先備份，匯入即可還原全部行程、待辦與貼圖。</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onClick="{{ exportICS }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font-size:13px;font-weight:800;box-shadow:var(--shadow);">⬇ 匯出 .ics</button>
+              <label style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font-size:13px;font-weight:800;box-shadow:var(--shadow);text-align:center;cursor:pointer;">⬆ 匯入 .ics<input type="file" accept=".ics,text/calendar" onChange="{{ onImportICS }}" style="display:none;"/></label>
+            </div>
+            <div style="font-size:11px;color:var(--faint);line-height:1.5;margin-bottom:16px;">.ics 是通用日曆格式，可導入 Google 日曆、Apple 日曆、Outlook 等第三方匯出檔；匯入前會先顯示預覽清單讓你確認。</div>
+            <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:2px 0 9px;">開發者</div>
+            <div style="background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px;box-shadow:var(--shadow);">
+              <div style="display:flex;align-items:center;padding:11px 13px;"><span style="flex:1;font-size:14px;color:var(--fg);">開發者模式</span><button onClick="{{ toggleDevMode }}" style="width:44px;height:25px;border-radius:20px;background:{{ devTrackBg }};position:relative;"><div style="position:absolute;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;left:{{ devKnob }};"></div></button></div>
+              <sc-if value="{{ devMode }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top:1px solid var(--line);padding:12px 13px;">
+                <div style="font-size:11px;color:var(--faint);line-height:1.6;margin-bottom:11px;">預設不載入任何示範資料。下方可載入一組示範行程/待辦/貼圖來試用，或一鍵清除所有資料。</div>
+                <button onClick="{{ askLoadDemo }}" style="width:100%;padding:10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:800;margin-bottom:8px;">載入示範資料</button>
+                <button onClick="{{ askClearAll }}" style="width:100%;padding:10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--surface);color:#e4002b;font-size:13px;font-weight:800;">清除所有資料</button>
+              </div>
+              </sc-if>
+            </div>
+            <div style="text-align:center;font-size:10px;color:var(--faint);padding:6px 0 12px;">日曆桌寵 · v1.0 · 資料儲存於本機（模擬後端同步）</div>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+
+      <!-- ===== FAB ===== -->
+      <sc-if value="{{ isCal }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ openNew }}" style="position:absolute;right:16px;bottom:80px;width:56px;height:56px;border-radius:calc(var(--radius) + 10px);background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);border:var(--bd) solid var(--border);z-index:44;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+      </sc-if>
+
+      <!-- ===== PET LAYER ===== -->
+      <sc-if value="{{ petEnabled }}" hint-placeholder-val="{{ true }}">
+      <div ref="petLayerRef" data-pet="layer" style="position:absolute;left:12px;right:12px;bottom:78px;height:0;z-index:40;pointer-events:none;">
+        <div ref="petRef" data-pet="root" style="position:absolute;bottom:0;left:0;width:60px;height:60px;pointer-events:auto;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;">
+          <div ref="petBodyRef" data-pet="body" style="width:100%;height:100%;position:relative;transform-origin:bottom center;">
+            <div style="position:absolute;bottom:-3px;left:12px;width:36px;height:7px;background:rgba(0,0,0,.16);border-radius:50%;filter:blur(1px);"></div>
+            <div style="position:absolute;bottom:3px;left:7px;width:46px;height:44px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50% 50% 46% 46% / 60% 60% 42% 42%;box-shadow:inset -5px -6px 0 rgba(0,0,0,.07);">
+              <sc-if value="{{ petIsCat }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:-9px;left:5px;width:15px;height:15px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:65% 10% 60% 60%;transform:rotate(-18deg);"></div><div style="position:absolute;top:-9px;right:5px;width:15px;height:15px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:10% 65% 60% 60%;transform:rotate(18deg);"></div></sc-if>
+              <sc-if value="{{ petIsBear }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:-8px;left:3px;width:16px;height:16px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50%;"></div><div style="position:absolute;top:-8px;right:3px;width:16px;height:16px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50%;"></div></sc-if>
+              <sc-if value="{{ petIsBunny }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:-23px;left:9px;width:10px;height:27px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50% 50% 40% 40%;transform:rotate(-8deg);"></div><div style="position:absolute;top:-23px;right:9px;width:10px;height:27px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50% 50% 40% 40%;transform:rotate(8deg);"></div></sc-if>
+              <sc-if value="{{ petIsChick }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:9px;height:9px;background:var(--pet);border:var(--bd) solid var(--pet-outline);border-radius:50% 50% 0 0;"></div><div style="position:absolute;top:24px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #f59e0b;z-index:2;"></div></sc-if>
+              <div style="position:absolute;top:15px;left:10px;width:9px;height:11px;background:#fff;border:2px solid var(--pet-outline);border-radius:50%;animation:cpblink 4.4s infinite;transform-origin:center;"><div style="position:absolute;top:3px;left:2px;width:4px;height:5px;background:var(--pet-outline);border-radius:50%;"></div></div>
+              <div style="position:absolute;top:15px;right:10px;width:9px;height:11px;background:#fff;border:2px solid var(--pet-outline);border-radius:50%;animation:cpblink 4.4s infinite;transform-origin:center;"><div style="position:absolute;top:3px;left:2px;width:4px;height:5px;background:var(--pet-outline);border-radius:50%;"></div></div>
+              <div style="position:absolute;top:26px;left:6px;width:7px;height:5px;background:#ff8aa0;border-radius:50%;opacity:.8;"></div>
+              <div style="position:absolute;top:26px;right:6px;width:7px;height:5px;background:#ff8aa0;border-radius:50%;opacity:.8;"></div>
+              <div style="position:absolute;top:27px;left:50%;transform:translateX(-50%);width:9px;height:5px;border:2px solid var(--pet-outline);border-top:none;border-radius:0 0 8px 8px;"></div>
+            </div>
+            <div style="position:absolute;bottom:0;left:14px;width:11px;height:6px;background:var(--pet-outline);border-radius:50%;"></div>
+            <div style="position:absolute;bottom:0;right:14px;width:11px;height:6px;background:var(--pet-outline);border-radius:50%;"></div>
+          </div>
+          <img ref="petImgRef" data-pet="img" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;pointer-events:none;"/>
+          <div ref="petZRef" data-pet="z" style="position:absolute;top:-8px;right:-2px;font-size:12px;font-weight:800;color:var(--fg);display:none;transform:rotate(8deg);">z<sub style="font-size:8px;">z</sub></div>
+          <div ref="petGrabRef" data-pet="grab" style="position:absolute;top:-6px;left:-8px;font-size:13px;font-weight:900;color:var(--accent);display:none;">!?</div>
+          <sc-if value="{{ petAccShow }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:17px;pointer-events:none;z-index:2;">{{ petAcc }}</div></sc-if>
+          <sc-if value="{{ hasBadge }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:-3px;right:-4px;min-width:19px;height:19px;padding:0 4px;background:var(--accent);color:var(--accent-fg);border:2px solid var(--surface);border-radius:10px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;">{{ petBadge }}</div></sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== REMINDER TOAST ===== -->
+      <sc-if value="{{ remOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:12px;right:12px;top:14px;z-index:95;">
+        <div onClick="{{ dismissRem }}" style="display:flex;align-items:center;gap:10px;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 13px;cursor:pointer;animation:cppop .26s cubic-bezier(.34,1.56,.64,1);">
+          <div style="width:34px;height:34px;flex:none;border-radius:10px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:18px;">🔔</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:800;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ remTitle }}</div><div style="font-size:11px;color:var(--muted);">{{ remBody }}</div></div>
+          <span style="font-size:16px;color:var(--faint);font-weight:800;">×</span>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== IMPORT PREVIEW ===== -->
+      <sc-if value="{{ importOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:93;display:flex;align-items:center;justify-content:center;padding:22px;">
+        <div onClick="{{ cancelImport }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:relative;width:100%;max-width:320px;max-height:78%;display:flex;flex-direction:column;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;animation:cppop .24s cubic-bezier(.34,1.56,.64,1);">
+          <div style="padding:16px 16px 10px;"><div style="font-family:var(--font-head);font-size:19px;color:var(--fg);letter-spacing:var(--title-ls);">匯入預覽</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">{{ importName }} · 共 {{ importCount }} 筆行程</div></div>
+          <sc-if value="{{ importEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 16px 16px;font-size:13px;color:var(--muted);line-height:1.6;">無法從此檔案辨識出行程。請確認是有效的 .ics（iCalendar）匯出檔。</div></sc-if>
+          <div style="flex:1;overflow-y:auto;padding:0 12px;">
+            <sc-for list="{{ importList }}" as="it" hint-placeholder-count="0"><div style="display:flex;gap:9px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid var(--line);"><div style="width:8px;height:8px;border-radius:50%;flex:none;margin-top:4px;background:{{ it.color }};"></div><div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:var(--fg);">{{ it.title }}</div><div style="font-size:11px;color:var(--faint);">{{ it.sub }}</div></div></div></sc-for>
+            <sc-if value="{{ importMoreShow }}" hint-placeholder-val="{{ false }}"><div style="padding:9px 6px;font-size:11px;color:var(--faint);">{{ importMore }}</div></sc-if>
+          </div>
+          <div style="display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);"><button onClick="{{ cancelImport }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:800;">取消</button><button onClick="{{ confirmImport }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--accent);color:var(--accent-fg);font-size:14px;font-weight:800;">{{ importOkText }}</button></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== RECURRING SCOPE DIALOG ===== -->
+      <sc-if value="{{ scopeOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:92;display:flex;align-items:center;justify-content:center;padding:26px;">
+        <div onClick="{{ scopeCancel }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:relative;width:100%;max-width:300px;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px 18px 16px;animation:cppop .24s cubic-bezier(.34,1.56,.64,1);">
+          <div style="font-family:var(--font-head);font-size:20px;color:var(--fg);letter-spacing:var(--title-ls);margin-bottom:8px;">{{ scopeTitle }}</div>
+          <div style="font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:16px;">{{ scopeMsg }}</div>
+          <button onClick="{{ scopeThis }}" style="width:100%;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--accent);color:var(--accent-fg);font-size:14px;font-weight:800;margin-bottom:8px;">{{ scopeThisText }}</button>
+          <button onClick="{{ scopeAll }}" style="width:100%;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:800;margin-bottom:8px;">{{ scopeAllText }}</button>
+          <button onClick="{{ scopeCancel }}" style="width:100%;padding:9px;color:var(--muted);font-size:13px;font-weight:700;background:none;">取消</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== CALENDAR EDITOR ===== -->
+      <sc-if value="{{ calEditOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:94;display:flex;align-items:center;justify-content:center;padding:24px;">
+        <div onClick="{{ closeCalEdit }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:relative;width:100%;max-width:300px;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px 18px 16px;animation:cppop .24s cubic-bezier(.34,1.56,.64,1);">
+          <div style="font-family:var(--font-head);font-size:20px;color:var(--fg);letter-spacing:var(--title-ls);margin-bottom:12px;">{{ calEditTitle }}</div>
+          <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:5px;">名稱</div>
+          <input value="{{ calEditName }}" onInput="{{ onCalName }}" placeholder="例如：工作、家庭、健身" style="width:100%;padding:10px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:14px;margin-bottom:14px;"/>
+          <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:8px;">顏色</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;"><sc-for list="{{ calEditSwatches }}" as="s" hint-placeholder-count="10"><button onClick="{{ s.onTap }}" style="width:30px;height:30px;border-radius:50%;background:{{ s.hex }};box-shadow:{{ s.ring }};"></button></sc-for></div>
+          <div style="display:flex;gap:8px;"><button onClick="{{ saveCalEdit }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--accent);color:var(--accent-fg);font-size:14px;font-weight:800;">儲存</button><button onClick="{{ closeCalEdit }}" style="flex:none;padding:11px 16px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:800;">取消</button></div>
+          <sc-if value="{{ calEditCanDelete }}" hint-placeholder-val="{{ false }}"><button onClick="{{ delCalEdit }}" style="width:100%;margin-top:8px;padding:9px;color:#e4002b;font-size:13px;font-weight:800;background:none;">刪除此日曆</button></sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== LEVEL INFO ===== -->
+      <sc-if value="{{ levelInfoOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:94;display:flex;align-items:center;justify-content:center;padding:24px;">
+        <div onClick="{{ toggleLevelInfo }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:relative;width:100%;max-width:300px;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px 18px 16px;animation:cppop .24s cubic-bezier(.34,1.56,.64,1);">
+          <div style="font-family:var(--font-head);font-size:20px;color:var(--fg);letter-spacing:var(--title-ls);margin-bottom:6px;">桌寵等級制度</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">每完成一項待辦 +1 經驗值。累積越多，桌寵升級並解鎖頭上的專屬配件。</div>
+          <sc-for list="{{ petTiers }}" as="t" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:6px;border-radius:12px;background:{{ t.rowBg }};border:1.5px solid {{ t.rowBd }};"><span style="font-size:18px;width:24px;text-align:center;">{{ t.acc }}</span><span style="flex:1;font-size:13px;font-weight:800;color:var(--fg);">{{ t.name }}</span><span style="font-size:12px;color:var(--muted);">{{ t.range }}</span></div></sc-for>
+          <button onClick="{{ toggleLevelInfo }}" style="width:100%;margin-top:8px;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:800;">知道了</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== CONFIRM DIALOG ===== -->
+      <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:26px;">
+        <div onClick="{{ confirmCancel }}" style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:relative;width:100%;max-width:300px;background:var(--surface);border:var(--bd) solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:20px 18px 16px;animation:cppop .24s cubic-bezier(.34,1.56,.64,1);">
+          <div style="font-family:var(--font-head);font-size:20px;color:var(--fg);letter-spacing:var(--title-ls);margin-bottom:8px;">{{ confirmTitle }}</div>
+          <div style="font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:18px;">{{ confirmMsg }}</div>
+          <div style="display:flex;gap:8px;">
+            <button onClick="{{ confirmCancel }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:800;">取消</button>
+            <button onClick="{{ confirmOk }}" style="flex:1;padding:11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:{{ confirmOkBg }};color:{{ confirmOkFg }};font-size:14px;font-weight:800;">{{ confirmOkText }}</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== PET OUTSIDE CATCHER ===== -->
+      <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ petClose }}" style="position:absolute;inset:0;z-index:55;"></div>
+      </sc-if>
+
+      <!-- ===== PET BUBBLE ===== -->
+      <sc-if value="{{ bubbleOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:12px;bottom:150px;width:270px;max-width:calc(100% - 24px);z-index:60;">
+        <div style="position:relative;background:#fff;color:#141414;border:3px solid #141414;border-radius:20px;padding:15px 15px 13px;box-shadow:5px 6px 0 rgba(0,0,0,.2);animation:cppop .28s cubic-bezier(.34,1.56,.64,1);font-family:'Noto Sans TC',sans-serif;">
+          <button onClick="{{ petClose }}" style="position:absolute;top:-13px;right:-13px;width:29px;height:29px;background:#141414;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);">✕</button>
+
+          <sc-if value="{{ isGreeting }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:15px;font-weight:800;line-height:1.5;margin-bottom:11px;">{{ greetingText }}</div>
+          <div style="display:flex;gap:7px;"><button onClick="{{ showTodos }}" style="flex:1;padding:9px 0;border:2.5px solid #141414;border-radius:11px;background:#ffd23f;color:#141414;font-weight:800;font-size:13px;">看待辦</button><button onClick="{{ showAI }}" style="flex:1;padding:9px 0;border:2.5px solid #141414;border-radius:11px;background:#fff;color:#141414;font-weight:800;font-size:13px;">給我建議</button></div>
+          </sc-if>
+
+          <sc-if value="{{ isTodos }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:14px;font-weight:900;margin-bottom:8px;">📋 今日待辦</div>
+          <sc-for list="{{ todayTodos }}" as="t" hint-placeholder-count="0"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><button onClick="{{ t.onToggle }}" style="width:20px;height:20px;border:2.5px solid #141414;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ t.boxBg }};color:#fff;font-size:12px;font-weight:900;">{{ t.check }}</button><span style="flex:1;font-size:13px;font-weight:600;color:{{ t.color }};text-decoration:{{ t.strike }};">{{ t.title }}</span><sc-if value="{{ t.overdue }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:800;color:#e4002b;white-space:nowrap;">{{ t.dateLabel }}</span></sc-if><button onClick="{{ t.onDel }}" style="color:#bbb;font-size:15px;font-weight:800;flex:none;">×</button></div></sc-for>
+          <sc-if value="{{ noTodayTodos }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#999;margin-bottom:6px;">今天清空啦，太棒了！</div></sc-if>
+          <div style="display:flex;gap:6px;margin:4px 0 12px;"><input value="{{ todoTodayDraft }}" onInput="{{ onTodoToday }}" placeholder="新增今日待辦…" style="flex:1;padding:6px 9px;border:2px solid #141414;border-radius:9px;font-size:12px;"/><button onClick="{{ addTodoToday }}" style="padding:0 12px;border:2px solid #141414;border-radius:9px;background:#141414;color:#fff;font-weight:800;font-size:14px;">＋</button></div>
+          <div style="font-size:14px;font-weight:900;margin-bottom:8px;">🗓 明日待辦</div>
+          <sc-for list="{{ tomorrowTodos }}" as="t" hint-placeholder-count="0"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><button onClick="{{ t.onToggle }}" style="width:20px;height:20px;border:2.5px solid #141414;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ t.boxBg }};color:#fff;font-size:12px;font-weight:900;">{{ t.check }}</button><span style="flex:1;font-size:13px;font-weight:600;color:{{ t.color }};text-decoration:{{ t.strike }};">{{ t.title }}</span><button onClick="{{ t.onDel }}" style="color:#bbb;font-size:15px;font-weight:800;flex:none;">×</button></div></sc-for>
+          <div style="display:flex;gap:6px;margin-top:4px;"><input value="{{ todoTomorrowDraft }}" onInput="{{ onTodoTomorrow }}" placeholder="新增明日待辦…" style="flex:1;padding:6px 9px;border:2px solid #141414;border-radius:9px;font-size:12px;"/><button onClick="{{ addTodoTomorrow }}" style="padding:0 12px;border:2px solid #141414;border-radius:9px;background:#141414;color:#fff;font-weight:800;font-size:14px;">＋</button></div>
+          </sc-if>
+
+          <sc-if value="{{ isAI }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:14px;font-weight:900;margin-bottom:9px;display:flex;align-items:center;gap:7px;"><span>✨ {{ petName }}的行程建議</span></div>
+          <sc-if value="{{ aiLoading }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:9px;padding:6px 0 10px;"><div style="width:18px;height:18px;border:3px solid #eee;border-top-color:#141414;border-radius:50%;animation:cpspin .8s linear infinite;"></div><span style="font-size:12px;color:#666;">正在翻看你最近的行程…</span></div></sc-if>
+          <sc-if value="{{ aiReady }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.6;white-space:pre-line;background:#faf7ee;border:2px dashed #141414;border-radius:12px;padding:10px 11px;">{{ aiText }}</div></sc-if>
+          <div style="display:flex;gap:7px;margin-top:11px;"><button onClick="{{ showTodos }}" style="flex:1;padding:8px 0;border:2.5px solid #141414;border-radius:11px;background:#fff;color:#141414;font-weight:800;font-size:12px;">看待辦</button><button onClick="{{ showAI }}" style="flex:1;padding:8px 0;border:2.5px solid #141414;border-radius:11px;background:#ffd23f;color:#141414;font-weight:800;font-size:12px;">重新分析</button></div>
+          </sc-if>
+
+          <div style="position:absolute;bottom:-15px;left:26px;width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:16px solid #141414;"></div>
+          <div style="position:absolute;bottom:-10px;left:29px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:11px solid #fff;"></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== TAB BAR ===== -->
+      <div style="flex:none;height:64px;border-top:var(--bd) solid var(--border);background:var(--surface);display:flex;align-items:stretch;z-index:35;">
+        <button onClick="{{ goCal }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ navCalColor }};"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="16" rx="3"></rect><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"></line><line x1="8" y1="3" x2="8" y2="6"></line><line x1="16" y1="3" x2="16" y2="6"></line></svg><span style="font-size:10px;font-weight:700;">日曆</span></button>
+        <button onClick="{{ goSearch }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ navSearchColor }};"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg><span style="font-size:10px;font-weight:700;">搜尋</span></button>
+        <button onClick="{{ goOverview }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ navOverviewColor }};"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg><span style="font-size:10px;font-weight:700;">綜覽</span></button>
+        <button onClick="{{ goSettings }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ navSetColor }};"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"></line><circle cx="10" cy="8" r="2.5" fill="var(--surface)"></circle><line x1="4" y1="16" x2="20" y2="16"></line><circle cx="15" cy="16" r="2.5" fill="var(--surface)"></circle></svg><span style="font-size:10px;font-weight:700;">設定</span></button>
+      </div>
+
+      <!-- ===== DAY DETAIL SHEET ===== -->
+      <sc-if value="{{ dayOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:65;display:flex;align-items:flex-end;">
+        <div onClick="{{ closeDay }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);"></div>
+        <div style="position:relative;width:100%;max-height:88%;overflow-y:auto;background:var(--surface);border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg);border-top:var(--bd) solid var(--border);padding:8px 16px 22px;animation:cpfadeup .26s ease;">
+          <div style="width:40px;height:4px;border-radius:3px;background:var(--faint);margin:4px auto 12px;opacity:.5;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-family:var(--font-head);font-size:22px;color:var(--fg);letter-spacing:var(--title-ls);">{{ dayLabel }}</div>
+            <button onClick="{{ closeDay }}" style="font-size:14px;color:var(--muted);font-weight:700;">完成</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 14px;">
+            <sc-for list="{{ dayStickers }}" as="s" hint-placeholder-count="0"><button onClick="{{ s.onTap }}" style="font-size:20px;line-height:1;background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;padding:4px 7px;">{{ s.glyph }}</button></sc-for>
+            <button onClick="{{ toggleStickerPick }}" style="font-size:13px;font-weight:700;color:var(--accent);border:1.5px dashed var(--border);border-radius:10px;padding:6px 10px;background:none;">＋ 貼圖</button>
+          </div>
+          <sc-if value="{{ stickerPick }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 14px;padding:10px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);max-height:172px;overflow-y:auto;"><sc-for list="{{ stickerOptions }}" as="o" hint-placeholder-count="10"><button onClick="{{ o.cb }}" style="font-size:22px;line-height:1;width:38px;height:38px;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;">{{ o.g }}</button></sc-for></div></sc-if>
+          <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;">行程</div>
+          <sc-if value="{{ dayNoEvents }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--faint);margin-bottom:10px;">這天沒有行程</div></sc-if>
+          <sc-for list="{{ dayEvents }}" as="e" hint-placeholder-count="0">
+            <div onClick="{{ e.onTap }}" style="display:flex;align-items:center;gap:10px;padding:10px 11px;margin-bottom:6px;border-radius:var(--radius);background:var(--bg);border:var(--bd) solid var(--border);cursor:pointer;">
+              <div style="width:5px;align-self:stretch;border-radius:3px;background:{{ e.color }};flex:none;"></div>
+              <div style="width:82px;flex:none;font-size:11px;font-weight:800;color:var(--muted);">{{ e.time }}</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--fg);">{{ e.title }}</div><sc-if value="{{ e.hasLoc }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--faint);">{{ e.loc }}</div></sc-if></div>
+              <sc-if value="{{ e.conflict }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10px;font-weight:800;color:#fff;background:#e4002b;border-radius:6px;padding:2px 6px;">衝突</span></sc-if>
+            </div>
+          </sc-for>
+          <button onClick="{{ openDayNew }}" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-size:13px;font-weight:700;margin:4px 0 16px;background:none;">＋ 新增事件</button>
+          <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;">待辦清單</div>
+          <sc-for list="{{ dayTodos }}" as="t" hint-placeholder-count="0"><div data-td-id="{{ t.id }}" style="margin-bottom:5px;border-radius:var(--radius);background:var(--bg);border:1px solid var(--line);opacity:{{ t.dragOpacity }};"><div style="display:flex;align-items:center;gap:8px;padding:8px 10px;"><div onPointerDown="{{ t.onDown }}" style="cursor:grab;touch-action:none;color:var(--muted);font-size:15px;line-height:1;flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--surface-2);">☰</div><button onClick="{{ t.onToggle }}" style="width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ t.boxBg }};color:#fff;font-size:12px;font-weight:900;">{{ t.check }}</button><span onClick="{{ t.onExpand }}" style="flex:1;font-size:13px;font-weight:600;color:{{ t.color }};text-decoration:{{ t.strike }};cursor:pointer;">{{ t.title }}</span><sc-if value="{{ t.hasSubs }}" hint-placeholder-val="{{ false }}"><span onClick="{{ t.onExpand }}" style="font-size:10px;font-weight:800;color:var(--muted);cursor:pointer;white-space:nowrap;">{{ t.caret }} {{ t.subCount }}</span></sc-if><sc-if value="{{ t.overdue }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:800;color:#e4002b;">{{ t.dateLabel }}</span></sc-if><button onClick="{{ t.onDel }}" style="color:var(--faint);font-size:15px;font-weight:800;">×</button></div><sc-if value="{{ t.expanded }}" hint-placeholder-val="{{ false }}"><div style="padding:0 10px 8px 36px;display:flex;flex-direction:column;gap:4px;"><sc-for list="{{ t.subs }}" as="s" hint-placeholder-count="0"><div style="display:flex;align-items:center;gap:7px;"><button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border:2px solid var(--border);border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ s.boxBg }};color:#fff;font-size:10px;font-weight:900;">{{ s.check }}</button><span style="flex:1;font-size:12px;color:{{ s.color }};text-decoration:{{ s.strike }};">{{ s.title }}</span><button onClick="{{ s.onDel }}" style="color:var(--faint);font-size:13px;">×</button></div></sc-for><div style="display:flex;gap:5px;margin-top:2px;"><input value="{{ t.subDraft }}" onInput="{{ t.onSubDraft }}" placeholder="新增細項…" style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fg);font-size:12px;"/><button onClick="{{ t.addSub }}" style="padding:0 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--fg);font-weight:800;font-size:13px;">＋</button></div></div></sc-if></div></sc-for>
+          <div style="display:flex;gap:6px;margin-top:4px;"><input value="{{ dayTodoDraft }}" onInput="{{ onDayTodo }}" placeholder="新增清單項目…" style="flex:1;padding:9px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/><button onClick="{{ addDayTodo }}" style="padding:0 14px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--accent);color:var(--accent-fg);font-weight:800;font-size:15px;">＋</button></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== EVENT MODAL ===== -->
+      <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:70;display:flex;align-items:flex-end;">
+        <div onClick="{{ closeModal }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);"></div>
+        <div style="position:relative;width:100%;max-height:90%;overflow-y:auto;background:var(--surface);border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg);border-top:var(--bd) solid var(--border);padding:8px 16px 22px;animation:cpfadeup .26s ease;">
+          <div style="width:40px;height:4px;border-radius:3px;background:var(--faint);margin:4px auto 12px;opacity:.5;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <button onClick="{{ closeModal }}" style="font-size:14px;color:var(--muted);font-weight:600;">取消</button>
+            <span style="font-size:15px;font-weight:800;color:var(--fg);">{{ modalTitle }}</span>
+            <button onClick="{{ saveEvent }}" style="font-size:14px;color:var(--accent);font-weight:800;">儲存</button>
+          </div>
+
+          <input value="{{ draft.title }}" data-field="title" onInput="{{ onDraftField }}" placeholder="標題" style="width:100%;padding:10px 12px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg);font-size:18px;font-weight:700;margin-bottom:11px;"/>
+
+          <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;">日曆</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;">
+            <sc-for list="{{ calChips }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.onTap }}" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;border:2px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:700;"><span style="width:9px;height:9px;border-radius:50%;background:{{ c.color }};"></span>{{ c.name }}</button></sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);"><span style="font-size:14px;color:var(--fg);font-weight:600;">全天</span><button onClick="{{ toggleAllDay }}" style="width:44px;height:25px;border-radius:20px;background:{{ allDayTrackBg }};position:relative;"><div style="position:absolute;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;left:{{ allDayKnob }};"></div></button></div>
+
+          <div style="display:flex;gap:8px;margin-bottom:11px;">
+            <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">日期</div><input type="date" value="{{ draft.date }}" data-field="date" onChange="{{ onDraftField }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/></div>
+          </div>
+          <sc-if value="{{ showTimes }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;margin-bottom:13px;">
+            <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">開始</div><input type="time" value="{{ draft.start }}" data-field="start" onChange="{{ onDraftField }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/></div>
+            <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">結束</div><input type="time" value="{{ draft.end }}" data-field="end" onChange="{{ onDraftField }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/></div>
+          </div>
+          </sc-if>
+
+          <div style="display:flex;gap:8px;margin-bottom:11px;">
+            <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">重複</div><select value="{{ draft.repeat }}" data-field="repeat" onChange="{{ onDraftField }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"><option value="none">不重複</option><option value="daily">每日</option><option value="weekday">每個工作日</option><option value="weekly">每週</option><option value="monthly">每月</option><option value="yearly">每年</option></select></div>
+            <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">提醒</div><select value="{{ remSelectVal }}" onChange="{{ onReminderSelect }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"><option value="none">無</option><option value="0">準時</option><option value="5">5 分鐘前</option><option value="10">10 分鐘前</option><option value="30">30 分鐘前</option><option value="60">1 小時前</option><option value="1440">1 天前</option><option value="custom">自訂…</option></select><sc-if value="{{ remIsCustom }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;margin-top:6px;"><input value="{{ remCustomVal }}" onInput="{{ onRemCustom }}" type="number" min="0" placeholder="分鐘" style="width:78px;padding:8px 9px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/><span style="font-size:12px;color:var(--muted);">分鐘前提醒</span></div></sc-if></div>
+          </div>
+
+          <div style="margin-bottom:11px;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">地點</div><input value="{{ draft.location }}" data-field="location" onInput="{{ onDraftField }}" placeholder="加入地點或會議連結" style="width:100%;padding:9px 11px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/></div>
+
+          <div style="margin-bottom:11px;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">時區</div><select value="{{ draft.tz }}" data-field="tz" onChange="{{ onDraftField }}" style="width:100%;padding:9px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"><option value="Asia/Taipei">台北 (GMT+8)</option><option value="Asia/Tokyo">東京 (GMT+9)</option><option value="America/Los_Angeles">洛杉磯 (GMT-7)</option><option value="Europe/London">倫敦 (GMT+1)</option><option value="UTC">UTC</option></select></div>
+
+          <div style="margin-bottom:11px;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">邀請對象</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"><sc-for list="{{ inviteeChips }}" as="v" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;background:var(--surface-2);font-size:12px;color:var(--fg);border:1px solid var(--border);">{{ v.name }}<button onClick="{{ v.onTap }}" style="color:var(--faint);font-weight:800;">×</button></span></sc-for></div><div style="display:flex;gap:6px;"><input value="{{ inviteeDraft }}" onInput="{{ onInvitee }}" placeholder="姓名或 email" style="flex:1;padding:8px 10px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--bg);color:var(--fg);font-size:13px;"/><button onClick="{{ addInvitee }}" style="padding:0 13px;border:var(--bd) solid var(--border);border-radius:calc(var(--radius) - 2px);background:var(--surface-2);color:var(--fg);font-weight:800;">＋</button></div></div>
+
+          <div style="margin-bottom:11px;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">附件</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"><sc-for list="{{ attachChips }}" as="a" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;background:var(--surface-2);font-size:12px;color:var(--fg);border:1px solid var(--border);">📎 {{ a.name }}<button onClick="{{ a.onTap }}" style="color:var(--faint);font-weight:800;">×</button></span></sc-for></div><button onClick="{{ addAttach }}" style="padding:7px 13px;border:1.5px dashed var(--border);border-radius:calc(var(--radius) - 2px);color:var(--muted);font-size:12px;font-weight:700;background:none;">＋ 加入附件</button></div>
+
+          <div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;">備註</div><textarea value="{{ draft.notes }}" data-field="notes" onInput="{{ onDraftField }}" placeholder="加入備註…" rows="3" style="width:100%;padding:10px 11px;border:var(--bd) solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg);font-size:13px;resize:none;line-height:1.5;"></textarea></div>
+
+          <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}"><button onClick="{{ deleteEvent }}" style="width:100%;padding:12px;border:var(--bd) solid var(--border);border-radius:var(--radius);color:#e4002b;font-weight:800;font-size:14px;background:var(--bg);">刪除事件</button></sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <div style="font-size:12.5px;color:#4a4c55;font-weight:600;text-align:center;letter-spacing:.3px;">目前主題：<b style="color:#22232a;">{{ themeName }}</b>（{{ modeLabel }}）· 到「設定」可切換 6 種風格與淺／深色</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:940},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;manga&quot;,&quot;minimal&quot;,&quot;warm&quot;,&quot;business&quot;,&quot;vivid&quot;,&quot;pixel&quot;],&quot;default&quot;:&quot;pixel&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;startDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;外觀&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cal&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;cal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;啟動&quot;},&quot;petName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;摩卡&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;桌寵&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.KEY = 'calpet.v2';
+    this.petRef = React.createRef();
+    this.petBodyRef = React.createRef();
+    this.petLayerRef = React.createRef();
+    this.petImgRef = React.createRef();
+    this.petZRef = React.createRef();
+    this.petGrabRef = React.createRef();
+    this.PET_ASSETS = { idle:null, walk:null, sit:null, sleep:null, jump:null, look:null, grab:null };
+    this.pet = { action:'idle', x:14, y:0, dir:1, ph:0, until:0, dragging:false, moved:false, targetX:14, targetY:0, downX:0, downY:0, jstart:0 };
+    this._fired = new Set(); try{ const f=JSON.parse(localStorage.getItem('CALPET_FIRED')||'[]'); this._fired=new Set(f); }catch(e){}
+    const saved = this.load();
+    const s = saved || this.seed();
+    const st = s.settings;
+    this.state = {
+      screen: (props && props.startScreen) || 'cal',
+      view: 'month',
+      cursor: this.iso(new Date()),
+      selected: this.iso(new Date()),
+      events: s.events, todos: s.todos, calendars: s.calendars,
+      themeId: saved ? st.themeId : ((props && props.defaultTheme) || st.themeId),
+      dark: saved ? st.dark : !!(props && props.startDark),
+      weekStart: st.weekStart, aiKey: st.aiKey || '', weeksShown: (saved && st.weeksShown) || 4,
+      petName: saved ? st.petName : ((props && props.petName) || st.petName),
+      petEnabled: st.petEnabled !== false, tz: st.tz || 'Asia/Taipei', petKind: (saved && st.petKind) || 'cat', calEdit:null, levelInfoOpen:false, flashToday:false,
+      notifyOn: saved ? !!st.notifyOn : false,
+      defaultRem: saved ? (st.defaultRem || '10') : '10', remForce:false, importPreview:null, importName:'',
+      ctxMsg: null, petXP: saved ? (st.petXP||0) : 0,
+      modalOpen: false, editingId: null, draft: null, editOcc:null, scopeAsk:null,
+      quick: '', search: '', quickBusy:false, remBanner:null,
+      bubbleOpen: false, bubbleMode: 'greeting', greeted: false,
+      aiText: '', aiLoading: false,
+      inviteeDraft: '', attachN: 0,
+      todoTodayDraft: '', todoTomorrowDraft: '',
+      stickers: s.stickers || [],
+      swipeDir: saved ? (st.swipeDir || 'v') : 'v',
+      bufStart: this.iso(this.addDays(this.wkStartOf(new Date(), (saved ? (st.weekStart||0) : 0)), -182)),
+      bufWeeks: 53, rowH: 96,
+      scrollLabel: (new Date().getFullYear())+'年 '+(new Date().getMonth()+1)+'月',
+      dayOpen: false, dayISO: this.iso(new Date()), dayTodoDraft: '',
+      aiInfoOpen: false, stickerPick: false, searchCal:'all', tdDragId:null, tdExpand:[],
+      ovType:'events', ovPeriod:'month', ovCursor:this.iso(new Date()), ovCollapsed:[], devMode:false, confirm:null,
+    };
+  }
+
+  /* ---------- persistence ---------- */
+  load(){ try{ const s = localStorage.getItem(this.KEY); if(s) return JSON.parse(s); }catch(e){} return null; }
+  dump(){ const st = this.state; return { events: st.events, todos: st.todos, calendars: st.calendars, stickers: st.stickers, settings: { themeId: st.themeId, dark: st.dark, weekStart: st.weekStart, aiKey: st.aiKey, petName: st.petName, petEnabled: st.petEnabled, tz: st.tz, weeksShown: st.weeksShown, swipeDir: st.swipeDir, notifyOn: st.notifyOn, defaultRem: st.defaultRem, petXP: st.petXP, petKind: st.petKind } }; }
+  save(){ try{ localStorage.setItem(this.KEY, JSON.stringify(this.dump())); }catch(e){} }
+  commit(patch, cb){ this.setState(patch, ()=>{ this.save(); if(cb) cb(); }); }
+  uid(){ return Math.random().toString(36).slice(2,9); }
+
+  /* ---------- date utils ---------- */
+  iso(d){ const z = new Date(d); return z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')+'-'+String(z.getDate()).padStart(2,'0'); }
+  parse(s){ const p = s.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+  addDays(d,n){ const z = new Date(d); z.setDate(z.getDate()+n); return z; }
+  norm(d){ const z = new Date(d); z.setHours(0,0,0,0); return z; }
+  wkStartOf(d,ws){ const z=this.norm(d); z.setDate(z.getDate()-((z.getDay()-ws+7)%7)); return z; }
+  weekStartDate(d){ return this.wkStartOf(d, this.state.weekStart); }
+  weeksBetween(a,b){ return Math.round((this.norm(b)-this.norm(a))/(7*86400000)); }
+  calById(id){ return this.state.calendars.find(c=>c.id===id); }
+  todoDate(t){ if(t.date) return t.date; const T=this.norm(new Date()); if(t.when==='tomorrow') return this.iso(this.addDays(T,1)); return this.iso(T); }
+  stickersOn(ds){ return (this.state.stickers||[]).filter(s=>s.date===ds); }
+  todosOn(ds){ return this.state.todos.filter(t=> this.todoDate(t)===ds ); }
+  /* ---------- lunar / festivals ---------- */
+  _LI(y){ const T={2024:0x04b60,2025:0x0a6e6,2026:0x0a4e0,2027:0x0d260,2028:0x0ea65,2029:0x0d530,2030:0x05aa0,2031:0x076a3,2032:0x096d0,2033:0x04afb,2034:0x04ad0,2035:0x0a4d0,2036:0x1d0b6,2037:0x0d250,2038:0x0d520,2039:0x0dd45,2040:0x0b5a0}; return T[y]; }
+  _lLeap(y){ return this._LI(y)&0xf; }
+  _lMonthDays(y,m){ return (this._LI(y)&(0x10000>>m))?30:29; }
+  _lLeapDays(y){ return this._lLeap(y)? ((this._LI(y)&0x10000)?30:29):0; }
+  _lYearDays(y){ let s=348; for(let i=0x8000;i>0x8;i>>=1) s+=(this._LI(y)&i)?1:0; return s+this._lLeapDays(y); }
+  solar2lunar(y,m,d){ const BASE=Date.UTC(2024,1,10); let off=Math.round((Date.UTC(y,m-1,d)-BASE)/86400000); if(off<0||this._LI(y)===undefined) return null; let ly=2024; while(this._LI(ly)!==undefined){ const yd=this._lYearDays(ly); if(off<yd) break; off-=yd; ly++; } if(this._LI(ly)===undefined) return null; const leap=this._lLeap(ly); let mo=1,isLeap=false; while(true){ const dim=isLeap?this._lLeapDays(ly):this._lMonthDays(ly,mo); if(off<dim) break; off-=dim; if(!isLeap&&mo===leap&&leap>0){ isLeap=true; } else if(isLeap){ isLeap=false; mo++; } else { mo++; } } return {ly,mo,isLeap,day:off+1}; }
+  _lDay(d){ const c='日一二三四五六七八九十'; if(d===10) return '初十'; if(d===20) return '二十'; if(d===30) return '三十'; if(d<10) return '初'+c[d]; if(d<20) return '十'+c[d-10]; return '廿'+c[d-20]; }
+  lunarCell(dObj){
+    const r=this.solar2lunar(dObj.getFullYear(), dObj.getMonth()+1, dObj.getDate());
+    const sm=(dObj.getMonth()+1)+'-'+dObj.getDate();
+    const SF={'1-1':'元旦','2-28':'和平日','4-4':'兒童節','4-5':'清明','5-1':'勞動節','10-10':'國慶','12-25':'行憲'};
+    let fest=SF[sm]||'';
+    if(r && !r.isLeap){ const lm=r.mo+'-'+r.day; const LF={'1-1':'春節','1-15':'元宵','5-5':'端午','7-7':'七夕','7-15':'中元','8-15':'中秋','9-9':'重陽','12-8':'臘八'};
+      if(!fest){ if(LF[lm]) fest=LF[lm]; else if(r.mo===12 && r.day===this._lMonthDays(r.ly,12)) fest='除夕'; } }
+    let text=''; const LM=['正','二','三','四','五','六','七','八','九','十','冬','臘'];
+    if(fest) text=fest; else if(r) text = r.day===1 ? ((r.isLeap?'閏':'')+LM[r.mo-1]+'月') : this._lDay(r.day);
+    return { text, isFest: !!fest };
+  }
+
+  on(e, d){
+    const ds = this.iso(d); const base = this.parse(e.date);
+    if(e.exdates && e.exdates.indexOf(ds)>=0) return false;
+    if(!e.repeat || e.repeat==='none') return e.date===ds;
+    if(d < base) return false;
+    const dow = d.getDay();
+    if(e.repeat==='daily') return true;
+    if(e.repeat==='weekday') return dow>=1 && dow<=5;
+    if(e.repeat==='weekly') return dow===base.getDay();
+    if(e.repeat==='monthly') return d.getDate()===base.getDate();
+    if(e.repeat==='yearly') return d.getDate()===base.getDate() && d.getMonth()===base.getMonth();
+    return e.date===ds;
+  }
+  dayEvents(dn){
+    const vis = new Set(this.state.calendars.filter(c=>c.visible).map(c=>c.id));
+    const list = this.state.events.filter(e=> vis.has(e.cal) && this.on(e, dn));
+    list.sort((a,b)=>{ if(a.allDay&&!b.allDay) return -1; if(!a.allDay&&b.allDay) return 1; return (a.start||'').localeCompare(b.start||''); });
+    return list;
+  }
+  weather(dn){ const arr=['晴 32°','多雲 30°','短暫陣雨 27°','晴時多雲 31°','悶熱 34°','舒適 26°','陰 29°']; return arr[dn.getDate()%arr.length]; }
+
+  /* ---------- seed ---------- */
+  seed(){
+    const cals = [
+      {id:'work',name:'工作',color:'#2f6bff',text:'#fff',visible:true},
+      {id:'personal',name:'個人',color:'#17b26a',text:'#fff',visible:true},
+      {id:'project',name:'專案 Aurora',color:'#8b5cf6',text:'#fff',visible:true},
+      {id:'family',name:'家庭',color:'#f5871f',text:'#fff',visible:true},
+      {id:'health',name:'健康',color:'#ef4d6b',text:'#fff',visible:true},
+    ];
+    return { events:[], todos:[], calendars: cals, stickers:[], settings:{ themeId:'manga', dark:false, weekStart:0, aiKey:'', petName:'摩卡', petEnabled:true, tz:'Asia/Taipei', petKind:'cat' } };
+  }
+  demoData(){
+    const T = this.norm(new Date());
+    const d = (n)=> this.iso(this.addDays(T,n));
+    const ev = (o)=> Object.assign({ id:this.uid(), allDay:false, repeat:'none', reminder:'10', location:'', notes:'', invitees:[], attachments:[], tz:'Asia/Taipei' }, o);
+    const events = [
+      ev({title:'每日站會',cal:'work',date:d(-20),start:'09:30',end:'09:45',repeat:'weekday',reminder:'5'}),
+      ev({title:'產品需求評審',cal:'project',date:d(0),start:'11:00',end:'12:00',location:'會議室 3A',notes:'帶最新 PRD 與時程表',invitees:['佩琪','Marcus','怡君'],attachments:['PRD_v4.pdf']}),
+      ev({title:'客戶 Zoom：Northwind',cal:'work',date:d(0),start:'14:00',end:'15:00',location:'Zoom',invitees:['client@northwind.com','Ken'],reminder:'10',notes:'確認 Q3 交付範圍'}),
+      ev({title:'1:1 與 Lena',cal:'work',date:d(0),start:'16:30',end:'17:00',location:'小會議室'}),
+      ev({title:'健身｜腿部訓練',cal:'health',date:d(0),start:'19:30',end:'20:30',repeat:'weekly'}),
+      ev({title:'季度規劃工作坊',cal:'project',date:d(1),start:'10:00',end:'12:30',location:'大會議室',invitees:['全體 PM'],reminder:'30'}),
+      ev({title:'午餐 with Rita',cal:'personal',date:d(1),start:'12:30',end:'13:30',location:'表參道咖啡'}),
+      ev({title:'設計評審',cal:'project',date:d(1),start:'15:00',end:'16:00',location:'會議室 2B'}),
+      ev({title:'Beta 凍結',cal:'project',date:d(2),allDay:true,notes:'里程碑'}),
+      ev({title:'牙醫回診',cal:'health',date:d(3),start:'09:00',end:'09:40',location:'品御牙醫'}),
+      ev({title:'團隊聚餐',cal:'family',date:d(3),start:'18:30',end:'21:00',location:'欣葉'}),
+      ev({title:'出差：東京',cal:'work',date:d(5),allDay:true,notes:'客戶拜訪 2 天'}),
+      ev({title:'月度全員大會',cal:'work',date:d(4),start:'10:00',end:'11:00',repeat:'monthly'}),
+      ev({title:'繳房租',cal:'personal',date:d(6),allDay:true,repeat:'monthly'}),
+    ];
+    const todos = [
+      {id:this.uid(),title:'回覆 Northwind 提案 email',when:'today',done:false,priority:'high'},
+      {id:this.uid(),title:'完成評審投影片',when:'today',done:false,priority:'high'},
+      {id:this.uid(),title:'訂週五的會議室',when:'today',done:true,priority:'low'},
+      {id:this.uid(),title:'送出上月報銷',when:'tomorrow',done:false,priority:'mid'},
+      {id:this.uid(),title:'打給供應商確認報價',when:'tomorrow',done:false,priority:'mid'},
+      {id:this.uid(),title:'Review PR #482',when:'tomorrow',done:false,priority:'low'},
+    ];
+    todos.push({ id:this.uid(), title:'寄出已簽合約掃描檔', date:d(-1), done:false, priority:'high' });
+    const stickers = [ { id:this.uid(), date:d(6), glyph:'💲' }, { id:this.uid(), date:d(3), glyph:'🎂' }, { id:this.uid(), date:d(1), glyph:'❤️' }, { id:this.uid(), date:d(3), glyph:'🍽️' }, { id:this.uid(), date:d(5), glyph:'✈️' } ];
+    // —— 三年份結構化內容（2025 / 2026 / 2027）——
+    const uid=()=>this.uid();
+    const iso=(y,m,dd)=> y+'-'+String(m).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+    [2025,2026,2027].forEach(y=>{
+      for(let m=1;m<=12;m++){
+        events.push(
+          ev({title:'繳房租',cal:'personal',date:iso(y,m,1),allDay:true}),
+          ev({title:'發薪日',cal:'work',date:iso(y,m,5),allDay:true}),
+          ev({title:'月度全員大會',cal:'work',date:iso(y,m,10),start:'10:00',end:'11:00',location:'大會議室'}),
+          ev({title:'讀書會',cal:'personal',date:iso(y,m,18),start:'19:30',end:'21:00',location:'市立圖書館'}),
+          ev({title:'月結對帳',cal:'work',date:iso(y,m,28),start:'14:00',end:'15:30'})
+        );
+        stickers.push({id:uid(),date:iso(y,m,5),glyph:'💰'});
+      }
+      [1,4,7,10].forEach(m=> events.push(ev({title:'Q'+((m-1)/3+1)+' 季度規劃工作坯',cal:'project',date:iso(y,m,15),start:'10:00',end:'12:30',location:'大會議室'})) );
+      events.push(ev({title:'元旦',cal:'family',date:iso(y,1,1),allDay:true})); stickers.push({id:uid(),date:iso(y,1,1),glyph:'🎉'});
+      events.push(ev({title:'情人節晚餐',cal:'family',date:iso(y,2,14),start:'19:00',end:'21:00',location:'餐廣'})); stickers.push({id:uid(),date:iso(y,2,14),glyph:'❤️'});
+      events.push(ev({title:'媽媽生日',cal:'family',date:iso(y,3,22),allDay:true,notes:'訂蛋糕'})); stickers.push({id:uid(),date:iso(y,3,22),glyph:'🎂'});
+      events.push(ev({title:'結婚紀念日',cal:'family',date:iso(y,6,8),allDay:true})); stickers.push({id:uid(),date:iso(y,6,8),glyph:'💍'});
+      events.push(ev({title:'暑期旅行：'+y,cal:'family',date:iso(y,7,20),allDay:true,notes:'家庭旅遊 5 天'})); stickers.push({id:uid(),date:iso(y,7,20),glyph:'✈️'});
+      events.push(ev({title:'年度健檢',cal:'health',date:iso(y,9,12),start:'08:30',end:'11:00',location:'健檢中心'})); stickers.push({id:uid(),date:iso(y,9,12),glyph:'🏥'});
+      events.push(ev({title:'產品發表會',cal:'project',date:iso(y,11,6),start:'14:00',end:'16:00',location:'國際會議中心'})); stickers.push({id:uid(),date:iso(y,11,6),glyph:'🎯'});
+      events.push(ev({title:'跨年',cal:'personal',date:iso(y,12,31),start:'22:00',end:'23:59'})); stickers.push({id:uid(),date:iso(y,12,31),glyph:'🎊'});
+      todos.push(
+        {id:uid(),title:y+' 年度目標檢視',date:iso(y,1,3),done:false,priority:'high'},
+        {id:uid(),title:'報稅',date:iso(y,5,10),done:false,priority:'high'},
+        {id:uid(),title:'續約保險',date:iso(y,10,1),done:false,priority:'mid'}
+      );
+    });
+    return { events, todos, stickers };
+  }
+
+  /* ---------- themes ---------- */
+  get THEMES(){
+    if(this._th) return this._th;
+    this._th = {
+      manga:{ name:'漫畫', desc:'粗黑線・網點・爆炸感', head:"'Bangers','Noto Sans TC',sans-serif", body:"'Noto Sans TC',sans-serif", tls:'.02em', tt:'none', bd:3, radius:14, radiusLg:24, pet:'#ffd23f', petOutline:'#111111',
+        light:{ bg:'#ffffff', surface:'#ffffff', surface2:'#f0f0f0', fg:'#111111', muted:'#555555', faint:'#9a9a9a', border:'#111111', line:'#111111', accent:'#e4002b', accentFg:'#ffffff', todayBg:'#ffe08a', todayFg:'#111111', chip:'#ffffff', shadow:'4px 4px 0 #111111', halftone:'radial-gradient(rgba(17,17,17,.16) 1.2px, transparent 1.4px)', scanline:'none' },
+        dark:{ bg:'#121212', surface:'#1a1a1a', surface2:'#000000', fg:'#ffffff', muted:'#bbbbbb', faint:'#777777', border:'#ffffff', line:'#ffffff', accent:'#ff2d4b', accentFg:'#111111', todayBg:'#3a2f00', todayFg:'#ffe08a', chip:'#1a1a1a', shadow:'4px 4px 0 #000000', halftone:'radial-gradient(rgba(255,255,255,.12) 1.2px, transparent 1.4px)', scanline:'none' } },
+      minimal:{ name:'極簡', desc:'留白・細線・單色', head:"'Helvetica Neue',Helvetica,Arial,'Noto Sans TC',sans-serif", body:"'Helvetica Neue',Helvetica,Arial,'Noto Sans TC',sans-serif", tls:'-.01em', tt:'none', bd:1, radius:12, radiusLg:22, pet:'#e4e4e7', petOutline:'#3f3f46',
+        light:{ bg:'#fafafa', surface:'#ffffff', surface2:'#f4f4f5', fg:'#18181b', muted:'#71717a', faint:'#a1a1aa', border:'#e4e4e7', line:'#eeeef0', accent:'#18181b', accentFg:'#ffffff', todayBg:'#eeeef0', todayFg:'#18181b', chip:'#ffffff', shadow:'0 1px 2px rgba(0,0,0,.05)', halftone:'none', scanline:'none' },
+        dark:{ bg:'#0a0a0a', surface:'#151515', surface2:'#1d1d1d', fg:'#fafafa', muted:'#a1a1aa', faint:'#52525b', border:'#282828', line:'#1f1f1f', accent:'#fafafa', accentFg:'#0a0a0a', todayBg:'#242424', todayFg:'#fafafa', chip:'#151515', shadow:'0 1px 2px rgba(0,0,0,.4)', halftone:'none', scanline:'none' } },
+      warm:{ name:'暖陽', desc:'奶油紙感・襯線・柔和', head:"'Newsreader','Noto Serif TC',serif", body:"'Noto Serif TC','Noto Sans TC',serif", tls:'0', tt:'none', bd:1, radius:18, radiusLg:28, pet:'#e8a06a', petOutline:'#7a4a2a',
+        light:{ bg:'#f4ede1', surface:'#fffaf1', surface2:'#efe3d0', fg:'#3d2f24', muted:'#7a6a58', faint:'#a89684', border:'#e2d3bd', line:'#ece0cd', accent:'#c2683f', accentFg:'#fff8f0', todayBg:'#f3ddc4', todayFg:'#8a3f1c', chip:'#fffaf1', shadow:'0 8px 22px rgba(120,90,60,.14)', halftone:'none', scanline:'none' },
+        dark:{ bg:'#241d17', surface:'#2e251d', surface2:'#392d22', fg:'#f0e6d8', muted:'#c3b3a0', faint:'#8a7a67', border:'#463726', line:'#3a2e22', accent:'#e0895c', accentFg:'#241d17', todayBg:'#4a3820', todayFg:'#f0c79a', chip:'#2e251d', shadow:'0 8px 22px rgba(0,0,0,.4)', halftone:'none', scanline:'none' } },
+      business:{ name:'商務', desc:'俐落・資訊密度・可信賴', head:"'IBM Plex Sans','Noto Sans TC',sans-serif", body:"'IBM Plex Sans','Noto Sans TC',sans-serif", tls:'-.01em', tt:'none', bd:1, radius:12, radiusLg:20, pet:'#6ea8ff', petOutline:'#123a6b',
+        light:{ bg:'#eef1f6', surface:'#ffffff', surface2:'#f4f7fb', fg:'#0f2440', muted:'#5a6b82', faint:'#93a1b5', border:'#dbe2ec', line:'#e9eef5', accent:'#1e5fd6', accentFg:'#ffffff', todayBg:'#dde9ff', todayFg:'#1747a8', chip:'#ffffff', shadow:'0 4px 14px rgba(15,36,64,.09)', halftone:'none', scanline:'none' },
+        dark:{ bg:'#0c1626', surface:'#13233d', surface2:'#1a2c49', fg:'#e8eef7', muted:'#9db0cb', faint:'#64768f', border:'#25384f', line:'#1e2f47', accent:'#4b8bff', accentFg:'#08122a', todayBg:'#183056', todayFg:'#a9cbff', chip:'#13233d', shadow:'0 4px 14px rgba(0,0,0,.45)', halftone:'none', scanline:'none' } },
+      vivid:{ name:'鮮活', desc:'高彩度・大字・撞色', head:"'Space Grotesk','Noto Sans TC',sans-serif", body:"'Space Grotesk','Noto Sans TC',sans-serif", tls:'-.02em', tt:'none', bd:2, radius:22, radiusLg:30, pet:'#ff8a3d', petOutline:'#151515',
+        light:{ bg:'#f5f4ef', surface:'#ffffff', surface2:'#eceae1', fg:'#141414', muted:'#5b5b52', faint:'#93938a', border:'#141414', line:'#e3e1d7', accent:'#ff5a1f', accentFg:'#ffffff', todayBg:'#ffe1d1', todayFg:'#c23c08', chip:'#ffffff', shadow:'0 10px 26px rgba(255,90,31,.26)', halftone:'none', scanline:'none' },
+        dark:{ bg:'#141019', surface:'#1f1826', surface2:'#291f33', fg:'#f6f1fb', muted:'#b4a6c4', faint:'#7c6e8c', border:'#372b45', line:'#2b2135', accent:'#ff6a2b', accentFg:'#1a0f08', todayBg:'#3a2214', todayFg:'#ffb083', chip:'#1f1826', shadow:'0 10px 26px rgba(255,106,43,.3)', halftone:'none', scanline:'none' } },
+      pixel:{ name:'像素', desc:'8-bit・點陣・硬邊', head:"'DotGothic16','Pixelify Sans',monospace", body:"'DotGothic16','Pixelify Sans',monospace", tls:'0', tt:'none', bd:3, radius:0, radiusLg:0, pet:'#7bd86f', petOutline:'#173a1c',
+        light:{ bg:'#e8e6d0', surface:'#f4f2df', surface2:'#dcd9be', fg:'#2b2b22', muted:'#5c5a45', faint:'#8a866a', border:'#2b2b22', line:'#c3bf9e', accent:'#2f8f3e', accentFg:'#f4f2df', todayBg:'#cfe6b8', todayFg:'#1f5c26', chip:'#f4f2df', shadow:'3px 3px 0 #2b2b22', halftone:'none', scanline:'repeating-linear-gradient(0deg, rgba(43,43,34,.07) 0 1px, transparent 1px 3px)' },
+        dark:{ bg:'#0f120e', surface:'#161d14', surface2:'#1e261b', fg:'#cfeccb', muted:'#7fa87a', faint:'#4d6349', border:'#cfeccb', line:'#25301f', accent:'#46d160', accentFg:'#0f120e', todayBg:'#1c3a1f', todayFg:'#8ef58a', chip:'#161d14', shadow:'3px 3px 0 #000000', halftone:'none', scanline:'repeating-linear-gradient(0deg, rgba(207,236,203,.05) 0 1px, transparent 1px 3px)' } },
+    };
+    return this._th;
+  }
+  theme(){ return this.THEMES[this.state.themeId] || this.THEMES.manga; }
+  mode(){ const th = this.theme(); return this.state.dark ? th.dark : th.light; }
+  phoneStyle(){
+    const th = this.theme(); const m = this.mode();
+    const v = (k,val)=> '--'+k+':'+val+';';
+    let s='';
+    s += v('bg',m.bg)+v('surface',m.surface)+v('surface-2',m.surface2)+v('fg',m.fg)+v('muted',m.muted)+v('faint',m.faint)+v('border',m.border)+v('line',m.line)+v('accent',m.accent)+v('accent-fg',m.accentFg)+v('today-bg',m.todayBg)+v('today-fg',m.todayFg)+v('chip',m.chip)+v('shadow',m.shadow)+v('halftone',m.halftone)+v('scanline',m.scanline);
+    s += v('bd',th.bd+'px')+v('radius',th.radius+'px')+v('radius-lg',th.radiusLg+'px')+v('title-ls',th.tls)+v('title-tt',th.tt)+v('font-head',th.head)+v('font-body',th.body)+v('pet',th.pet)+v('pet-outline',th.petOutline);
+    s += 'background:var(--bg);color:var(--fg);font-family:var(--font-body);';
+    return s;
+  }
+
+  /* ---------- lifecycle / pet ---------- */
+  componentDidMount(){
+    this.measure();
+    this._rz = ()=> { this.measure(); this.measureRow(); };
+    window.addEventListener('resize', this._rz);
+    const rh = this.measureRow(); this.scrollToToday(false, rh);
+    this._pm = (e)=>this.petMove(e); this._pu = (e)=>this.petUp(e);
+    window.addEventListener('pointermove', this._pm); window.addEventListener('pointerup', this._pu);
+    this._wkm=(e)=>this.wkMove(e); this._wku=(e)=>this.wkUp(e); window.addEventListener('pointermove', this._wkm); window.addEventListener('pointerup', this._wku);
+    this._tdm=(e)=>this.tdMove(e); this._tdu=(e)=>this.tdUp(e); window.addEventListener('pointermove', this._tdm); window.addEventListener('pointerup', this._tdu);
+    this.startPet();
+    this._remTimer = setInterval(()=>this.checkReminders(), 30000); this.checkReminders();
+    this._greetT = setTimeout(()=>{ if(this.state.petEnabled) this.setState({ bubbleOpen:true, bubbleMode:'greeting', greeted:true }); }, 950);
+  }
+  componentWillUnmount(){ clearInterval(this._petTimer); clearInterval(this._remTimer); clearTimeout(this._greetT); clearTimeout(this._remBT); window.removeEventListener('resize', this._rz); window.removeEventListener('pointermove', this._pm); window.removeEventListener('pointerup', this._pu); window.removeEventListener('pointermove', this._wkm); window.removeEventListener('pointerup', this._wku); window.removeEventListener('pointermove', this._tdm); window.removeEventListener('pointerup', this._tdu); }
+  componentDidUpdate(){ if(this._adjust){ const el=document.querySelector('[data-month-scroll]'); if(el) el.scrollTop += this._adjust; this._adjust=0; } const m=this.monthEl(); if(m && m.clientHeight>0 && this._posEl!==m){ this._posEl=m; if(!m._scrollBound){ m._scrollBound=true; m.addEventListener('scroll', ()=>this.onMonthScroll({ currentTarget:m }), { passive:true }); } const rh=Math.max(58, Math.floor(m.clientHeight/(this.state.weeksShown||4))); if(rh!==this.state.rowH) this.setState({ rowH:rh }, ()=>this.scrollToToday(false, rh)); else this.scrollToToday(false, rh); } }
+  monthEl(){ return document.querySelector('[data-month-scroll]'); }
+  measureRow(){ const el=this.monthEl(); let rh=this.state.rowH; if(el && el.clientHeight>0){ rh=Math.max(58, Math.floor(el.clientHeight/(this.state.weeksShown||4))); if(rh!==this.state.rowH) this.setState({ rowH:rh }); } return rh; }
+  scrollToToday(smooth, rh){ const el=this.monthEl(); if(!el) return; rh=rh||this.state.rowH||96; const idx=this.weeksBetween(this.parse(this.state.bufStart), this.weekStartDate(new Date())); el.scrollTo({ top: Math.max(0, idx*rh), behavior: smooth?'smooth':'auto' }); }
+  pageMonth(dir){ const el=this.monthEl(); if(!el) return; el.scrollBy({ top: dir*(this.state.rowH||96)*(this.state.weeksShown||4), behavior:'smooth' }); }
+  onMonthScroll(e){ const el=(e&&(e.currentTarget||e.target))||this.monthEl(); this.handleScroll(el); }
+  handleScroll(el){ if(!el) return; const rh=this.state.rowH||96; const idx=Math.round(el.scrollTop/rh); const mid=this.addDays(this.parse(this.state.bufStart), idx*7+3); const label=mid.getFullYear()+'年 '+(mid.getMonth()+1)+'月'; const total=this.state.bufWeeks; if(idx<4){ this._adjust=(this._adjust||0)+12*rh; this.setState({ bufStart:this.iso(this.addDays(this.parse(this.state.bufStart),-84)), bufWeeks: total+12, scrollLabel: label }); } else if(idx>total-8){ this.setState({ bufWeeks: total+12, scrollLabel: label }); } else if(label!==this.state.scrollLabel){ this.setState({ scrollLabel: label }); } }
+  pn(n){ this._pc = this._pc || {}; const c=this._pc[n]; if(c && document.contains(c)) return c; const el=document.querySelector('[data-pet="'+n+'"]'); this._pc[n]=el; return el; }
+  measure(){ const l = this.pn('layer'); if(l) this.trackW = Math.max(60, l.clientWidth - 62); }
+  startPet(){ this.trackW = this.trackW || 290; this._petTimer = setInterval(()=>{ this.tickPet(); }, 40); }
+  petDown(e){ if(e && e.preventDefault) e.preventDefault(); const p=this.pet; p.dragging=true; p.moved=false; p.downX=e.clientX; p.downY=e.clientY; p.targetX=p.x; p.targetY=p.y; }
+  petMove(e){ const p=this.pet; if(!p.dragging) return; const l=this.pn('layer'); const root=this.pn('root'); if(!l||!root) return; const r=l.getBoundingClientRect(); const sc=(root.getBoundingClientRect().width/(root.offsetWidth||60))||1; if(Math.abs(e.clientX-p.downX)+Math.abs(e.clientY-p.downY)>4) p.moved=true; const x=(e.clientX-r.left)/sc-30; const y=(r.bottom-e.clientY)/sc-30; p.targetX=Math.max(0,Math.min(this.trackW||290,x)); p.targetY=Math.max(0,Math.min(360,y)); p.x=p.targetX; p.y=p.targetY; root.style.transform='translateX('+p.x+'px) translateY('+(-p.y)+'px)'; const b=this.pn('body'); if(b) b.style.transform='scaleX('+p.dir+') rotate(4deg) scaleY(1.12)'; const g=this.pn('grab'); if(g) g.style.display='block'; const z=this.pn('z'); if(z) z.style.display='none'; }
+  petUp(){ const p=this.pet; if(!p.dragging) return; p.dragging=false; if(!p.moved) this.petTap(); p.moved=false; p.action='idle'; p.until=performance.now()+800; }
+  nextAction(){ const p=this.pet; const pool=['walk','walk','walk','idle','idle','sit','look','sleep','jump']; const a=pool[Math.floor(Math.random()*pool.length)]; p.action=a; if(a==='walk') p.dir=Math.random()<0.5?-1:1; const dur={walk:2600,idle:1800,sit:4200,look:1600,sleep:6500,jump:700}[a]||2000; p.until=performance.now()+dur*(0.7+Math.random()*0.6); if(a==='jump') p.jstart=performance.now(); }
+  tickPet(){
+    const p=this.pet; const node=this.pn('root'), body=this.pn('body'); if(!node) return; if(!node._petBound){ node._petBound=true; node.addEventListener('pointerdown',(e)=>this.petDown(e)); } this.bindSwipe();
+    p.ph+=0.16; let pose;
+    if(p.dragging){ p.x+=(p.targetX-p.x)*0.45; p.y+=(p.targetY-p.y)*0.45; pose='grab'; }
+    else if(this.state.bubbleOpen){ p.x+=(14-p.x)*0.16; p.y*=0.6; p.dir=1; pose='idle'; }
+    else {
+      if(performance.now()>p.until) this.nextAction();
+      if(p.action==='walk'){ p.x+=p.dir*1.15; if(p.x>=this.trackW){ p.x=this.trackW; p.dir=-1; } else if(p.x<=0){ p.x=0; p.dir=1; } }
+      p.y = p.y>0.5 ? p.y*0.6 : 0; pose=p.action;
+    }
+    let bob=0, bt='';
+    if(pose==='walk'){ bob=Math.abs(Math.sin(p.ph))*4; bt='rotate('+(Math.sin(p.ph)*4)+'deg)'; }
+    else if(pose==='idle'){ bob=Math.abs(Math.sin(p.ph*0.6))*1.5; }
+    else if(pose==='sit'){ bt='translateY(5px) scaleY(0.9)'; }
+    else if(pose==='sleep'){ bt='rotate(10deg) translateY(4px)'; }
+    else if(pose==='look'){ bt='rotate('+(Math.sin(p.ph*0.5)*7)+'deg)'; }
+    else if(pose==='jump'){ const k=Math.max(0,Math.sin(p.ph*1.4)); bob=k*16; bt='scaleY('+(1+k*0.08)+')'; }
+    else if(pose==='grab'){ bt='rotate(4deg) scaleY(1.12)'; }
+    node.style.transform='translateX('+p.x+'px) translateY('+(-(p.y+bob))+'px)';
+    if(body) body.style.transform='scaleX('+p.dir+') '+bt;
+    const z=this.pn('z'); if(z) z.style.display=(pose==='sleep')?'block':'none';
+    const g=this.pn('grab'); if(g) g.style.display=(pose==='grab')?'block':'none';
+    const src=this.PET_ASSETS[pose]; const img=this.pn('img');
+    if(img){ if(src){ if(img.getAttribute('src')!==src) img.src=src; img.style.display='block'; if(body) body.style.display='none'; } else { img.style.display='none'; if(body) body.style.display='block'; } }
+  }
+
+  /* ---------- navigation ---------- */
+  prev(){ const v=this.state.view; if(v==='month'){ this.pageMonth(-1); return; } const c = this.parse(this.state.cursor); if(v==='week') c.setDate(c.getDate()-7); else c.setDate(c.getDate()-1); this.commit({ cursor:this.iso(c) }); }
+  next(){ const v=this.state.view; if(v==='month'){ this.pageMonth(1); return; } const c = this.parse(this.state.cursor); if(v==='week') c.setDate(c.getDate()+7); else c.setDate(c.getDate()+1); this.commit({ cursor:this.iso(c) }); }
+  today(){ const t = this.iso(new Date()); this.flashTodayCell(); if(this.state.view==='month'){ this.setState({ selected:t, scrollLabel:(new Date().getFullYear())+'年 '+(new Date().getMonth()+1)+'月' }, ()=>{ this.save(); this.scrollToToday(true); }); return; } this.commit({ cursor:t, selected:t }); }
+  flashTodayCell(){ this.setState({ flashToday:true }); clearTimeout(this._flashT); this._flashT=setTimeout(()=>this.setState({ flashToday:false }), 1300); }
+  setView(v){ this.commit({ view:v }, ()=>{ if(v!=='month') this._posEl=null; }); }
+  setWeeks(n){ this.commit({ weeksShown:n }, ()=>{ const el=this.monthEl(); if(el && el.clientHeight>0){ const rh=Math.max(58, Math.floor(el.clientHeight/n)); this.setState({ rowH:rh }, ()=>this.scrollToToday(false, rh)); } }); }
+  setScreen(s){ this.commit({ screen:s }, ()=>{ if(s!=='cal') this._posEl=null; }); }
+  selectDay(ds){ this.commit({ selected:ds, cursor:ds }); }
+
+  /* ---------- event modal ---------- */
+  openNew(ds){ const d = ds || this.state.selected || this.iso(new Date()); this.setState({ modalOpen:true, editingId:null, remForce:false, attachN:0, inviteeDraft:'', draft:{ title:'', cal:(this.state.calendars[0]||{}).id||'work', allDay:false, date:d, start:'09:00', end:'10:00', repeat:'none', reminder:(this.state.defaultRem||'10'), location:'', tz:this.state.tz, notes:'', invitees:[], attachments:[] } }); }
+  openEvent(id, occ){ const e = this.state.events.find(x=>x.id===id); if(!e) return; this.setState({ modalOpen:true, editingId:id, editOcc: occ||e.date, remForce:false, inviteeDraft:'', attachN:(e.attachments||[]).length, draft: JSON.parse(JSON.stringify(e)) }); }
+  closeModal(){ this.setState({ modalOpen:false }); }
+  commitEvent(){ const dr = this.state.draft; if(!dr) return; const ev = Object.assign({}, dr, { title:(dr.title||'').trim()||'新事件' }); let events; if(this.state.editingId){ events = this.state.events.map(x=> x.id===this.state.editingId ? Object.assign({}, ev, {id:this.state.editingId}) : x); } else { ev.id = this.uid(); events = this.state.events.concat([ev]); } this.commit({ events, modalOpen:false }); }
+  saveEvent(){ const dr = this.state.draft; if(!dr) return; if(this.state.editingId){ const base=this.state.events.find(x=>x.id===this.state.editingId); if(base && base.repeat && base.repeat!=='none'){ this.setState({ scopeAsk:{ mode:'save' } }); return; } } this.commitEvent(); }
+  deleteEvent(){ if(!this.state.editingId) return; const e=this.state.events.find(x=>x.id===this.state.editingId); if(e && e.repeat && e.repeat!=='none'){ this.setState({ scopeAsk:{ mode:'delete' } }); return; } this.commit({ events:this.state.events.filter(x=>x.id!==this.state.editingId), modalOpen:false }); }
+  scopeCancel(){ this.setState({ scopeAsk:null }); }
+  wkDown(ev, id, ds, mode){ if(ev){ if(ev.preventDefault) ev.preventDefault(); if(mode==='resize'&&ev.stopPropagation) ev.stopPropagation(); } const e=this.state.events.find(x=>x.id===id); if(!e) return; const sp=e.start.split(':').map(Number), ep=(e.end||e.start).split(':').map(Number); const g=document.querySelector('[data-week-grid]'); const scale=g?(g.getBoundingClientRect().height/(g.offsetHeight||1)):1; this._wk={ id, ds, mode, sx:ev.clientX, sy:ev.clientY, sMin:sp[0]*60+sp[1], eMin:ep[0]*60+ep[1], scale:scale||1, moved:false }; }
+  wkMove(ev){ const w=this._wk; if(!w) return; const dyMin=Math.round(((ev.clientY-w.sy)/w.scale)/44*60/15)*15; if(Math.abs(ev.clientX-w.sx)+Math.abs(ev.clientY-w.sy)>4) w.moved=true; let cs=w.sMin, ce=w.eMin; if(w.mode==='move'){ cs=w.sMin+dyMin; ce=w.eMin+dyMin; if(cs<0){ ce-=cs; cs=0; } if(ce>1440){ const o=ce-1440; cs-=o; ce=1440; } } else { ce=Math.max(w.sMin+15, w.eMin+dyMin); if(ce>1440) ce=1440; } this.setState({ wkDrag:{ id:w.id, curSMin:cs, curEMin:ce } }); }
+  wkUp(ev){ const w=this._wk; if(!w) return; this._wk=null; const d=this.state.wkDrag; this.setState({ wkDrag:null }); if(!w.moved){ if(w.mode==='move') this.openEvent(w.id, w.ds); return; } if(!d) return; const fmt=(m)=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); const patch={ start:fmt(d.curSMin), end:fmt(d.curEMin) }; const dxCol=Math.round(((ev.clientX-w.sx)/w.scale)/60); if(dxCol!==0){ const ws=this.weekStartDate(this.parse(this.state.cursor)); const idx=Math.round((this.norm(this.parse(w.ds))-this.norm(ws))/86400000); const ni=Math.max(0,Math.min(6, idx+dxCol)); patch.date=this.iso(this.addDays(ws,ni)); } const e=this.state.events.find(x=>x.id===w.id); if(!e) return; if(e.repeat && e.repeat!=='none'){ const single=Object.assign({}, e, patch, { id:this.uid(), repeat:'none', exdates:[], date: patch.date || w.ds }); const ex=(e.exdates||[]).concat([w.ds]); this.commit({ events:this.state.events.map(x=> x.id===w.id?Object.assign({},x,{exdates:ex}):x).concat([single]) }); } else { this.commit({ events:this.state.events.map(x=> x.id===w.id?Object.assign({},x,patch):x) }); } }
+  scopeApply(kind){ const mode=this.state.scopeAsk&&this.state.scopeAsk.mode; const id=this.state.editingId; const occ=this.state.editOcc; const base=this.state.events.find(x=>x.id===id); this.setState({ scopeAsk:null }); if(!base) return;
+    if(mode==='delete'){ if(kind==='all'){ this.commit({ events:this.state.events.filter(x=>x.id!==id), modalOpen:false }); } else { const ex=(base.exdates||[]).concat([occ]); this.commit({ events:this.state.events.map(x=> x.id===id ? Object.assign({},x,{exdates:ex}) : x), modalOpen:false }); } }
+    else { const dr=this.state.draft; const ev=Object.assign({}, dr, { title:(dr.title||'').trim()||'新事件' }); if(kind==='all'){ this.commit({ events:this.state.events.map(x=> x.id===id ? Object.assign({}, ev, {id}) : x), modalOpen:false }); } else { const single=Object.assign({}, ev, { id:this.uid(), repeat:'none', date:occ, exdates:[] }); const ex=(base.exdates||[]).concat([occ]); const events=this.state.events.map(x=> x.id===id ? Object.assign({},x,{exdates:ex}) : x).concat([single]); this.commit({ events, modalOpen:false }); } }
+  }
+  onDraftField(e){ const f = e.target.dataset.field; this.setState({ draft: Object.assign({}, this.state.draft, { [f]: e.target.value }) }); }
+  toggleAllDay(){ this.setState({ draft: Object.assign({}, this.state.draft, { allDay: !this.state.draft.allDay }) }); }
+  pickCal(id){ this.setState({ draft: Object.assign({}, this.state.draft, { cal:id }) }); }
+  onInvitee(e){ this.setState({ inviteeDraft: e.target.value }); }
+  addInvitee(){ const n = (this.state.inviteeDraft||'').trim(); if(!n) return; const inv = (this.state.draft.invitees||[]).concat([n]); this.setState({ draft: Object.assign({}, this.state.draft, { invitees: inv }), inviteeDraft:'' }); }
+  delInvitee(i){ const inv = (this.state.draft.invitees||[]).slice(); inv.splice(i,1); this.setState({ draft: Object.assign({}, this.state.draft, { invitees: inv }) }); }
+  addAttach(){ const n = this.state.attachN + 1; const a = (this.state.draft.attachments||[]).concat(['附件_'+n+'.pdf']); this.setState({ attachN:n, draft: Object.assign({}, this.state.draft, { attachments:a }) }); }
+  delAttach(i){ const a = (this.state.draft.attachments||[]).slice(); a.splice(i,1); this.setState({ draft: Object.assign({}, this.state.draft, { attachments:a }) }); }
+
+  /* ---------- quick add ---------- */
+  onQuick(e){ this.setState({ quick: e.target.value }); }
+  async runQuick(){
+    const raw = (this.state.quick||'').trim(); if(!raw) return;
+    let p = null;
+    if(this.state.aiKey && window.claude && window.claude.complete){
+      this.setState({ quickBusy:true });
+      try{ p = await this.aiParseQuick(raw); }catch(e){ p = null; }
+      this.setState({ quickBusy:false });
+    }
+    if(!p) p = this.parseQuick(raw);
+    if(!p) return;
+    const firstCal = (this.state.calendars[0]||{}).id||'work';
+    this.setState({ modalOpen:true, editingId:null, quick:'', attachN:0, inviteeDraft:'', draft:{ title:p.title, cal:p.cal||firstCal, allDay:p.allDay, date:p.date, start:p.start, end:p.end, repeat:p.repeat||'none', reminder:p.reminder||'10', location:p.location||'', tz:this.state.tz, notes:'', invitees:[], attachments:[] } });
+  }
+  async aiParseQuick(raw){
+    const today = this.iso(this.norm(new Date()));
+    const cals = this.state.calendars.map(c=>c.id+'='+c.name).join(', ');
+    const sys = '你是行程解析器。把使用者的中文口語轉成 JSON，只輸出 JSON不要說明。欄位：title(字串), date(YYYY-MM-DD), allDay(bool), start("HH:MM"), end("HH:MM"), location(字串), reminder(分鐘數字字串如"10"), repeat(none/daily/weekday/weekly/monthly/yearly), cal(從清單挑最合適的 id)。今天是 '+today+'。日曆清單：'+cals+'。若未指定時間則 allDay=true；end 預設比 start 晚一小時。';
+    const out = await window.claude.complete({ system:sys, max_tokens:300, messages:[{ role:'user', content: raw }] });
+    let js = (out||'').trim(); const a=js.indexOf('{'), b=js.lastIndexOf('}'); if(a>=0&&b>a) js=js.slice(a,b+1);
+    const o = JSON.parse(js);
+    if(!o.date) o.date = today;
+    if(o.allDay===undefined) o.allDay = !o.start;
+    if(!o.start) o.start='09:00'; if(!o.end) o.end='10:00';
+    if(!o.title) o.title='新事件';
+    return o;
+  }
+  parseQuick(s){
+    let str = (s||'').trim(); if(!str) return null;
+    const T = this.norm(new Date()); let date = this.iso(T);
+    let location='', reminder='10', repeat='none';
+    const rep=[['每天','daily'],['每日','daily'],['工作日','weekday'],['平日','weekday'],['每週','weekly'],['每周','weekly'],['每月','monthly'],['每年','yearly']];
+    for(const r of rep){ if(str.indexOf(r[0])>=0){ repeat=r[1]; str=str.replace(r[0],''); break; } }
+    const remM = str.match(/(?:提前|提醒|前)\s*(\d{1,3})\s*(分鐘|分|小時)?/);
+    if(remM){ let n=parseInt(remM[1],10); if(/小時/.test(remM[2]||'')) n*=60; reminder=String(n); str=str.replace(remM[0],''); }
+    const locM = str.match(/(?:@|＠|在)\s*([^ 　,，]+)/);
+    if(locM){ location=locM[1]; str=str.replace(locM[0],''); }
+    const rel = [['大後天',3],['後天',2],['明天',1],['明日',1],['今天',0],['今日',0]];
+    for(const r of rel){ if(str.indexOf(r[0])>=0){ date = this.iso(this.addDays(T,r[1])); str = str.replace(r[0],''); break; } }
+    const wk = {'週日':0,'週一':1,'週二':2,'週三':3,'週四':4,'週五':5,'週六':6,'周日':0,'周一':1,'周二':2,'周三':3,'周四':4,'周五':5,'周六':6,'星期日':0,'星期一':1,'星期二':2,'星期三':3,'星期四':4,'星期五':5,'星期六':6};
+    for(const k in wk){ if(str.indexOf(k)>=0){ let add=(wk[k]-T.getDay()+7)%7; if(add===0) add=7; date=this.iso(this.addDays(T,add)); str=str.replace(k,''); break; } }
+    let hh=null, mm=0; const pm=/下午|晚上|傍晚/.test(str), am=/上午|早上|清晨/.test(str), noon=/中午/.test(str);
+    const m = str.match(/(\d{1,2})\s*[:：點点時时]\s*(\d{1,2})?/);
+    if(m){ hh=parseInt(m[1],10); mm=m[2]?parseInt(m[2],10):0; }
+    if(noon && hh==null) hh=12;
+    if(hh!=null){ if(pm && hh<12) hh+=12; if(am && hh===12) hh=0; }
+    str = str.replace(/(上午|下午|晚上|早上|傍晚|清晨|中午)/g,'').replace(/(\d{1,2})\s*[:：點点時时]\s*(\d{1,2})?/g,'').replace(/[，,、和跟與在]/g,' ');
+    const allDay = hh==null;
+    const start = hh!=null ? String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0') : '09:00';
+    const eh = hh!=null ? Math.min(hh+1,23) : 10;
+    const end = String(eh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+    const title = str.trim() || '新事件';
+    return { title, date, start, end, allDay, location, reminder, repeat };
+  }
+
+  /* ---------- search / settings ---------- */
+  onSearch(e){ this.setState({ search: e.target.value }); }
+  setSearchCal(id){ this.setState({ searchCal:id }); }
+  setTheme(id){ this.commit({ themeId:id }); }
+  setDark(v){ this.commit({ dark:v }); }
+  setWeekStart(n){ this.commit({ weekStart:n }); }
+  onAiKey(e){ this.commit({ aiKey:e.target.value }); }
+  onPetName(e){ this.commit({ petName:e.target.value }); }
+  togglePet(){ this.commit({ petEnabled: !this.state.petEnabled, bubbleOpen:false }); }
+  toggleNotify(){ if(this.state.notifyOn){ this.commit({ notifyOn:false }); return; } if('Notification' in window){ try{ Notification.requestPermission().then(p=>{ this.commit({ notifyOn:true }); if(p==='granted') this.checkReminders(); }); }catch(e){ this.commit({ notifyOn:true }); } } else { this.commit({ notifyOn:true }); } }
+  saveFired(){ try{ localStorage.setItem('CALPET_FIRED', JSON.stringify([...this._fired].slice(-300))); }catch(e){} }
+  dismissRem(){ this.setState({ remBanner:null }); }
+  _remPreset(v){ return ['none','0','5','10','30','60','1440'].indexOf(String(v))>=0; }
+  _remCustom(){ const dr=this.state.draft||{}; return this.state.remForce || (dr.reminder!=null && dr.reminder!=='none' && !this._remPreset(dr.reminder)); }
+  _remSel(){ const dr=this.state.draft||{}; return this._remCustom()?'custom':String(dr.reminder==null?'10':dr.reminder); }
+  _remVal(){ const dr=this.state.draft||{}; return (dr.reminder&&dr.reminder!=='none')?String(dr.reminder):''; }
+  onReminderSelect(e){ const v=e.target.value; if(v==='custom'){ const cur=this.state.draft.reminder; const val=(!this._remPreset(cur)&&cur!=='none')?cur:'15'; this.setState({ remForce:true, draft:Object.assign({},this.state.draft,{reminder:String(val)}) }); } else { this.setState({ remForce:false, draft:Object.assign({},this.state.draft,{reminder:v}) }); } }
+  onRemCustom(e){ let n=parseInt(String(e.target.value||'').replace(/[^0-9]/g,''),10); if(isNaN(n)) n=0; if(n>10080) n=10080; this.setState({ remForce:true, draft:Object.assign({},this.state.draft,{reminder:String(n)}) }); }
+  setDefaultRem(e){ this.commit({ defaultRem: e.target.value }); }
+  icsEsc(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n'); }
+  icsUnesc(s){ return String(s||'').replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\'); }
+  exportICS(){
+    const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CalPet//TW','CALSCALE:GREGORIAN'];
+    const rr={daily:'FREQ=DAILY',weekday:'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR',weekly:'FREQ=WEEKLY',monthly:'FREQ=MONTHLY',yearly:'FREQ=YEARLY'};
+    this.state.events.forEach(e=>{ const dt=e.date.replace(/-/g,''); lines.push('BEGIN:VEVENT','UID:'+e.id+'@calpet','SUMMARY:'+this.icsEsc(e.title));
+      if(e.allDay){ lines.push('DTSTART;VALUE=DATE:'+dt); lines.push('DTEND;VALUE=DATE:'+this.iso(this.addDays(this.parse(e.date),1)).replace(/-/g,'')); }
+      else { lines.push('DTSTART:'+dt+'T'+(e.start||'09:00').replace(':','')+'00'); lines.push('DTEND:'+dt+'T'+((e.end||e.start||'10:00').replace(':',''))+'00'); }
+      if(e.location) lines.push('LOCATION:'+this.icsEsc(e.location));
+      if(e.notes) lines.push('DESCRIPTION:'+this.icsEsc(e.notes));
+      if(e.repeat && e.repeat!=='none' && rr[e.repeat]) lines.push('RRULE:'+rr[e.repeat]);
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    try{ const blob=new Blob([lines.join('\r\n')],{type:'text/calendar'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='calpet-'+this.iso(new Date())+'.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); }catch(e){}
+  }
+  parseICS(text){
+    const raw=String(text||'').replace(/\r\n/g,'\n').replace(/\n[ \t]/g,''); const lines=raw.split('\n'); const out=[]; let cur=null;
+    const firstCal=(this.state.calendars[0]||{}).id||'work'; const freq={DAILY:'daily',WEEKLY:'weekly',MONTHLY:'monthly',YEARLY:'yearly'};
+    lines.forEach(ln=>{
+      if(ln.indexOf('BEGIN:VEVENT')===0){ cur={ id:this.uid(), cal:firstCal, allDay:false, repeat:'none', reminder:'10', location:'', notes:'', invitees:[], attachments:[], tz:this.state.tz, title:'', date:this.iso(new Date()), start:'09:00', end:'10:00' }; return; }
+      if(ln.indexOf('END:VEVENT')===0){ if(cur&&cur.title) out.push(cur); cur=null; return; }
+      if(!cur) return; const ci=ln.indexOf(':'); if(ci<0) return; const name=ln.slice(0,ci).split(';')[0]; const val=ln.slice(ci+1);
+      if(name==='SUMMARY') cur.title=this.icsUnesc(val);
+      else if(name==='LOCATION') cur.location=this.icsUnesc(val);
+      else if(name==='DESCRIPTION') cur.notes=this.icsUnesc(val);
+      else if(name==='DTSTART'){ const m=val.match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/); if(m){ cur.date=m[1]+'-'+m[2]+'-'+m[3]; if(m[4]){ cur.start=m[4]+':'+m[5]; cur.allDay=false; } else cur.allDay=true; } }
+      else if(name==='DTEND'){ const m=val.match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/); if(m&&m[4]) cur.end=m[4]+':'+m[5]; }
+      else if(name==='RRULE'){ const fm=val.match(/FREQ=(\w+)/); if(fm){ let r=freq[fm[1]]||'none'; if(r==='weekly'&&/BYDAY=MO,TU,WE,TH,FR/.test(val)) r='weekday'; cur.repeat=r; } }
+    });
+    return out;
+  }
+  onImportICS(e){ const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ let ev=[]; try{ ev=this.parseICS(rd.result); }catch(err){ ev=[]; } this.setState({ importPreview: ev, importName: f.name }); }; rd.readAsText(f); e.target.value=''; }
+  confirmImport(){ const ev=this.state.importPreview||[]; if(ev.length){ this.commit({ events:this.state.events.concat(ev), importPreview:null }); this.setState({ remBanner:{ title:'已匯入 '+ev.length+' 個行程', body:this.state.importName||'.ics 檔案' } }); clearTimeout(this._remBT); this._remBT=setTimeout(()=>this.setState({remBanner:null}),6000); } else { this.setState({ importPreview:null }); } }
+  cancelImport(){ this.setState({ importPreview:null }); }
+  checkReminders(){
+    if(!this.state.notifyOn) return;
+    const now = new Date(); const T = this.norm(now); const tISO=this.iso(T);
+    const evs = this.dayEvents(T).filter(e=>!e.allDay);
+    for(const e of evs){
+      const parts=(e.start||'').split(':'); if(parts.length<2) continue;
+      const evTime = new Date(T); evTime.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+      const remMin = parseInt(e.reminder||'10',10)||0;
+      const fireAt = evTime.getTime() - remMin*60000;
+      const key = tISO+'|'+e.id+'|'+e.start;
+      if(now.getTime()>=fireAt && now.getTime()<evTime.getTime()+60000 && !this._fired.has(key)){
+        this._fired.add(key); this.saveFired();
+        const body = (remMin>0? remMin+' 分鐘後':'即將開始')+' · '+e.start+(e.location?(' @'+e.location):'');
+        try{ if('Notification' in window && Notification.permission==='granted') new Notification(e.title, { body }); }catch(err){}
+        this.setState({ remBanner:{ title:e.title, body } });
+        if(this.state.petEnabled) this.petSay('「'+e.title+'」'+(remMin>0?(' 還有 '+remMin+' 分鐘就開始囉！'):' 現在開始囉！'), false);
+        clearTimeout(this._remBT); this._remBT=setTimeout(()=>this.setState({ remBanner:null }), 8000);
+      }
+    }
+  }
+  toggleCal(id){ this.commit({ calendars: this.state.calendars.map(c=> c.id===id ? Object.assign({}, c, { visible: !c.visible }) : c) }); }
+  addCalendar(){ this.openCalNew(); }
+  _calPalette(){ return ['#e4002b','#f97316','#ca8a04','#16a34a','#0891b2','#2563eb','#7c3aed','#db2777','#0f766e','#64748b']; }
+  openCalNew(){ const pal=this._calPalette(); this.setState({ calEdit:{ id:null, name:'', color:pal[this.state.calendars.length%pal.length], palette:pal } }); }
+  openCalEdit(id){ const c=this.state.calendars.find(x=>x.id===id); if(!c) return; const pal=this._calPalette().slice(); if(pal.indexOf(c.color)<0) pal.unshift(c.color); this.setState({ calEdit:{ id:c.id, name:c.name, color:c.color, palette:pal } }); }
+  onCalName(e){ this.setState({ calEdit:Object.assign({},this.state.calEdit,{name:e.target.value}) }); }
+  setCalColor(hex){ this.setState({ calEdit:Object.assign({},this.state.calEdit,{color:hex}) }); }
+  closeCalEdit(){ this.setState({ calEdit:null }); }
+  saveCalEdit(){ const ce=this.state.calEdit; if(!ce) return; const name=(ce.name||'').trim()||'未命名日曆'; if(ce.id){ this.commit({ calendars:this.state.calendars.map(c=> c.id===ce.id?Object.assign({},c,{name,color:ce.color}):c), calEdit:null }); } else { this.commit({ calendars:this.state.calendars.concat([{ id:this.uid(), name, color:ce.color, text:'#fff', visible:true }]), calEdit:null }); } }
+  delCalEdit(){ const ce=this.state.calEdit; if(!ce||!ce.id||this.state.calendars.length<=1){ this.setState({calEdit:null}); return; } this.commit({ calendars:this.state.calendars.filter(c=>c.id!==ce.id), calEdit:null }); }
+  setPetKind(k){ this.commit({ petKind:k }); }
+  toggleLevelInfo(){ this.setState({ levelInfoOpen: !this.state.levelInfoOpen }); }
+  setTz(e){ this.commit({ tz:e.target.value }); }
+  _tzLabel(tz){ const T={'Asia/Taipei':'台北 (GMT+8)','Asia/Tokyo':'東京 (GMT+9)','Asia/Shanghai':'上海 (GMT+8)','Asia/Hong_Kong':'香港 (GMT+8)','Asia/Singapore':'新加坡 (GMT+8)','Asia/Seoul':'首爾 (GMT+9)','America/Los_Angeles':'洛杉矶 (GMT-8)','America/New_York':'紐約 (GMT-5)','Europe/London':'倫敦 (GMT+0)','Australia/Sydney':'雪梨 (GMT+11)','UTC':'UTC'}; return T[tz]||tz; }
+  resetData(){ try{ localStorage.removeItem(this.KEY); }catch(e){} const s=this.seed(); this.commit({ events:s.events, todos:s.todos, calendars:s.calendars, stickers:s.stickers||[], themeId:s.settings.themeId, dark:false, weekStart:0, aiKey:'', petName:s.settings.petName, petEnabled:true, tz:'Asia/Taipei', weeksShown:4, swipeDir:'h', modalOpen:false, dayOpen:false, screen:'cal', view:'month', bubbleOpen:false }); }
+  loadDemoData(){ const dm=this.demoData(); this.commit({ events:dm.events, todos:dm.todos, stickers:dm.stickers, modalOpen:false, dayOpen:false, bubbleOpen:false }); }
+  clearAllData(){ this.commit({ events:[], todos:[], stickers:[], modalOpen:false, dayOpen:false, bubbleOpen:false }); }
+  toggleDevMode(){ this.setState({ devMode: !this.state.devMode }); }
+  askConfirm(cfg){ this.setState({ confirm: cfg }); }
+  confirmCancel(){ this.setState({ confirm:null }); }
+  confirmOk(){ const c=this.state.confirm; this.setState({ confirm:null }, ()=>{ if(!c) return; if(c.act==='load') this.loadDemoData(); else if(c.act==='clear') this.clearAllData(); }); }
+  askLoadDemo(){ this.askConfirm({ title:'載入示範資料', msg:'將以三年份（2025–2027）示範行程、待辦與貼圖取代目前資料。確定要載入嗎？', okText:'載入', danger:false, act:'load' }); }
+  askClearAll(){ this.askConfirm({ title:'清除所有資料', msg:'將刪除所有行程、待辦與貼圖，且無法復原。建議先到「資料備份」匯出。確定清除？', okText:'清除', danger:true, act:'clear' }); }
+  ovSetType(t){ this.setState({ ovType:t }); }
+  ovSetPeriod(p){ this.setState({ ovPeriod:p, ovCollapsed:[] }); }
+  ovToday(){ this.setState({ ovCursor:this.iso(new Date()) }); }
+  ovShift(dir){ const c=this.parse(this.state.ovCursor); const p=this.state.ovPeriod; if(p==='week') c.setDate(c.getDate()+dir*7); else if(p==='month') c.setMonth(c.getMonth()+dir); else c.setFullYear(c.getFullYear()+dir); this.setState({ ovCursor:this.iso(c) }); }
+  ovToggleGroup(key){ const set=new Set(this.state.ovCollapsed||[]); if(set.has(key)) set.delete(key); else set.add(key); this.setState({ ovCollapsed:[...set] }); }
+  ovCollapseAll(){ this.setState({ ovCollapsed: this.overviewGroups().map(g=>g.key) }); }
+  ovExpandAll(){ this.setState({ ovCollapsed: [] }); }
+  overviewGroups(){
+    const S=this.state; const type=S.ovType; const period=S.ovPeriod; const cur=this.parse(S.ovCursor);
+    let start,end;
+    if(period==='week'){ start=this.weekStartDate(cur); end=this.addDays(start,6); }
+    else if(period==='month'){ start=new Date(cur.getFullYear(),cur.getMonth(),1); end=new Date(cur.getFullYear(),cur.getMonth()+1,0); }
+    else { start=new Date(cur.getFullYear(),0,1); end=new Date(cur.getFullYear(),11,31); }
+    const perDay=[]; let dd=this.norm(start); const en=this.norm(end); let guard=0;
+    while(dd<=en && guard++<400){ const ds=this.iso(dd); let items=[];
+      if(type==='events') items=this.dayEvents(dd).map(e=>({kind:'event',e}));
+      else if(type==='todos') items=this.todosOn(ds).map(t=>({kind:'todo',t}));
+      else items=this.stickersOn(ds).map(s=>({kind:'sticker',s}));
+      if(items.length) perDay.push({ ds, date:new Date(dd), items });
+      dd=this.addDays(dd,1);
+    }
+    if(period==='year'){ const groups=[]; for(let m=0;m<12;m++){ const dys=perDay.filter(pd=>pd.date.getMonth()===m); if(!dys.length) continue; let cnt=0; dys.forEach(x=>cnt+=x.items.length); groups.push({ key:cur.getFullYear()+'-'+m, label:(m+1)+'月', sub:'', count:cnt, days:dys }); } return groups; }
+    const wd=['日','一','二','三','四','五','六'];
+    return perDay.map(pd=>({ key:pd.ds, label:(pd.date.getMonth()+1)+'/'+pd.date.getDate(), sub:'週'+wd[pd.date.getDay()], count:pd.items.length, days:[pd] }));
+  }
+  buildOverviewDisplay(){
+    const S=this.state; const raw=this.overviewGroups(); const collapsed=new Set(S.ovCollapsed||[]); const isYear=S.ovPeriod==='year';
+    const wd=['日','一','二','三','四','五','六']; const todayISO=this.iso(this.norm(new Date()));
+    const mapItem=(x,ds)=>{
+      if(x.kind==='event'){ const e=x.e; const c=this.calById(e.cal); return { hasBar:true, hasGlyph:false, glyph:'', color:(c&&c.color)||'#888', time:e.allDay?'全天':e.start, title:e.title, hasSub:!!e.location, sub:e.location||'', hasRight:false, right:'', rightColor:'', strike:'none', onTap:()=>this.openEvent(e.id) }; }
+      if(x.kind==='todo'){ const t=x.t; const od=!t.done && this.todoDate(t)<todayISO; const dd2=this.parse(this.todoDate(t)); return { hasBar:true, hasGlyph:false, glyph:'', color:t.done?'var(--faint)':'var(--accent)', time:t.done?'完成':'待辦', title:t.title, hasSub:od, sub: od?('逾期・原'+(dd2.getMonth()+1)+'/'+dd2.getDate()):'', hasRight:true, right:t.done?'✓':'○', rightColor:t.done?'var(--accent)':'var(--faint)', strike:t.done?'line-through':'none', onTap:()=>this.toggleTodo(t.id) }; }
+      const s=x.s; return { hasBar:false, hasGlyph:true, glyph:s.glyph, color:'', time:'', title:'貼圖', hasSub:false, sub:'', hasRight:false, right:'', rightColor:'', strike:'none', onTap:()=>this.openDay(ds) };
+    };
+    const groups=raw.map(g=>{ const open=!collapsed.has(g.key); const days=g.days.map(pd=>({ hasLabel:isYear, dayLabel: pd.date.getDate()+'日 週'+wd[pd.date.getDay()], items:pd.items.map(x=>mapItem(x,pd.ds)) })); return { key:g.key, title:g.label, sub:g.sub, count:'('+g.count+')', open, chevron: open?'▾':'▸', days, onToggle:()=>this.ovToggleGroup(g.key) }; });
+    const cur=this.parse(S.ovCursor); let label;
+    if(S.ovPeriod==='week'){ const ws=this.weekStartDate(cur); const we=this.addDays(ws,6); label=(ws.getMonth()+1)+'/'+ws.getDate()+' – '+(we.getMonth()+1)+'/'+we.getDate(); }
+    else if(S.ovPeriod==='month') label=cur.getFullYear()+'年 '+(cur.getMonth()+1)+'月';
+    else label=cur.getFullYear()+'年';
+    let total=0; raw.forEach(g=>total+=g.count);
+    return { groups, label, empty:groups.length===0, total };
+  }
+  openDay(ds){ this.setState({ dayOpen:true, dayISO:ds, selected:ds, dayTodoDraft:'', stickerPick:false }); }
+  closeDay(){ this.setState({ dayOpen:false }); }
+  onDayTodo(e){ this.setState({ dayTodoDraft:e.target.value }); }
+  addDayTodo(){ const v=(this.state.dayTodoDraft||'').trim(); if(!v) return; this.commit({ todos: this.state.todos.concat([{ id:this.uid(), title:v, date:this.state.dayISO, done:false, priority:'mid' }]), dayTodoDraft:'' }); }
+  toggleStickerPick(){ this.setState({ stickerPick: !this.state.stickerPick }); }
+  addSticker(g){ this.commit({ stickers: (this.state.stickers||[]).concat([{ id:this.uid(), date:this.state.dayISO, glyph:g }]), stickerPick:false }); }
+  delSticker(id){ this.commit({ stickers: (this.state.stickers||[]).filter(s=>s.id!==id) }); }
+  toggleAiInfo(){ this.setState({ aiInfoOpen: !this.state.aiInfoOpen }); }
+  setSwipe(d){ this.commit({ swipeDir:d }); }
+  exportData(){ try{ const blob=new Blob([JSON.stringify(this.dump(),null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='calpet-backup-'+this.iso(new Date())+'.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); }catch(e){} }
+  onImportFile(e){ const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d||!d.events) return; const st=d.settings||{}; this.commit({ events:d.events||[], todos:d.todos||[], calendars:d.calendars||this.state.calendars, stickers:d.stickers||[], themeId:st.themeId||this.state.themeId, dark:!!st.dark, weekStart:st.weekStart||0, aiKey:st.aiKey||'', petName:st.petName||this.state.petName, petEnabled:st.petEnabled!==false, tz:st.tz||'Asia/Taipei', weeksShown:st.weeksShown||4, swipeDir:st.swipeDir||'h', modalOpen:false, dayOpen:false }); }catch(err){} }; rd.readAsText(f); e.target.value=''; }
+  bindSwipe(){ const el=document.querySelector('[data-swipe="app"]'); if(!el || el._swipeBound) return; el._swipeBound=true; let sx=0,sy=0,tt=0,active=false; el.addEventListener('pointerdown',(ev)=>{ if(ev.target.closest('button,input,select,textarea,a,label')){ active=false; return; } active=true; sx=ev.clientX; sy=ev.clientY; tt=Date.now(); }); el.addEventListener('pointerup',(ev)=>{ if(!active) return; active=false; if(this.state.screen!=='cal'||this.state.dayOpen||this.state.modalOpen||this.state.bubbleOpen) return; const dx=ev.clientX-sx, dy=ev.clientY-sy; if(Date.now()-tt>700) return; const v=this.state.view; if(v==='month'){ if(this.state.swipeDir==='h' && Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.4) this.pageMonth(dx<0?1:-1); return; } if(v==='week'){ if(Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy)*1.5) (dx<0?this.next():this.prev()); } }); }
+
+  /* ---------- todos / pet bubble ---------- */
+  toggleTodo(id){ const t=this.state.todos.find(x=>x.id===id); const willDone = t && !t.done; const todos=this.state.todos.map(x=> x.id===id ? Object.assign({},x,{done:!x.done}) : x); if(willDone){ const oldXP=this.state.petXP||0, nx=oldXP+1; const before=this.petTier(oldXP).i, after=this.petTier(nx).i; this.commit({ todos, petXP:nx }); if(after>before){ this.petSay('午！升級到【'+this.petTier(nx).name+'】了，解鎖新配件 '+this.petTier(nx).acc+'！', true); } else { const ch=['太棒了！又完成一件～', '厉害，保持這個節奏！', '搞定！我替你高興～', '又刑掉一項，超有效率！']; this.petSay(ch[Math.floor(Math.random()*ch.length)], true); } } else { this.commit({ todos }); } }
+  petTier(xp){ xp=xp||0; if(xp>=50) return {i:4,acc:'👑',name:'傳說'}; if(xp>=30) return {i:3,acc:'🎩',name:'達人'}; if(xp>=15) return {i:2,acc:'🎀',name:'熟練'}; if(xp>=5) return {i:1,acc:'⭐',name:'新手+'}; return {i:0,acc:'',name:'新手'}; }
+  petNextText(xp){ xp=xp||0; const th=[5,15,30,50]; for(const t of th){ if(xp<t) return '，再 '+(t-xp)+' 項升級'; } return '，已達最高等級'; }
+  petSay(msg, jump){ this.setState({ bubbleOpen:true, bubbleMode:'greeting', greeted:true, ctxMsg:msg }); if(jump){ this.pet.action='jump'; this.pet.jstart=performance.now(); this.pet.until=performance.now()+700; } }
+  delTodo(id){ this.commit({ todos: this.state.todos.filter(t=>t.id!==id) }); }
+  tdDown(ev,id){ if(ev&&ev.preventDefault) ev.preventDefault(); this._td={id}; this.setState({tdDragId:id}); }
+  tdMove(ev){ if(!this._td) return; const rows=document.querySelectorAll('[data-td-id]'); let tgt=null; for(const r of rows){ const b=r.getBoundingClientRect(); if(ev.clientY>=b.top && ev.clientY<=b.bottom){ tgt=r.getAttribute('data-td-id'); break; } } if(tgt && tgt!==this._td.id) this.reorderTodo(this._td.id, tgt); }
+  tdUp(){ if(!this._td) return; this._td=null; this.setState({tdDragId:null}); }
+  reorderTodo(dragId,targetId){ const arr=this.state.todos.slice(); const di=arr.findIndex(t=>t.id===dragId), ti=arr.findIndex(t=>t.id===targetId); if(di<0||ti<0||di===ti) return; const it=arr.splice(di,1)[0]; arr.splice(ti,0,it); this.commit({todos:arr}); }
+  toggleTodoExpand(id){ const s=new Set(this.state.tdExpand||[]); if(s.has(id)) s.delete(id); else s.add(id); this.setState({tdExpand:[...s]}); }
+  toggleSub(tid,sid){ this.commit({ todos:this.state.todos.map(t=> t.id===tid?Object.assign({},t,{subs:(t.subs||[]).map(s=> s.id===sid?Object.assign({},s,{done:!s.done}):s)}):t) }); }
+  delSub(tid,sid){ this.commit({ todos:this.state.todos.map(t=> t.id===tid?Object.assign({},t,{subs:(t.subs||[]).filter(s=>s.id!==sid)}):t) }); }
+  onSubDraft(tid,e){ this.setState({ ['subDraft_'+tid]: e.target.value }); }
+  addSub(tid){ const k='subDraft_'+tid; const v=(this.state[k]||'').trim(); if(!v) return; const s=new Set(this.state.tdExpand||[]); s.add(tid); this.commit({ todos:this.state.todos.map(t=> t.id===tid?Object.assign({},t,{subs:(t.subs||[]).concat([{id:this.uid(),title:v,done:false}])}):t), [k]:'', tdExpand:[...s] }); }
+  addTodo(when){ const key = when==='today' ? 'todoTodayDraft' : 'todoTomorrowDraft'; const v=(this.state[key]||'').trim(); if(!v) return; this.commit({ todos: this.state.todos.concat([{ id:this.uid(), title:v, when, done:false, priority:'mid' }]), [key]:'' }); }
+  onTodoInput(when, e){ const key = when==='today' ? 'todoTodayDraft' : 'todoTomorrowDraft'; this.setState({ [key]: e.target.value }); }
+  petTap(){ if(this.state.bubbleOpen) return; this.setState({ bubbleOpen:true, bubbleMode: this.state.greeted ? 'todos' : 'greeting', greeted:true }); }
+  petClose(){ this.setState({ bubbleOpen:false, ctxMsg:null }); }
+  showTodosBubble(){ this.setState({ bubbleOpen:true, bubbleMode:'todos' }); }
+
+  async runAI(){
+    this.setState({ bubbleOpen:true, bubbleMode:'ai', aiLoading:true, aiText:'' });
+    const ctx = this.buildAIContext();
+    const sys = '你是使用者的行程小助理，一隻叫「'+this.state.petName+'」的桌寵。根據以下行程與待辦，用繁體中文給出 2–3 點「具體、可執行」的排程建議。每點一句、以「・」開頭、親切精簡，不要開場白與結語。';
+    let out = '';
+    try{
+      if(window.claude && window.claude.complete){
+        out = await window.claude.complete({ system: sys, max_tokens: 400, messages:[{ role:'user', content: ctx }] });
+      } else { throw new Error('no helper'); }
+    }catch(e){ out = this.heuristicAI(); }
+    if(!out || !out.trim()) out = this.heuristicAI();
+    this.setState({ aiLoading:false, aiText: out.trim() });
+  }
+  buildAIContext(){
+    const T = this.norm(new Date()); const lines=[];
+    for(let i=0;i<7;i++){ const dn=this.addDays(T,i); const evs=this.dayEvents(dn); evs.forEach(e=>{ const c=this.calById(e.cal); lines.push((e.allDay?'全天':e.start+'-'+e.end)+' '+e.title+'（'+((c&&c.name)||'')+'）· '+this.iso(dn)); }); }
+    const td = this.state.todos.filter(t=>!t.done).map(t=>'待辦：'+t.title+'（'+(t.when==='today'?'今天':'明天')+'）');
+    return '未來七天行程：\n'+(lines.join('\n')||'（無）')+'\n\n未完成待辦：\n'+(td.join('\n')||'（無）');
+  }
+  heuristicAI(){
+    const T = this.norm(new Date());
+    const todays = this.dayEvents(T).filter(e=>!e.allDay);
+    const tomo = this.dayEvents(this.addDays(T,1)).filter(e=>!e.allDay);
+    const open = this.state.todos.filter(t=>!t.done);
+    const openToday = open.filter(t=>t.when==='today');
+    const lines=[];
+    if(todays.length>=4) lines.push('・今天有 '+todays.length+' 個會議，偏滿——建議把「'+((openToday[0]||{}).title||'最重要的待辦')+'」挪到第一個會議前的空檔先解決。');
+    else lines.push('・今天行程還算寬鬆，適合切出一段 45 分鐘的專注時間清掉待辦。');
+    if(tomo.length){ let longest=tomo[0]; tomo.forEach(e=>{ if(this.mins(e.end)-this.mins(e.start) > this.mins(longest.end)-this.mins(longest.start)) longest=e; }); lines.push('・明天的「'+longest.title+'」較長，建議中間留 10 分鐘休息，並把午餐約在附近省移動時間。'); }
+    if(open.length) lines.push('・還有 '+open.length+' 項待辦未完成，我可以幫你把最急的兩項釘在今天的上午。');
+    return lines.slice(0,3).join('\n');
+  }
+  mins(t){ const p=(t||'0:0').split(':').map(Number); return p[0]*60+(p[1]||0); }
+  overlapIds(list){ const set=new Set(); const L=list.filter(e=>!e.allDay); for(let i=0;i<L.length;i++){ for(let j=i+1;j<L.length;j++){ const a=L[i],b=L[j]; if(this.mins(a.start)<this.mins(b.end) && this.mins(b.start)<this.mins(a.end)){ set.add(a.id); set.add(b.id); } } } return set; }
+  hasConflict(dn){ return this.overlapIds(this.dayEvents(dn)).size>0; }
+
+  /* ---------- build views ---------- */
+  buildScrollWeeks(){
+    const gs = this.weekStartDate(this.parse(this.state.bufStart));
+    const nW = this.state.bufWeeks;
+    const tISO = this.iso(this.norm(new Date()));
+    const weeks=[];
+    for(let w=0; w<nW; w++){
+      const cells=[];
+      for(let k=0;k<7;k++){
+        const d = this.addDays(gs, w*7+k); const dn = this.norm(d); const ds = this.iso(dn);
+        const isToday = ds===tISO; const isSel = ds===this.state.selected;
+        const first = d.getDate()===1;
+        const zebra = ((d.getFullYear()*12+d.getMonth())%2)===1;
+        const evs = this.dayEvents(dn);
+        const conf = this.overlapIds(evs).size>0;
+        const shown = evs.slice(0,3).map(e=>{ const c=this.calById(e.cal); return { id:e.id, title:(e.allDay?'':e.start+' ')+e.title, color:(c&&c.color)||'#888', textColor:(c&&c.text)||'#fff', onTap:()=>this.openDay(ds) }; });
+        const stk = this.stickersOn(ds);
+        const lc = this.lunarCell(d);
+        cells.push({
+          day: first ? ((d.getMonth()+1)+'月') : d.getDate(),
+          bg: isToday ? 'var(--today-bg)' : (isSel ? 'var(--surface-2)' : (zebra ? 'rgba(130,130,130,0.06)' : 'transparent')),
+          numColor: isToday ? 'var(--today-fg)' : ((isSel||first) ? 'var(--accent)' : 'var(--fg)'),
+          numWeight: (isToday||isSel||first) ? '800' : '500',
+          lunarText: lc.text, lunarColor: lc.isFest?'var(--accent)':'var(--faint)', lunarWeight: lc.isFest?'800':'600',
+          stickers: stk.map(s=>({ glyph:s.glyph })), hasStickers: stk.length>0, stkSize: stk.length<=1?19:(stk.length===2?15:(stk.length===3?12:10)), hasConflict:conf,
+          events: shown, more: evs.length>3 ? ('+'+(evs.length-3)) : '', hasMore: evs.length>3,
+          isTodayFlash: isToday && this.state.flashToday,
+          onTap:()=>this.openDay(ds),
+        });
+      }
+      weeks.push({ cells });
+    }
+    return weeks;
+  }
+  buildWeek(){
+    const ws = this.weekStartDate(this.parse(this.state.cursor));
+    const tISO = this.iso(this.norm(new Date()));
+    const H0=7, H1=22, PXH=44;
+    const cols=[];
+    const wd=['日','一','二','三','四','五','六'];
+    for(let i=0;i<7;i++){
+      const d = this.addDays(ws,i); const dn=this.norm(d); const ds=this.iso(dn);
+      const evs = this.dayEvents(dn); const timed=[];
+      evs.forEach(e=>{ if(e.allDay) return; const c=this.calById(e.cal); const sp=e.start.split(':').map(Number); const ep=(e.end||e.start).split(':').map(Number); let sMin=sp[0]*60+sp[1], eMin=ep[0]*60+ep[1]; const drag=this.state.wkDrag; const isDrag=drag&&drag.id===e.id; if(isDrag){ sMin=drag.curSMin; eMin=drag.curEMin; } let top=(sMin/60-H0)*PXH; let h=(eMin-sMin)/60*PXH; if(h<20)h=20; if(top<0){ h+=top; top=0; } const lbl=String(Math.floor(sMin/60)).padStart(2,'0')+':'+String(sMin%60).padStart(2,'0'); timed.push({ id:e.id, ds, title:e.title, timeLabel:lbl, top:Math.round(top), height:Math.round(h), color:(c&&c.color)||'#888', textColor:(c&&c.text)||'#fff', dragShadow:isDrag?'0 6px 16px rgba(0,0,0,.35)':'none', dragZ:isDrag?9:1, onDown:(ev)=>this.wkDown(ev,e.id,ds,'move'), onResize:(ev)=>this.wkDown(ev,e.id,ds,'resize') }); });
+      const it = ds===tISO;
+      cols.push({ label:'週'+wd[d.getDay()], dateNum:d.getDate(), headBg: it?'var(--today-bg)':'transparent', headFg: it?'var(--today-fg)':'var(--fg)', timed });
+    }
+    const hours=[]; for(let h=H0;h<=H1;h++) hours.push({ label:(h<10?'0':'')+h+':00', top:(h-H0)*PXH });
+    const now = new Date(); const inWeek = now>=ws && now<this.addDays(ws,7);
+    const nowTop = (now.getHours()-H0 + now.getMinutes()/60)*PXH;
+    return { cols, hours, showNow: inWeek && now.getHours()>=H0 && now.getHours()<=H1, nowTop:Math.round(nowTop), gridH:(H1-H0)*PXH+16 };
+  }
+  buildAgenda(){
+    const T = this.norm(new Date()); const tISO=this.iso(T); const days=[];
+    const wd=['週日','週一','週二','週三','週四','週五','週六'];
+    for(let i=0;i<16;i++){
+      const d=this.addDays(T,i); const dn=this.norm(d); const ds=this.iso(dn);
+      const evItems = this.dayEvents(dn).map(e=>{ const c=this.calById(e.cal); return { kind:'event', time:e.allDay?'全天':e.start, title:e.title, loc:e.location||'', hasLoc:!!e.location, color:(c&&c.color)||'#888', titleColor:'var(--fg)', strike:'none', check:'', checkColor:'transparent', onTap:()=>this.openEvent(e.id) }; });
+      let tds=[]; if(i===0) tds=this.state.todos.filter(t=>t.when==='today'); else if(i===1) tds=this.state.todos.filter(t=>t.when==='tomorrow');
+      const tdItems = tds.map(t=>({ kind:'todo', time:'待辦', title:t.title, loc:'', hasLoc:false, color:'var(--accent)', titleColor: t.done?'var(--faint)':'var(--fg)', strike: t.done?'line-through':'none', check: t.done?'✓':'○', checkColor: t.done?'var(--accent)':'var(--faint)', onTap:()=>this.toggleTodo(t.id) }));
+      const items = evItems.concat(tdItems);
+      if(items.length===0 && i>1) continue;
+      days.push({ dateLabel:(d.getMonth()+1)+'月'+d.getDate()+'日', weekdayLabel: i===0?'今天':(i===1?'明天':wd[d.getDay()]), weather:this.weather(dn), headColor: ds===tISO?'var(--accent)':'var(--fg)', empty: items.length===0, items });
+    }
+    return days;
+  }
+
+  get STK(){ return ['💲','💰','💵','💳','❤️','💕','💖','💘','😍','💍','💐','🥂','🎂','🎉','🎊','🎁','🥳','🎈','⭐','🌟','❗','⚠️','🔥','📌','🚩','✈️','🏖️','🚗','🧳','🗺️','☕','🍽️','🍕','🍔','🍺','🍰','💼','📝','📎','💻','📚','🎓','✅','❌','💊','🏥','💪','🏃','🦷','📞','📷','🎵','🎮','🐾','💡','🌙','☀️','🌧️','🌸','🍁','⏰','🎯','🏆']; }
+
+  /* ---------- render ---------- */
+  renderVals(){
+    const S = this.state;
+    const A = 'var(--accent)', AF='var(--accent-fg)', MU='var(--muted)', FA='var(--faint)', FG='var(--fg)', S2='var(--surface-2)';
+    const now = new Date();
+    const wdTW=['週日','週一','週二','週三','週四','週五','週六'];
+    const todayFull = now.getFullYear()+' / '+(now.getMonth()+1)+' / '+now.getDate()+'  '+wdTW[now.getDay()];
+    const cur = this.parse(S.cursor);
+    let periodLabel='';
+    if(S.view==='month'){ periodLabel = S.scrollLabel; }
+    else if(S.view==='week'){ const wsd=this.weekStartDate(cur); const wed=this.addDays(wsd,6); periodLabel = (wsd.getMonth()+1)+'/'+wsd.getDate()+' – '+(wed.getMonth()+1)+'/'+wed.getDate(); }
+    else periodLabel='即將到來';
+
+    const baseWk=['日','一','二','三','四','五','六'];
+    const weekHead = Array.from({length:7},(_,i)=>{ const idx=(S.weekStart+i)%7; return { label:baseWk[idx], color:(idx===0||idx===6)?A:MU }; });
+
+    const wk = this.buildWeek();
+    const draft = S.draft || {};
+    const dcal = this.calById(draft.cal);
+
+    const calChips = this.state.calendars.map(c=>{ const active = draft.cal===c.id; return { name:c.name, color:c.color, border: active?A:'var(--border)', bg: active?S2:'var(--surface)', fg:FG, onTap:()=>this.pickCal(c.id) }; });
+    const inviteeChips = (draft.invitees||[]).map((n,i)=>({ name:n, onTap:()=>this.delInvitee(i) }));
+    const attachChips = (draft.attachments||[]).map((n,i)=>({ name:n, onTap:()=>this.delAttach(i) }));
+
+    const themeCards = Object.keys(this.THEMES).map(id=>{ const th=this.THEMES[id]; const l=th.light; const active=id===S.themeId; return { name:th.name, desc:th.desc, c1:l.surface, c2:l.accent, c3:l.fg, borderCol: active?A:'var(--border)', shadow: active?'var(--shadow)':'none', tick: active?'✓':'', onTap:()=>this.setTheme(id) }; });
+    const calRows = this.state.calendars.map(c=>({ name:c.name, color:c.color, trackBg: c.visible?A:S2, knobLeft: c.visible?'19px':'2px', onToggle:()=>this.toggleCal(c.id), onEdit:()=>this.openCalEdit(c.id) }));
+
+    // search
+    const q=(S.search||'').trim().toLowerCase();
+    const fc=S.searchCal||'all';
+    let searchResults=[]; 
+    if(q){ this.state.events.forEach(e=>{ if(fc!=='all'&&e.cal!==fc) return; const c=this.calById(e.cal); const hay=(e.title+' '+(e.location||'')+' '+(e.notes||'')).toLowerCase(); if(hay.indexOf(q)>=0) searchResults.push({ title:e.title, sub:(e.allDay?'全天':e.start)+(e.location?(' · '+e.location):'')+' · '+((c&&c.name)||''), color:(c&&c.color)||'#888', onTap:()=>this.openEvent(e.id) }); }); if(fc==='all') this.state.todos.forEach(t=>{ if(t.title.toLowerCase().indexOf(q)>=0) searchResults.push({ title:t.title, sub:'待辦 · '+(t.when==='today'?'今天':'明天')+(t.done?' · 已完成':''), color:A, onTap:()=>this.showTodosBubble() }); }); }
+    const searchCalChips=[{id:'all',label:'全部',color:A}].concat(this.state.calendars.map(c=>({id:c.id,label:c.name,color:c.color}))).map(ch=>({ label:ch.label, dot:ch.color, active:fc===ch.id, bg: fc===ch.id?ch.color:'transparent', fg: fc===ch.id?'#fff':'var(--muted)', bd: fc===ch.id?ch.color:'var(--border)', onTap:(function(id){ return ()=>this.setSearchCal(id); }).call(this, ch.id) }));
+
+    // pet todos
+    const todayISO=this.iso(this.norm(now));
+    const mapTodo = (t)=>{ const od=!t.done && this.todoDate(t)<todayISO; const dd=this.parse(this.todoDate(t)); return { title:t.title, color: t.done?FA:FG, strike: t.done?'line-through':'none', check: t.done?'✓':'', boxBg: t.done?'#141414':'#fff', overdue:od, dateLabel: od?('逾期・原'+(dd.getMonth()+1)+'/'+dd.getDate()):'', onToggle:()=>this.toggleTodo(t.id), onDel:()=>this.delTodo(t.id) }; };
+    const tomorrowISO=this.iso(this.addDays(this.norm(now),1));
+    const todayTodos = this.state.todos.filter(t=> this.todoDate(t)===todayISO || (!t.done && this.todoDate(t)<todayISO)).map(mapTodo);
+    const tomorrowTodos = this.state.todos.filter(t=> this.todoDate(t)===tomorrowISO).map(mapTodo);
+    const openToday = this.state.todos.filter(t=> !t.done && (this.todoDate(t)===todayISO || this.todoDate(t)<todayISO));
+    const highToday = openToday.filter(t=>t.priority==='high').length;
+    const petBadge = openToday.length ? String(openToday.length) : '';
+    const greetingText = openToday.length ? ('嗨，我是'+S.petName+'！今天還有 '+openToday.length+' 件待辦'+(highToday?('，其中 '+highToday+' 件重要'):'')+'，要一起看看嗎？') : ('嗨，我是'+S.petName+'！今天的待辦都清光啦，要看看明天的安排嗎？');
+
+    const dISO=S.dayISO; const dObj=this.parse(dISO); const dNorm=this.norm(dObj);
+    const dayRaw=this.dayEvents(dNorm); const dayConf=this.overlapIds(dayRaw);
+    const dayEventsL=dayRaw.map(e=>{ const c=this.calById(e.cal); const cf=dayConf.has(e.id); return { title:e.title, time:e.allDay?'全天':(e.start+'–'+e.end), loc:e.location||'', hasLoc:!!e.location, color:cf?'#e4002b':((c&&c.color)||'#888'), conflict:cf, onTap:()=>this.openEvent(e.id, dISO) }; });
+    const expandSet=new Set(S.tdExpand||[]);
+    const dayTodosL=this.todosOn(dISO).map(t=>{ const od=!t.done && this.todoDate(t)<todayISO; const dd=this.parse(this.todoDate(t)); const subs=(t.subs||[]).map(s=>({ title:s.title, done:s.done, check:s.done?'✓':'', boxBg:s.done?A:'transparent', color:s.done?FA:FG, strike:s.done?'line-through':'none', onToggle:()=>this.toggleSub(t.id,s.id), onDel:()=>this.delSub(t.id,s.id) })); const done=subs.filter(s=>s.done).length; const exp=expandSet.has(t.id); return { id:t.id, title:t.title, color:t.done?FA:FG, strike:t.done?'line-through':'none', check:t.done?'✓':'', boxBg:t.done?A:'transparent', overdue:od, dateLabel: od?('逾期・原'+(dd.getMonth()+1)+'/'+dd.getDate()):'', onToggle:()=>this.toggleTodo(t.id), onDel:()=>this.delTodo(t.id), onDown:(ev)=>this.tdDown(ev,t.id), dragOpacity: S.tdDragId===t.id?'0.55':'1', subs, hasSubs:subs.length>0, subCount: subs.length?(done+'/'+subs.length):'', caret: exp?'▾':'▸', expanded:exp, onExpand:()=>this.toggleTodoExpand(t.id), subDraft:S['subDraft_'+t.id]||'', onSubDraft:(ev)=>this.onSubDraft(t.id,ev), addSub:()=>this.addSub(t.id) }; });
+    const dayStickersL=this.stickersOn(dISO).map(s=>({ glyph:s.glyph, onTap:()=>this.delSticker(s.id) }));
+    const dayLabel=(dObj.getMonth()+1)+'月'+dObj.getDate()+'日 '+wdTW[dObj.getDay()];
+    const OV=this.buildOverviewDisplay();
+    return {
+      rootStyle: this.phoneStyle(),
+      themeName: this.theme().name, modeLabel: S.dark?'深色':'淺色',
+      todayFull, periodLabel,
+      isCal: S.screen==='cal', isSearch: S.screen==='search', isSettings: S.screen==='settings', isOverview: S.screen==='overview',
+      isMonth: S.view==='month', isWeek: S.view==='week', isAgenda: S.view==='agenda',
+      monthBg: S.view==='month'?A:'transparent', monthFg: S.view==='month'?AF:MU,
+      weekBg: S.view==='week'?A:'transparent', weekFg: S.view==='week'?AF:MU,
+      agBg: S.view==='agenda'?A:'transparent', agFg: S.view==='agenda'?AF:MU,
+      navCalColor: S.screen==='cal'?A:FA, navSearchColor: S.screen==='search'?A:FA, navSetColor: S.screen==='settings'?A:FA, navOverviewColor: S.screen==='overview'?A:FA,
+      weekHead,
+      w4Bg:(S.weeksShown||4)===4?A:'transparent', w4Fg:(S.weeksShown||4)===4?AF:MU, w5Bg:S.weeksShown===5?A:'transparent', w5Fg:S.weeksShown===5?AF:MU, w6Bg:S.weeksShown===6?A:'transparent', w6Fg:S.weeksShown===6?AF:MU,
+      monthWeeks: this.buildScrollWeeks(), rowH: S.rowH,
+      weekCols: wk.cols, weekHours: wk.hours, showNow: wk.showNow, nowTop: wk.nowTop, weekGridH: wk.gridH,
+      agendaDays: this.buildAgenda(),
+      quick: S.quick, search: S.search,
+      searchResults, searchEmpty: !!q && searchResults.length===0, searchIdle: !q, searchCalChips,
+      themeCards, calRows,
+      lightBg: !S.dark?A:'transparent', lightFg: !S.dark?AF:MU, darkBg: S.dark?A:'transparent', darkFg: S.dark?AF:MU,
+      sunBg: S.weekStart===0?A:'transparent', sunFg: S.weekStart===0?AF:MU, monBg: S.weekStart===1?A:'transparent', monFg: S.weekStart===1?AF:MU,
+      aiKey: S.aiKey, aiStatus: S.aiKey?'已設定金鑰':'使用內建模型', aiPillBg: S.aiKey?'#17b26a':S2, aiPillFg: S.aiKey?'#fff':MU,
+      petName: S.petName, petEnabled: S.petEnabled, petTrackBg: S.petEnabled?A:S2, petKnobLeft: S.petEnabled?'21px':'2px',
+      petKind:S.petKind, petIsCat:S.petKind==='cat', petIsBear:S.petKind==='bear', petIsBunny:S.petKind==='bunny', petIsChick:S.petKind==='chick',
+      petKinds:[{k:'cat',name:'摩卡',emo:'🐱'},{k:'bear',name:'可可',emo:'🐻'},{k:'bunny',name:'麻糬',emo:'🐰'},{k:'chick',name:'布丁',emo:'🐤'}].map(p=>({ name:p.name, emo:p.emo, active:S.petKind===p.k, bg:S.petKind===p.k?A:S2, fg:S.petKind===p.k?AF:FG, bd:S.petKind===p.k?A:'var(--border)', onTap:(function(k){return ()=>this.setPetKind(k);}).call(this,p.k) })),
+      levelInfoOpen:S.levelInfoOpen,
+      petTiers:[{n:'新手',t:'0–4 項',a:'—'},{n:'新手+',t:'5–14 項',a:'⭐'},{n:'熟練',t:'15–29 項',a:'🎀'},{n:'達人',t:'30–49 項',a:'🎩'},{n:'傳說',t:'50 項以上',a:'👑'}].map(x=>{ const active=this.petTier(S.petXP||0).name===x.n; return { name:x.n, range:x.t, acc:x.a, active, rowBg:active?'var(--surface-2)':'transparent', rowBd:active?'var(--accent)':'var(--line)' }; }),
+      calEditOpen:!!S.calEdit, calEditTitle:(S.calEdit&&S.calEdit.id)?'編輯日曆':'新增日曆', calEditName:S.calEdit?S.calEdit.name:'', calEditColor:S.calEdit?S.calEdit.color:'#888', calEditCanDelete:!!(S.calEdit&&S.calEdit.id&&this.state.calendars.length>1),
+      calEditSwatches:(S.calEdit?S.calEdit.palette:[]).map(hex=>({ hex, active:S.calEdit&&S.calEdit.color===hex, ring:(S.calEdit&&S.calEdit.color===hex)?'0 0 0 3px var(--accent)':'0 0 0 1.5px rgba(0,0,0,.15)', onTap:(function(h){return ()=>this.setCalColor(h);}).call(this,hex) })),
+      petAcc:this.petTier(S.petXP||0).acc, petAccShow:this.petTier(S.petXP||0).acc!=='', petAccDisp:this.petTier(S.petXP||0).acc||'🐾', petTierName:this.petTier(S.petXP||0).name, petXP:S.petXP||0, petNextText:this.petNextText(S.petXP||0),
+      tz: this._tzLabel(S.tz), tzVal:S.tz, syncLabel:'剛剛同步',
+      quickBusy:S.quickBusy, quickBtnLabel:S.quickBusy?'⋯':'＋',
+      notifyOn:S.notifyOn, notifyTrackBg:S.notifyOn?A:S2, notifyKnob:S.notifyOn?'21px':'2px',
+      remOpen:!!S.remBanner, remTitle:S.remBanner?S.remBanner.title:'', remBody:S.remBanner?S.remBanner.body:'',
+      // modal
+      modalOpen: S.modalOpen, isEdit: !!S.editingId, modalTitle: S.editingId?'編輯事件':'新增事件',
+      draft, showTimes: !draft.allDay, allDayTrackBg: draft.allDay?A:S2, allDayKnob: draft.allDay?'21px':'2px',
+      calChips, inviteeChips, attachChips, inviteeDraft: S.inviteeDraft,
+      // pet
+      bubbleOpen: S.bubbleOpen, isGreeting: S.bubbleMode==='greeting', isTodos: S.bubbleMode==='todos', isAI: S.bubbleMode==='ai',
+      greetingText: S.ctxMsg || greetingText, hasBadge: !!petBadge, petBadge,
+      todayTodos, tomorrowTodos, noTodayTodos: todayTodos.length===0,
+      todoTodayDraft: S.todoTodayDraft, todoTomorrowDraft: S.todoTomorrowDraft,
+      aiText: S.aiText, aiLoading: S.aiLoading, aiReady: !S.aiLoading && !!S.aiText,
+      dayOpen:S.dayOpen, dayLabel, dayEvents:dayEventsL, dayTodos:dayTodosL, dayStickers:dayStickersL, dayNoEvents:dayEventsL.length===0, dayTodoDraft:S.dayTodoDraft, stickerPick:S.stickerPick,
+      aiInfoOpen:S.aiInfoOpen, swipeHBg:S.swipeDir==='h'?A:'transparent', swipeHFg:S.swipeDir==='h'?AF:MU, swipeVBg:S.swipeDir==='v'?A:'transparent', swipeVFg:S.swipeDir==='v'?AF:MU,
+      devMode:S.devMode, devTrackBg:S.devMode?A:S2, devKnob:S.devMode?'21px':'2px',
+      confirmOpen: !!S.confirm, confirmTitle: S.confirm?S.confirm.title:'', confirmMsg: S.confirm?S.confirm.msg:'', confirmOkText: S.confirm?S.confirm.okText:'確定', confirmOkBg: (S.confirm&&S.confirm.danger)?'#e4002b':A, confirmOkFg: (S.confirm&&S.confirm.danger)?'#ffffff':AF,
+      ovType:S.ovType, ovPeriod:S.ovPeriod, ovLabel:OV.label, ovGroups:OV.groups, ovEmpty:OV.empty, ovTotal:OV.total, ovIsYear:S.ovPeriod==='year',
+      ovTypeEvBg:S.ovType==='events'?A:'transparent', ovTypeEvFg:S.ovType==='events'?AF:MU, ovTypeTdBg:S.ovType==='todos'?A:'transparent', ovTypeTdFg:S.ovType==='todos'?AF:MU, ovTypeStBg:S.ovType==='stickers'?A:'transparent', ovTypeStFg:S.ovType==='stickers'?AF:MU,
+      ovPYBg:S.ovPeriod==='year'?A:'transparent', ovPYFg:S.ovPeriod==='year'?AF:MU, ovPMBg:S.ovPeriod==='month'?A:'transparent', ovPMFg:S.ovPeriod==='month'?AF:MU, ovPWBg:S.ovPeriod==='week'?A:'transparent', ovPWFg:S.ovPeriod==='week'?AF:MU,
+      // handlers
+      onPrev:()=>this.prev(), onNext:()=>this.next(), onToday:()=>this.today(), onMonthScroll:(e)=>this.onMonthScroll(e),
+      setMonth:()=>this.setView('month'), setWeek:()=>this.setView('week'), setAgenda:()=>this.setView('agenda'),
+      goCal:()=>this.setScreen('cal'), goSearch:()=>this.setScreen('search'), goSettings:()=>this.setScreen('settings'),
+      openNew:()=>this.openNew(), closeModal:()=>this.closeModal(), saveEvent:()=>this.saveEvent(), deleteEvent:()=>this.deleteEvent(),
+      scopeOpen:!!S.scopeAsk, scopeTitle:(S.scopeAsk&&S.scopeAsk.mode==='delete')?'刪除重複事件':'修改重複事件', scopeMsg:(S.scopeAsk&&S.scopeAsk.mode==='delete')?'這是重複事件，要刪除哪些？':'這是重複事件，變更要套用到哪些？', scopeAllText:(S.scopeAsk&&S.scopeAsk.mode==='delete')?'刪除全部':'套用全部', scopeThisText:(S.scopeAsk&&S.scopeAsk.mode==='delete')?'只刪這一次':'只改這一次',
+      scopeThis:()=>this.scopeApply('this'), scopeAll:()=>this.scopeApply('all'), scopeCancel:()=>this.scopeCancel(),
+      onDraftField:(e)=>this.onDraftField(e), toggleAllDay:()=>this.toggleAllDay(),
+      onInvitee:(e)=>this.onInvitee(e), addInvitee:()=>this.addInvitee(), addAttach:()=>this.addAttach(),
+      onQuick:(e)=>this.onQuick(e), runQuick:()=>this.runQuick(), onSearch:(e)=>this.onSearch(e), setSearchCal:(id)=>this.setSearchCal(id),
+      exportICS:()=>this.exportICS(), onImportICS:(e)=>this.onImportICS(e), confirmImport:()=>this.confirmImport(), cancelImport:()=>this.cancelImport(),
+      onReminderSelect:(e)=>this.onReminderSelect(e), onRemCustom:(e)=>this.onRemCustom(e), setDefaultRem:(e)=>this.setDefaultRem(e),
+      remSelectVal:this._remSel(), remIsCustom:this._remCustom(), remCustomVal:this._remVal(), defaultRemVal:S.defaultRem,
+      importOpen: !!S.importPreview, importCount: S.importPreview?S.importPreview.length:0, importEmpty: !!S.importPreview && S.importPreview.length===0, importName:S.importName||'',
+      importOkText: (!!S.importPreview && S.importPreview.length===0)?'關閉':('匯入 '+(S.importPreview?S.importPreview.length:0)+' 筆'),
+      importMore: (S.importPreview&&S.importPreview.length>40)?('及其餘 '+(S.importPreview.length-40)+' 筆…'):'', importMoreShow: !!(S.importPreview&&S.importPreview.length>40),
+      importList: (S.importPreview||[]).slice(0,40).map(e=>{ const c=this.calById(e.cal); return { title:e.title, sub:(e.allDay?'全天':(e.start+'–'+e.end))+' · '+e.date+(e.repeat&&e.repeat!=='none'?' · 重複':''), color:(c&&c.color)||'#888' }; }),
+      setLight:()=>this.setDark(false), setDark:()=>this.setDark(true), wkSun:()=>this.setWeekStart(0), wkMon:()=>this.setWeekStart(1),
+      setW4:()=>this.setWeeks(4), setW5:()=>this.setWeeks(5), setW6:()=>this.setWeeks(6),
+      onAiKey:(e)=>this.onAiKey(e), onPetName:(e)=>this.onPetName(e), togglePet:()=>this.togglePet(), toggleNotify:()=>this.toggleNotify(), dismissRem:()=>this.dismissRem(),
+      addCalendar:()=>this.addCalendar(), resetData:()=>this.resetData(),
+      openCalEdit:(id)=>this.openCalEdit(id), onCalName:(e)=>this.onCalName(e), setCalColor:(h)=>this.setCalColor(h), closeCalEdit:()=>this.closeCalEdit(), saveCalEdit:()=>this.saveCalEdit(), delCalEdit:()=>this.delCalEdit(),
+      setPetKind:(k)=>this.setPetKind(k), toggleLevelInfo:()=>this.toggleLevelInfo(), setTz:(e)=>this.setTz(e),
+      goOverview:()=>this.setScreen('overview'), ovSetEvents:()=>this.ovSetType('events'), ovSetTodos:()=>this.ovSetType('todos'), ovSetStickers:()=>this.ovSetType('stickers'),
+      ovSetYear:()=>this.ovSetPeriod('year'), ovSetMonth:()=>this.ovSetPeriod('month'), ovSetWeek:()=>this.ovSetPeriod('week'),
+      ovPrev:()=>this.ovShift(-1), ovNext:()=>this.ovShift(1), ovToday:()=>this.ovToday(), ovCollapseAll:()=>this.ovCollapseAll(), ovExpandAll:()=>this.ovExpandAll(),
+      loadDemoData:()=>this.loadDemoData(), clearAllData:()=>this.clearAllData(), toggleDevMode:()=>this.toggleDevMode(),
+      askLoadDemo:()=>this.askLoadDemo(), askClearAll:()=>this.askClearAll(), confirmOk:()=>this.confirmOk(), confirmCancel:()=>this.confirmCancel(),
+      onPetDown:(e)=>this.petDown(e), petTap:()=>this.petTap(), petClose:()=>this.petClose(), showTodos:()=>this.showTodosBubble(), showAI:()=>this.runAI(),
+      addTodoToday:()=>this.addTodo('today'), addTodoTomorrow:()=>this.addTodo('tomorrow'),
+      onTodoToday:(e)=>this.onTodoInput('today',e), onTodoTomorrow:(e)=>this.onTodoInput('tomorrow',e),
+      openDay:(ds)=>this.openDay(ds), closeDay:()=>this.closeDay(), openDayNew:()=>this.openNew(S.dayISO), addDayTodo:()=>this.addDayTodo(), onDayTodo:(e)=>this.onDayTodo(e),
+      toggleSub:(tid,sid)=>this.toggleSub(tid,sid), delSub:(tid,sid)=>this.delSub(tid,sid), onSubDraft:(tid,e)=>this.onSubDraft(tid,e), addSub:(tid)=>this.addSub(tid), toggleTodoExpand:(id)=>this.toggleTodoExpand(id),
+      toggleStickerPick:()=>this.toggleStickerPick(), toggleAiInfo:()=>this.toggleAiInfo(), setSwipeH:()=>this.setSwipe('h'), setSwipeV:()=>this.setSwipe('v'), exportData:()=>this.exportData(), onImportFile:(e)=>this.onImportFile(e),
+      stickerOptions:this.STK.map((g)=>({ g, cb:()=>this.addSticker(g) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
