@@ -67,7 +67,7 @@ Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase D
 ## 版本發布方式
 
 1. 更新 `package.json` 的 `version`。
-2. 在 `release-notes.json` 新增同版本的公告內容，最新版本放第一筆。
+2. 在 `release-notes.json` 新增同版本的公告內容，最新版本放第一筆；版本正式部署後，該版公告不再修改。
 3. 執行 `npm run build`；prebuild 會產生 `public/version.json` 與含版本 cache 名稱的 `public/sw.js`。
 4. 部署 `dist/`。使用者開啟 App、回到前景、恢復連線或手動檢查時會取得不快取的 `version.json`，看到更新內容後可選擇立即更新或稍後提醒。
 
@@ -94,8 +94,8 @@ src/pwa/          版本檢查、更新提示與 service worker client
 pwa/              service worker 來源模板
 scripts/          release assets 產生器
 public/           manifest、icon 與產生後的 release assets
-docs/             原型行為與架構文件
+docs/             原型行為、架構決策與審查交接文件
 supabase/         CLI config、migrations 與本機 seed
 ```
 
-後續工作與資料架構見 [tasks.md](tasks.md)。
+跨模組設計見 [架構決策](docs/architecture-decisions.md)，後續工作與資料架構見 [tasks.md](tasks.md)。
