@@ -1,0 +1,20 @@
+{
+  "name": "日蹦 DayPop",
+  "short_name": "DayPop",
+  "description": "日曆、待辦與陪伴小幫手",
+  "lang": "zh-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f3ff",
+  "theme_color": "#7356d8",
+  "icons": [
+    {
+      "src": "./icons/daypop.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

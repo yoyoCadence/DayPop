@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DayPop">
+  <rect width="512" height="512" rx="112" fill="#f4ce3f"/>
+  <rect x="72" y="96" width="368" height="344" rx="58" fill="#fffaf0" stroke="#171717" stroke-width="24"/>
+  <path d="M72 186h368M164 66v76M348 66v76" fill="none" stroke="#171717" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="188" cy="286" r="42" fill="#ff6b66" stroke="#171717" stroke-width="18"/>
+  <path d="M274 254h104M274 318h80" fill="none" stroke="#171717" stroke-width="22" stroke-linecap="round"/>
+</svg>
