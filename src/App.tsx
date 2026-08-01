@@ -1,4 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { AuthDialog } from './auth/AuthDialog';
+import { useAuth } from './auth/authContext';
 import { buildMonthGrid, formatDayTitle, formatMonthTitle, toDateKey } from './domain/date';
 import { useDayPopData } from './hooks/useDayPopData';
 import { UpdateDialog } from './pwa/UpdateDialog';
@@ -13,7 +15,10 @@ export default function App() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventTime, setEventTime] = useState('09:00');
   const [todoTitle, setTodoTitle] = useState('');
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authActionError, setAuthActionError] = useState<string | null>(null);
   const { data, addEvent, addTodo, toggleTodo } = useDayPopData();
+  const auth = useAuth();
   const updater = useAppUpdate();
 
   const days = useMemo(
@@ -58,6 +63,15 @@ export default function App() {
     setTodoTitle('');
   }
 
+  async function signOut() {
+    setAuthActionError(null);
+    try {
+      await auth.signOut();
+    } catch (error) {
+      setAuthActionError(error instanceof Error ? error.message : '登出失敗，請稍後再試。');
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -65,10 +79,34 @@ export default function App() {
           <div className="eyebrow">DAILY CALENDAR COMPANION</div>
           <h1>日蹦 <span>DayPop</span></h1>
         </div>
-        <button className="version-button" type="button" onClick={() => void updater.checkForUpdate()}>
-          {updater.checking ? '檢查中…' : `v${updater.currentVersion}`}
-        </button>
+        <div className="topbar-actions">
+          <button className="version-button" type="button" onClick={() => void updater.checkForUpdate()}>
+            {updater.checking ? '檢查中…' : `v${updater.currentVersion}`}
+          </button>
+          <button className="account-button" type="button" onClick={() => setAuthOpen(true)}>
+            {auth.initializing ? '帳號載入中' : auth.user?.email ?? '遊客模式'}
+          </button>
+        </div>
       </header>
+
+      <section className={`storage-scope-banner${auth.user ? ' authenticated' : ''}`} aria-live="polite">
+        <div>
+          <strong>{auth.user ? '帳號已登入' : '目前是遊客模式'}</strong>
+          <p>
+            {auth.configurationError
+              ? `Supabase 尚未就緒：${auth.configurationError} 日曆仍安全保存在這台裝置。`
+              : auth.user
+                ? `${auth.user.email ?? '這個帳號'} 已完成登入；目前日曆仍保存在這台裝置，帳號資料保存會在下一階段接上。`
+                : '行程、待辦與設定只保存在這台裝置。登入不會刪除或自動上傳這些資料。'}
+          </p>
+          {authActionError && <p className="auth-action-error">{authActionError}</p>}
+        </div>
+        {auth.user ? (
+          <button className="button secondary" type="button" onClick={() => void signOut()}>登出</button>
+        ) : (
+          <button className="button primary" type="button" onClick={() => setAuthOpen(true)} disabled={Boolean(auth.configurationError)}>登入／註冊</button>
+        )}
+      </section>
 
       <section className="calendar-card" aria-label="月曆">
         <div className="calendar-toolbar">
@@ -180,6 +218,8 @@ export default function App() {
       </section>
 
       <footer>使用者資料與 App cache 分開保存・更新不會清除行程與設定</footer>
+
+      <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
 
       {updater.availableRelease && (
         <UpdateDialog

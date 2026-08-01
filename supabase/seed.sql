@@ -1,0 +1,2 @@
+-- DayPop intentionally starts without shared seed rows.
+-- Add deterministic local-only fixtures here when schema integration tests are introduced.

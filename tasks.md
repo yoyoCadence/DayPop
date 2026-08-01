@@ -12,6 +12,7 @@
 - 保存策略：所有 UI 經 repository/service 存取資料。遊客模式使用版本化本機儲存；登入模式將 Supabase 作為 durable store，保留本機快取以加快同裝置啟動與處理短暫網路失敗。MVP 不做 Realtime、多裝置 merge、完整離線寫入佇列或複雜 conflict UI。
 - AI 助理與完整離線編輯已確認延後。分享日曆、真正寄送邀請、可靠背景推播與進階跨裝置同步也不進 MVP。正式部署平台可在建立 production pipeline 前定案。
 - 寵物定位：是 App 介面內的寵物小幫手，用於顯示待辦、提醒與陪伴回饋，不是 Windows／macOS 桌面上獨立運行的桌寵程式。MVP 可保留現有 rule-based 基本互動；新素材、成長系統與 AI 對話延後。
+- 家庭群組：先列入私人日曆 MVP 之後的產品階段。預設群組名稱為「家庭」，模型支援多位成員；成員各自選擇是否將日曆分享給群組，共享日曆預設允許成員共同維護，但新增行程／待辦時可將單一事項設為私人。邀請方式暫定為 Email 邀請連結，實作前再確認成員上限、管理員規則與是否需要唯讀權限。
 
 ## Proposed data architecture
 
@@ -28,15 +29,20 @@
 | `event_attachments` | 檔名、MIME、size、Storage object path 與 event 關聯；實作時採私人 bucket、owner RLS 與 signed URL。 |
 | `todos` | `owner_id`、標題、`due_date`、priority、`completed_at`、`parent_id`（子項）、`sort_order`；取代 `when=today/tomorrow` 與獨立 `subs` array。 |
 | `stickers` | `owner_id`、日期、glyph／asset key、排序；保留未來由 emoji 遷移到素材 ID 的空間。 |
+| `family_groups` | 家庭群組、可改名稱；建立者為 owner，預設名稱由應用層填入「家庭」。 |
+| `family_memberships` | `group_id`、`user_id`、role 與加入時間；accepted membership 才能參與分享授權。 |
+| `family_invitations` | 邀請者、受邀 Email、不可逆 token hash、到期／接受／撤銷狀態；接受流程使用受控 RPC／server-side 邊界，避免前端直接偽造 membership。 |
+| `calendar_group_shares` | 日曆擁有者明確開啟的群組分享與 `view`／`edit` 權限；關閉分享不刪除原始日曆資料。 |
 
-RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WITH CHECK` 均核對 `(select auth.uid()) = owner_id`；child table 需同時保證 parent ownership。前端只使用 project URL 與 publishable key。若未來加入共享日曆，再以獨立 `calendar_members` 與角色政策擴充，不先把私人 MVP 複雜化。
+RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 與 `WITH CHECK` 均核對 `(select auth.uid()) = owner_id`；child table 需同時保證 parent ownership。前端只使用 project URL 與 publishable key。家庭分享實作後，讀寫政策才額外接受「有效 membership + 日曆分享權限 + 事項非 private」，不能只靠前端隱藏私人事項。
 
 ## Next
 
 - [ ] **DP-012 — 擴充共用 domain model：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation，明確處理全天／時區／重複事件 invariant；先補測試再接 UI。
-- [ ] **DP-020 — 建立可重建的 Supabase workflow：** 固定官方 Supabase CLI 為 project dev dependency，加入 `supabase/config.toml`、migrations、seed 與 type generation script。若要在本機執行完整 stack，需先安裝官方 Docker Desktop 或其他可信容器 runtime。
 
 ## In Progress
+
+- [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
 ## Backlog
 
@@ -48,9 +54,6 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 
 ### Supabase / auth / data
 
-- [ ] **DP-021 — 實作核心 schema migrations：** 依上方資料架構建立 tables、constraints、foreign keys、indexes、updated-at handling 與明確的 delete／cascade policy；以 migration SQL 和 seed 驗證，不只在 Dashboard 點選。
-- [ ] **DP-022 — 實作並測試 RLS：** 為每張 exposed table 建立 authenticated owner policies，使用至少兩個測試帳號驗證 read/write 隔離、child ownership、Storage policy 與未登入拒絕。
-- [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 實作 Email＋密碼註冊／登入、Google OAuth、忘記／重設密碼、登出、session restore、OAuth／recovery callback、Auth state change、錯誤與 loading 狀態；保留「遊客模式（只存本機）」並清楚顯示資料保存範圍。
 - [ ] **DP-024 — 建立 account bootstrap：** 新帳號建立 profile、preferences 與預設 calendars；流程需 idempotent，重試不得產生重複預設資料。
 - [ ] **DP-025 — 建立 legacy localStorage migration：** 偵測 `calpet.v2`、schema validate、顯示預覽與筆數、一次性匯入 Supabase、處理重複 ID／失敗回復；成功前不刪除原資料，並禁止匯入舊 AI key。
 - [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
@@ -71,7 +74,10 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
 - [ ] **DP-042 — 可靠背景提醒／推播：** 另行設計 Web Push subscription、排程、撤銷、時區與權限；目前頁面開啟時的 Notification timer 不視為可靠提醒。
 - [ ] **DP-043 — 安全 AI 助理：** 若產品決定保留 AI，改由 Supabase Edge Function／受控 server endpoint 管理 provider secret、rate limit、輸入最小化與稽核；禁止在 browser localStorage 保存 secret。
-- [ ] **DP-044 — 共享日曆與真實邀請：** 新增 `calendar_members`、角色、邀請生命週期與更細 RLS；在 owner-only 模型完整驗證前不開始。
+- [ ] **DP-044 — 定案家庭群組產品規則：** 確認群組人數上限、owner／admin／member 能力、退出與解散規則、Email 邀請與重送／撤銷／過期流程，以及共享日曆是 `edit` 預設或可切唯讀；在 owner-only 模型完整驗證前不開始。
+- [ ] **DP-047 — 建立家庭群組與安全邀請：** 以 migrations 建立 `family_groups`、`family_memberships`、`family_invitations`，提供建立／更名／邀請／接受／拒絕／退出的受控 service 或 RPC；預設名稱為「家庭」，token 僅保存 hash 並設有效期限。
+- [ ] **DP-048 — 建立日曆分享與單項私人覆寫：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。
+- [ ] **DP-049 — 驗證家庭 RLS 與共同維護：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。
 - [ ] **DP-045 — 外部日曆整合：** Google／Apple／Outlook 雙向同步另列專案，先維持經驗證的 ICS 匯入匯出。
 - [ ] **DP-046 — 進階跨裝置同步：** 產品真的出現多裝置需求後，再設計 Realtime、`updated_at` 衝突規則、tombstone、pending queue、可觀測 sync status 與多 client 測試。
 
@@ -80,10 +86,15 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
-- MCP／Codex plugin 不是 runtime 必需品。若之後需要 agent 操作 Supabase，可評估官方／OpenAI curated 的 Supabase plugin；它不能取代 repo 內 migration、RLS 測試或 CLI workflow，也不應為了初始化而強制安裝。
+- MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 套用／驗證 migration 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-029 — 修正 PR #2 Supabase／Auth review：** hardening migration 對不存在的 Dashboard helper 加入防護，新增 calendar child `NO ACTION` migration、帳號刪除 cascade pgTAP 與 linked CLI scripts；本機 URL 支援安全 loopback，Auth dialog 會清空敏感狀態、保留密碼更新完成畫面，並區分 Google provider 未啟用與設定查詢失敗。migration 已套用遠端，5 項 rollback DB 測試與 security advisor 驗證完成。
+- [x] **DP-022 — 實作並測試核心 RLS：** 9 張 exposed table 均啟用 RLS 與 owner CRUD policies，`anon` 無 table privileges；已用兩個暫存帳號在 rollback transaction 驗證 owner read/write、跨帳號隔離與 child ownership，Supabase security advisor 為 0 警告。Storage bucket／policy 仍由 DP-028 處理。
+- [x] **DP-021 — 實作核心 schema migrations：** 已建立並套用 core schema、owner RLS 與 advisor hardening migrations，涵蓋 9 張表、constraints、複合 foreign keys、query／FK indexes 與 updated-at triggers；遠端 migration history 與 repo 檔名一致。
+- [x] **DP-020 — 建立可重建的 Supabase workflow：** 已固定官方 Supabase CLI、建立 `supabase/config.toml`／`seed.sql`，並加入本機 stack、reset 與 TypeScript type generation scripts；完整本機 reset 仍需可信容器 runtime。
 
 - [x] **DP-000 — 初始化規劃盤點：** 完整閱讀現有專案檔案與生成 runtime，記錄現況、風險、建議資料架構、套件／工具需求，更新 `AGENTS.md` Section 0 與本任務板；未修改產品程式碼、未安裝套件或 MCP。
 - [x] **DP-002 — 確認 MVP 產品／架構方向：** 定案 mobile-first PWA、React + TypeScript + Vite、Supabase、Orbit 式 Email＋密碼／Google／遊客登入體驗；完整離線、AI 與進階跨裝置同步延後，寵物定位為 App 內建小幫手。

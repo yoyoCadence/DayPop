@@ -101,6 +101,28 @@ input:focus-visible {
   font-size: 0.75rem;
 }
 
+.topbar-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.account-button {
+  max-width: min(48vw, 240px);
+  overflow: hidden;
+  border: 1px solid rgba(115, 86, 216, 0.24);
+  border-radius: 999px;
+  background: var(--primary-soft);
+  padding: 8px 12px;
+  color: var(--primary-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -154,12 +176,48 @@ input:focus-visible {
 .calendar-card,
 .day-panel,
 .pet-helper,
-.release-panel {
+.release-panel,
+.storage-scope-banner {
   border: 1px solid rgba(232, 224, 243, 0.92);
   border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
+}
+
+.storage-scope-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-color: rgba(255, 141, 161, 0.3);
+  background: rgba(255, 250, 252, 0.94);
+  padding: 14px 16px;
+}
+
+.storage-scope-banner.authenticated {
+  border-color: rgba(56, 143, 112, 0.28);
+  background: rgba(244, 252, 248, 0.94);
+}
+
+.storage-scope-banner strong,
+.storage-scope-banner p {
+  margin: 0;
+}
+
+.storage-scope-banner strong {
+  font-size: 0.88rem;
+}
+
+.storage-scope-banner p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.storage-scope-banner .auth-action-error {
+  color: #ad4560;
 }
 
 .calendar-card {
@@ -916,6 +974,152 @@ footer {
   margin-top: 18px;
 }
 
+.auth-backdrop {
+  z-index: 20;
+}
+
+.auth-dialog {
+  position: relative;
+  width: min(100%, 440px);
+  max-height: min(720px, calc(100dvh - 30px));
+  overflow-y: auto;
+  border-radius: 24px;
+  background: white;
+  padding: 24px;
+  box-shadow: 0 28px 80px rgba(47, 36, 75, 0.3);
+}
+
+.auth-dialog h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.auth-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-radius: 13px;
+  background: var(--surface-soft);
+  padding: 4px;
+}
+
+.auth-tabs button {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 9px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.auth-tabs button.active {
+  background: white;
+  box-shadow: 0 4px 12px rgba(74, 53, 116, 0.1);
+  color: var(--primary-dark);
+}
+
+.google-auth-button,
+.auth-guest-button {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 11px 13px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.google-auth-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.auth-provider-note {
+  margin: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  padding: 9px 10px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.auth-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  padding: 11px 12px;
+  color: var(--ink);
+}
+
+.auth-submit {
+  width: 100%;
+}
+
+.auth-feedback {
+  margin: 0;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-feedback.error {
+  background: #fff0f3;
+  color: #ad4560;
+}
+
+.auth-feedback.success {
+  background: #edf8f3;
+  color: #32775f;
+}
+
+.auth-text-button {
+  display: block;
+  margin: 12px auto 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.auth-guest-button {
+  margin-top: 14px;
+  color: var(--muted);
+}
+
 @media (max-width: 430px) {
   .app-shell {
     padding-right: 11px;
@@ -970,13 +1174,14 @@ footer {
   }
 
   .topbar,
+  .storage-scope-banner,
   footer {
     grid-column: 1 / -1;
   }
 
   .calendar-card {
     position: sticky;
-    grid-row: 2 / span 3;
+    grid-row: 3 / span 3;
     top: 24px;
     padding: 24px;
   }

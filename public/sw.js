@@ -1,5 +1,5 @@
 /* Generated into public/sw.js by scripts/generate-release-assets.mjs. */
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.2.0';
 const CACHE_PREFIX = 'daypop-app-shell-';
 const CACHE_NAME = `${CACHE_PREFIX}${APP_VERSION}`;
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icons/daypop.svg'];

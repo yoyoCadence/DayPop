@@ -1,12 +1,13 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "releasedAt": "2026-08-01",
-  "title": "DayPop PWA 基礎版",
+  "title": "帳號與資料安全基礎",
   "changes": [
-    "建立 mobile-first PWA 與可維護的 React、TypeScript 架構",
-    "加入版本檢查、更新內容公告與使用者選擇更新流程",
-    "建立不會被 App 更新清除的版本化使用者資料儲存層",
-    "提供最小可用的月曆、行程、待辦與 App 內寵物小幫手"
+    "加入 Email 註冊、登入、忘記密碼、重設密碼與 session restore",
+    "保留遊客模式並清楚標示資料目前保存在哪裡",
+    "建立 Supabase 核心資料表、owner-only RLS 與型別安全 client 基礎",
+    "改善密碼更新回饋、登入欄位清理與本機 Supabase 開發相容性",
+    "Google 登入會在 Supabase provider 完成設定後自動顯示"
   ],
   "dataSchemaVersion": 1
 }
