@@ -1,6 +1,6 @@
 # 日蹦 DayPop — Tasks
 
-本檔案是專案初始化階段的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全原型行為 → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。未經確認前不開始實作。
+本檔案是專案的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全原型行為 → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。目前已進入實作階段。
 
 ## Planning baseline（已確認）
 
@@ -33,8 +33,8 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 
 ## Next
 
-- [ ] **DP-001 — 驗證並連結 GitHub 基線：** 確認 `yoyoCadence/DayPop` 的可存取權、default branch 與遠端內容；採 clone／safe merge 方式保留本資料夾現有檔案，完成後 `git status` 可正確顯示分支與 `origin`。不得用會覆寫本機原型的初始化方式。
-- [ ] **DP-003 — 建立原型行為保全清單：** 對現有四個主畫面、事件 CRUD／重複事件、待辦／子項、貼圖、匯入匯出、主題、通知與桌寵建立可勾選 smoke matrix；記錄現有假功能（同步、附件、天氣、內建 AI）與文字錯誤，作為漸進重構驗收基線。
+- [ ] **DP-012 — 擴充共用 domain model：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation，明確處理全天／時區／重複事件 invariant；先補測試再接 UI。
+- [ ] **DP-020 — 建立可重建的 Supabase workflow：** 固定官方 Supabase CLI 為 project dev dependency，加入 `supabase/config.toml`、migrations、seed 與 type generation script。若要在本機執行完整 stack，需先安裝官方 Docker Desktop 或其他可信容器 runtime。
 
 ## In Progress
 
@@ -42,16 +42,12 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-010 — 建立前端骨架：** 在新 feature branch 建立 React + TypeScript + Vite 專案、環境變數範例、lint／typecheck／unit／build scripts；保留原型快照作為 reference，不修改 generated runtime。
-- [ ] **DP-011 — 建立可安裝 PWA 基線：** 加入 manifest、icons、mobile viewport、App shell cache 與 update UX；確認不快取敏感 API response。MVP 只承諾基本啟動快取，不承諾完整離線編輯。
-- [ ] **DP-012 — 拆分共用 domain types：** 定義 Calendar、Event、Recurrence、Todo、Sticker、Preferences 的 TypeScript schema 與 runtime validation，明確處理全天／時區／重複事件 invariant。
 - [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。
 - [ ] **DP-014 — 漸進搬移核心 UI：** 依「日曆 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定」逐段搬移，每段通過 smoke matrix 才移除對應舊邏輯。
 - [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。
 
 ### Supabase / auth / data
 
-- [ ] **DP-020 — 建立可重建的 Supabase local workflow：** 將官方 Supabase CLI 固定為 project dev dependency，`supabase init` 後提交 config、migrations、seed 與 type generation script；`db reset` 必須可重現。若採完整 local stack，先由使用者安裝官方 Docker Desktop 或同等可信容器 runtime。
 - [ ] **DP-021 — 實作核心 schema migrations：** 依上方資料架構建立 tables、constraints、foreign keys、indexes、updated-at handling 與明確的 delete／cascade policy；以 migration SQL 和 seed 驗證，不只在 Dashboard 點選。
 - [ ] **DP-022 — 實作並測試 RLS：** 為每張 exposed table 建立 authenticated owner policies，使用至少兩個測試帳號驗證 read/write 隔離、child ownership、Storage policy 與未登入拒絕。
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 實作 Email＋密碼註冊／登入、Google OAuth、忘記／重設密碼、登出、session restore、OAuth／recovery callback、Auth state change、錯誤與 loading 狀態；保留「遊客模式（只存本機）」並清楚顯示資料保存範圍。
@@ -79,10 +75,10 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 - [ ] **DP-045 — 外部日曆整合：** Google／Apple／Outlook 雙向同步另列專案，先維持經驗證的 ICS 匯入匯出。
 - [ ] **DP-046 — 進階跨裝置同步：** 產品真的出現多裝置需求後，再設計 Realtime、`updated_at` 衝突規則、tombstone、pending queue、可觀測 sync status 與多 client 測試。
 
-## Package / tooling review（尚未安裝）
+## Package / tooling review
 
-- 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI 已安裝；目前沒有 package manifest。
-- 後續必要候選：官方 `react`／`react-dom`、`typescript`、`vite`、`@supabase/supabase-js`；Supabase CLI 建議依官方文件固定為 project dev dependency。日期／重複事件、validation、PWA 與測試套件在 DP-010 建立前端骨架時選定並鎖版。
+- 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
+- `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
 - MCP／Codex plugin 不是 runtime 必需品。若之後需要 agent 操作 Supabase，可評估官方／OpenAI curated 的 Supabase plugin；它不能取代 repo 內 migration、RLS 測試或 CLI workflow，也不應為了初始化而強制安裝。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
@@ -91,6 +87,10 @@ RLS 基線：所有 user data table 只開放 `authenticated`，`USING` 與 `WIT
 
 - [x] **DP-000 — 初始化規劃盤點：** 完整閱讀現有專案檔案與生成 runtime，記錄現況、風險、建議資料架構、套件／工具需求，更新 `AGENTS.md` Section 0 與本任務板；未修改產品程式碼、未安裝套件或 MCP。
 - [x] **DP-002 — 確認 MVP 產品／架構方向：** 定案 mobile-first PWA、React + TypeScript + Vite、Supabase、Orbit 式 Email＋密碼／Google／遊客登入體驗；完整離線、AI 與進階跨裝置同步延後，寵物定位為 App 內建小幫手。
+- [x] **DP-001 — 驗證並連結 GitHub 基線：** 確認 `yoyoCadence/DayPop` 是空的 public repo；在不覆寫原型的前提下建立本地 `main` 基線提交、設定 `origin`，並建立 `feat/pwa-foundation` 分支。尚未 push。
+- [x] **DP-003 — 建立原型行為保全清單：** 新增 `docs/prototype-behavior-baseline.md`，記錄核心畫面、資料能力、假功能、搬移驗收與資料安全 smoke checklist。
+- [x] **DP-010 — 建立前端骨架：** 建立 React + TypeScript + Vite App、`.env.example`、版本化本機 repository、lint／typecheck／unit／build scripts 與 mobile-first 核心月曆最小流程；保留且未修改 generated runtime。
+- [x] **DP-011 — 建立可安裝 PWA 與可控更新基線：** 加入 manifest、icon、mobile viewport、App shell cache、`version.json`、release notes 與更新提示。新版只在使用者選擇後 activate；service worker 不快取 API response、不清除 localStorage／IndexedDB，只管理 DayPop App cache。完整離線編輯仍延後。
 
 ## Official references
 

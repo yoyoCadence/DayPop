@@ -1,0 +1,15 @@
+{
+  "releases": [
+    {
+      "version": "0.1.0",
+      "releasedAt": "2026-08-01",
+      "title": "DayPop PWA 基礎版",
+      "changes": [
+        "建立 mobile-first PWA 與可維護的 React、TypeScript 架構",
+        "加入版本檢查、更新內容公告與使用者選擇更新流程",
+        "建立不會被 App 更新清除的版本化使用者資料儲存層",
+        "提供最小可用的月曆、行程、待辦與 App 內寵物小幫手"
+      ]
+    }
+  ]
+}
