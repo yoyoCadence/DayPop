@@ -26,4 +26,25 @@ describe('readSupabasePublicConfig', () => {
       }),
     ).toThrow('HTTPS');
   });
+
+  it.each(['http://localhost:54321', 'http://127.0.0.1:54321', 'http://[::1]:54321'])(
+    'allows the local Supabase loopback URL %s',
+    (url) => {
+      expect(
+        readSupabasePublicConfig({
+          VITE_SUPABASE_URL: url,
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example',
+        }).url,
+      ).toBe(url);
+    },
+  );
+
+  it('rejects non-HTTP protocols even when the hostname is localhost', () => {
+    expect(() =>
+      readSupabasePublicConfig({
+        VITE_SUPABASE_URL: 'ftp://localhost:54321',
+        VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example',
+      }),
+    ).toThrow('HTTPS');
+  });
 });

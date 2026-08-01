@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(4);
+select plan(5);
 
 insert into auth.users (id)
 values
@@ -23,6 +23,39 @@ values (
   '00000000-0000-4000-8000-0000000000a1',
   'A calendar',
   true
+);
+
+insert into public.events (
+  owner_id,
+  calendar_id,
+  title,
+  is_all_day,
+  start_date,
+  end_date
+)
+values (
+  '00000000-0000-4000-8000-0000000000a1',
+  '10000000-0000-4000-8000-0000000000a1',
+  'cascade event',
+  true,
+  date '2026-08-01',
+  date '2026-08-01'
+);
+
+insert into public.todos (owner_id, calendar_id, title, due_date)
+values (
+  '00000000-0000-4000-8000-0000000000a1',
+  '10000000-0000-4000-8000-0000000000a1',
+  'cascade todo',
+  date '2026-08-01'
+);
+
+insert into public.stickers (owner_id, calendar_id, sticker_date, glyph)
+values (
+  '00000000-0000-4000-8000-0000000000a1',
+  '10000000-0000-4000-8000-0000000000a1',
+  date '2026-08-01',
+  '🌱'
 );
 
 select is(
@@ -89,6 +122,27 @@ end;
 $$;
 select pass('second user cannot update or attach child rows to another owner calendar');
 
-select * from finish();
 reset role;
+
+delete from auth.users
+where id = '00000000-0000-4000-8000-0000000000a1';
+
+select is(
+  (
+    select sum(row_count)::integer
+    from (
+      select count(*) as row_count from public.calendars where owner_id = '00000000-0000-4000-8000-0000000000a1'
+      union all
+      select count(*) from public.events where owner_id = '00000000-0000-4000-8000-0000000000a1'
+      union all
+      select count(*) from public.todos where owner_id = '00000000-0000-4000-8000-0000000000a1'
+      union all
+      select count(*) from public.stickers where owner_id = '00000000-0000-4000-8000-0000000000a1'
+    ) as owned_rows
+  ),
+  0,
+  'deleting an auth user cascades through calendars and owned child rows'
+);
+
+select * from finish();
 rollback;

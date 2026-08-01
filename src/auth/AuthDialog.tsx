@@ -14,6 +14,7 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [recoveryComplete, setRecoveryComplete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; text: string } | null>(
     null,
@@ -32,7 +33,8 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
         if (newPassword.length < 8) throw new Error('新密碼至少需要 8 個字元。');
         await auth.updatePassword(newPassword);
         setFeedback({ kind: 'success', text: '密碼已更新。' });
-        onClose();
+        setNewPassword('');
+        setRecoveryComplete(true);
       } else if (mode === 'forgot') {
         await auth.requestPasswordReset(email.trim());
         setFeedback({ kind: 'success', text: '重設信已寄出，請查看收件匣與垃圾郵件匣。' });
@@ -42,11 +44,11 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
         if (result.needsEmailConfirmation) {
           setFeedback({ kind: 'success', text: '註冊完成，請先到 Email 點擊驗證連結。' });
         } else {
-          onClose();
+          finishClose(false);
         }
       } else {
         await auth.signIn(email.trim(), password);
-        onClose();
+        finishClose(false);
       }
     } catch (error) {
       setFeedback({ kind: 'error', text: humanizeAuthError(error) });
@@ -62,13 +64,25 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
       await auth.signInWithGoogle();
     } catch (error) {
       setFeedback({ kind: 'error', text: humanizeAuthError(error) });
+    } finally {
       setBusy(false);
     }
   }
 
   function close() {
     if (busy) return;
-    if (recoveryMode) auth.dismissPasswordRecovery();
+    finishClose(recoveryMode);
+  }
+
+  function finishClose(dismissRecovery: boolean) {
+    if (dismissRecovery) auth.dismissPasswordRecovery();
+    setMode('signin');
+    setEmail('');
+    setPassword('');
+    setNewPassword('');
+    setRecoveryComplete(false);
+    setFeedback(null);
+    setBusy(false);
     onClose();
   }
 
@@ -85,11 +99,19 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
         <button className="auth-close" type="button" aria-label="關閉登入視窗" onClick={close}>×</button>
         <div className="dialog-eyebrow">DAYPOP ACCOUNT</div>
         <h2 id="auth-title">
-          {recoveryMode ? '設定新密碼' : mode === 'forgot' ? '忘記密碼' : '保存你的日蹦資料'}
+          {recoveryMode
+            ? recoveryComplete
+              ? '密碼已更新'
+              : '設定新密碼'
+            : mode === 'forgot'
+              ? '忘記密碼'
+              : '保存你的日蹦資料'}
         </h2>
         <p className="dialog-intro">
           {recoveryMode
-            ? '輸入新的登入密碼。'
+            ? recoveryComplete
+              ? '你可以關閉這個視窗，繼續使用日蹦。'
+              : '輸入新的登入密碼。'
             : mode === 'forgot'
               ? '輸入帳號 Email，我們會寄送安全的重設連結。'
               : '登入不會刪除或自動上傳目前的遊客資料；資料匯入會在後續由你確認。'}
@@ -102,16 +124,22 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
           </div>
         )}
 
-        {!recoveryMode && mode !== 'forgot' && auth.googleEnabled && (
+        {!recoveryMode && mode !== 'forgot' && auth.googleAuthStatus === 'enabled' && (
           <button className="google-auth-button" type="button" onClick={() => void continueWithGoogle()} disabled={busy}>
             使用 Google 帳號繼續
           </button>
         )}
-        {!recoveryMode && mode !== 'forgot' && !auth.googleEnabled && (
+        {!recoveryMode && mode !== 'forgot' && auth.googleAuthStatus === 'checking' && (
+          <p className="auth-provider-note">正在確認 Google 登入設定…</p>
+        )}
+        {!recoveryMode && mode !== 'forgot' && auth.googleAuthStatus === 'disabled' && (
           <p className="auth-provider-note">Google 登入尚未在此 Supabase 專案啟用，目前請使用 Email。</p>
         )}
+        {!recoveryMode && mode !== 'forgot' && auth.googleAuthStatus === 'unavailable' && (
+          <p className="auth-provider-note">目前無法確認 Google 登入狀態，你仍可使用 Email。</p>
+        )}
 
-        <form className="auth-form" onSubmit={submit}>
+        {!recoveryComplete && <form className="auth-form" onSubmit={submit}>
           {!recoveryMode && (
             <label>
               Email
@@ -136,7 +164,13 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
           <button className="button primary auth-submit" type="submit" disabled={busy}>
             {busy ? '處理中…' : recoveryMode ? '更新密碼' : mode === 'forgot' ? '寄送重設信' : mode === 'signup' ? '建立帳號' : '登入'}
           </button>
-        </form>
+        </form>}
+
+        {recoveryComplete && (
+          <button className="button primary auth-submit" type="button" onClick={close}>
+            完成
+          </button>
+        )}
 
         {!recoveryMode && mode === 'signin' && (
           <button className="auth-text-button" type="button" onClick={() => selectMode('forgot')}>忘記密碼？</button>

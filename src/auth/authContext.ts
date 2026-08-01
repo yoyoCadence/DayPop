@@ -5,12 +5,14 @@ export interface SignUpResult {
   needsEmailConfirmation: boolean;
 }
 
+export type GoogleAuthStatus = 'checking' | 'enabled' | 'disabled' | 'unavailable';
+
 export interface AuthContextValue {
   session: Session | null;
   user: User | null;
   initializing: boolean;
   isPasswordRecovery: boolean;
-  googleEnabled: boolean;
+  googleAuthStatus: GoogleAuthStatus;
   configurationError: string | null;
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string): Promise<SignUpResult>;

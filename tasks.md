@@ -91,6 +91,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-029 — 修正 PR #2 Supabase／Auth review：** hardening migration 對不存在的 Dashboard helper 加入防護，新增 calendar child `NO ACTION` migration、帳號刪除 cascade pgTAP 與 linked CLI scripts；本機 URL 支援安全 loopback，Auth dialog 會清空敏感狀態、保留密碼更新完成畫面，並區分 Google provider 未啟用與設定查詢失敗。migration 已套用遠端，5 項 rollback DB 測試與 security advisor 驗證完成。
 - [x] **DP-022 — 實作並測試核心 RLS：** 9 張 exposed table 均啟用 RLS 與 owner CRUD policies，`anon` 無 table privileges；已用兩個暫存帳號在 rollback transaction 驗證 owner read/write、跨帳號隔離與 child ownership，Supabase security advisor 為 0 警告。Storage bucket／policy 仍由 DP-028 處理。
 - [x] **DP-021 — 實作核心 schema migrations：** 已建立並套用 core schema、owner RLS 與 advisor hardening migrations，涵蓋 9 張表、constraints、複合 foreign keys、query／FK indexes 與 updated-at triggers；遠端 migration history 與 repo 檔名一致。
 - [x] **DP-020 — 建立可重建的 Supabase workflow：** 已固定官方 Supabase CLI、建立 `supabase/config.toml`／`seed.sql`，並加入本機 stack、reset 與 TypeScript type generation scripts；完整本機 reset 仍需可信容器 runtime。

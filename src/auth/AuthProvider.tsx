@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../lib/database.types';
 import { getAuthRedirectUrl, getSupabaseClient, isGoogleAuthEnabled } from '../lib/supabase';
-import { AuthContext, type AuthContextValue, type SignUpResult } from './authContext';
+import {
+  AuthContext,
+  type AuthContextValue,
+  type GoogleAuthStatus,
+  type SignUpResult,
+} from './authContext';
 
 interface ClientResolution {
   client: SupabaseClient<Database> | null;
@@ -23,7 +28,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(Boolean(resolution.client));
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleAuthStatus, setGoogleAuthStatus] = useState<GoogleAuthStatus>(
+    resolution.client ? 'checking' : 'unavailable',
+  );
 
   useEffect(() => {
     const client = resolution.client;
@@ -38,19 +45,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setInitializing(false);
     });
 
-    void client.auth.getSession().then(({ data: sessionData, error }) => {
-      if (!active) return;
-      if (error) console.warn('DayPop session restore failed:', error.message);
-      setSession(sessionData.session);
-      setInitializing(false);
-    });
-
     void isGoogleAuthEnabled()
       .then((enabled) => {
-        if (active) setGoogleEnabled(enabled);
+        if (active) setGoogleAuthStatus(enabled ? 'enabled' : 'disabled');
       })
       .catch(() => {
-        if (active) setGoogleEnabled(false);
+        if (active) setGoogleAuthStatus('unavailable');
       });
 
     return () => {
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user: session?.user ?? null,
       initializing,
       isPasswordRecovery,
-      googleEnabled,
+      googleAuthStatus,
       configurationError: resolution.error,
       async signIn(email, password) {
         const { error } = await requireClient().auth.signInWithPassword({ email, password });
@@ -101,7 +101,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       async updatePassword(password) {
         const { error } = await requireClient().auth.updateUser({ password });
         if (error) throw error;
-        setIsPasswordRecovery(false);
       },
       dismissPasswordRecovery() {
         setIsPasswordRecovery(false);
@@ -112,7 +111,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setSession(null);
       },
     };
-  }, [googleEnabled, initializing, isPasswordRecovery, resolution.client, resolution.error, session]);
+  }, [
+    googleAuthStatus,
+    initializing,
+    isPasswordRecovery,
+    resolution.client,
+    resolution.error,
+    session,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

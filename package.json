@@ -18,7 +18,9 @@
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
     "supabase:test": "supabase test db --local supabase/tests/database",
-    "supabase:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts"
+    "supabase:test:linked": "supabase test db --linked supabase/tests/database",
+    "supabase:types": "supabase gen types --lang typescript --local --schema public > src/lib/database.types.ts",
+    "supabase:types:linked": "supabase gen types --lang typescript --linked --schema public > src/lib/database.types.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",

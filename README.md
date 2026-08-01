@@ -48,11 +48,19 @@ npm run preview
 ```bash
 npm run supabase:start
 npm run supabase:reset
+npm run supabase:test
 npm run supabase:types
 npm run supabase:stop
 ```
 
-本機 Supabase stack／reset 需要 Docker-compatible runtime。正式 schema 以 `supabase/migrations/` 為準；目前 migrations 已套用到 DayPop 遠端專案並通過 RLS 隔離測試與 Supabase security advisor。
+本機 Supabase stack／reset／database test 需要 Docker-compatible runtime。若要對已連結的 preview／staging 專案驗證，可先執行 `npx supabase link --project-ref <project-ref>`，再使用：
+
+```bash
+npm run supabase:test:linked
+npm run supabase:types:linked
+```
+
+正式 schema 以 `supabase/migrations/` 為準；目前 migrations 已套用到 DayPop 遠端專案，並通過 owner RLS、帳號刪除 cascade 測試與 Supabase security advisor。不要對有正式資料的專案執行 remote reset。
 
 Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase Dashboard 啟用，因此 UI 會提示先使用 Email；完成 Google OAuth client 與 redirect allowlist 設定後，App 會從公開 Auth settings 偵測並顯示 Google 登入按鈕。
 

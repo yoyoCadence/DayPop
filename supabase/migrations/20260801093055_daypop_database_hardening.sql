@@ -1,7 +1,13 @@
 -- The Dashboard's automatic-RLS option installs this event-trigger helper in
 -- public. It must continue serving the event trigger, but it must not be exposed
 -- as a callable Data API RPC.
-revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke execute on function public.rls_auto_enable() from public, anon, authenticated';
+  end if;
+end
+$$;
 
 -- Composite foreign keys require indexes in the same leading-column order.
 -- Owner-first indexes from the core migration remain useful for owner-scoped

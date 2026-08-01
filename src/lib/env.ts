@@ -32,8 +32,13 @@ export function readSupabasePublicConfig(env: PublicEnvironment): SupabasePublic
     throw new SupabaseConfigurationError('VITE_SUPABASE_URL 不是有效網址。');
   }
 
-  if (parsedUrl.protocol !== 'https:' && parsedUrl.hostname !== 'localhost') {
-    throw new SupabaseConfigurationError('Supabase URL 必須使用 HTTPS。');
+  const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+  const isSecureRemote = parsedUrl.protocol === 'https:';
+  const isLocalDevelopment =
+    parsedUrl.protocol === 'http:' && loopbackHosts.has(parsedUrl.hostname);
+
+  if (!isSecureRemote && !isLocalDevelopment) {
+    throw new SupabaseConfigurationError('Supabase URL 必須使用 HTTPS；本機開發可使用 HTTP loopback。');
   }
 
   return { url: parsedUrl.toString().replace(/\/$/, ''), publishableKey };
