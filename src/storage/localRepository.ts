@@ -1,5 +1,31 @@
 import type { CalendarEvent, DayPopUserData, TodoItem } from '../domain/types';
-import { readUserData, writeUserData, type StorageLike } from './versionedStorage';
+import {
+  readUserData,
+  writeUserData,
+  type StorageLike,
+  type StorageReadResult,
+} from './versionedStorage';
+
+/**
+ * Fired on `window` when a write was refused mid-session, so the app can swap
+ * in the recovery screen without every screen having to plumb the error up.
+ */
+export const LOCAL_DATA_BLOCKED_EVENT = 'daypop:local-data-blocked';
+
+/**
+ * Thrown when the stored data could not be read and a write was attempted
+ * anyway. The UI must resolve the problem (export, then reset) before editing.
+ */
+export class LocalDataBlockedError extends Error {
+  constructor(readonly result: Exclude<StorageReadResult, { status: 'ready' }>) {
+    super(
+      result.status === 'future'
+        ? '這份 DayPop 資料來自較新的版本，請先更新 App。'
+        : '這台裝置上的 DayPop 資料無法讀取，請先備份再決定如何處理。',
+    );
+    this.name = 'LocalDataBlockedError';
+  }
+}
 
 export interface NewEventInput {
   title: string;
@@ -24,8 +50,15 @@ export class LocalDayPopRepository {
     this.#storage = storage;
   }
 
+  /** Raw read result, so callers can show recovery instead of editing. */
+  read(): StorageReadResult {
+    return readUserData(this.#storage);
+  }
+
   load(): DayPopUserData {
-    return structuredClone(readUserData(this.#storage).data);
+    const result = readUserData(this.#storage);
+    if (result.status !== 'ready') throw new LocalDataBlockedError(result);
+    return structuredClone(result.envelope.data);
   }
 
   addEvent(input: NewEventInput): DayPopUserData {
@@ -91,9 +124,14 @@ export class LocalDayPopRepository {
   }
 
   #mutate(update: (data: DayPopUserData) => DayPopUserData): DayPopUserData {
+    // Re-read before every write. If the stored bytes became unreadable — or
+    // were written by a newer schema — refuse rather than overwrite them with
+    // whatever this session happens to hold.
     const current = readUserData(this.#storage);
-    const next = update(structuredClone(current.data));
-    writeUserData(next, current.revision, this.#storage);
+    if (current.status !== 'ready') throw new LocalDataBlockedError(current);
+
+    const next = update(structuredClone(current.envelope.data));
+    writeUserData(next, current.envelope.revision, this.#storage);
     return structuredClone(next);
   }
 }

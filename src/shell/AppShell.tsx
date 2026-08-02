@@ -20,6 +20,12 @@ export interface AppShellProps {
    * and inside the viewport so they never break out of the preview frame.
    */
   dialogs?: ReactNode;
+  /**
+   * Hides the bottom tabs. Used by blocking states such as local-data recovery,
+   * where navigating away is not possible — an inert tab bar would be an
+   * affordance that does nothing.
+   */
+  hideTabBar?: boolean;
 }
 
 /**
@@ -31,7 +37,14 @@ export interface AppShellProps {
  * App content inside the real safe area. See
  * `docs/claude-design-source-of-truth.md` § 手機 App 與桌面預覽外框.
  */
-export function AppShell({ tab, onTabChange, children, overlay, dialogs }: AppShellProps) {
+export function AppShell({
+  tab,
+  onTabChange,
+  children,
+  overlay,
+  dialogs,
+  hideTabBar = false,
+}: AppShellProps) {
   const { cssVariables, theme, mode } = useTheme();
   // Published so sheets and dialogs can portal into the viewport instead of
   // escaping the preview frame — see `ViewportLayer`.
@@ -47,7 +60,7 @@ export function AppShell({ tab, onTabChange, children, overlay, dialogs }: AppSh
           <AppViewportContext.Provider value={viewport}>
             <div className="dp-appbody">{children}</div>
             {overlay ? <div className="dp-overlay">{overlay}</div> : null}
-            <TabBar active={tab} onSelect={onTabChange} />
+            {!hideTabBar && <TabBar active={tab} onSelect={onTabChange} />}
             {dialogs}
           </AppViewportContext.Provider>
         </div>

@@ -1,11 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptyUserData } from '../domain/types';
+import { LocalDataBlockedError, LocalDayPopRepository } from './localRepository';
 import {
+  backupRawUserData,
   LEGACY_USER_DATA_STORAGE_KEY,
+  listUserDataBackups,
   readUserData,
+  resetUserData,
   USER_DATA_STORAGE_KEY,
   writeUserData,
 } from './versionedStorage';
+
+function readyEnvelope() {
+  const result = readUserData();
+  if (result.status !== 'ready') throw new Error(`expected ready, got ${result.status}`);
+  return result.envelope;
+}
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe('versioned user storage', () => {
   it('stores user data in a schema-versioned envelope', () => {
@@ -16,7 +30,12 @@ describe('versioned user storage', () => {
 
     expect(stored.schemaVersion).toBe(1);
     expect(stored.revision).toBe(1);
-    expect(readUserData().data.preferences.petName).toBe('小蹦');
+    expect(readyEnvelope().data.preferences.petName).toBe('小蹦');
+  });
+
+  it('treats a missing key as a fresh start, not damage', () => {
+    const result = readUserData();
+    expect(result.status).toBe('ready');
   });
 
   it('never removes unrelated or legacy localStorage data', () => {
@@ -29,13 +48,122 @@ describe('versioned user storage', () => {
     expect(localStorage.getItem(LEGACY_USER_DATA_STORAGE_KEY)).toContain('legacy');
     expect(localStorage.getItem('another.app.setting')).toBe('keep-me');
   });
+});
 
-  it('returns safe defaults without overwriting malformed data', () => {
+describe('unreadable data', () => {
+  it('reports unparseable JSON as corrupt instead of returning empty data', () => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, 'not-json');
 
     const result = readUserData();
 
-    expect(result.data.events).toEqual([]);
+    expect(result.status).toBe('corrupt');
+    expect(result).toMatchObject({ raw: 'not-json' });
+  });
+
+  it('reports a valid JSON object with the wrong shape as corrupt', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, '{"hello":"world"}');
+    expect(readUserData().status).toBe('corrupt');
+  });
+
+  it('reports a newer schema as future rather than swallowing the error', () => {
+    localStorage.setItem(
+      USER_DATA_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 99,
+        revision: 3,
+        updatedAt: new Date().toISOString(),
+        data: createEmptyUserData(),
+      }),
+    );
+
+    const result = readUserData();
+
+    expect(result.status).toBe('future');
+    expect(result).toMatchObject({ schemaVersion: 99 });
+  });
+});
+
+describe('backup and reset', () => {
+  it('refuses to reset before a backup exists', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'not-json');
+    expect(() => resetUserData()).toThrow(/尚未備份/);
     expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('not-json');
+  });
+
+  it('resets once the original bytes have been copied aside', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'not-json');
+
+    const key = backupRawUserData('not-json');
+    resetUserData();
+
+    expect(localStorage.getItem(key)).toBe('not-json');
+    expect(readUserData().status).toBe('ready');
+  });
+
+  it('keeps every backup instead of clobbering an earlier one', () => {
+    const first = backupRawUserData('first', localStorage, new Date(2026, 0, 1));
+    const second = backupRawUserData('second', localStorage, new Date(2026, 0, 2));
+
+    expect(first).not.toBe(second);
+    expect(localStorage.getItem(first)).toBe('first');
+    expect(localStorage.getItem(second)).toBe('second');
+    expect(listUserDataBackups()).toEqual([first, second]);
+  });
+});
+
+describe('repository write barrier', () => {
+  it('refuses to overwrite malformed data on the next mutation', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'not-json');
+    const repository = new LocalDayPopRepository();
+
+    expect(() =>
+      repository.addEvent({
+        title: '會議',
+        date: '2026-08-06',
+        allDay: false,
+        start: '09:00',
+        end: '10:00',
+      }),
+    ).toThrow(LocalDataBlockedError);
+
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('not-json');
+  });
+
+  it('refuses to overwrite data written by a newer schema', () => {
+    const raw = JSON.stringify({
+      schemaVersion: 99,
+      revision: 3,
+      updatedAt: new Date().toISOString(),
+      data: createEmptyUserData(),
+    });
+    localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
+    const repository = new LocalDayPopRepository();
+
+    expect(() => repository.addTodo({ title: '買菜', date: '2026-08-06' })).toThrow(
+      LocalDataBlockedError,
+    );
+    expect(() => repository.load()).toThrow(LocalDataBlockedError);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
+  });
+
+  it('blocks even when the session started with readable data', () => {
+    const repository = new LocalDayPopRepository();
+    repository.addTodo({ title: '第一筆', date: '2026-08-06' });
+
+    // Something outside this tab damaged the key mid-session.
+    localStorage.setItem(USER_DATA_STORAGE_KEY, '{{{');
+
+    expect(() => repository.addTodo({ title: '第二筆', date: '2026-08-06' })).toThrow(
+      LocalDataBlockedError,
+    );
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('{{{');
+  });
+
+  it('still writes normally when the data is readable', () => {
+    const repository = new LocalDayPopRepository();
+    const next = repository.addTodo({ title: '買菜', date: '2026-08-06' });
+
+    expect(next.todos).toHaveLength(1);
+    expect(readyEnvelope().data.todos[0]?.title).toBe('買菜');
   });
 });
