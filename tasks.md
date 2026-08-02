@@ -7,7 +7,7 @@
 - 產品型態：mobile-first 響應式 Web App／PWA，可加到手機主畫面並在桌面瀏覽器使用；MVP 不做原生 iOS／Android／桌面 App。
 - MVP 使用情境：個人帳號、私人日曆與待辦；同一帳號主要在同一裝置使用。重點是架構正確、可執行且核心功能穩定，跨裝置即時一致性不是目前優先項目。
 - 前端：React + TypeScript + Vite。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 是完整設計來源；必須實際渲染並逐頁搬移，不可只依單張截圖或現有 React scaffold 自行重設計，也不直接在 generated `support.js` 上擴充產品。
-- 視覺目標：先以使用者確認的「漫畫」主題作為第一個還原與驗收基準，同時保留原稿六套主題架構。原稿 `data-props` 的像素預設與 seed 的漫畫預設互相衝突，新使用者的正式預設主題待確認。手機／安裝 PWA 只顯示 App 內容；桌面可使用原稿手機展示框。詳細規則見 `docs/claude-design-source-of-truth.md`。
+- 視覺目標：2026-08-02 已定案新使用者預設為「漫畫」淺色主題，並作為第一個還原與驗收基準；原稿其他五套主題仍完整保留。`.dc.html` 的 `data-props.defaultTheme` 已由像素校正為漫畫，與 seed 一致；既有保存偏好不得被覆寫。手機／安裝 PWA 只顯示 App 內容；桌面可使用原稿手機展示框。詳細規則與 handoff 見 `docs/claude-design-source-of-truth.md`。
 - 後端：Supabase Auth + Postgres + Storage；所有 schema 與 RLS 由可提交的 migration 管理，不以 Dashboard 手動狀態作為唯一來源。
 - 登入方式：參考 Orbit，支援 Email＋密碼註冊／登入、Google OAuth、忘記／重設密碼、session restore，以及遊客模式（資料只存本機）。成功登入後由 Auth state change 統一啟動帳號資料流程。
 - 保存策略：所有 UI 經 repository/service 存取資料。遊客模式使用版本化本機儲存；登入模式將 Supabase 作為 durable store，保留本機快取以加快同裝置啟動與處理短暫網路失敗。MVP 不做 Realtime、多裝置 merge、完整離線寫入佇列或複雜 conflict UI。
@@ -40,7 +40,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-050 — 建立 canonical App shell 與主題基礎：** 從 `.dc.html` 抽出六套 theme tokens、以漫畫主題作第一個 parity target，建立 App viewport、桌面手機展示框、safe-area、頂部狀態區與底部四分頁；手機不渲染假裝置外框。新使用者預設主題確認前維持可設定常數，不改資料模型或覆寫既有偏好。
+- [ ] **DP-050 — 建立 canonical App shell 與主題基礎：** 從 `.dc.html` 抽出六套 theme tokens，將漫畫淺色設為新使用者預設與第一個 parity target，建立 App viewport、桌面手機展示框、safe-area、頂部狀態區與底部四分頁；手機不渲染假裝置外框。此任務不改資料模型，不得覆寫既有主題偏好，也不得刪除其他五套主題。
 - [ ] **DP-051 — 搬移漫畫主題核心日曆 shell：** 依原稿完成 header、月／週／列表 segmented control、快速新增列、月格、FAB 與 App 內浮動寵物位置；以空資料與示範資料在 390px、桌面展示框逐項比對。
 - [ ] **DP-016 — 阻斷本機資料毀損覆寫：** 將 storage read result 改為可區分 ready／corrupt／future-version；repository 遇到後兩者拒絕 mutation，UI 提供原始內容匯出與明確復原／重設流程。補 malformed mutate 與 future schema 回歸測試，原 key 在備份／匯出成功前不得取代。
 - [ ] **DP-017 — 處理 browser storage 不可用：** guarded access `window.localStorage`，處理 accessor／read／`QuotaExceededError`；只能在持續警告且使用者知情時退回本次分頁的 in-memory mode，並測試重新載入不會被誤稱已保存。
@@ -101,7 +101,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
-- [x] **DP-005 — 重新盤點 Claude Design 完整設計來源：** 實際渲染 `.dc.html` 並核對日曆月／週／列表、搜尋、綜覽、設定與事件 sheet；確認 generated `support.js` 的 runtime 角色與 Pet Asset Spec 的補充範圍，建立 `docs/claude-design-source-of-truth.md`，並明定現有 React scaffold 不是視覺驗收基準。
+- [x] **DP-005 — 重新盤點 Claude Design 完整設計來源：** 實際渲染 `.dc.html` 並核對日曆月／週／列表、搜尋、綜覽、設定與事件 sheet；確認 generated `support.js` 的 runtime 角色與 Pet Asset Spec 的補充範圍，建立 `docs/claude-design-source-of-truth.md`，明定現有 React scaffold 不是視覺驗收基準，並依 2026-08-02 決策將原稿全新啟動預設校正為漫畫淺色。
 - [x] **DP-004 — 整合 2026-08-01 review handoff：** 重新以探針確認兩條本機資料遺失路徑，建立 `docs/architecture-decisions.md`，重排 storage／CI／domain 優先度，更新 App 內浮動寵物規範，並把 PWA、偏好、日期與 DB invariant 建議拆成可執行任務；LICENSE 保留給專案擁有者決定。
 - [x] **DP-029 — 修正 PR #2 Supabase／Auth review：** hardening migration 對不存在的 Dashboard helper 加入防護，新增 calendar child `NO ACTION` migration、帳號刪除 cascade pgTAP 與 linked CLI scripts；本機 URL 支援安全 loopback，Auth dialog 會清空敏感狀態、保留密碼更新完成畫面，並區分 Google provider 未啟用與設定查詢失敗。migration 已套用遠端，5 項 rollback DB 測試與 security advisor 驗證完成。
 - [x] **DP-022 — 實作並測試核心 RLS：** 9 張 exposed table 均啟用 RLS 與 owner CRUD policies，`anon` 無 table privileges；已用兩個暫存帳號在 rollback transaction 驗證 owner read/write、跨帳號隔離與 child ownership，Supabase security advisor 為 0 警告。Storage bucket／policy 仍由 DP-028 處理。
