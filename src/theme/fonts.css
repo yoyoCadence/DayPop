@@ -1,0 +1,57 @@
+/*
+ * Self-hosted display fonts for the six canonical themes (DP-052).
+ *
+ * The Claude Design source loads these from Google Fonts. DayPop bundles them
+ * from the npm registry instead (Fontsource, all OFL-1.1), so the production
+ * build makes no runtime third-party font request and stays CSP-friendly.
+ *
+ * Weights mirror the原檔 `<link>` exactly — Bangers 400, DotGothic16 400,
+ * IBM Plex Sans 400/500/600/700, Newsreader 400/500/600/700, Space Grotesk
+ * 400/500/600/700, Pixelify Sans 400/600/700.
+ *
+ * Each import is the per-weight entry point, not a named subset. Only the
+ * per-weight files carry `unicode-range`, which is what makes the browser
+ * download a slice only when a matching character is on screen — the same
+ * behaviour as the original Google Fonts stylesheet. The named subset files
+ * (`latin-400.css` and friends) omit `unicode-range`, so two of them for the
+ * same weight would silently override each other.
+ *
+ * NOT self-hosted: Noto Sans TC and Noto Serif TC. Their complete Fontsource
+ * subset sets are 65 MB and 78 MB, which is not a reasonable payload for a
+ * mobile PWA. Chinese text falls back to the platform font (PingFang TC /
+ * Microsoft JhengHei / Noto Sans CJK). The difference is recorded in
+ * `docs/claude-design-source-of-truth.md`.
+ */
+
+/* 漫畫 — headings */
+@import "@fontsource/bangers/400.css";
+
+/* 暖陽 — headings */
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/500.css";
+@import "@fontsource/newsreader/600.css";
+@import "@fontsource/newsreader/700.css";
+
+/* 商務 — headings and body */
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+
+/* 鮮活 — headings and body */
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+
+/* 像素 — headings and body. DotGothic16 leads the stack and is what gives CJK
+   text the dot-matrix look; characters it does not cover fall through to
+   Pixelify Sans and then the platform font.
+   Exception to the per-weight rule above: DotGothic16's per-weight entry point
+   slices CJK into ~170 `@font-face` rules and costs 106 KB of render-blocking
+   CSS on its own. The single `japanese` subset carries Latin, kana and kanji in
+   one 396 KB woff2, which only downloads while the 像素 theme is active. */
+@import "@fontsource/dotgothic16/japanese-400.css";
+@import "@fontsource/pixelify-sans/400.css";
+@import "@fontsource/pixelify-sans/600.css";
+@import "@fontsource/pixelify-sans/700.css";
