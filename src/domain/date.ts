@@ -16,6 +16,25 @@ export function addDays(date: Date, amount: number): Date {
   return next;
 }
 
+/** Midnight of the same local day. Mirrors `norm()` in the原檔. */
+export function startOfDay(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+/** First day of the week containing `date`. Mirrors `wkStartOf()` in the原檔. */
+export function startOfWeek(date: Date, weekStartsOn: 0 | 1): Date {
+  const next = startOfDay(date);
+  next.setDate(next.getDate() - ((next.getDay() - weekStartsOn + 7) % 7));
+  return next;
+}
+
+/** Whole weeks from `from` to `to`; negative when `to` is earlier. */
+export function weeksBetween(from: Date, to: Date): number {
+  return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / (7 * 86_400_000));
+}
+
 export function buildMonthGrid(cursor: Date, weekStartsOn: 0 | 1): Date[] {
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const offset = (first.getDay() - weekStartsOn + 7) % 7;

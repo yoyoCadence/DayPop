@@ -40,7 +40,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-051 — 搬移漫畫主題核心日曆 shell：** 依原稿完成 header、月／週／列表 segmented control、快速新增列、月格、FAB 與 App 內浮動寵物位置；以空資料與示範資料在 390px、桌面展示框逐項比對。
 - [ ] **DP-016 — 阻斷本機資料毀損覆寫：** 將 storage read result 改為可區分 ready／corrupt／future-version；repository 遇到後兩者拒絕 mutation，UI 提供原始內容匯出與明確復原／重設流程。補 malformed mutate 與 future schema 回歸測試，原 key 在備份／匯出成功前不得取代。
 - [ ] **DP-017 — 處理 browser storage 不可用：** guarded access `window.localStorage`，處理 accessor／read／`QuotaExceededError`；只能在持續警告且使用者知情時退回本次分頁的 in-memory mode，並測試重新載入不會被誤稱已保存。
 - [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
@@ -55,7 +54,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ### Foundation / maintainable frontend
 
 - [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。
-- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。
+- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。同時收掉 DP-051 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、FAB sheet 補齊原稿欄位、待辦移回寵物對話泡泡（DP-040）、點月格改開日詳情 sheet，並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。主題顯示字體已由 DP-052 先行處理，本任務保留 unpkg React 移除、CSP 政策與整體資源盤點；若日後決定連中文字體也自託管，需先解決 subset 與體積問題。
 - [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest（目前仍是舊的紫色骨架色）；把保存的偏好與六套 theme id 接進 DP-050 的 `ThemeProvider`，既有保存值一律優先於預設；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
 
@@ -101,6 +100,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-051 — 搬移漫畫主題核心日曆 shell：** 依原稿完成 header（今日日期列、`--font-head` 期間標題、今天、搜尋）、‹ › 與月／週／列表 segmented control、快速新增列、連續捲動的月格、FAB 與 App 內浮動寵物位置。農曆／節日與快速新增自然語言解析自原檔逐行移植成 `src/domain/lunar.ts`、`src/domain/quickAdd.ts` 並補 20 個單元測試。`AppShell` 新增 viewport portal，讓 sheet／dialog 待在展示框內並蓋過 tab bar。週／列表保留原位並明講尚未搬移；點月格目前只選取該日。DP-010 的日曆工程骨架已刪除。以 Playwright 與原始 `.dc.html` 並排比對：header 量得完全相同的 384 × 180.59、月格捲動區 486.41、FAB 與寵物位置逐像素一致，390px／1280px 無水平溢出，console 0 error。過渡措施與 DP-014 的收尾清單記於 `docs/claude-design-source-of-truth.md`。
 - [x] **DP-052 — 自託管六套主題的顯示字體：** Bangers、Newsreader、IBM Plex Sans、Space Grotesk、Pixelify Sans 與 DotGothic16 皆由 npm 官方 registry 的 Fontsource 套件（OFL-1.1）取得並由 Vite 打包成同源資源，字重與原檔 Google Fonts `<link>` 一致，production build 無任何執行期第三方字型請求。匯入帶 `unicode-range` 的字重進入點以維持切片下載；DotGothic16 例外改用單一 japanese subset，避免 106 KB render-blocking CSS。`.dp-preview` 還原 `font-synthesis: weight style`，讓只有 400 字重的 Bangers／DotGothic16 不會比原稿細。Noto Sans TC／Noto Serif TC 因完整 subset 達 65／78 MB 不自託管，中文沿用系統字體並記錄差異。已以 `document.fonts.check()` 驗證八組字體字元覆蓋，並確認網路側只有同源 woff2。
 - [x] **DP-050 — 建立 canonical App shell 與主題基礎：** `src/theme/themes.ts` 逐值鏡像原檔 `THEMES`，六套主題的淺／深色 palette 與形狀 token 全數保留，`themeCssVariables()` 依原檔 `phoneStyle()` 輸出相同的 25 個 CSS 變數；漫畫淺色為新使用者預設。`src/shell` 提供 App viewport、safe-area、頂部狀態區、底部四分頁與只在瀏覽器分頁＋寬視窗出現的 404 × 824 展示框，手機與安裝後 PWA 不渲染假外框／假瀏海／假狀態列。搜尋與綜覽保留分頁位置並明確標示未搬移，既有日曆、登入與版本更新能力照舊可用。ThemeProvider 只存在記憶體，未改資料模型也未寫入任何偏好。已用 Playwright 對照原始 `.dc.html` 驗證桌面與 390px 版面、深色與像素主題及 console 0 error。
 - [x] **DP-005 — 重新盤點 Claude Design 完整設計來源：** 實際渲染 `.dc.html` 並核對日曆月／週／列表、搜尋、綜覽、設定與事件 sheet；確認 generated `support.js` 的 runtime 角色與 Pet Asset Spec 的補充範圍，建立 `docs/claude-design-source-of-truth.md`，明定現有 React scaffold 不是視覺驗收基準，並依 2026-08-02 決策將原稿全新啟動預設校正為漫畫淺色。
