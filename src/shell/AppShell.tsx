@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTheme } from '../theme/themeContext';
 import { TabBar } from './TabBar';
 import type { ShellTab } from './tabs';
+import { AppViewportContext } from './viewportContext';
 import './shell.css';
 
 export interface AppShellProps {
@@ -32,18 +33,23 @@ export interface AppShellProps {
  */
 export function AppShell({ tab, onTabChange, children, overlay, dialogs }: AppShellProps) {
   const { cssVariables, theme, mode } = useTheme();
+  // Published so sheets and dialogs can portal into the viewport instead of
+  // escaping the preview frame — see `ViewportLayer`.
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className="dp-preview" style={cssVariables}>
       <div className="dp-phone">
-        <div className="dp-viewport">
+        <div className="dp-viewport" ref={setViewport}>
           <div className="dp-texture" aria-hidden="true" />
           <div className="dp-notch" aria-hidden="true" />
           <PreviewStatusBar />
-          <div className="dp-appbody">{children}</div>
-          {overlay ? <div className="dp-overlay">{overlay}</div> : null}
-          <TabBar active={tab} onSelect={onTabChange} />
-          {dialogs}
+          <AppViewportContext.Provider value={viewport}>
+            <div className="dp-appbody">{children}</div>
+            {overlay ? <div className="dp-overlay">{overlay}</div> : null}
+            <TabBar active={tab} onSelect={onTabChange} />
+            {dialogs}
+          </AppViewportContext.Provider>
         </div>
       </div>
       <div className="dp-preview-caption">

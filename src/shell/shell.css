@@ -277,15 +277,14 @@ body {
 
 /* ---------- transitional bridge for the not-yet-migrated scaffold ----------
  *
- * The DP-010 scaffold screens still use the purple prototype tokens declared in
- * `styles.css :root`. Those names now collide with the canonical theme tokens
- * that live on an ancestor, and the desktop two-column media query in
- * `styles.css` keys off viewport width, which is wrong inside a 384px phone
- * frame. Both are neutralised here rather than by editing `styles.css`, and the
- * whole block is deleted together with the scaffold in DP-051 / DP-014.
+ * The calendar scaffold is gone (DP-051). What is left are the account and
+ * version blocks on the 設定 screen plus the auth/update dialogs, which still
+ * use the purple prototype tokens declared in `styles.css :root`. Those names
+ * collide with the canonical theme tokens on an ancestor, so they are pinned
+ * back here rather than by editing `styles.css`. Deleted with the last of the
+ * scaffold in DP-014.
  */
 
-.dp-screen .app-shell,
 .dp-screen .dp-legacy-scaffold,
 .dp-viewport .dialog-backdrop {
   --ink: #2e2a3b;
@@ -305,26 +304,11 @@ body {
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.dp-screen .app-shell {
-  display: block;
-  width: 100%;
-  padding: 14px 14px 22px;
-}
-
 /* Preserved-but-not-yet-redesigned blocks embedded in a canonical screen. */
 .dp-screen .dp-legacy-scaffold {
   display: grid;
   gap: 12px;
   margin-bottom: 18px;
-}
-
-.dp-screen .calendar-card {
-  position: static;
-  padding: 18px 14px 14px;
-}
-
-.dp-screen .day-cell {
-  min-height: 53px;
 }
 
 /* Dialogs are rendered inside the App viewport, so keep their backdrop inside

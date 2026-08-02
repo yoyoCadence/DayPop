@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdate } from './pwa/useAppUpdate';
-import { CalendarScaffoldScreen } from './screens/CalendarScaffoldScreen';
+import { CalendarScreen } from './screens/calendar/CalendarScreen';
 import { PendingScreen } from './screens/PendingScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
@@ -37,7 +37,7 @@ export default function App() {
         </>
       }
     >
-      {tab === 'cal' && <CalendarScaffoldScreen />}
+      {tab === 'cal' && <CalendarScreen onGoSearch={() => setTab('search')} />}
       {tab === 'search' && (
         <PendingScreen
           title="搜尋"
