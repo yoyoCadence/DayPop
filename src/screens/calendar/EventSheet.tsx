@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { CalendarEvent } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../storage/localRepository';
@@ -55,13 +55,8 @@ function EventSheetForm({
   const [start, setStart] = useState(editing?.start ?? '09:00');
   const [end, setEnd] = useState(editing?.end ?? '10:00');
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  // Escape is handled by `CalendarScreen` so that, when this sheet is stacked on
+  // top of 日詳情, one keypress closes only the topmost sheet.
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

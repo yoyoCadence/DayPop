@@ -756,6 +756,251 @@
   font-weight: 800;
 }
 
+/* ---------- day detail sheet ----------
+   z-index 65 in the原檔: above the tab bar and the floating layers, below the
+   event sheet so the two can stack. */
+
+.cal-day-layer {
+  position: absolute;
+  z-index: 65;
+  display: flex;
+  align-items: flex-end;
+  inset: 0;
+}
+
+.cal-day-backdrop {
+  position: absolute;
+  border: 0;
+  background: rgba(0, 0, 0, 0.45);
+  inset: 0;
+}
+
+.cal-day-sheet {
+  position: relative;
+  width: 100%;
+  max-height: 88%;
+  overflow-y: auto;
+  border-top: var(--bd) solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface);
+  padding: 8px 16px 22px;
+  animation: cal-fadeup 0.26s ease;
+}
+
+@keyframes cal-fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-day-sheet {
+    animation: none;
+  }
+}
+
+.cal-day-grip {
+  width: 40px;
+  height: 4px;
+  margin: 4px auto 12px;
+  border-radius: 3px;
+  background: var(--faint);
+  opacity: 0.5;
+}
+
+.cal-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cal-day-title {
+  color: var(--fg);
+  font-family: var(--font-head);
+  font-size: 22px;
+  letter-spacing: var(--title-ls);
+}
+
+.cal-day-done {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cal-day-section {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cal-day-empty {
+  margin-bottom: 10px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.cal-day-event {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  margin-bottom: 6px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 10px 11px;
+  gap: 10px;
+  text-align: left;
+}
+
+.cal-day-bar {
+  width: 5px;
+  flex: none;
+  align-self: stretch;
+  border-radius: 3px;
+}
+
+.cal-day-time {
+  width: 82px;
+  flex: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cal-day-event-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-day-conflict {
+  flex: none;
+  border-radius: 6px;
+  background: #e4002b;
+  padding: 2px 6px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.cal-day-new {
+  width: 100%;
+  margin: 4px 0 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: none;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cal-day-todo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.cal-day-check {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cal-day-todo-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cal-day-overdue {
+  color: #e4002b;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cal-day-delete {
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cal-day-todo-add {
+  display: flex;
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.cal-day-todo-add input {
+  min-width: 0;
+  flex: 1;
+  border: var(--bd) solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
+  padding: 9px 11px;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.cal-day-todo-add button {
+  border: var(--bd) solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--accent);
+  padding: 0 14px;
+  color: var(--accent-fg);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cal-day-pending {
+  margin: 10px 0 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.cal-day-sheet button:focus-visible,
+.cal-day-sheet input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---------- bottom sheet ---------- */
 
 .cal-sheet-backdrop {

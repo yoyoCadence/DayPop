@@ -73,6 +73,13 @@ export class LocalDayPopRepository {
     return this.#mutate((data) => ({ ...data, todos: [...data.todos, todo] }));
   }
 
+  deleteTodo(id: string): DayPopUserData {
+    return this.#mutate((data) => ({
+      ...data,
+      todos: data.todos.filter((todo) => todo.id !== id),
+    }));
+  }
+
   toggleTodo(id: string): DayPopUserData {
     const now = new Date().toISOString();
     return this.#mutate((data) => ({

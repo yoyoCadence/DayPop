@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { useDayPopData } from '../../hooks/useDayPopData';
 import { AgendaView } from './AgendaView';
+import { DayDetailSheet } from './DayDetailSheet';
 import { EventSheet } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
 import { PetLayer } from './PetLayer';
@@ -34,7 +35,8 @@ const VIEW_OPTIONS: { view: CalendarView; label: string }[] = [
  * event editing sheets.
  */
 export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
-  const { data, addEvent, updateEvent, deleteEvent, addTodo, toggleTodo } = useDayPopData();
+  const { data, addEvent, updateEvent, deleteEvent, addTodo, toggleTodo, deleteTodo } =
+    useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
   const todayKey = toDateKey(new Date());
@@ -50,6 +52,7 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [dayDetailKey, setDayDetailKey] = useState<string | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
 
   const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
@@ -59,10 +62,34 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
     setSheetOpen(true);
   }, []);
 
+  // Tapping a month cell selects the day and opens 日詳情, as in the原檔.
+  const openDayDetail = useCallback((key: string) => {
+    setSelected(key);
+    setDayDetailKey(key);
+  }, []);
+
   function closeSheet() {
     setSheetOpen(false);
     setEditingId(null);
   }
+
+  // One Escape handler for both sheets, so a keypress closes only the topmost.
+  // The event sheet can be opened from inside 日詳情, and two independent window
+  // listeners would dismiss both at once.
+  useEffect(() => {
+    if (!sheetOpen && !dayDetailKey) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (sheetOpen) {
+        setSheetOpen(false);
+        setEditingId(null);
+      } else {
+        setDayDetailKey(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sheetOpen, dayDetailKey]);
 
   const weekStartsOn = data.preferences.weekStartsOn;
 
@@ -213,7 +240,7 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
             selectedDate={selected}
             todayKey={todayKey}
             flashToday={flashToday}
-            onSelectDate={setSelected}
+            onSelectDate={openDayDetail}
             onPeriodLabelChange={handlePeriodLabelChange}
           />
         )}
@@ -256,6 +283,18 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       </button>
+
+      <DayDetailSheet
+        dateKey={dayDetailKey}
+        events={data.events}
+        todos={data.todos}
+        onClose={() => setDayDetailKey(null)}
+        onOpenEvent={openEvent}
+        onNewEvent={() => setSheetOpen(true)}
+        onAddTodo={addTodo}
+        onToggleTodo={toggleTodo}
+        onDeleteTodo={deleteTodo}
+      />
 
       <EventSheet
         open={sheetOpen}
