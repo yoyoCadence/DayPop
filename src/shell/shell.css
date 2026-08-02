@@ -42,6 +42,12 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-body);
+  /* Several theme fonts ship a single weight (Bangers 400, DotGothic16 400)
+     while the markup asks for 700–900. The原檔 relies on the browser's default
+     synthetic bold; `styles.css` disables synthesis globally, which would render
+     those themes noticeably lighter than the source. Restore the default inside
+     the App viewport only. */
+  font-synthesis: weight style;
 }
 
 /* Mobile: the phone bezel is not a real element, only the viewport is. */

@@ -56,7 +56,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。
-- [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。原稿主題需要 Bangers、DotGothic16、IBM Plex Sans、Newsreader、Noto Sans TC、Noto Serif TC、Space Grotesk 與 Pixelify Sans；DP-050 已保留正確 font stack 但未加入遠端字型連結，字體自託管完成前漫畫標題不會是 Bangers、像素主題不會是點陣字。
+- [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。主題顯示字體已由 DP-052 先行處理，本任務保留 unpkg React 移除、CSP 政策與整體資源盤點；若日後決定連中文字體也自託管，需先解決 subset 與體積問題。
 - [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest（目前仍是舊的紫色骨架色）；把保存的偏好與六套 theme id 接進 DP-050 的 `ThemeProvider`，既有保存值一律優先於預設；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
 
 ### Supabase / auth / data
@@ -93,6 +93,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## Package / tooling review
 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
+- 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 套用／驗證 migration 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
@@ -100,6 +101,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-052 — 自託管六套主題的顯示字體：** Bangers、Newsreader、IBM Plex Sans、Space Grotesk、Pixelify Sans 與 DotGothic16 皆由 npm 官方 registry 的 Fontsource 套件（OFL-1.1）取得並由 Vite 打包成同源資源，字重與原檔 Google Fonts `<link>` 一致，production build 無任何執行期第三方字型請求。匯入帶 `unicode-range` 的字重進入點以維持切片下載；DotGothic16 例外改用單一 japanese subset，避免 106 KB render-blocking CSS。`.dp-preview` 還原 `font-synthesis: weight style`，讓只有 400 字重的 Bangers／DotGothic16 不會比原稿細。Noto Sans TC／Noto Serif TC 因完整 subset 達 65／78 MB 不自託管，中文沿用系統字體並記錄差異。已以 `document.fonts.check()` 驗證八組字體字元覆蓋，並確認網路側只有同源 woff2。
 - [x] **DP-050 — 建立 canonical App shell 與主題基礎：** `src/theme/themes.ts` 逐值鏡像原檔 `THEMES`，六套主題的淺／深色 palette 與形狀 token 全數保留，`themeCssVariables()` 依原檔 `phoneStyle()` 輸出相同的 25 個 CSS 變數；漫畫淺色為新使用者預設。`src/shell` 提供 App viewport、safe-area、頂部狀態區、底部四分頁與只在瀏覽器分頁＋寬視窗出現的 404 × 824 展示框，手機與安裝後 PWA 不渲染假外框／假瀏海／假狀態列。搜尋與綜覽保留分頁位置並明確標示未搬移，既有日曆、登入與版本更新能力照舊可用。ThemeProvider 只存在記憶體，未改資料模型也未寫入任何偏好。已用 Playwright 對照原始 `.dc.html` 驗證桌面與 390px 版面、深色與像素主題及 console 0 error。
 - [x] **DP-005 — 重新盤點 Claude Design 完整設計來源：** 實際渲染 `.dc.html` 並核對日曆月／週／列表、搜尋、綜覽、設定與事件 sheet；確認 generated `support.js` 的 runtime 角色與 Pet Asset Spec 的補充範圍，建立 `docs/claude-design-source-of-truth.md`，明定現有 React scaffold 不是視覺驗收基準，並依 2026-08-02 決策將原稿全新啟動預設校正為漫畫淺色。
 - [x] **DP-004 — 整合 2026-08-01 review handoff：** 重新以探針確認兩條本機資料遺失路徑，建立 `docs/architecture-decisions.md`，重排 storage／CI／domain 優先度，更新 App 內浮動寵物規範，並把 PWA、偏好、日期與 DB invariant 建議拆成可執行任務；LICENSE 保留給專案擁有者決定。

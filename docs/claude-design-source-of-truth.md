@@ -89,6 +89,30 @@
 
 ### 已知落差（不在 DP-050 範圍）
 
-- **字體**：原檔用 Google Fonts 載入 Bangers、DotGothic16、IBM Plex Sans、Newsreader、Noto Sans TC、Noto Serif TC、Space Grotesk、Pixelify Sans。DP-015 要移除非必要遠端字型依賴並建立 CSP 相容 build，因此這裡只保留正確的 font stack，沒有加入執行期遠端字型連結。在字體自託管完成前，漫畫主題的標題不會是 Bangers、像素主題不會是點陣字，這是目前唯一已知的主題視覺落差。
+- **字體**：DP-052 已自託管六套顯示字體，詳見下一節；中文仍使用系統字體。
 - **`theme-color` meta 與 manifest** 仍是舊的紫色骨架色，隨 DP-018 一起改成跟著主題走。
 - **尚未搬移畫面的樣式**：日曆分頁與設定分頁中的帳號／版本區塊仍是紫色工程骨架，`shell.css` 末段以獨立的 CSS 變數區塊把它們與 canonical token 隔離。該區塊與 `CalendarScaffoldScreen` 在 DP-051／DP-014 一起刪除。
+
+## DP-052 交接狀態：主題字體
+
+### 自託管範圍
+
+`src/theme/fonts.css` 是唯一的字體清單，由 `src/main.tsx` 在 `styles.css` 之前載入。六套顯示字體全部從 npm 官方 registry 的 Fontsource 套件取得（皆為 OFL-1.1），由 Vite 打包成同源 `assets/*.woff2`，production build 沒有任何執行期第三方字型請求，也不需要放寬 CSP。字重與原檔的 Google Fonts `<link>` 完全一致：Bangers 400、DotGothic16 400、IBM Plex Sans 400／500／600／700、Newsreader 400／500／600／700、Space Grotesk 400／500／600／700、Pixelify Sans 400／600／700。
+
+匯入的是**每個字重的進入點**（`400.css`）而不是具名 subset（`latin-400.css`）。只有前者帶 `unicode-range`，也就是原檔 Google Fonts stylesheet 的行為 — 畫面上出現對應字元時才下載該切片。具名 subset 檔沒有 `unicode-range`，同一字重匯入兩個會互相覆寫。
+
+唯一例外是 DotGothic16：它的字重進入點把 CJK 切成約 170 條 `@font-face`，單獨就是 106 KB 的 render-blocking CSS。改用單一 `japanese-400.css`，Latin、假名與漢字都在同一個 396 KB woff2，且只在使用像素主題時下載。
+
+### 中文字體的決定
+
+**Noto Sans TC 與 Noto Serif TC 不自託管。** 它們的完整 Fontsource subset 分別是 65 MB 與 78 MB，不是 mobile PWA 可接受的體積。中文改用平台系統字體（iOS／macOS 的 PingFang TC、Windows 的 Microsoft JhengHei、Android 的 Noto Sans CJK），因此中文字形會與原檔有平台相關的細微差異，這是刻意接受的取捨。像素主題不受影響，因為 DotGothic16 本身就涵蓋所需漢字。若日後要連中文一起自託管，必須先解決 subset 與體積問題，記於 DP-015。
+
+### font-synthesis
+
+`styles.css` 的 `:root` 設了 `font-synthesis: none`，但原檔沒有。Bangers 與 DotGothic16 只有 400 一個字重，而 markup 會要求 700–900，關閉合成會讓這兩套主題明顯比原稿細。`shell.css` 在 `.dp-preview` 上還原 `font-synthesis: weight style`，只影響 App viewport 內。
+
+### 已驗證
+
+以 `document.fonts.load()` 明確載入後再用 `document.fonts.check()` 確認字元覆蓋：Bangers 400、Pixelify Sans 400／700、DotGothic16 400（Latin 與「設定日曆綜覽搜尋」皆涵蓋）、Space Grotesk 500、IBM Plex Sans 600、Newsreader 700 全數通過。網路側只觀察到同源 `woff2` 請求與 Supabase auth settings，沒有 Google Fonts 或 unpkg。像素主題實際渲染確認中文也是點陣字。
+
+> 註：用文字寬度差異判斷是否套用字體對 CJK 無效 — 幾乎所有字體的漢字都是 1em 等寬。判斷覆蓋率請用 `document.fonts.check()`，並先 `await document.fonts.load()` 避免量測搶在下載之前。
