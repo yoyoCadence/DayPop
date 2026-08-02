@@ -1,12 +1,13 @@
 # 日蹦 DayPop — Tasks
 
-本檔案是專案的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全原型行為 → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。目前已進入實作階段。
+本檔案是專案的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全完整 Claude Design → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。目前已進入實作階段。
 
 ## Planning baseline（已確認）
 
 - 產品型態：mobile-first 響應式 Web App／PWA，可加到手機主畫面並在桌面瀏覽器使用；MVP 不做原生 iOS／Android／桌面 App。
 - MVP 使用情境：個人帳號、私人日曆與待辦；同一帳號主要在同一裝置使用。重點是架構正確、可執行且核心功能穩定，跨裝置即時一致性不是目前優先項目。
-- 前端：React + TypeScript + Vite，逐畫面從 `.dc.html` 搬移並保留視覺與行為基線，不直接在 generated `support.js` 上擴充產品。
+- 前端：React + TypeScript + Vite。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 是完整設計來源；必須實際渲染並逐頁搬移，不可只依單張截圖或現有 React scaffold 自行重設計，也不直接在 generated `support.js` 上擴充產品。
+- 視覺目標：先以使用者確認的「漫畫」主題作為第一個還原與驗收基準，同時保留原稿六套主題架構。原稿 `data-props` 的像素預設與 seed 的漫畫預設互相衝突，新使用者的正式預設主題待確認。手機／安裝 PWA 只顯示 App 內容；桌面可使用原稿手機展示框。詳細規則見 `docs/claude-design-source-of-truth.md`。
 - 後端：Supabase Auth + Postgres + Storage；所有 schema 與 RLS 由可提交的 migration 管理，不以 Dashboard 手動狀態作為唯一來源。
 - 登入方式：參考 Orbit，支援 Email＋密碼註冊／登入、Google OAuth、忘記／重設密碼、session restore，以及遊客模式（資料只存本機）。成功登入後由 Auth state change 統一啟動帳號資料流程。
 - 保存策略：所有 UI 經 repository/service 存取資料。遊客模式使用版本化本機儲存；登入模式將 Supabase 作為 durable store，保留本機快取以加快同裝置啟動與處理短暫網路失敗。MVP 不做 Realtime、多裝置 merge、完整離線寫入佇列或複雜 conflict UI。
@@ -39,6 +40,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-050 — 建立 canonical App shell 與主題基礎：** 從 `.dc.html` 抽出六套 theme tokens、以漫畫主題作第一個 parity target，建立 App viewport、桌面手機展示框、safe-area、頂部狀態區與底部四分頁；手機不渲染假裝置外框。新使用者預設主題確認前維持可設定常數，不改資料模型或覆寫既有偏好。
+- [ ] **DP-051 — 搬移漫畫主題核心日曆 shell：** 依原稿完成 header、月／週／列表 segmented control、快速新增列、月格、FAB 與 App 內浮動寵物位置；以空資料與示範資料在 390px、桌面展示框逐項比對。
 - [ ] **DP-016 — 阻斷本機資料毀損覆寫：** 將 storage read result 改為可區分 ready／corrupt／future-version；repository 遇到後兩者拒絕 mutation，UI 提供原始內容匯出與明確復原／重設流程。補 malformed mutate 與 future schema 回歸測試，原 key 在備份／匯出成功前不得取代。
 - [ ] **DP-017 — 處理 browser storage 不可用：** guarded access `window.localStorage`，處理 accessor／read／`QuotaExceededError`；只能在持續警告且使用者知情時退回本次分頁的 in-memory mode，並測試重新載入不會被誤稱已保存。
 - [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
@@ -53,7 +56,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ### Foundation / maintainable frontend
 
 - [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。
-- [ ] **DP-014 — 漸進搬移核心 UI：** 依「日曆 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定」逐段搬移，每段通過 smoke matrix 才移除對應舊邏輯。
+- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。
 - [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。
 - [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
 
@@ -98,6 +101,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-005 — 重新盤點 Claude Design 完整設計來源：** 實際渲染 `.dc.html` 並核對日曆月／週／列表、搜尋、綜覽、設定與事件 sheet；確認 generated `support.js` 的 runtime 角色與 Pet Asset Spec 的補充範圍，建立 `docs/claude-design-source-of-truth.md`，並明定現有 React scaffold 不是視覺驗收基準。
 - [x] **DP-004 — 整合 2026-08-01 review handoff：** 重新以探針確認兩條本機資料遺失路徑，建立 `docs/architecture-decisions.md`，重排 storage／CI／domain 優先度，更新 App 內浮動寵物規範，並把 PWA、偏好、日期與 DB invariant 建議拆成可執行任務；LICENSE 保留給專案擁有者決定。
 - [x] **DP-029 — 修正 PR #2 Supabase／Auth review：** hardening migration 對不存在的 Dashboard helper 加入防護，新增 calendar child `NO ACTION` migration、帳號刪除 cascade pgTAP 與 linked CLI scripts；本機 URL 支援安全 loopback，Auth dialog 會清空敏感狀態、保留密碼更新完成畫面，並區分 Google provider 未啟用與設定查詢失敗。migration 已套用遠端，5 項 rollback DB 測試與 security advisor 驗證完成。
 - [x] **DP-022 — 實作並測試核心 RLS：** 9 張 exposed table 均啟用 RLS 與 owner CRUD policies，`anon` 無 table privileges；已用兩個暫存帳號在 rollback transaction 驗證 owner read/write、跨帳號隔離與 child ownership，Supabase security advisor 為 0 警告。Storage bucket／policy 仍由 DP-028 處理。

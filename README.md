@@ -1,6 +1,6 @@
 # 日蹦 DayPop
 
-DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的原型，漸進整理成 React + TypeScript + Vite 的可維護產品；Supabase Auth 與資料庫安全基礎已接入，帳號日曆 CRUD／匯入仍是下一階段。
+DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；Supabase Auth 與資料庫安全基礎已接入，帳號日曆 CRUD／匯入仍是下一階段。
 
 ## 目前可用
 
@@ -13,7 +13,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
 - Supabase migrations、9 張核心表、owner-only RLS 與產生的 TypeScript database types
 
-舊的 `日曆桌寵 Calendar Pet.dc.html` 與 generated `support.js` 保留為產品行為參考，不在其上繼續堆疊正式功能。完整清單見 [原型行為保全清單](docs/prototype-behavior-baseline.md)。
+目前 React 首頁是可執行的工程骨架，尚未通過原始 Claude Design 的完整視覺驗收。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
 
 ## 本機開發
 
