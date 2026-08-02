@@ -30,5 +30,8 @@ export function useDayPopData() {
     toggleTodo(id: string) {
       setData(repository.toggleTodo(id));
     },
+    deleteTodo(id: string) {
+      setData(repository.deleteTodo(id));
+    },
   };
 }
