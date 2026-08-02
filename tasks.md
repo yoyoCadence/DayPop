@@ -76,6 +76,24 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-019 — 補齊 PWA 安裝圖示：** 由現有識別產出並實機驗證 180×180 Apple touch icon、192×192／512×512 PNG 與適當 maskable icon；manifest／HTML 保留 SVG 作補充但不再把 SVG 當 Apple icon。
 - [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
+### 原型假功能與待補能力
+
+> 原稿裡有畫面但沒有真正能力的部分。搬移時一律停用並保留版面位置，不得以假的成功狀態充數（規則見 `docs/claude-design-source-of-truth.md` 與 `docs/prototype-behavior-baseline.md`）。這裡是每一項的歸屬，避免停用之後被遺忘。
+
+| 原型假功能 | 現況 | 由誰補上 |
+| --- | --- | --- |
+| 天氣 | DP-053 起在列表檢視保留版面位置但不顯示 | DP-054 |
+| 貼圖 | 月格保留格位但沒有資料來源 | DP-012（模型）＋ DP-055（UI） |
+| 資料匯入匯出（JSON／ICS） | 尚未搬移 | DP-056 |
+| 附件 | 原稿的按鈕行為是假的 | DP-028 |
+| 雲端「已同步」狀態 | 尚未搬移，接通前不得顯示 | DP-026 |
+| 瀏覽器通知 timer | 不視為可靠提醒 | DP-042 |
+| AI 助理 | 模擬且會把 key 存在前端 | DP-043 |
+
+- [ ] **DP-054 — 補回天氣欄位：** 先定案資料來源、是否需要位置權限、離線與失敗時的顯示，再接回列表檢視每日標題右側與日詳情。在來源定案前維持停用；不得沿用原稿依日期取固定字串的假資料。
+- [ ] **DP-055 — 搬移貼圖 UI：** DP-012 的 Sticker 模型完成後，補上月格的貼圖顯示（原稿依數量調整字級：1 個 19px、2 個 15px、3 個 12px、4 個以上 10px）、日詳情的貼圖區與貼圖選擇器；保留未來由 emoji 遷移到素材 ID 的空間。
+- [ ] **DP-056 — 搬移資料匯入匯出：** JSON 與 ICS 的匯出與匯入，含 schema validation、匯入預覽與筆數、重複 ID 處理、失敗回復與 round-trip 測試；匯入成功前不得覆寫既有資料，且禁止匯入舊 AI key。ICS 的 exclusive `DTEND` 轉換依 DP-027。
+
 ### Deferred product features
 
 - [ ] **DP-040 — App 內浮動寵物素材與狀態機：** 核心 MVP 穩定後，將目前正常文件流的 `<aside class="pet-helper">` 升級為 App viewport 浮動層，依 `寵物素材規範 Pet Asset Spec.md` 接入各品種與含 `grab` 的七種狀態；拖曳範圍避開 safe-area，位置等純 UI state 留在裝置端，`pet_enabled` 可永久關閉。
