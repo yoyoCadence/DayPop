@@ -1,58 +1,59 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import type { CalendarEvent } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
-import type { NewEventInput, NewTodoInput } from '../../storage/localRepository';
+import type { EventPatch, NewEventInput, NewTodoInput } from '../../storage/localRepository';
 
-export interface AddSheetProps {
+export interface EventSheetProps {
   open: boolean;
-  /** Day the calendar currently has selected. */
+  /** Day the calendar currently has selected; the default for a new entry. */
   defaultDate: string;
+  /** Set to edit an existing event instead of creating one. */
+  editing?: CalendarEvent | null;
   onClose(): void;
   onAddEvent(input: NewEventInput): void;
+  onUpdateEvent(id: string, patch: EventPatch): void;
+  onDeleteEvent(id: string): void;
   onAddTodo(input: NewTodoInput): void;
 }
 
-type AddMode = 'event' | 'todo';
+type SheetMode = 'event' | 'todo';
 
 /**
- * The FAB's bottom sheet.
+ * The bottom sheet for creating and editing an event.
  *
- * The原檔 opens a full 新增／編輯事件 sheet here — 日曆, 全天, 日期時間, 重複,
- * 提醒, 地點, 時區, 邀請對象, 附件 and 刪除. Those fields need the Calendar,
- * Recurrence and Reminder models that DP-012 defines, so DP-051 ships the sheet
- * chrome (backdrop, rounded top, grip, fixed title bar, scrollable form) with
- * only the fields today's domain can actually store, and names the rest instead
- * of pretending to save them.
+ * The原檔's 新增／編輯事件 sheet also carries 日曆, 重複, 提醒, 地點, 時區,
+ * 邀請對象 and 附件. Those need the Calendar, Recurrence and Reminder models
+ * that DP-012 defines, so this sheet ships the原檔's chrome (backdrop, rounded
+ * top, grip, fixed title bar, scrollable form) with only the fields today's
+ * domain can actually store, and names the rest instead of pretending to save
+ * them.
  *
  * 待辦 is a mode here rather than its own screen because the原檔 adds todos
  * through the pet bubble, which is DP-040. Keeping it reachable avoids losing a
  * capability the app already had; DP-014 moves it to its canonical home.
  */
-export function AddSheet({ open, defaultDate, onClose, onAddEvent, onAddTodo }: AddSheetProps) {
+export function EventSheet({ open, ...rest }: EventSheetProps) {
   // Mounting the form only while open means the draft resets itself on every
   // open, without an effect that writes state during render.
   if (!open) return null;
-  return (
-    <AddSheetForm
-      defaultDate={defaultDate}
-      onClose={onClose}
-      onAddEvent={onAddEvent}
-      onAddTodo={onAddTodo}
-    />
-  );
+  return <EventSheetForm {...rest} />;
 }
 
-function AddSheetForm({
+function EventSheetForm({
   defaultDate,
+  editing,
   onClose,
   onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
   onAddTodo,
-}: Omit<AddSheetProps, 'open'>) {
-  const [mode, setMode] = useState<AddMode>('event');
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(defaultDate);
-  const [allDay, setAllDay] = useState(false);
-  const [start, setStart] = useState('09:00');
-  const [end, setEnd] = useState('10:00');
+}: Omit<EventSheetProps, 'open'>) {
+  const [mode, setMode] = useState<SheetMode>('event');
+  const [title, setTitle] = useState(editing?.title ?? '');
+  const [date, setDate] = useState(editing?.date ?? defaultDate);
+  const [allDay, setAllDay] = useState(editing?.allDay ?? false);
+  const [start, setStart] = useState(editing?.start ?? '09:00');
+  const [end, setEnd] = useState(editing?.end ?? '10:00');
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -65,13 +66,18 @@ function AddSheetForm({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) return;
-    if (mode === 'event') {
-      onAddEvent({ title, date, allDay, start: allDay ? '09:00' : start, end: allDay ? '10:00' : end });
+    const times = { start: allDay ? '09:00' : start, end: allDay ? '10:00' : end };
+    if (editing) {
+      onUpdateEvent(editing.id, { title, date, allDay, ...times });
+    } else if (mode === 'event') {
+      onAddEvent({ title, date, allDay, ...times });
     } else {
       onAddTodo({ title, date });
     }
     onClose();
   }
+
+  const heading = editing ? '編輯行程' : mode === 'event' ? '新增行程' : '新增待辦';
 
   return (
     <ViewportLayer>
@@ -81,25 +87,27 @@ function AddSheetForm({
           if (event.target === event.currentTarget) onClose();
         }}
       >
-        <form className="cal-sheet" onSubmit={submit} role="dialog" aria-modal="true" aria-label="新增">
+        <form className="cal-sheet" onSubmit={submit} role="dialog" aria-modal="true" aria-label={heading}>
           <div className="cal-sheet-grip" aria-hidden="true" />
           <div className="cal-sheet-bar">
             <button type="button" onClick={onClose}>
               取消
             </button>
-            <strong>{mode === 'event' ? '新增行程' : '新增待辦'}</strong>
+            <strong>{heading}</strong>
             <button type="submit">儲存</button>
           </div>
 
           <div className="cal-sheet-body">
-            <div className="cal-segmented" style={{ marginBottom: 12 }} role="group" aria-label="新增類型">
-              <button type="button" aria-pressed={mode === 'event'} onClick={() => setMode('event')}>
-                行程
-              </button>
-              <button type="button" aria-pressed={mode === 'todo'} onClick={() => setMode('todo')}>
-                待辦
-              </button>
-            </div>
+            {!editing && (
+              <div className="cal-segmented" style={{ marginBottom: 12 }} role="group" aria-label="新增類型">
+                <button type="button" aria-pressed={mode === 'event'} onClick={() => setMode('event')}>
+                  行程
+                </button>
+                <button type="button" aria-pressed={mode === 'todo'} onClick={() => setMode('todo')}>
+                  待辦
+                </button>
+              </div>
+            )}
 
             <input
               className="cal-title-input"
@@ -154,15 +162,28 @@ function AddSheetForm({
                   </div>
                 )}
 
+                {editing && (
+                  <button
+                    className="cal-delete-button"
+                    type="button"
+                    onClick={() => {
+                      onDeleteEvent(editing.id);
+                      onClose();
+                    }}
+                  >
+                    刪除事件
+                  </button>
+                )}
+
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位（DP-014）</strong>
-                  日曆、重複、提醒、地點、時區、邀請對象、附件與刪除。它們需要 DP-012 的 Calendar
+                  日曆、重複、提醒、地點、時區、邀請對象與附件。它們需要 DP-012 的 Calendar
                   與 Recurrence 模型，現在填了也存不下來，所以先不放假的欄位。
                 </div>
               </>
             )}
 
-            {mode === 'todo' && (
+            {!editing && mode === 'todo' && (
               <div className="cal-sheet-pending">
                 <strong>待辦之後會搬回原稿的位置</strong>
                 原稿是從寵物對話泡泡新增待辦（DP-040），子項、排序與優先度則屬 DP-014。這裡先保留一個可用的入口，不讓現有能力消失。

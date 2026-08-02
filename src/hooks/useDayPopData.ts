@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { DayPopUserData } from '../domain/types';
 import {
   LocalDayPopRepository,
+  type EventPatch,
   type NewEventInput,
   type NewTodoInput,
 } from '../storage/localRepository';
@@ -15,6 +16,12 @@ export function useDayPopData() {
     addEvent(input: NewEventInput) {
       if (!input.title.trim()) return;
       setData(repository.addEvent(input));
+    },
+    updateEvent(id: string, patch: EventPatch) {
+      setData(repository.updateEvent(id, patch));
+    },
+    deleteEvent(id: string) {
+      setData(repository.deleteEvent(id));
     },
     addTodo(input: NewTodoInput) {
       if (!input.title.trim()) return;

@@ -14,6 +14,9 @@ export interface NewTodoInput {
   date: string;
 }
 
+/** Fields the week grid and the event sheet are allowed to change. */
+export type EventPatch = Partial<Pick<CalendarEvent, 'title' | 'date' | 'allDay' | 'start' | 'end'>>;
+
 export class LocalDayPopRepository {
   readonly #storage: StorageLike;
 
@@ -38,6 +41,23 @@ export class LocalDayPopRepository {
       updatedAt: now,
     };
     return this.#mutate((data) => ({ ...data, events: [...data.events, event] }));
+  }
+
+  updateEvent(id: string, patch: EventPatch): DayPopUserData {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => ({
+      ...data,
+      events: data.events.map((event) =>
+        event.id === id ? { ...event, ...patch, updatedAt: now } : event,
+      ),
+    }));
+  }
+
+  deleteEvent(id: string): DayPopUserData {
+    return this.#mutate((data) => ({
+      ...data,
+      events: data.events.filter((event) => event.id !== id),
+    }));
   }
 
   addTodo(input: NewTodoInput): DayPopUserData {
