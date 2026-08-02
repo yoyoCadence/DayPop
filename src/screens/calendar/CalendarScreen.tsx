@@ -13,9 +13,18 @@ import './calendar.css';
 
 export type CalendarView = 'month' | 'week' | 'agenda';
 
+/** Something another tab asked the calendar to open when it mounts. */
+export type CalendarFocus = { kind: 'event'; id: string } | { kind: 'day'; dateKey: string };
+
 export interface CalendarScreenProps {
   /** The header's magnifier goes to the 搜尋 tab, as in the原檔. */
   onGoSearch(): void;
+  /**
+   * Set when 搜尋 or 綜覽 sent the user here to look at something. Read once as
+   * initial state: tab screens unmount on switch, so arriving with a focus is
+   * always a fresh mount.
+   */
+  focus?: CalendarFocus | null;
 }
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
@@ -28,21 +37,19 @@ const VIEW_OPTIONS: { view: CalendarView; label: string }[] = [
 /**
  * 日曆 tab, ported from the calendar screen of `日曆桌寵 Calendar Pet.dc.html`.
  *
- * DP-051 covers the shell: header, 月／週／列表 segmented control, quick-add row,
- * the continuously scrolling month grid, the FAB and the floating pet position.
- * The 週 and 列表 panes keep their place in the control but say plainly that
- * they are not migrated — DP-014 brings them over, along with the day detail and
- * event editing sheets.
+ * Owns the header, the 月／週／列表 segmented control, the quick-add row, the
+ * three view panes, the FAB, the floating pet position and the two sheets
+ * (日詳情 and 新增／編輯行程).
  */
-export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
+export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps) {
   const { data, addEvent, updateEvent, deleteEvent, addTodo, toggleTodo, deleteTodo } =
     useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
   const todayKey = toDateKey(new Date());
   const [view, setView] = useState<CalendarView>('month');
-  const [cursor, setCursor] = useState(todayKey);
-  const [selected, setSelected] = useState(todayKey);
+  const [cursor, setCursor] = useState(focus?.kind === 'day' ? focus.dateKey : todayKey);
+  const [selected, setSelected] = useState(focus?.kind === 'day' ? focus.dateKey : todayKey);
   const [monthLabel, setMonthLabel] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}年 ${now.getMonth() + 1}月`;
@@ -50,9 +57,13 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
   const [flashToday, setFlashToday] = useState(false);
   const [quick, setQuick] = useState('');
   const [quickNote, setQuickNote] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [dayDetailKey, setDayDetailKey] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(focus?.kind === 'event');
+  const [editingId, setEditingId] = useState<string | null>(
+    focus?.kind === 'event' ? focus.id : null,
+  );
+  const [dayDetailKey, setDayDetailKey] = useState<string | null>(
+    focus?.kind === 'day' ? focus.dateKey : null,
+  );
   const flashTimer = useRef<number | undefined>(undefined);
 
   const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
