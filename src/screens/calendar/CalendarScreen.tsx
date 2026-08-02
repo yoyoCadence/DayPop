@@ -2,9 +2,11 @@ import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { useDayPopData } from '../../hooks/useDayPopData';
-import { AddSheet } from './AddSheet';
+import { AgendaView } from './AgendaView';
+import { EventSheet } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
 import { PetLayer } from './PetLayer';
+import { WeekView } from './WeekView';
 import '../screens.css';
 import './calendar.css';
 
@@ -32,7 +34,7 @@ const VIEW_OPTIONS: { view: CalendarView; label: string }[] = [
  * event editing sheets.
  */
 export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
-  const { data, addEvent, addTodo } = useDayPopData();
+  const { data, addEvent, updateEvent, deleteEvent, addTodo, toggleTodo } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
   const todayKey = toDateKey(new Date());
@@ -47,7 +49,20 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
   const [quick, setQuick] = useState('');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
+
+  const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
+
+  const openEvent = useCallback((id: string) => {
+    setEditingId(id);
+    setSheetOpen(true);
+  }, []);
+
+  function closeSheet() {
+    setSheetOpen(false);
+    setEditingId(null);
+  }
 
   const weekStartsOn = data.preferences.weekStartsOn;
 
@@ -204,16 +219,22 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
         )}
 
         {view === 'week' && (
-          <PendingViewPane
-            title="週檢視還沒有搬過來"
-            summary="原稿的週檢視是 7 欄時間格：可拖曳事件、可調整長度、有目前時間線與全天列。"
+          <WeekView
+            weekStartsOn={weekStartsOn}
+            cursor={cursor}
+            todayKey={todayKey}
+            events={data.events}
+            onUpdateEvent={updateEvent}
+            onOpenEvent={openEvent}
           />
         )}
 
         {view === 'agenda' && (
-          <PendingViewPane
-            title="列表檢視還沒有搬過來"
-            summary="原稿的列表檢視依日期分段列出即將到來的行程與待辦，含天氣列與空狀態。"
+          <AgendaView
+            events={data.events}
+            todos={data.todos}
+            onOpenEvent={openEvent}
+            onToggleTodo={toggleTodo}
           />
         )}
       </div>
@@ -236,25 +257,16 @@ export function CalendarScreen({ onGoSearch }: CalendarScreenProps) {
         </svg>
       </button>
 
-      <AddSheet
+      <EventSheet
         open={sheetOpen}
         defaultDate={selected}
-        onClose={() => setSheetOpen(false)}
+        editing={editingEvent}
+        onClose={closeSheet}
         onAddEvent={addEvent}
+        onUpdateEvent={updateEvent}
+        onDeleteEvent={deleteEvent}
         onAddTodo={addTodo}
       />
-    </div>
-  );
-}
-
-function PendingViewPane({ title, summary }: { title: string; summary: string }) {
-  return (
-    <div className="cal-view-pane" style={{ overflowY: 'auto', padding: 16 }}>
-      <div className="dp-note">
-        <span className="dp-note-task">DP-014</span>
-        <strong>{title}</strong>
-        <p>{summary}</p>
-      </div>
     </div>
   );
 }
