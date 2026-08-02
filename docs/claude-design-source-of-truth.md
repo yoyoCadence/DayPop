@@ -66,6 +66,29 @@
 
 - 已完成：三份原檔盤點、主要頁面實際渲染、完整畫面範圍與視覺不變條件建檔；原始 `.dc.html` 的新使用者預設主題已由像素校正為漫畫。
 - 尚未完成：現有 React App 尚未還原 Claude Design；`src/App.tsx` 與目前紫色卡片版面只能視為功能／架構骨架，不可作為後續 UI 基準。
-- 下一步：從 `tasks.md` 的 DP-050 開始建立六套 theme tokens 與 canonical App shell，再執行 DP-051 搬移核心日曆。每一段都必須以原始 `.dc.html` 的相同頁面、資料與狀態作比對。
+- 下一步：DP-050 已完成六套 theme tokens 與 canonical App shell（見下一節），接著執行 DP-051 搬移核心日曆。每一段都必須以原始 `.dc.html` 的相同頁面、資料與狀態作比對。
 - 必須保留：既有登入、repository、Supabase、PWA 更新與資料安全能力，但應嵌入原稿資訊架構，不可另做一個外觀不同的首頁；其他五套主題不可因漫畫是預設而刪除。
 - 不可修改：generated `support.js`；它只用於渲染原始設計，正式 React App 不應依賴它。
+
+## DP-050 交接狀態：App shell 與主題基礎
+
+### 已建立
+
+- `src/theme/themes.ts` 是原檔 `THEMES` getter 的逐值鏡像：六套主題各自的淺／深色 palette、`bd`／`radius`／`radiusLg`、標題字距與大小寫、`head`／`body` 字體堆疊、寵物填色與描邊。`themeCssVariables()` 依原檔 `phoneStyle()` 的相同名稱與順序輸出 25 個 CSS custom property，讓後續搬移的 markup 可以直接沿用 `var(--accent)` 等寫法。修改這個檔案等同修改設計，必須先回原檔核對。
+- `src/theme/ThemeProvider.tsx` 只保存在記憶體：DP-050 不改資料模型，也不寫入任何偏好。DP-018 接手時要把 `useState` 的初始值換成已保存的偏好，並保證既有值優先於預設。
+- `src/shell/AppShell.tsx` 與 `src/shell/shell.css` 是 App viewport、safe area、頂部狀態區、底部四分頁與桌面手機展示框；`overlay` 與 `dialogs` 兩個 slot 分別給 FAB／浮動寵物（z-index 40–44）與 sheet／dialog（z-index 90）。
+- `src/screens/` 目前有三種畫面：`CalendarScaffoldScreen`（DP-010 工程骨架，DP-051 整支替換）、`PendingScreen`（搜尋／綜覽的明確未搬移狀態）、`SettingsScaffoldScreen`（原檔外觀主題區塊 ＋ 保留中的帳號與版本能力）。
+
+### 展示框切換規則
+
+展示框只在 `@media (display-mode: browser) and (min-width: 900px) and (hover: hover) and (pointer: fine)` 出現：安裝後的 PWA、手機與平板都不會拿到假外框，桌面視窗縮到手機寬度也會自動移除。視窗高度不足時是整頁捲動，不是縮小手機，維持原稿預覽的行為。假瀏海與假狀態列屬於展示框，一律 `aria-hidden`，手機上改由真實 `env(safe-area-inset-*)` 負責。
+
+### 已驗證
+
+以 Playwright／Chromium 實際渲染比對原始 `.dc.html`：桌面展示框量得 404 × 824、內層 viewport 384 × 804、狀態列與底部四分頁位置一致，1280px 無水平溢出；390px 手機不渲染外框、瀏海、狀態列與展示框說明文字，tab bar 為 64px，`--accent` 為 `#e4002b`；桌面縮到 420px 展示框自動消失；漫畫淺色、漫畫深色與像素深色（含 scanline 材質）皆正確；console 0 error／warning。
+
+### 已知落差（不在 DP-050 範圍）
+
+- **字體**：原檔用 Google Fonts 載入 Bangers、DotGothic16、IBM Plex Sans、Newsreader、Noto Sans TC、Noto Serif TC、Space Grotesk、Pixelify Sans。DP-015 要移除非必要遠端字型依賴並建立 CSP 相容 build，因此這裡只保留正確的 font stack，沒有加入執行期遠端字型連結。在字體自託管完成前，漫畫主題的標題不會是 Bangers、像素主題不會是點陣字，這是目前唯一已知的主題視覺落差。
+- **`theme-color` meta 與 manifest** 仍是舊的紫色骨架色，隨 DP-018 一起改成跟著主題走。
+- **尚未搬移畫面的樣式**：日曆分頁與設定分頁中的帳號／版本區塊仍是紫色工程骨架，`shell.css` 末段以獨立的 CSS 變數區塊把它們與 canonical token 隔離。該區塊與 `CalendarScaffoldScreen` 在 DP-051／DP-014 一起刪除。

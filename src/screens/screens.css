@@ -1,0 +1,203 @@
+/*
+ * Shared chrome for canonical tab screens (DP-050).
+ * Header, section label, theme cards and the 淺色／深色 segmented control are
+ * transcribed from the 設定 screen of `日曆桌寵 Calendar Pet.dc.html`.
+ */
+
+.dp-screen-header {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  border-bottom: var(--bd) solid var(--border);
+  background: var(--surface);
+  background-image: var(--halftone);
+  background-size: 7px 7px;
+  padding: 14px 16px 8px;
+}
+
+.dp-screen-title {
+  color: var(--fg);
+  font-family: var(--font-head);
+  font-size: 28px;
+  letter-spacing: var(--title-ls);
+  text-transform: var(--title-tt);
+}
+
+.dp-screen-body {
+  padding: 16px;
+}
+
+.dp-section-label {
+  margin: 2px 0 9px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ---------- theme picker ---------- */
+
+.dp-theme-grid {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.dp-theme-card {
+  display: block;
+  width: 100%;
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 9px;
+  text-align: left;
+}
+
+.dp-theme-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.dp-theme-preview {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.dp-theme-swatch {
+  position: relative;
+  width: 26px;
+  height: 34px;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.dp-theme-swatch i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 11px;
+}
+
+.dp-theme-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.dp-theme-lines i {
+  height: 5px;
+  border-radius: 2px;
+}
+
+.dp-theme-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dp-theme-name span {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.dp-theme-desc {
+  margin-top: 1px;
+  color: var(--faint);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* ---------- light / dark segmented control ---------- */
+
+.dp-mode-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 4px;
+}
+
+.dp-mode-button {
+  flex: 1;
+  border: 0;
+  border-radius: calc(var(--radius) - 4px);
+  background: transparent;
+  padding: 9px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dp-mode-button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* ---------- notes and pending placeholders ---------- */
+
+.dp-note {
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px 13px;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.dp-note + .dp-note {
+  margin-top: 10px;
+}
+
+.dp-note strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.dp-note p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dp-note ul {
+  margin: 7px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.dp-note-task {
+  display: inline-block;
+  margin-bottom: 7px;
+  border: 1.5px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--surface-2);
+  padding: 2px 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.dp-screen-footnote {
+  padding: 6px 0 12px;
+  color: var(--faint);
+  font-size: 10px;
+  text-align: center;
+}
+
+.dp-screen button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

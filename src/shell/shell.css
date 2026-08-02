@@ -1,0 +1,330 @@
+/*
+ * Canonical DayPop App shell (DP-050).
+ *
+ * Layout, sizes and colours come from `日曆桌寵 Calendar Pet.dc.html`; see
+ * `docs/claude-design-source-of-truth.md` before changing anything here.
+ *
+ * Two presentations, one DOM:
+ *   - Phone / installed PWA: the App viewport IS the page. No fake bezel, no
+ *     fake notch, no fake status bar — real `env(safe-area-inset-*)` instead.
+ *   - Desktop browser: the原型 404 × 824 phone frame is shown as preview chrome
+ *     only, and disappears again once the window narrows to phone width.
+ *
+ * The theme custom properties (`--bg`, `--accent`, …) are applied by `AppShell`
+ * to `.dp-preview`, so both the App viewport and the mobile page background
+ * follow the active theme.
+ */
+
+/* ---------- page ---------- */
+
+html {
+  /* Only visible behind the desktop preview frame; the App viewport paints its
+     own themed background. */
+  background: none;
+  background-color: #0a0a0c;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: none;
+  overscroll-behavior: none;
+}
+
+/* ---------- shell ---------- */
+
+.dp-preview {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+}
+
+/* Mobile: the phone bezel is not a real element, only the viewport is. */
+.dp-phone {
+  display: contents;
+}
+
+.dp-viewport {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+}
+
+/* Scanline / texture overlay (pixel theme). */
+.dp-texture {
+  position: absolute;
+  z-index: 38;
+  inset: 0;
+  background-image: var(--scanline);
+  background-size: 100% 3px;
+  pointer-events: none;
+}
+
+/* Simulated hardware chrome — desktop preview only. */
+.dp-notch,
+.dp-statusbar,
+.dp-preview-caption {
+  display: none;
+}
+
+.dp-appbody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Every tab screen fills the app body and owns its own scrolling. */
+.dp-screen {
+  position: absolute;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg);
+  inset: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Floating layers (FAB, App 內浮動寵物, toasts) sit above the app body and
+   below the tab bar's own stacking context — see DP-051 / DP-040. */
+.dp-overlay {
+  position: absolute;
+  z-index: 40;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dp-overlay > * {
+  pointer-events: auto;
+}
+
+/* ---------- tab bar ---------- */
+
+.dp-tabbar {
+  position: relative;
+  z-index: 35;
+  display: flex;
+  height: calc(64px + env(safe-area-inset-bottom));
+  flex: none;
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: var(--bd) solid var(--border);
+  background: var(--surface);
+}
+
+.dp-tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  gap: 3px;
+  color: var(--faint);
+}
+
+.dp-tab[aria-current="page"] {
+  color: var(--accent);
+}
+
+.dp-tab-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dp-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* ---------- desktop preview frame ---------- */
+
+/*
+ * Shown only in a browser tab (never in an installed PWA), only with a fine
+ * pointer (so phones and tablets never get a fake device), and only once the
+ * window is wide enough that the frame is not competing with the content.
+ * A short window scrolls the page rather than shrinking the phone, which is how
+ * the原型 preview behaves.
+ */
+@media (display-mode: browser) and (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .dp-preview {
+    justify-content: center;
+    justify-content: safe center;
+    padding: 28px 16px;
+    gap: 16px;
+    background: radial-gradient(120% 120% at 50% 0%, #d6d8de 0%, #bbbdc6 55%, #a9abb6 100%);
+  }
+
+  .dp-phone {
+    position: relative;
+    display: block;
+    width: 404px;
+    height: 824px;
+    flex: none;
+    border-radius: 56px;
+    background: #0a0a0c;
+    padding: 10px;
+    box-shadow:
+      0 2px 0 2px #26262b,
+      0 44px 80px -24px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 2px #000;
+  }
+
+  .dp-viewport {
+    height: 100%;
+    padding: 0;
+    border-radius: 46px;
+  }
+
+  .dp-notch {
+    position: absolute;
+    z-index: 37;
+    top: 12px;
+    left: 50%;
+    display: block;
+    width: 118px;
+    height: 32px;
+    border-radius: 20px;
+    background: #0a0a0c;
+    transform: translateX(-50%);
+  }
+
+  .dp-statusbar {
+    z-index: 36;
+    display: flex;
+    height: 44px;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 26px 6px;
+    color: var(--fg);
+    font-family: var(--font-body);
+  }
+
+  .dp-statusbar-time {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .dp-statusbar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .dp-statusbar-right span {
+    opacity: 0.9;
+  }
+
+  .dp-statusbar-battery {
+    position: relative;
+    width: 22px;
+    height: 11px;
+    border: 1.5px solid currentcolor;
+    border-radius: 3px;
+    opacity: 0.9;
+  }
+
+  .dp-statusbar-battery::after {
+    position: absolute;
+    right: 5px;
+    border-radius: 1px;
+    background: currentcolor;
+    content: "";
+    inset: 1.5px;
+  }
+
+  .dp-tabbar {
+    height: 64px;
+    padding-bottom: 0;
+  }
+
+  .dp-preview-caption {
+    display: block;
+    color: #4a4c55;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-align: center;
+  }
+
+  .dp-preview-caption b {
+    color: #22232a;
+  }
+}
+
+/* ---------- transitional bridge for the not-yet-migrated scaffold ----------
+ *
+ * The DP-010 scaffold screens still use the purple prototype tokens declared in
+ * `styles.css :root`. Those names now collide with the canonical theme tokens
+ * that live on an ancestor, and the desktop two-column media query in
+ * `styles.css` keys off viewport width, which is wrong inside a 384px phone
+ * frame. Both are neutralised here rather than by editing `styles.css`, and the
+ * whole block is deleted together with the scaffold in DP-051 / DP-014.
+ */
+
+.dp-screen .app-shell,
+.dp-screen .dp-legacy-scaffold,
+.dp-viewport .dialog-backdrop {
+  --ink: #2e2a3b;
+  --muted: #756f83;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-soft: #faf8ff;
+  --line: #e8e0f3;
+  --primary: #7356d8;
+  --primary-dark: #5d40bf;
+  --primary-soft: #eee8ff;
+  --accent: #ff8da1;
+  --success: #388f70;
+  --shadow: 0 16px 42px rgba(74, 53, 116, 0.12);
+  color: #2e2a3b;
+  font-family:
+    Inter, ui-rounded, "SF Pro Rounded", "Noto Sans TC", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.dp-screen .app-shell {
+  display: block;
+  width: 100%;
+  padding: 14px 14px 22px;
+}
+
+/* Preserved-but-not-yet-redesigned blocks embedded in a canonical screen. */
+.dp-screen .dp-legacy-scaffold {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dp-screen .calendar-card {
+  position: static;
+  padding: 18px 14px 14px;
+}
+
+.dp-screen .day-cell {
+  min-height: 53px;
+}
+
+/* Dialogs are rendered inside the App viewport, so keep their backdrop inside
+   it — a `position: fixed` backdrop breaks out of the desktop preview frame.
+   z-index clears the tab bar (35) and the floating overlay layer (40). */
+.dp-viewport .dialog-backdrop {
+  position: absolute;
+  z-index: 90;
+}
