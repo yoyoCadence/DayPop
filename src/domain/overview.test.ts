@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { timedEventFromWallTime } from './eventTime';
 import {
   buildOverviewGroups,
   overviewLabel,
@@ -11,20 +12,37 @@ import type { CalendarEvent, TodoItem } from './types';
 const CURSOR = new Date(2026, 7, 6); // Thursday 2026-08-06
 
 function event(id: string, date: string, start: string, allDay = false): CalendarEvent {
-  return {
+  const common = {
     id,
+    calendarId: 'calendar-1',
     title: `事件${id}`,
-    date,
-    allDay,
-    start,
-    end: start,
-    createdAt: '',
-    updatedAt: '',
+    location: null,
+    notes: null,
+    reminderMinutes: [],
+    recurrence: null,
+    sharingScope: 'inherit' as const,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
   };
+  return allDay
+    ? { ...common, allDay: true, startDate: date, endDate: date }
+    : timedEventFromWallTime(common, { date, start, end: start }, 'Asia/Taipei');
 }
 
 function todo(id: string, date: string, done = false): TodoItem {
-  return { id, title: `待辦${id}`, date, done, createdAt: '', updatedAt: '' };
+  return {
+    id,
+    calendarId: 'calendar-1',
+    parentId: null,
+    title: `待辦${id}`,
+    dueDate: date,
+    priority: 'none',
+    completedAt: done ? '2026-08-01T00:00:00.000Z' : null,
+    sortOrder: 0,
+    sharingScope: 'inherit',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  };
 }
 
 function input(overrides: Partial<BuildOverviewInput> = {}): BuildOverviewInput {
@@ -127,7 +145,7 @@ describe('buildOverviewGroups', () => {
     expect(items[1]).toMatchObject({ time: '完成', sub: '', done: true });
   });
 
-  it('returns nothing for stickers until the model exists', () => {
+  it('returns nothing for stickers until DP-055 wires them into the overview input', () => {
     expect(buildOverviewGroups(input({ type: 'stickers' }))).toEqual([]);
   });
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptyUserData } from '../domain/types';
+import v1Fixture from './fixtures/user-data-v1.json';
 import { LocalDataBlockedError, LocalDayPopRepository } from './localRepository';
 import {
   backupRawUserData,
@@ -28,7 +29,7 @@ describe('versioned user storage', () => {
 
     const stored = writeUserData(data, 0);
 
-    expect(stored.schemaVersion).toBe(1);
+    expect(stored.schemaVersion).toBe(2);
     expect(stored.revision).toBe(1);
     expect(readyEnvelope().data.preferences.petName).toBe('小蹦');
   });
@@ -36,6 +37,45 @@ describe('versioned user storage', () => {
   it('treats a missing key as a fresh start, not damage', () => {
     const result = readUserData();
     expect(result.status).toBe('ready');
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).not.toBeNull();
+    if (result.status === 'ready') {
+      expect(result.envelope.data.calendars).toMatchObject([
+        { name: '我的日曆', isDefault: true },
+      ]);
+    }
+  });
+
+  it('migrates the retained v1 fixture to v2 and persists one stable default calendar', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(v1Fixture));
+
+    const first = readyEnvelope();
+    const second = readyEnvelope();
+    const calendarId = first.data.calendars[0]!.id;
+
+    expect(first.schemaVersion).toBe(2);
+    expect(second.data.calendars[0]!.id).toBe(calendarId);
+    expect(first.revision).toBe(7);
+    expect(first.data.events.every((event) => event.calendarId === calendarId)).toBe(true);
+    expect(first.data.todos.every((todo) => todo.calendarId === calendarId)).toBe(true);
+    expect(first.data.preferences).toMatchObject({
+      timezone: 'Asia/Taipei',
+      weekStartsOn: 1,
+      theme: 'dark',
+      petName: '小蹦',
+    });
+
+    const timed = first.data.events.find((event) => !event.allDay);
+    expect(timed).toMatchObject({
+      allDay: false,
+      startsAt: '2026-08-03T15:30:00.000Z',
+      endsAt: '2026-08-03T16:30:00.000Z',
+      timezone: 'Asia/Taipei',
+    });
+    expect(first.data.events.find((event) => event.allDay)).toMatchObject({
+      startDate: '2026-08-05',
+      endDate: '2026-08-05',
+    });
+    expect(first.data.todos[0]?.completedAt).toBe('2026-08-04T03:00:00.000Z');
   });
 
   it('never removes unrelated or legacy localStorage data', () => {
@@ -165,5 +205,8 @@ describe('repository write barrier', () => {
 
     expect(next.todos).toHaveLength(1);
     expect(readyEnvelope().data.todos[0]?.title).toBe('買菜');
+    expect(readyEnvelope().data.todos[0]?.calendarId).toBe(
+      readyEnvelope().data.calendars[0]?.id,
+    );
   });
 });

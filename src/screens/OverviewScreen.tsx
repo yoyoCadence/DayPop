@@ -33,9 +33,9 @@ const PERIOD_OPTIONS: { period: OverviewPeriod; label: string }[] = [
  * `日曆桌寵 Calendar Pet.dc.html`: type and period segmented controls, period
  * stepper, collapsible groups and a total count.
  *
- * 貼圖 keeps its place in the type control but has no source of data until the
- * Sticker model lands (DP-012), so it shows an explicit note rather than an
- * empty state that would imply the user simply has none.
+ * 貼圖 keeps its place in the type control. DP-055 still needs to wire Sticker
+ * storage into this view, so it shows an explicit note rather than an empty
+ * state that would imply the user simply has none.
  */
 export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
   const { data, toggleTodo } = useDayPopData();
@@ -146,9 +146,9 @@ export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
       <div className="overview-body">
         {type === 'stickers' && (
           <div className="dp-note">
-            <span className="dp-note-task">DP-012 / DP-055</span>
-            <strong>貼圖還沒有資料來源</strong>
-            <p>原稿在這裡統計貼圖。DayPop 的 Sticker 模型還沒有建立，所以這一欄暫時永遠是空的。</p>
+            <span className="dp-note-task">DP-055</span>
+            <strong>貼圖統計尚未接上</strong>
+            <p>Sticker 已可保存；原稿的區間統計與列表會在 DP-055 接上，現在不顯示假的空資料。</p>
           </div>
         )}
 

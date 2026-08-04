@@ -117,7 +117,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     return `${start.getMonth() + 1}/${start.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`;
   }, [cursor, monthLabel, view, weekStartsOn]);
 
-  const openTodoCount = data.todos.filter((todo) => !todo.done && todo.date <= todayKey).length;
+  const openTodoCount = data.todos.filter(
+    (todo) => todo.completedAt === null && todo.dueDate !== null && todo.dueDate <= todayKey,
+  ).length;
 
   const handlePeriodLabelChange = useCallback((label: string) => setMonthLabel(label), []);
 
@@ -159,13 +161,12 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     setSelected(draft.date);
     setQuick('');
 
-    // The原檔 hands the parsed draft to the event sheet, which keeps 重複／地點／
-    // 提醒. DayPop has nowhere to store them yet, so say so rather than drop them
-    // silently. Removed when DP-014 brings the sheet over.
+    // The canonical model can store these fields, but quick add must still hand
+    // the draft to the full event sheet before they can be confirmed (DP-014).
     const dropped = unsupportedQuickAddParts(draft);
     setQuickNote(
       dropped.length > 0
-        ? `已新增「${draft.title}」。${dropped.join('、')}也讀到了，但目前的資料模型還存不下來（DP-012／DP-027）。`
+        ? `已新增「${draft.title}」。${dropped.join('、')}也讀到了，等 DP-014 改由事件表單確認後才會保存。`
         : null,
     );
   }

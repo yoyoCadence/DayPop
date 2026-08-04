@@ -1,4 +1,5 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
+import { eventDate, eventStartTime } from './eventTime';
 import type { CalendarEvent, TodoItem } from './types';
 
 /**
@@ -154,15 +155,15 @@ function toOverviewDay(day: { dateKey: string; date: Date; items: OverviewItem[]
 function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[] {
   if (input.type === 'events') {
     return input.events
-      .filter((event) => event.date === dateKey)
+      .filter((event) => eventDate(event) === dateKey)
       .sort((left, right) => {
         if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return left.start.localeCompare(right.start);
+        return eventStartTime(left).localeCompare(eventStartTime(right));
       })
       .map((event) => ({
         kind: 'event' as const,
         id: event.id,
-        time: event.allDay ? '全天' : event.start,
+        time: event.allDay ? '全天' : eventStartTime(event),
         title: event.title,
         sub: '',
         done: false,
@@ -171,22 +172,22 @@ function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[
 
   if (input.type === 'todos') {
     return input.todos
-      .filter((todo) => todo.date === dateKey)
+      .filter((todo) => todo.dueDate === dateKey)
       .map((todo) => {
-        const overdue = !todo.done && todo.date < input.todayKey;
-        const due = fromDateKey(todo.date);
+        const done = todo.completedAt !== null;
+        const overdue = !done && todo.dueDate !== null && todo.dueDate < input.todayKey;
+        const due = fromDateKey(todo.dueDate!);
         return {
           kind: 'todo' as const,
           id: todo.id,
-          time: todo.done ? '完成' : '待辦',
+          time: done ? '完成' : '待辦',
           title: todo.title,
           sub: overdue ? `逾期・原${due.getMonth() + 1}/${due.getDate()}` : '',
-          done: todo.done,
+          done,
         };
       });
   }
 
-  // Stickers need the Sticker model (DP-012); there is no source of truth for
-  // them yet, so the tab renders its empty state rather than inventing data.
+  // Sticker storage now exists, but wiring it into this input and UI is DP-055.
   return [];
 }

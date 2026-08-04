@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { fromDateKey, toDateKey } from '../../domain/date';
+import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { minutesFromTime } from '../../domain/timeGrid';
 import type { CalendarEvent, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
@@ -24,16 +25,8 @@ export interface DayDetailSheetProps {
  * 日詳情 sheet, ported from the `dayOpen` block of
  * `日曆桌寵 Calendar Pet.dc.html`. Opened by tapping a month cell.
  *
- * Three parts of the原檔's sheet need models DayPop does not have yet, so their
- * place is kept and named rather than faked:
- *   - 貼圖 row and picker — needs the Sticker model (DP-012) and the UI is
- *     DP-055.
- *   - todo 子項 (subtasks) — needs `parent_id` on todos (DP-012).
- *   - todo drag-to-reorder — needs `sort_order` on todos (DP-012).
- *
- * Event rows show no location because the domain has no location field yet
- * (DP-012); everything else — the 全天／start–end time column, the 衝突 badge on
- * overlapping events, the overdue marker on todos — is the原檔's behaviour.
+ * Sticker, subtask and ordering fields now exist in the domain. Their visual
+ * controls remain deliberately deferred to DP-055／DP-014.
  */
 export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
   if (!dateKey) return null;
@@ -61,15 +54,15 @@ function DayDetailSheetBody({
 
   const dayEvents = useMemo(() => {
     const list = events
-      .filter((event) => event.date === dateKey)
+      .filter((event) => eventDate(event) === dateKey)
       .sort((left, right) => {
         if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return left.start.localeCompare(right.start);
+        return eventStartTime(left).localeCompare(eventStartTime(right));
       });
     const conflicting = overlappingIds(list);
     return list.map((event) => ({
       event,
-      time: event.allDay ? '全天' : `${event.start}–${event.end}`,
+      time: event.allDay ? '全天' : `${eventStartTime(event)}–${eventEndTime(event)}`,
       conflict: conflicting.has(event.id),
     }));
   }, [dateKey, events]);
@@ -77,10 +70,10 @@ function DayDetailSheetBody({
   const dayTodos = useMemo(
     () =>
       todos
-        .filter((todo) => todo.date === dateKey)
+        .filter((todo) => todo.dueDate === dateKey)
         .map((todo) => ({
           todo,
-          overdue: !todo.done && todo.date < todayKey,
+          overdue: todo.completedAt === null && todo.dueDate !== null && todo.dueDate < todayKey,
         })),
     [dateKey, todayKey, todos],
   );
@@ -107,7 +100,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-pending">
             <span className="dp-note-task">DP-055</span>
-            貼圖列與貼圖選擇器在原稿就在這個位置，等 DP-012 的 Sticker 模型完成後補上。
+            貼圖列與貼圖選擇器在原稿就在這個位置，資料模型已完成，等 DP-055 接上 UI。
           </div>
 
           <div className="cal-day-section">行程</div>
@@ -138,18 +131,18 @@ function DayDetailSheetBody({
               <button
                 className="cal-day-check"
                 type="button"
-                aria-pressed={row.todo.done}
+                aria-pressed={row.todo.completedAt !== null}
                 aria-label={`完成 ${row.todo.title}`}
                 onClick={() => onToggleTodo(row.todo.id)}
-                style={{ background: row.todo.done ? 'var(--accent)' : 'transparent' }}
+                style={{ background: row.todo.completedAt ? 'var(--accent)' : 'transparent' }}
               >
-                {row.todo.done ? '✓' : ''}
+                {row.todo.completedAt ? '✓' : ''}
               </button>
               <span
                 className="cal-day-todo-title"
                 style={{
-                  color: row.todo.done ? 'var(--faint)' : 'var(--fg)',
-                  textDecoration: row.todo.done ? 'line-through' : 'none',
+                  color: row.todo.completedAt ? 'var(--faint)' : 'var(--fg)',
+                  textDecoration: row.todo.completedAt ? 'line-through' : 'none',
                 }}
               >
                 {row.todo.title}
@@ -183,9 +176,8 @@ function DayDetailSheetBody({
           </form>
 
           <div className="cal-day-pending">
-            <span className="dp-note-task">DP-012</span>
-            原稿的待辦還有子項、拖曳排序與優先度。它們需要 todos 的 `parent_id` 與 `sort_order`，
-            現在的資料模型還存不下來。
+            <span className="dp-note-task">DP-014</span>
+            待辦子項、拖曳排序與優先度已可保存，後續依原稿補上操作介面。
           </div>
         </div>
       </div>
@@ -202,8 +194,8 @@ function overlappingIds(events: CalendarEvent[]): Set<string> {
       const a = timed[i]!;
       const b = timed[j]!;
       if (
-        minutesFromTime(a.start) < minutesFromTime(b.end) &&
-        minutesFromTime(b.start) < minutesFromTime(a.end)
+        minutesFromTime(eventStartTime(a)) < minutesFromTime(eventEndTime(b)) &&
+        minutesFromTime(eventStartTime(b)) < minutesFromTime(eventEndTime(a))
       ) {
         result.add(a.id);
         result.add(b.id);

@@ -38,6 +38,14 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 執行順序是：先保護現有 v1 storage，再完成 domain／DB mapping 與 runtime validation，最後才建立兩個 repository adapter。第一次升到 schema v2 時必須保留 v1 fixture、migration test 與 future-version test。
 
+### 實作結果（DP-012）
+
+- Canonical event 改為全天／timed discriminated union；全天使用 inclusive `startDate`／`endDate`，timed 使用 ISO instant `startsAt`／`endsAt` 與 IANA `timezone`。Calendar、Recurrence、EventException、Todo、Sticker、Preferences 皆有對應 runtime validation。
+- `src/domain/databaseMapping.ts` 是 domain 與 generated Supabase `Row`／`Insert` types 的唯一 mapping；client insert 刻意不帶 `created_at`／`updated_at`。這層只定義 contract，不在 DP-012 接上網路 CRUD。
+- 本機 envelope 已升到 schema v2。首次啟動與 v1 migration 都會立即持久化一個 UUID default calendar，避免每次讀取產生不同 ID；v1 的非 UUID event／todo ID 會在一次性 migration 重建為 UUID 並指向該 calendar。v1 fixture、migration 與 future-version 測試持續保留。
+- DB 目前的 `month_weeks` 在 mapping 中只作暫時相容編碼：`6` 對應 fixed-six，`4`／`5` 讀成 adaptive，寫回 adaptive 暫用 `4`。欄位正式改為 `fixed_six_week_grid`、UI 偏好接線與既有值 migration 仍屬 DP-018。
+- Recurrence 在本階段只保存 RFC 5545 rule text；展開 occurrence、DST、單次修改與 ICS round-trip 仍屬 DP-027。提醒上限、DB timezone 受控驗證與 `created_at` hardening 仍依 DP-036／027，不在 mapping 層假裝完成。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。
@@ -65,6 +73,8 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - UI 的 23:xx 行程必須正確跨到次日，不能只把小時 `% 24` 後留下同一天日期。
 
 以上 invariant 必須在 account CRUD 接線前完成 migration、generated types 與測試。
+
+DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。尚未完成的 DB timezone 受控驗證、reminder array 上限與 `created_at` 防偽依 DP-027／036 處理，完成前不得把 account CRUD 視為已可上線。
 
 ## 7. 工程治理
 

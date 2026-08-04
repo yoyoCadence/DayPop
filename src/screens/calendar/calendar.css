@@ -400,7 +400,7 @@
   overflow: hidden;
   border-left: 3px solid rgba(0, 0, 0, 0.22);
   border-radius: 5px;
-  /* Per-calendar colours arrive with DP-012/DP-026. */
+  /* Per-calendar colours are wired with DP-014/DP-026. */
   background: var(--accent);
   padding: 2px 4px;
   color: var(--accent-fg);
