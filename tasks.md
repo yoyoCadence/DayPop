@@ -40,10 +40,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-016 — 阻斷本機資料毀損覆寫：** 將 storage read result 改為可區分 ready／corrupt／future-version；repository 遇到後兩者拒絕 mutation，UI 提供原始內容匯出與明確復原／重設流程。補 malformed mutate 與 future schema 回歸測試，原 key 在備份／匯出成功前不得取代。
 - [ ] **DP-017 — 處理 browser storage 不可用：** guarded access `window.localStorage`，處理 accessor／read／`QuotaExceededError`；只能在持續警告且使用者知情時退回本次分頁的 in-memory mode，並測試重新載入不會被誤稱已保存。
 - [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
-- [ ] **DP-012 — 定案共用 domain ↔ DB contract：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation；guest 也建立穩定 default calendar，timed event 使用 ISO instant＋IANA timezone，全天 `endDate` 採 inclusive。DP-016 完成後才建立 schema v2 migration／fixtures，再接 DP-013。
+- [ ] **DP-012 — 定案共用 domain ↔ DB contract：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation；guest 也建立穩定 default calendar，timed event 使用 ISO instant＋IANA timezone，全天 `endDate` 採 inclusive。DP-016 的 write barrier 已完成；schema v2 migration／fixtures 仍等 DP-017 的 storage 不可用處理，再接 DP-013。這也是 DP-014 剩餘設定區塊（日曆管理、貼圖）與 DP-055 的前置。
 
 ## In Progress
 
@@ -118,6 +117,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-016 — 阻斷本機資料毀損覆寫：** `readUserData()` 改為回傳 `ready`／`corrupt`／`future` 三態，不再把讀不出來的資料當成空資料。`LocalDayPopRepository` 每次寫入前重讀，非 `ready` 一律丟出 `LocalDataBlockedError` 而不覆寫；`App` 在任何畫面掛載前檢查，改渲染 `DataRecoveryScreen` 並隱藏底部分頁。復原流程是「先備份再重設」：備份寫到帶時間戳的 `daypop.user-data.backup.*` 並下載檔案，`resetUserData()` 在沒有備份時直接拒絕。session 中途被其他分頁破壞也會擋下並切到復原畫面。補 10 個回歸測試涵蓋 malformed、future schema、中途損壞與備份／重設閘門。本機 schema version 的提升仍等 DP-017。
 - [x] **DP-058 — 搬移搜尋與綜覽（DP-014 第三段）：** 搜尋頁完成標題、搜尋欄、日曆篩選 chip 列、結果卡片、閒置提示與無結果訊息；綜覽頁完成「共 N 筆」、行程／待辦／貼圖切換、期間 stepper、年／月／週與「今天」、年檢視的全部收合／展開，以及可折疊的分組卡片。搜尋比對與綜覽分組抽成 `src/domain/search.ts`、`src/domain/overview.ts` 並補 17 個單元測試。跨分頁開啟以 `App` 的 `calendarFocus` 狀態處理，`CalendarScreen` 掛載時讀成初始 state，不需要 effect。日曆篩選 chips 與貼圖統計需要 DP-012 的模型，保留位置並標示。分頁佔位元件 `PendingScreen` 已刪除，四個分頁都有真正的畫面。
 - [x] **DP-057 — 搬移日詳情 sheet（DP-014 第二段）：** 點月格開啟的日詳情依原稿完成：sheet 外框與 grip、`M月D日 週X` 標題與「完成」、行程區段（全天／`start–end`、時間重疊的紅色色條與「衝突」標籤、空狀態「這天沒有行程」）、＋ 新增事件、待辦清單（勾選、刪除、新增）。z-index 65，可與事件 sheet（90）同時開啟。貼圖列、待辦子項與拖曳排序需要 DP-012 的模型，保留版面位置並標示負責任務。Escape 改由 `CalendarScreen` 統一處理，只關最上層 — 兩個元件各自監聽 `window` 會讓一次按鍵關掉兩層。repository 補上 `deleteTodo`（未動 schema）。已與原稿並排比對 sheet 錨點、寬度與 padding，390px 無水平溢出，console 0 error。
 - [x] **DP-053 — 搬移週檢視與列表檢視（DP-014 第一段）：** 週檢視的 7 欄時間格（36px 時刻軌、07:00–22:00、44px／小時、676px 格高、60px 欄寬、今日欄位標色、目前時間線）與列表檢視的每日分段卡片皆依原稿完成。時間格計算集中在 `src/domain/timeGrid.ts` 並補 20 個單元測試；拖曳改時間、調整長度與跨欄換日皆吸附 15 分鐘，按下未移動則開啟事件。`AddSheet` 改名為 `EventSheet` 並支援編輯與刪除，repository 補上 `updateEvent`／`deleteEvent`（未動 schema）。天氣是原型假功能，依基準文件維持停用、保留版面位置但不顯示假資料。與原稿並排量測週格為完全相同的 `x:484 y:336.09 420 × 676`，390px 整頁無水平溢出且時間格自身橫向捲動，console 0 error。

@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdate } from './pwa/useAppUpdate';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
+import { DataRecoveryScreen } from './screens/DataRecoveryScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
 import type { ShellTab } from './shell/tabs';
+import { LOCAL_DATA_BLOCKED_EVENT, LocalDayPopRepository } from './storage/localRepository';
 
 /**
  * Routes the four canonical tabs into the App shell.
@@ -23,6 +25,31 @@ export default function App() {
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
   const updater = useAppUpdate();
+
+  // Checked before any screen mounts. A screen that mounted over unreadable
+  // data would write a blank state over it on the first edit — DP-016.
+  const [storageGeneration, setStorageGeneration] = useState(0);
+  const rereadStorage = useCallback(() => setStorageGeneration((current) => current + 1), []);
+  const storage = useMemo(
+    () => new LocalDayPopRepository().read(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-read on demand
+    [storageGeneration],
+  );
+
+  // The repository refuses the write itself; this only brings the UI in line
+  // when the stored bytes change under us mid-session.
+  useEffect(() => {
+    window.addEventListener(LOCAL_DATA_BLOCKED_EVENT, rereadStorage);
+    return () => window.removeEventListener(LOCAL_DATA_BLOCKED_EVENT, rereadStorage);
+  }, [rereadStorage]);
+
+  if (storage.status !== 'ready') {
+    return (
+      <AppShell tab="cal" onTabChange={() => {}} hideTabBar>
+        <DataRecoveryScreen result={storage} onRecovered={rereadStorage} />
+      </AppShell>
+    );
+  }
 
   function focusCalendar(focus: CalendarFocus) {
     setCalendarFocus(focus);
