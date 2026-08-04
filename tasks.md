@@ -64,10 +64,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
+> DP-031 進行中；依交接順序，完成後才把下一項（DP-013）移入。
 
 ## In Progress
 
+- [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
 ## Backlog
