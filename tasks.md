@@ -38,6 +38,30 @@
 
 RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 與 `WITH CHECK` 均核對 `(select auth.uid()) = owner_id`；child table 需同時保證 parent ownership。前端只使用 project URL 與 publishable key。家庭分享實作後，讀寫政策才額外接受「有效 membership + 日曆分享權限 + 事項非 private」，不能只靠前端隱藏私人事項。
 
+## 建議執行順序（保留 Supabase MCP 額度）
+
+> 這是跨 agent 的交接順序；各任務仍須依 `Next → In Progress → Done` 移動，目前只把最前面的未完成任務放在 `Next`，完成後才將下一項移入。表中標示「不使用」的階段不得呼叫 Supabase MCP、不得查詢／修改遠端專案，也不得以 Dashboard 手改 schema。若需要核對 Supabase API，先使用 repository 既有型別、測試與官方文件；migration 仍只以 `supabase/migrations/` 為單一事實來源。
+
+| 順序 | 任務 | Supabase MCP | 交接規則 |
+| --- | --- | --- | --- |
+| 1 | DP-031 CI | 不使用 | 只建立 repository CI 與既有驗證。 |
+| 2 | DP-013 repository/service boundary | 不使用 | 以既有 generated types、mock 與本機測試完成邊界；遠端整合驗收留到 DP-026。 |
+| 3 | DP-055 貼圖完整體驗 | 不使用 | 只接 canonical domain／repository，不新增遠端 schema。 |
+| 4 | DP-014 MVP CRUD UI | 不使用 | UI 與 repository contract 對接；不直接呼叫 Supabase client。 |
+| 5 | DP-015 素材安全與 CSP | 不使用 | 不變更 Supabase Storage 或遠端政策。 |
+| **停止點** | **Supabase MCP 交接** | **開始需要** | agent 必須先提醒專案擁有者：「下一階段將使用 Supabase MCP，請改由可使用 MCP 的 agent 接手。」未收到確認前不得開始下列任務的遠端操作。 |
+| 6 | DP-018 主題／月格偏好 migration | 需要 | migration 先在本機落檔並走正式 migration workflow；MCP agent 負責核對專案狀態、型別與 advisor，不得用 MCP 直接下 DDL。 |
+| 7 | DP-036 DB invariants | 需要 | 以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
+| 8 | DP-027 日期／時區邊界 | 需要 | 先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
+| 9 | DP-024 帳號資料 bootstrap | 需要 | 以真實帳號驗證初始化、RLS 與重試安全性。 |
+| 10 | DP-026 核心 CRUD 遠端持久化 | 需要 | 驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
+| 11 | DP-025 legacy 匯入 | 需要 | 在 durable CRUD 穩定後才驗證一次性匯入與可回復流程。 |
+| 12 | DP-028 附件 Storage | 需要 | bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
+
+> DP-023 剩餘的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作。負責 DP-023 的 agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
+
+> 進入 MCP 階段後仍禁止透過 MCP 直接執行 DDL、禁止 remote reset，也不得查改正式使用者資料。MCP 只用於任務必要的專案狀態檢查、read-only schema／advisor 驗證與安全測試；所有 schema 變更必須先存在於 migration 檔並由可追蹤的 migration workflow 套用。
+
 ## Next
 
 - [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
