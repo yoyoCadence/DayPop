@@ -1,10 +1,6 @@
 import type { CalendarEvent, DayPopUserData, TodoItem } from '../domain/types';
-import {
-  readUserData,
-  writeUserData,
-  type StorageLike,
-  type StorageReadResult,
-} from './versionedStorage';
+import { getAppStorage, type StorageLike } from './browserStorage';
+import { readUserData, writeUserData, type StorageReadResult } from './versionedStorage';
 
 /**
  * Fired on `window` when a write was refused mid-session, so the app can swap
@@ -44,10 +40,20 @@ export interface NewTodoInput {
 export type EventPatch = Partial<Pick<CalendarEvent, 'title' | 'date' | 'allDay' | 'start' | 'end'>>;
 
 export class LocalDayPopRepository {
-  readonly #storage: StorageLike;
+  readonly #injected: StorageLike | undefined;
 
-  constructor(storage: StorageLike = window.localStorage) {
-    this.#storage = storage;
+  /** Defaults to the shared app store; pass one only in tests. */
+  constructor(storage?: StorageLike) {
+    this.#injected = storage;
+  }
+
+  /**
+   * Resolved per operation rather than captured in the constructor: the shared
+   * store can degrade to memory mid-session (DP-017), and a repository holding
+   * the old delegate would keep writing into a store that refuses writes.
+   */
+  get #storage(): StorageLike {
+    return this.#injected ?? getAppStorage();
   }
 
   /** Raw read result, so callers can show recovery instead of editing. */

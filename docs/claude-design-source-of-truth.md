@@ -227,3 +227,24 @@
 以 `document.fonts.load()` 明確載入後再用 `document.fonts.check()` 確認字元覆蓋：Bangers 400、Pixelify Sans 400／700、DotGothic16 400（Latin 與「設定日曆綜覽搜尋」皆涵蓋）、Space Grotesk 500、IBM Plex Sans 600、Newsreader 700 全數通過。網路側只觀察到同源 `woff2` 請求與 Supabase auth settings，沒有 Google Fonts 或 unpkg。像素主題實際渲染確認中文也是點陣字。
 
 > 註：用文字寬度差異判斷是否套用字體對 CJK 無效 — 幾乎所有字體的漢字都是 1em 等寬。判斷覆蓋率請用 `document.fonts.check()`，並先 `await document.fonts.load()` 避免量測搶在下載之前。
+
+## DP-016／DP-017 交接狀態：非原稿的資料狀態畫面
+
+原稿假設 `localStorage` 永遠可用、永遠讀得回來，因此沒有這兩個狀態的設計。以下兩個畫面是為了不謊報保存結果而加的，都用 canonical theme tokens 建構，**不得在後續搬移中被移除或改成可關閉**。
+
+### 復原畫面（DP-016）
+
+`src/screens/DataRecoveryScreen.tsx`。本機資料解析失敗或來自較新 schema 時，取代所有分頁渲染（`AppShell hideTabBar`）。先備份、備份成功才開放重設；`resetUserData()` 在沒有備份時直接拒絕。
+
+### 記憶體模式橫幅（DP-017）
+
+`src/shell/StorageWarningBanner.tsx`，經 `AppShell` 的 `banner` prop 固定在 App body 之上，四個分頁與復原畫面都會顯示。
+
+- **佔版面而非浮層**：警告會存在整個 session，浮層會擋住日曆內容。
+- **不可關閉**：關掉之後使用者會在半路忘記自己的編輯不會保存。
+- **兩種原因文案**：儲存空間已滿、瀏覽器不允許使用本機儲存空間；兩者都接同一句「只留在這個分頁，重新整理或關掉之後就會消失」。
+- 記憶體模式下復原畫面的備份文案會改寫，因為此時只有下載的檔案是真備份。
+
+### 已驗證
+
+以 Playwright／Chromium 在 390px 逐項確認：封鎖 `localStorage` accessor 後 App 仍正常開啟、橫幅顯示、分頁可用、快速新增可見、重新整理後編輯消失且橫幅仍在；session 中途 `setItem` 丟 `QuotaExceededError` 時橫幅即時出現、既有位元組與第一筆編輯完全未變、重新整理後只剩第一筆且橫幅消失；四個分頁皆顯示橫幅；資料損壞＋無法保存時復原畫面與橫幅同時存在且原始位元組不變。水平溢出 0px，console 0 error／warning。

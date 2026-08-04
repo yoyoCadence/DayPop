@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
+import { useStorageMode } from './hooks/useStorageMode';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdate } from './pwa/useAppUpdate';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
@@ -8,6 +9,7 @@ import { OverviewScreen } from './screens/OverviewScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
+import { StorageWarningBanner } from './shell/StorageWarningBanner';
 import type { ShellTab } from './shell/tabs';
 import { LOCAL_DATA_BLOCKED_EVENT, LocalDayPopRepository } from './storage/localRepository';
 
@@ -25,6 +27,11 @@ export default function App() {
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
   const updater = useAppUpdate();
+
+  // Shown on every tab while the browser refuses to persist data — DP-017.
+  const storageMode = useStorageMode();
+  const banner =
+    storageMode.kind === 'memory' ? <StorageWarningBanner reason={storageMode.reason} /> : null;
 
   // Checked before any screen mounts. A screen that mounted over unreadable
   // data would write a blank state over it on the first edit — DP-016.
@@ -45,7 +52,7 @@ export default function App() {
 
   if (storage.status !== 'ready') {
     return (
-      <AppShell tab="cal" onTabChange={() => {}} hideTabBar>
+      <AppShell tab="cal" onTabChange={() => {}} banner={banner} hideTabBar>
         <DataRecoveryScreen result={storage} onRecovered={rereadStorage} />
       </AppShell>
     );
@@ -67,6 +74,7 @@ export default function App() {
     <AppShell
       tab={tab}
       onTabChange={changeTab}
+      banner={banner}
       dialogs={
         <>
           <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />

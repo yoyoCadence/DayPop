@@ -1,4 +1,7 @@
 import { createEmptyUserData, type DayPopUserData } from '../domain/types';
+import { getAppStorage, type StorageLike } from './browserStorage';
+
+export type { StorageLike };
 
 export const USER_DATA_STORAGE_KEY = 'daypop.user-data';
 export const LEGACY_USER_DATA_STORAGE_KEY = 'calpet.v2';
@@ -10,14 +13,6 @@ export interface StoredEnvelope {
   revision: number;
   updatedAt: string;
   data: DayPopUserData;
-}
-
-export interface StorageLike {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-  readonly length: number;
-  key(index: number): string | null;
 }
 
 /**
@@ -57,7 +52,7 @@ function isEnvelope(value: unknown): value is StoredEnvelope {
   );
 }
 
-export function readUserData(storage: StorageLike = window.localStorage): StorageReadResult {
+export function readUserData(storage: StorageLike = getAppStorage()): StorageReadResult {
   const raw = storage.getItem(USER_DATA_STORAGE_KEY);
   // No key yet is a genuinely fresh start, not damage.
   if (raw === null) return { status: 'ready', envelope: createEnvelope(createEmptyUserData(), 0) };
@@ -91,7 +86,7 @@ export function readUserData(storage: StorageLike = window.localStorage): Storag
 export function writeUserData(
   data: DayPopUserData,
   previousRevision: number,
-  storage: StorageLike = window.localStorage,
+  storage: StorageLike = getAppStorage(),
 ): StoredEnvelope {
   const envelope = createEnvelope(data, previousRevision + 1);
   storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
@@ -106,7 +101,7 @@ export function writeUserData(
  */
 export function backupRawUserData(
   raw: string,
-  storage: StorageLike = window.localStorage,
+  storage: StorageLike = getAppStorage(),
   now: Date = new Date(),
 ): string {
   const key = `${USER_DATA_BACKUP_PREFIX}${now.toISOString()}`;
@@ -114,7 +109,7 @@ export function backupRawUserData(
   return key;
 }
 
-export function listUserDataBackups(storage: StorageLike = window.localStorage): string[] {
+export function listUserDataBackups(storage: StorageLike = getAppStorage()): string[] {
   const keys: string[] = [];
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
@@ -129,7 +124,7 @@ export function listUserDataBackups(storage: StorageLike = window.localStorage):
  * Refuses to run until a backup of the current bytes exists, so the reset path
  * cannot be used to destroy data that was never copied anywhere.
  */
-export function resetUserData(storage: StorageLike = window.localStorage): StoredEnvelope {
+export function resetUserData(storage: StorageLike = getAppStorage()): StoredEnvelope {
   if (listUserDataBackups(storage).length === 0) {
     throw new Error('尚未備份原始內容，拒絕重設本機資料。');
   }

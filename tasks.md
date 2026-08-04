@@ -40,9 +40,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-017 — 處理 browser storage 不可用：** guarded access `window.localStorage`，處理 accessor／read／`QuotaExceededError`；只能在持續警告且使用者知情時退回本次分頁的 in-memory mode，並測試重新載入不會被誤稱已保存。
 - [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
-- [ ] **DP-012 — 定案共用 domain ↔ DB contract：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation；guest 也建立穩定 default calendar，timed event 使用 ISO instant＋IANA timezone，全天 `endDate` 採 inclusive。DP-016 的 write barrier 已完成；schema v2 migration／fixtures 仍等 DP-017 的 storage 不可用處理，再接 DP-013。這也是 DP-014 剩餘設定區塊（日曆管理、貼圖）與 DP-055 的前置。
+- [ ] **DP-012 — 定案共用 domain ↔ DB contract：** 在目前 Event／Todo／Preferences 最小型別上加入 Calendar、Recurrence、EventException、Sticker 與 runtime validation；guest 也建立穩定 default calendar，timed event 使用 ISO instant＋IANA timezone，全天 `endDate` 採 inclusive。DP-016 的 write barrier 與 DP-017 的 storage 不可用處理都已完成，schema v2 migration／fixtures 可以開始，再接 DP-013。這也是 DP-014 剩餘設定區塊（日曆管理、貼圖）與 DP-055 的前置。
 
 ## In Progress
 
@@ -117,6 +116,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-017 — 處理 browser storage 不可用：** 所有儲存存取改走 `src/storage/browserStorage.ts` 的 `AppStorage`。開機前先 probe：讀 `window.localStorage` 這個動作本身會丟例外（無痕視窗、封鎖網站資料）、`setItem` 會丟例外，也可能寫得進去卻讀不回來，三種都判為不可用。不可用或 session 中途遭拒（多為 `QuotaExceededError`）就把**本分頁**降級為 `MemoryStorage`，把 `daypop.*` 與 legacy key 帶過去讓畫面維持一致，原始位元組完全不動。降級後不會自動切回持久化，否則同一 session 會半在磁碟半在記憶體。`StorageWarningBanner` 由 `AppShell` 的新 `banner` prop 固定在 App body 之上，四個分頁與復原畫面都看得到，且刻意不可關閉。記憶體模式下復原畫面的備份文案改為指向下載的檔案，因為此時只有它是真備份。`LocalDayPopRepository` 改為每次操作重新解析共用 store，否則降級後仍會寫進舊 delegate。補 14 個單元測試涵蓋 probe 三種失敗、降級與訂閱、不自動復原，以及「重新載入後編輯確實消失」。本機 schema version 的提升前置至此完成。
 - [x] **DP-016 — 阻斷本機資料毀損覆寫：** `readUserData()` 改為回傳 `ready`／`corrupt`／`future` 三態，不再把讀不出來的資料當成空資料。`LocalDayPopRepository` 每次寫入前重讀，非 `ready` 一律丟出 `LocalDataBlockedError` 而不覆寫；`App` 在任何畫面掛載前檢查，改渲染 `DataRecoveryScreen` 並隱藏底部分頁。復原流程是「先備份再重設」：備份寫到帶時間戳的 `daypop.user-data.backup.*` 並下載檔案，`resetUserData()` 在沒有備份時直接拒絕。session 中途被其他分頁破壞也會擋下並切到復原畫面。補 10 個回歸測試涵蓋 malformed、future schema、中途損壞與備份／重設閘門。本機 schema version 的提升仍等 DP-017。
 - [x] **DP-058 — 搬移搜尋與綜覽（DP-014 第三段）：** 搜尋頁完成標題、搜尋欄、日曆篩選 chip 列、結果卡片、閒置提示與無結果訊息；綜覽頁完成「共 N 筆」、行程／待辦／貼圖切換、期間 stepper、年／月／週與「今天」、年檢視的全部收合／展開，以及可折疊的分組卡片。搜尋比對與綜覽分組抽成 `src/domain/search.ts`、`src/domain/overview.ts` 並補 17 個單元測試。跨分頁開啟以 `App` 的 `calendarFocus` 狀態處理，`CalendarScreen` 掛載時讀成初始 state，不需要 effect。日曆篩選 chips 與貼圖統計需要 DP-012 的模型，保留位置並標示。分頁佔位元件 `PendingScreen` 已刪除，四個分頁都有真正的畫面。
 - [x] **DP-057 — 搬移日詳情 sheet（DP-014 第二段）：** 點月格開啟的日詳情依原稿完成：sheet 外框與 grip、`M月D日 週X` 標題與「完成」、行程區段（全天／`start–end`、時間重疊的紅色色條與「衝突」標籤、空狀態「這天沒有行程」）、＋ 新增事件、待辦清單（勾選、刪除、新增）。z-index 65，可與事件 sheet（90）同時開啟。貼圖列、待辦子項與拖曳排序需要 DP-012 的模型，保留版面位置並標示負責任務。Escape 改由 `CalendarScreen` 統一處理，只關最上層 — 兩個元件各自監聽 `window` 會讓一次按鍵關掉兩層。repository 補上 `deleteTodo`（未動 schema）。已與原稿並排比對 sheet 錨點、寬度與 padding，390px 無水平溢出，console 0 error。

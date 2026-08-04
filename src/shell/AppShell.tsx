@@ -21,6 +21,12 @@ export interface AppShellProps {
    */
   dialogs?: ReactNode;
   /**
+   * Full-width notice pinned above the app body, never scrolled away. Used for
+   * conditions that apply to every tab — currently the DP-017 memory-mode
+   * warning. Takes layout space on purpose so it cannot cover App content.
+   */
+  banner?: ReactNode;
+  /**
    * Hides the bottom tabs. Used by blocking states such as local-data recovery,
    * where navigating away is not possible — an inert tab bar would be an
    * affordance that does nothing.
@@ -43,6 +49,7 @@ export function AppShell({
   children,
   overlay,
   dialogs,
+  banner,
   hideTabBar = false,
 }: AppShellProps) {
   const { cssVariables, theme, mode } = useTheme();
@@ -58,6 +65,7 @@ export function AppShell({
           <div className="dp-notch" aria-hidden="true" />
           <PreviewStatusBar />
           <AppViewportContext.Provider value={viewport}>
+            {banner}
             <div className="dp-appbody">{children}</div>
             {overlay ? <div className="dp-overlay">{overlay}</div> : null}
             {!hideTabBar && <TabBar active={tab} onSelect={onTabChange} />}
