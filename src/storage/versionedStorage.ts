@@ -1,5 +1,7 @@
 import { createEmptyUserData, type DayPopUserData } from '../domain/types';
+import { isIsoInstant, parseDayPopUserData } from '../domain/validation';
 import { getAppStorage, type StorageLike } from './browserStorage';
+import { isV1UserData, migrateV1UserData, type V1UserData } from './localDataMigration';
 
 export type { StorageLike };
 
@@ -28,34 +30,14 @@ export type StorageReadResult =
   | { status: 'corrupt'; raw: string; reason: string }
   | { status: 'future'; raw: string; schemaVersion: number };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isUserData(value: unknown): value is DayPopUserData {
-  if (!isRecord(value) || !Array.isArray(value.events) || !Array.isArray(value.todos)) return false;
-  if (!isRecord(value.preferences)) return false;
-  return (
-    (value.preferences.weekStartsOn === 0 || value.preferences.weekStartsOn === 1) &&
-    typeof value.preferences.petName === 'string' &&
-    ['system', 'light', 'dark'].includes(String(value.preferences.theme))
-  );
-}
-
-function isEnvelope(value: unknown): value is StoredEnvelope {
-  return (
-    isRecord(value) &&
-    typeof value.schemaVersion === 'number' &&
-    typeof value.revision === 'number' &&
-    typeof value.updatedAt === 'string' &&
-    isUserData(value.data)
-  );
-}
-
 export function readUserData(storage: StorageLike = getAppStorage()): StorageReadResult {
   const raw = storage.getItem(USER_DATA_STORAGE_KEY);
   // No key yet is a genuinely fresh start, not damage.
-  if (raw === null) return { status: 'ready', envelope: createEnvelope(createEmptyUserData(), 0) };
+  if (raw === null) {
+    const envelope = createEnvelope(createEmptyUserData(), 0);
+    storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
+    return { status: 'ready', envelope };
+  }
 
   let parsed: unknown;
   try {
@@ -68,19 +50,47 @@ export function readUserData(storage: StorageLike = getAppStorage()): StorageRea
     };
   }
 
-  if (!isEnvelope(parsed)) {
+  if (!isRecord(parsed)) {
+    return { status: 'corrupt', raw, reason: '資料結構不符合目前的 DayPop 格式' };
+  }
+  const schemaVersion = parsed.schemaVersion;
+  if (typeof schemaVersion !== 'number' || !Number.isInteger(schemaVersion)) {
     return { status: 'corrupt', raw, reason: '資料結構不符合目前的 DayPop 格式' };
   }
 
-  if (parsed.schemaVersion > __DATA_SCHEMA_VERSION__) {
-    return { status: 'future', raw, schemaVersion: parsed.schemaVersion };
+  if (schemaVersion > __DATA_SCHEMA_VERSION__) {
+    return { status: 'future', raw, schemaVersion };
   }
 
-  if (parsed.schemaVersion < __DATA_SCHEMA_VERSION__) {
-    return { status: 'ready', envelope: migrateEnvelope(parsed) };
+  if (!isEnvelopeMetadata(parsed)) {
+    return { status: 'corrupt', raw, reason: '資料 envelope metadata 不完整' };
   }
 
-  return { status: 'ready', envelope: parsed };
+  if (schemaVersion === 1) {
+    if (!isV1UserData(parsed.data)) {
+      return { status: 'corrupt', raw, reason: 'schema v1 資料內容不完整' };
+    }
+    const envelope = migrateEnvelope({ ...parsed, data: parsed.data });
+    storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
+    return { status: 'ready', envelope };
+  }
+
+  if (parsed.schemaVersion !== __DATA_SCHEMA_VERSION__) {
+    return { status: 'corrupt', raw, reason: `不支援 schema v${parsed.schemaVersion}` };
+  }
+
+  try {
+    return {
+      status: 'ready',
+      envelope: { ...parsed, data: parseDayPopUserData(parsed.data) },
+    };
+  } catch (cause) {
+    return {
+      status: 'corrupt',
+      raw,
+      reason: cause instanceof Error ? cause.message : 'domain validation failed',
+    };
+  }
 }
 
 export function writeUserData(
@@ -88,7 +98,7 @@ export function writeUserData(
   previousRevision: number,
   storage: StorageLike = getAppStorage(),
 ): StoredEnvelope {
-  const envelope = createEnvelope(data, previousRevision + 1);
+  const envelope = createEnvelope(parseDayPopUserData(data), previousRevision + 1);
   storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
   return envelope;
 }
@@ -140,10 +150,37 @@ function createEnvelope(data: DayPopUserData, revision: number): StoredEnvelope 
   };
 }
 
-function migrateEnvelope(envelope: StoredEnvelope): StoredEnvelope {
-  // Schema v1 is the first structured DayPop envelope. Future migrations are
-  // appended here and must never delete unrelated localStorage or Cache entries.
-  // Envelopes from a newer schema never reach this function — `readUserData`
-  // reports them as `future` so nothing overwrites them.
-  return createEnvelope(envelope.data, envelope.revision);
+interface RawEnvelope {
+  schemaVersion: number;
+  revision: number;
+  updatedAt: string;
+  data: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isEnvelopeMetadata(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & RawEnvelope {
+  return (
+    Number.isInteger(value.schemaVersion) &&
+    Number(value.schemaVersion) > 0 &&
+    Number.isInteger(value.revision) &&
+    Number(value.revision) >= 0 &&
+    isIsoInstant(value.updatedAt) &&
+    'data' in value
+  );
+}
+
+function migrateEnvelope(envelope: RawEnvelope & { data: V1UserData }): StoredEnvelope {
+  // v1 is intentionally retained as a concrete fixture and migrator. Future
+  // steps are appended here; newer envelopes never reach this function.
+  return {
+    schemaVersion: __DATA_SCHEMA_VERSION__,
+    revision: envelope.revision,
+    updatedAt: envelope.updatedAt,
+    data: migrateV1UserData(envelope.data, envelope.updatedAt),
+  };
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import {
   blockGeometry,
   columnShift,
@@ -48,9 +49,8 @@ interface DragState {
  * bottom edge, snapping to 15 minutes. All-day events are not drawn on the grid
  * in the原檔 either; the 全天 row is part of DP-014's remaining work.
  *
- * The原檔 additionally splits a recurring event when one occurrence is dragged.
- * DayPop has no recurrence model yet (DP-012/DP-027), so a drag simply updates
- * the single event it touched.
+ * The recurrence model exists, but occurrence splitting and DST semantics are
+ * DP-027, so a drag still updates the base event for now.
  */
 export function WeekView({
   weekStartsOn,
@@ -80,9 +80,10 @@ export function WeekView({
     const byDate = new Map<string, CalendarEvent[]>();
     for (const event of events) {
       if (event.allDay) continue;
-      const list = byDate.get(event.date);
+      const key = eventDate(event);
+      const list = byDate.get(key);
       if (list) list.push(event);
-      else byDate.set(event.date, [event]);
+      else byDate.set(key, [event]);
     }
 
     return Array.from({ length: 7 }, (_, index) => {
@@ -90,13 +91,15 @@ export function WeekView({
       const key = toDateKey(date);
       const timed = (byDate.get(key) ?? [])
         .slice()
-        .sort((left, right) => left.start.localeCompare(right.start))
+        .sort((left, right) => eventStartTime(left).localeCompare(eventStartTime(right)))
         .map((event) => {
           const dragging = preview?.id === event.id;
-          const startMinutes = dragging ? preview.startMinutes : minutesFromTime(event.start);
+          const startMinutes = dragging
+            ? preview.startMinutes
+            : minutesFromTime(eventStartTime(event));
           const endMinutes = dragging
             ? preview.endMinutes
-            : minutesFromTime(event.end || event.start);
+            : minutesFromTime(eventEndTime(event) || eventStartTime(event));
           return {
             event,
             dragging,
@@ -121,13 +124,13 @@ export function WeekView({
     if (mode === 'resize') domEvent.stopPropagation();
     dragRef.current = {
       id: event.id,
-      dateKey: event.date,
+      dateKey: eventDate(event),
       mode,
       startX: domEvent.clientX,
       startY: domEvent.clientY,
       origin: {
-        startMinutes: minutesFromTime(event.start),
-        endMinutes: minutesFromTime(event.end || event.start),
+        startMinutes: minutesFromTime(eventStartTime(event)),
+        endMinutes: minutesFromTime(eventEndTime(event) || eventStartTime(event)),
       },
       moved: false,
     };

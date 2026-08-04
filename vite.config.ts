@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    __DATA_SCHEMA_VERSION__: '1',
+    __DATA_SCHEMA_VERSION__: '2',
   },
   test: {
     environment: 'jsdom',

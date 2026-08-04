@@ -1,4 +1,11 @@
-import type { CalendarEvent, DayPopUserData, TodoItem } from '../domain/types';
+import { eventWallTime, timedEventFromWallTime } from '../domain/eventTime';
+import {
+  createDomainId,
+  type CalendarEvent,
+  type DayPopUserData,
+  type TodoItem,
+} from '../domain/types';
+import { parseDayPopUserData } from '../domain/validation';
 import { getAppStorage, type StorageLike } from './browserStorage';
 import { readUserData, writeUserData, type StorageReadResult } from './versionedStorage';
 
@@ -29,15 +36,23 @@ export interface NewEventInput {
   allDay: boolean;
   start: string;
   end: string;
+  calendarId?: string;
 }
 
 export interface NewTodoInput {
   title: string;
   date: string;
+  calendarId?: string;
 }
 
 /** Fields the week grid and the event sheet are allowed to change. */
-export type EventPatch = Partial<Pick<CalendarEvent, 'title' | 'date' | 'allDay' | 'start' | 'end'>>;
+export interface EventPatch {
+  title?: string;
+  date?: string;
+  allDay?: boolean;
+  start?: string;
+  end?: string;
+}
 
 export class LocalDayPopRepository {
   readonly #injected: StorageLike | undefined;
@@ -69,17 +84,10 @@ export class LocalDayPopRepository {
 
   addEvent(input: NewEventInput): DayPopUserData {
     const now = new Date().toISOString();
-    const event: CalendarEvent = {
-      id: createId(),
-      title: input.title.trim(),
-      date: input.date,
-      allDay: input.allDay,
-      start: input.start,
-      end: input.end,
-      createdAt: now,
-      updatedAt: now,
-    };
-    return this.#mutate((data) => ({ ...data, events: [...data.events, event] }));
+    return this.#mutate((data) => {
+      const event = createEvent(data, input, createDomainId(), now);
+      return { ...data, events: [...data.events, event] };
+    });
   }
 
   updateEvent(id: string, patch: EventPatch): DayPopUserData {
@@ -87,7 +95,7 @@ export class LocalDayPopRepository {
     return this.#mutate((data) => ({
       ...data,
       events: data.events.map((event) =>
-        event.id === id ? { ...event, ...patch, updatedAt: now } : event,
+        event.id === id ? patchEvent(event, patch, data.preferences.timezone, now) : event,
       ),
     }));
   }
@@ -101,15 +109,22 @@ export class LocalDayPopRepository {
 
   addTodo(input: NewTodoInput): DayPopUserData {
     const now = new Date().toISOString();
-    const todo: TodoItem = {
-      id: createId(),
-      title: input.title.trim(),
-      date: input.date,
-      done: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    return this.#mutate((data) => ({ ...data, todos: [...data.todos, todo] }));
+    return this.#mutate((data) => {
+      const todo: TodoItem = {
+        id: createDomainId(),
+        calendarId: input.calendarId ?? defaultCalendarId(data),
+        parentId: null,
+        title: input.title.trim(),
+        dueDate: input.date,
+        priority: 'none',
+        completedAt: null,
+        sortOrder: data.todos.length,
+        sharingScope: 'inherit',
+        createdAt: now,
+        updatedAt: now,
+      };
+      return { ...data, todos: [...data.todos, todo] };
+    });
   }
 
   deleteTodo(id: string): DayPopUserData {
@@ -124,7 +139,9 @@ export class LocalDayPopRepository {
     return this.#mutate((data) => ({
       ...data,
       todos: data.todos.map((todo) =>
-        todo.id === id ? { ...todo, done: !todo.done, updatedAt: now } : todo,
+        todo.id === id
+          ? { ...todo, completedAt: todo.completedAt === null ? now : null, updatedAt: now }
+          : todo,
       ),
     }));
   }
@@ -136,12 +153,74 @@ export class LocalDayPopRepository {
     const current = readUserData(this.#storage);
     if (current.status !== 'ready') throw new LocalDataBlockedError(current);
 
-    const next = update(structuredClone(current.envelope.data));
+    const next = parseDayPopUserData(update(structuredClone(current.envelope.data)));
     writeUserData(next, current.envelope.revision, this.#storage);
     return structuredClone(next);
   }
 }
 
-function createId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `daypop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+function createEvent(
+  data: DayPopUserData,
+  input: NewEventInput,
+  id: string,
+  now: string,
+): CalendarEvent {
+  const common = {
+    id,
+    calendarId: input.calendarId ?? defaultCalendarId(data),
+    title: input.title.trim(),
+    location: null,
+    notes: null,
+    reminderMinutes: [],
+    recurrence: null,
+    sharingScope: 'inherit' as const,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return input.allDay
+    ? { ...common, allDay: true, startDate: input.date, endDate: input.date }
+    : timedEventFromWallTime(
+        common,
+        { date: input.date, start: input.start, end: input.end },
+        data.preferences.timezone,
+      );
+}
+
+function patchEvent(
+  event: CalendarEvent,
+  patch: EventPatch,
+  defaultTimezone: string,
+  updatedAt: string,
+): CalendarEvent {
+  const previous = eventWallTime(event);
+  const allDay = patch.allDay ?? event.allDay;
+  const common = {
+    id: event.id,
+    calendarId: event.calendarId,
+    title: patch.title?.trim() ?? event.title,
+    location: event.location,
+    notes: event.notes,
+    reminderMinutes: event.reminderMinutes,
+    recurrence: event.recurrence,
+    sharingScope: event.sharingScope,
+    createdAt: event.createdAt,
+    updatedAt,
+  };
+  const date = patch.date ?? previous.date;
+  if (allDay) return { ...common, allDay: true, startDate: date, endDate: date };
+  return timedEventFromWallTime(
+    common,
+    {
+      date,
+      start: (patch.start ?? previous.start) || '09:00',
+      end: (patch.end ?? previous.end) || '10:00',
+    },
+    event.allDay ? defaultTimezone : event.timezone,
+  );
+}
+
+function defaultCalendarId(data: DayPopUserData): string {
+  const calendar = data.calendars.find((candidate) => candidate.isDefault) ?? data.calendars[0];
+  if (!calendar) throw new Error('DayPop 資料缺少預設日曆。');
+  return calendar.id;
 }

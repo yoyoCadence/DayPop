@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { eventWallTime } from '../../domain/eventTime';
 import type { CalendarEvent } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../storage/localRepository';
@@ -22,11 +23,8 @@ type SheetMode = 'event' | 'todo';
  * The bottom sheet for creating and editing an event.
  *
  * The原檔's 新增／編輯事件 sheet also carries 日曆, 重複, 提醒, 地點, 時區,
- * 邀請對象 and 附件. Those need the Calendar, Recurrence and Reminder models
- * that DP-012 defines, so this sheet ships the原檔's chrome (backdrop, rounded
- * top, grip, fixed title bar, scrollable form) with only the fields today's
- * domain can actually store, and names the rest instead of pretending to save
- * them.
+ * 邀請對象 and 附件. The canonical models now exist; wiring those controls is
+ * still part of DP-014／DP-028, so the sheet does not pretend to save them.
  *
  * 待辦 is a mode here rather than its own screen because the原檔 adds todos
  * through the pet bubble, which is DP-040. Keeping it reachable avoids losing a
@@ -48,12 +46,13 @@ function EventSheetForm({
   onDeleteEvent,
   onAddTodo,
 }: Omit<EventSheetProps, 'open'>) {
+  const editingWallTime = editing ? eventWallTime(editing) : null;
   const [mode, setMode] = useState<SheetMode>('event');
   const [title, setTitle] = useState(editing?.title ?? '');
-  const [date, setDate] = useState(editing?.date ?? defaultDate);
+  const [date, setDate] = useState(editingWallTime?.date ?? defaultDate);
   const [allDay, setAllDay] = useState(editing?.allDay ?? false);
-  const [start, setStart] = useState(editing?.start ?? '09:00');
-  const [end, setEnd] = useState(editing?.end ?? '10:00');
+  const [start, setStart] = useState(editingWallTime?.start || '09:00');
+  const [end, setEnd] = useState(editingWallTime?.end || '10:00');
 
   // Escape is handled by `CalendarScreen` so that, when this sheet is stacked on
   // top of 日詳情, one keypress closes only the topmost sheet.
@@ -172,8 +171,8 @@ function EventSheetForm({
 
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位（DP-014）</strong>
-                  日曆、重複、提醒、地點、時區、邀請對象與附件。它們需要 DP-012 的 Calendar
-                  與 Recurrence 模型，現在填了也存不下來，所以先不放假的欄位。
+                  日曆、重複、提醒、地點、時區、邀請對象與附件。模型已定案，等 DP-014／DP-028
+                  依原稿接上欄位與保存流程。
                 </div>
               </>
             )}

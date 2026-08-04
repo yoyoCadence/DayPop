@@ -14,9 +14,9 @@ export interface SearchScreenProps {
 /**
  * 搜尋 tab, ported from the search screen of `日曆桌寵 Calendar Pet.dc.html`.
  *
- * The原檔 puts a per-calendar filter chip row under the field. DayPop has no
- * Calendar model yet (DP-012), so the row keeps its place with the single 全部
- * chip that actually applies, labelled with the task that will fill it in.
+ * The原檔 puts a per-calendar filter chip row under the field. The Calendar
+ * model exists; the row keeps its single working 全部 chip until DP-014 wires
+ * the filter interaction.
  */
 export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
   const { data } = useDayPopData();
@@ -59,7 +59,7 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
           <span className="search-chip-dot" />
           全部
         </button>
-        <span className="search-chip-pending">依日曆篩選待 DP-012</span>
+        <span className="search-chip-pending">依日曆篩選待 DP-014</span>
       </div>
 
       <div className="search-results">
@@ -81,7 +81,7 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
             onClick={() =>
               result.kind === 'event'
                 ? onOpenEvent(result.id)
-                : onOpenDay(data.todos.find((todo) => todo.id === result.id)?.date ?? '')
+                : onOpenDay(data.todos.find((todo) => todo.id === result.id)?.dueDate ?? '')
             }
           >
             <span className="search-result-dot" />

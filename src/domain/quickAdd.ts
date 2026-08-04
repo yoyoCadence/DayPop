@@ -25,14 +25,13 @@ export interface QuickAddDraft {
   /** `HH:MM`, one hour after `start`. */
   end: string;
   /**
-   * Recognised but not stored yet — DayPop's domain has no recurrence field
-   * until DP-012/DP-027. The calendar screen tells the user when a fragment was
-   * understood but dropped rather than silently discarding it.
+   * Recognised but not stored by quick add yet. DP-014 hands this draft to the
+   * event sheet; DP-027 owns recurrence expansion and occurrence semantics.
    */
   repeat: QuickAddRepeat;
-  /** Recognised but not stored yet — reminders arrive with DP-012/DP-036. */
+  /** Recognised but not stored by quick add until the event sheet is wired. */
   reminderMinutes: number;
-  /** Recognised but not stored yet — location arrives with DP-012. */
+  /** Recognised but not stored by quick add until the event sheet is wired. */
   location: string;
 }
 

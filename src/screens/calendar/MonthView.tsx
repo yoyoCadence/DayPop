@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey, weeksBetween } from '../../domain/date';
+import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { lunarCell } from '../../domain/lunar';
 import type { CalendarEvent } from '../../domain/types';
 
@@ -244,11 +245,10 @@ export function MonthView({
                     <div
                       className="cal-cell-event"
                       key={event.id}
-                      // Per-calendar colours arrive with the Calendar model in
-                      // DP-012/DP-026; until then every chip uses the accent.
+                      // Per-calendar colour rendering is wired with settings／CRUD.
                       style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
                     >
-                      {event.allDay ? event.title : `${event.start} ${event.title}`}
+                      {event.allDay ? event.title : `${eventStartTime(event)} ${event.title}`}
                     </div>
                   ))}
                   {hidden > 0 && <div className="cal-cell-more">+{hidden}</div>}
@@ -271,15 +271,16 @@ function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean)
 function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
   const map = new Map<string, CalendarEvent[]>();
   for (const event of events) {
-    const list = map.get(event.date);
+    const key = eventDate(event);
+    const list = map.get(key);
     if (list) list.push(event);
-    else map.set(event.date, [event]);
+    else map.set(key, [event]);
   }
   // All-day first, then by start time — the原檔's `dayEvents()` ordering.
   for (const list of map.values()) {
     list.sort((left, right) => {
       if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-      return (left.start || '').localeCompare(right.start || '');
+      return eventStartTime(left).localeCompare(eventStartTime(right));
     });
   }
   return map;
@@ -292,7 +293,12 @@ function hasOverlap(events: CalendarEvent[]): boolean {
     for (let j = i + 1; j < timed.length; j += 1) {
       const a = timed[i]!;
       const b = timed[j]!;
-      if (minutes(a.start) < minutes(b.end) && minutes(b.start) < minutes(a.end)) return true;
+      if (
+        minutes(eventStartTime(a)) < minutes(eventEndTime(b)) &&
+        minutes(eventStartTime(b)) < minutes(eventEndTime(a))
+      ) {
+        return true;
+      }
     }
   }
   return false;

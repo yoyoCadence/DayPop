@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { addDays, startOfDay, toDateKey } from '../../domain/date';
+import { eventDate, eventStartTime } from '../../domain/eventTime';
 import type { CalendarEvent, TodoItem } from '../../domain/types';
 
 /** The原檔 looks ahead 16 days and drops empty days after tomorrow. */
@@ -44,27 +45,27 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
       const key = toDateKey(date);
 
       const eventItems: AgendaItem[] = events
-        .filter((event) => event.date === key)
+        .filter((event) => eventDate(event) === key)
         .sort((left, right) => {
           if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-          return left.start.localeCompare(right.start);
+          return eventStartTime(left).localeCompare(eventStartTime(right));
         })
         .map((event) => ({
           kind: 'event',
           id: event.id,
-          time: event.allDay ? '全天' : event.start,
+          time: event.allDay ? '全天' : eventStartTime(event),
           title: event.title,
           done: false,
         }));
 
       const todoItems: AgendaItem[] = todos
-        .filter((todo) => todo.date === key)
+        .filter((todo) => todo.dueDate === key)
         .map((todo) => ({
           kind: 'todo',
           id: todo.id,
           time: '待辦',
           title: todo.title,
-          done: todo.done,
+          done: todo.completedAt !== null,
         }));
 
       const items = [...eventItems, ...todoItems];
@@ -107,8 +108,8 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
               <span
                 className="cal-agenda-bar"
                 style={{
-                  // Per-calendar colours arrive with DP-012/DP-026; todos use the
-                  // accent in the原檔 too.
+                  // Per-calendar colours are wired with DP-014/DP-026; todos
+                  // use the accent in the原檔 too.
                   background: 'var(--accent)',
                 }}
               />
