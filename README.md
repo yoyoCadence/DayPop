@@ -4,16 +4,21 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 
 ## 目前可用
 
-- 月曆瀏覽、切換月份與回到今天
-- 新增時間行程、新增／完成待辦
-- App 內建寵物小幫手摘要
+- 日曆分頁：連續捲動的月格、7 欄時間格週檢視、列表檢視，以及今天與前後期
+- 週檢視可拖曳改時間、拖曳邊緣調整長度、橫向拖曳換日，皆吸附 15 分鐘
+- 點日期開啟日詳情 sheet；新增、編輯與刪除行程
+- 快速新增自然語言解析日期與時間；讀到目前存不下來的重複／地點／提醒會明講，不靜靜丟掉
+- 新增、完成與刪除待辦
+- 搜尋分頁與綜覽分頁（行程／待辦切換、年／月／週期間）
+- 六套外觀主題 × 淺／深色、農曆與節日標示、App 內浮動寵物
 - 版本檢查、更新內容公告與使用者選擇更新
-- 版本化的本機資料格式；App cache 與使用者資料分開管理
+- 版本化的本機資料格式；讀不出來或來自較新版本時拒絕覆寫並進入復原流程
+- 瀏覽器無法保存資料時降級為本分頁記憶體模式，並持續顯示不可關閉的警告
 - mobile-first PWA manifest、service worker 與基本 App shell 啟動快取
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
 - Supabase migrations、9 張核心表、owner-only RLS 與產生的 TypeScript database types
 
-目前 React 首頁是可執行的工程骨架，尚未通過原始 Claude Design 的完整視覺驗收。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
+日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁除外觀主題外的其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、貼圖、附件、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
 
 ## 本機開發
 
@@ -76,6 +81,8 @@ Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴
 ## 資料安全邊界
 
 - 新 React App 暫時以 `daypop.user-data` 保存帶 `schemaVersion` 的遊客資料。
+- 資料讀不出來或來自較新的 schema 時 fail closed：拒絕所有寫入，改顯示復原畫面，並要求先備份成功才開放重設。原始位元組在備份前不會被取代。
+- `localStorage` 不可用（無痕視窗、封鎖網站資料）或中途寫入被拒（`QuotaExceededError`）時，只降級為本分頁的記憶體模式，並以不可關閉的橫幅持續告知內容不會保存；降級後不會自動切回。
 - 舊原型的 `calpet.v2` 不會被覆寫或刪除；正式匯入流程會另案實作並在成功前保留原資料。
 - 不呼叫 `localStorage.clear()`，也不因 App 版本更新重設行程或偏好。
 - Supabase 前端只允許 project URL 與 publishable key；不得放入 `service_role` 或其他伺服器密鑰。
@@ -86,10 +93,14 @@ Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴
 ## 專案結構
 
 ```text
-src/domain/       核心資料型別與日期邏輯
+src/domain/       核心資料型別、日期邏輯、農曆、快速新增解析與時間格計算
+src/theme/        六套 canonical 主題 token、ThemeProvider 與自託管字體清單
+src/shell/        App viewport、safe area、底部四分頁、桌面手機展示框與跨分頁橫幅
+src/screens/      各分頁畫面；calendar/ 是依原稿搬移的日曆
+src/hooks/        跨畫面共用的 React hooks
 src/auth/         Supabase Auth provider、狀態與登入介面
 src/lib/          公開環境設定、Supabase client 與產生的 DB types
-src/storage/      版本化本機資料與 repository
+src/storage/      瀏覽器儲存存取、版本化本機資料與 repository
 src/pwa/          版本檢查、更新提示與 service worker client
 pwa/              service worker 來源模板
 scripts/          release assets 產生器
