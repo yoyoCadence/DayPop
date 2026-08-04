@@ -7,7 +7,7 @@ import {
   type OverviewPeriod,
   type OverviewType,
 } from '../domain/overview';
-import { useDayPopData } from '../hooks/useDayPopData';
+import { useDayPopData } from '../data/dataContext';
 import './screens.css';
 import './overview.css';
 

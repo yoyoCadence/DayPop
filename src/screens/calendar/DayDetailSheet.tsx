@@ -4,7 +4,7 @@ import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime'
 import { minutesFromTime } from '../../domain/timeGrid';
 import type { CalendarEvent, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
-import type { NewTodoInput } from '../../storage/localRepository';
+import type { NewTodoInput } from '../../domain/mutations';
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 

@@ -1,19 +1,23 @@
-import { eventWallTime, timedEventFromWallTime } from '../domain/eventTime';
 import {
-  createDomainId,
-  type CalendarEvent,
-  type DayPopUserData,
-  type TodoItem,
-} from '../domain/types';
+  applyEventPatch,
+  createEventFromInput,
+  createTodoFromInput,
+  findEvent,
+  findTodo,
+  toggleTodoCompletion,
+  withEvent,
+  withoutEvent,
+  withoutTodo,
+  withTodo,
+  type EventPatch,
+  type NewEventInput,
+  type NewTodoInput,
+} from '../domain/mutations';
+import { createDomainId, type DayPopUserData } from '../domain/types';
 import { parseDayPopUserData } from '../domain/validation';
+import type { DayPopRepository, SyncLoadCapable } from '../data/repository';
 import { getAppStorage, type StorageLike } from './browserStorage';
 import { readUserData, writeUserData, type StorageReadResult } from './versionedStorage';
-
-/**
- * Fired on `window` when a write was refused mid-session, so the app can swap
- * in the recovery screen without every screen having to plumb the error up.
- */
-export const LOCAL_DATA_BLOCKED_EVENT = 'daypop:local-data-blocked';
 
 /**
  * Thrown when the stored data could not be read and a write was attempted
@@ -30,31 +34,15 @@ export class LocalDataBlockedError extends Error {
   }
 }
 
-export interface NewEventInput {
-  title: string;
-  date: string;
-  allDay: boolean;
-  start: string;
-  end: string;
-  calendarId?: string;
-}
-
-export interface NewTodoInput {
-  title: string;
-  date: string;
-  calendarId?: string;
-}
-
-/** Fields the week grid and the event sheet are allowed to change. */
-export interface EventPatch {
-  title?: string;
-  date?: string;
-  allDay?: boolean;
-  start?: string;
-  end?: string;
-}
-
-export class LocalDayPopRepository {
+/**
+ * Guest adapter: the whole document lives in one versioned `localStorage`
+ * envelope, so every edit is a read-modify-write of that envelope.
+ *
+ * The fail-closed guarantees from DP-016/017 live here rather than in the
+ * shared contract because they are properties of browser storage: a remote
+ * store has entirely different failure modes, handled by its own adapter.
+ */
+export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable {
   readonly #injected: StorageLike | undefined;
 
   /** Defaults to the shared app store; pass one only in tests. */
@@ -71,82 +59,68 @@ export class LocalDayPopRepository {
     return this.#injected ?? getAppStorage();
   }
 
-  /** Raw read result, so callers can show recovery instead of editing. */
-  read(): StorageReadResult {
-    return readUserData(this.#storage);
-  }
-
-  load(): DayPopUserData {
+  /**
+   * Synchronous read for the first paint — see `SyncLoadCapable`. Throws
+   * `LocalDataBlockedError` so the caller shows recovery instead of editing;
+   * this replaces the old `read()`, whose raw result `App` used to inspect
+   * before `DataProvider` owned that decision.
+   */
+  loadSync(): DayPopUserData {
     const result = readUserData(this.#storage);
     if (result.status !== 'ready') throw new LocalDataBlockedError(result);
     return structuredClone(result.envelope.data);
   }
 
-  addEvent(input: NewEventInput): DayPopUserData {
+  // `async` throughout: local work is synchronous, but the shared contract is
+  // async for the remote adapter's sake, and `async` turns the fail-closed
+  // throws below into rejections without any extra plumbing.
+  async load(): Promise<DayPopUserData> {
+    return this.loadSync();
+  }
+
+  addEvent(input: NewEventInput): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) =>
+      withEvent(data, createEventFromInput(data, input, { id: createDomainId(), now })),
+    );
+  }
+
+  updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData> {
     const now = new Date().toISOString();
     return this.#mutate((data) => {
-      const event = createEvent(data, input, createDomainId(), now);
-      return { ...data, events: [...data.events, event] };
+      const event = findEvent(data, id);
+      if (!event) return data;
+      return withEvent(data, applyEventPatch(event, patch, data.preferences.timezone, now));
     });
   }
 
-  updateEvent(id: string, patch: EventPatch): DayPopUserData {
+  deleteEvent(id: string): Promise<DayPopUserData> {
+    return this.#mutate((data) => withoutEvent(data, id));
+  }
+
+  addTodo(input: NewTodoInput): Promise<DayPopUserData> {
     const now = new Date().toISOString();
-    return this.#mutate((data) => ({
-      ...data,
-      events: data.events.map((event) =>
-        event.id === id ? patchEvent(event, patch, data.preferences.timezone, now) : event,
-      ),
-    }));
+    return this.#mutate((data) =>
+      withTodo(data, createTodoFromInput(data, input, { id: createDomainId(), now })),
+    );
   }
 
-  deleteEvent(id: string): DayPopUserData {
-    return this.#mutate((data) => ({
-      ...data,
-      events: data.events.filter((event) => event.id !== id),
-    }));
+  deleteTodo(id: string): Promise<DayPopUserData> {
+    return this.#mutate((data) => withoutTodo(data, id));
   }
 
-  addTodo(input: NewTodoInput): DayPopUserData {
+  toggleTodo(id: string): Promise<DayPopUserData> {
     const now = new Date().toISOString();
     return this.#mutate((data) => {
-      const todo: TodoItem = {
-        id: createDomainId(),
-        calendarId: input.calendarId ?? defaultCalendarId(data),
-        parentId: null,
-        title: input.title.trim(),
-        dueDate: input.date,
-        priority: 'none',
-        completedAt: null,
-        sortOrder: data.todos.length,
-        sharingScope: 'inherit',
-        createdAt: now,
-        updatedAt: now,
-      };
-      return { ...data, todos: [...data.todos, todo] };
+      const todo = findTodo(data, id);
+      if (!todo) return data;
+      return withTodo(data, toggleTodoCompletion(todo, now));
     });
   }
 
-  deleteTodo(id: string): DayPopUserData {
-    return this.#mutate((data) => ({
-      ...data,
-      todos: data.todos.filter((todo) => todo.id !== id),
-    }));
-  }
-
-  toggleTodo(id: string): DayPopUserData {
-    const now = new Date().toISOString();
-    return this.#mutate((data) => ({
-      ...data,
-      todos: data.todos.map((todo) =>
-        todo.id === id
-          ? { ...todo, completedAt: todo.completedAt === null ? now : null, updatedAt: now }
-          : todo,
-      ),
-    }));
-  }
-
-  #mutate(update: (data: DayPopUserData) => DayPopUserData): DayPopUserData {
+  async #mutate(
+    update: (data: DayPopUserData) => DayPopUserData,
+  ): Promise<DayPopUserData> {
     // Re-read before every write. If the stored bytes became unreadable — or
     // were written by a newer schema — refuse rather than overwrite them with
     // whatever this session happens to hold.
@@ -157,70 +131,4 @@ export class LocalDayPopRepository {
     writeUserData(next, current.envelope.revision, this.#storage);
     return structuredClone(next);
   }
-}
-
-function createEvent(
-  data: DayPopUserData,
-  input: NewEventInput,
-  id: string,
-  now: string,
-): CalendarEvent {
-  const common = {
-    id,
-    calendarId: input.calendarId ?? defaultCalendarId(data),
-    title: input.title.trim(),
-    location: null,
-    notes: null,
-    reminderMinutes: [],
-    recurrence: null,
-    sharingScope: 'inherit' as const,
-    createdAt: now,
-    updatedAt: now,
-  };
-  return input.allDay
-    ? { ...common, allDay: true, startDate: input.date, endDate: input.date }
-    : timedEventFromWallTime(
-        common,
-        { date: input.date, start: input.start, end: input.end },
-        data.preferences.timezone,
-      );
-}
-
-function patchEvent(
-  event: CalendarEvent,
-  patch: EventPatch,
-  defaultTimezone: string,
-  updatedAt: string,
-): CalendarEvent {
-  const previous = eventWallTime(event);
-  const allDay = patch.allDay ?? event.allDay;
-  const common = {
-    id: event.id,
-    calendarId: event.calendarId,
-    title: patch.title?.trim() ?? event.title,
-    location: event.location,
-    notes: event.notes,
-    reminderMinutes: event.reminderMinutes,
-    recurrence: event.recurrence,
-    sharingScope: event.sharingScope,
-    createdAt: event.createdAt,
-    updatedAt,
-  };
-  const date = patch.date ?? previous.date;
-  if (allDay) return { ...common, allDay: true, startDate: date, endDate: date };
-  return timedEventFromWallTime(
-    common,
-    {
-      date,
-      start: (patch.start ?? previous.start) || '09:00',
-      end: (patch.end ?? previous.end) || '10:00',
-    },
-    event.allDay ? defaultTimezone : event.timezone,
-  );
-}
-
-function defaultCalendarId(data: DayPopUserData): string {
-  const calendar = data.calendars.find((candidate) => candidate.isDefault) ?? data.calendars[0];
-  if (!calendar) throw new Error('DayPop 資料缺少預設日曆。');
-  return calendar.id;
 }

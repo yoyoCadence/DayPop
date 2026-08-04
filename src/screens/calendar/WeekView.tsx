@@ -16,7 +16,7 @@ import {
   type DragRange,
 } from '../../domain/timeGrid';
 import type { CalendarEvent } from '../../domain/types';
-import type { EventPatch } from '../../storage/localRepository';
+import type { EventPatch } from '../../domain/mutations';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
+import { useDayPopDataState } from './data/dataContext';
 import { useStorageMode } from './hooks/useStorageMode';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdate } from './pwa/useAppUpdate';
@@ -11,7 +12,6 @@ import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
 import type { ShellTab } from './shell/tabs';
-import { LOCAL_DATA_BLOCKED_EVENT, LocalDayPopRepository } from './storage/localRepository';
 
 /**
  * Routes the four canonical tabs into the App shell.
@@ -34,26 +34,28 @@ export default function App() {
     storageMode.kind === 'memory' ? <StorageWarningBanner reason={storageMode.reason} /> : null;
 
   // Checked before any screen mounts. A screen that mounted over unreadable
-  // data would write a blank state over it on the first edit — DP-016.
-  const [storageGeneration, setStorageGeneration] = useState(0);
-  const rereadStorage = useCallback(() => setStorageGeneration((current) => current + 1), []);
-  const storage = useMemo(
-    () => new LocalDayPopRepository().read(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-read on demand
-    [storageGeneration],
-  );
+  // data would write a blank state over it on the first edit — DP-016. The
+  // provider owns this state now, so a write refused mid-session lands here
+  // too, without every screen having to plumb the error up.
+  const { state, refresh } = useDayPopDataState();
 
-  // The repository refuses the write itself; this only brings the UI in line
-  // when the stored bytes change under us mid-session.
-  useEffect(() => {
-    window.addEventListener(LOCAL_DATA_BLOCKED_EVENT, rereadStorage);
-    return () => window.removeEventListener(LOCAL_DATA_BLOCKED_EVENT, rereadStorage);
-  }, [rereadStorage]);
-
-  if (storage.status !== 'ready') {
+  if (state.status === 'blocked') {
     return (
       <AppShell tab="cal" onTabChange={() => {}} banner={banner} hideTabBar>
-        <DataRecoveryScreen result={storage} onRecovered={rereadStorage} />
+        <DataRecoveryScreen result={state.result} onRecovered={refresh} />
+      </AppShell>
+    );
+  }
+
+  // Unreachable with the guest adapter, which loads synchronously. Kept as a
+  // plain engineering placeholder until DP-026 wires the remote adapter in and
+  // decides what a load failure should actually look like.
+  if (state.status !== 'ready') {
+    return (
+      <AppShell tab="cal" onTabChange={() => {}} banner={banner} hideTabBar>
+        <div className="dp-screen-body">
+          <p className="dp-note">{state.status === 'failed' ? state.message : '載入中…'}</p>
+        </div>
       </AppShell>
     );
   }

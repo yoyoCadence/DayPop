@@ -92,12 +92,13 @@ Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴
 - Supabase 前端只允許 project URL 與 publishable key；不得放入 `service_role` 或其他伺服器密鑰。
 - 登入／登出不會自動上傳、清除或改綁目前的遊客資料；帳號匯入會另做可預覽、可確認、失敗可回復的流程。
 
-目前登入只建立安全 session；介面會明確提示帳號資料 CRUD 尚未接線，避免把「已登入」誤解成「已同步」。
+目前登入只建立安全 session；介面會明確提示帳號資料 CRUD 尚未接線，避免把「已登入」誤解成「已同步」。所有畫面都經 `src/data` 的 repository 合約存取資料，不直接呼叫 browser storage 或 Supabase；authenticated adapter 已存在並通過單元測試，但要等 DP-026 才會依 session 接上，屆時才會有資料真的寫進帳號。
 
 ## 專案結構
 
 ```text
-src/domain/       核心資料型別、日期邏輯、農曆、快速新增解析與時間格計算
+src/domain/       核心資料型別、日期邏輯、共用領域編輯、農曆、快速新增解析與時間格計算
+src/data/         UI 唯一依賴的 repository 合約、DataProvider 與 Supabase adapter
 src/theme/        六套 canonical 主題 token、ThemeProvider 與自託管字體清單
 src/shell/        App viewport、safe area、底部四分頁、桌面手機展示框與跨分頁橫幅
 src/screens/      各分頁畫面；calendar/ 是依原稿搬移的日曆

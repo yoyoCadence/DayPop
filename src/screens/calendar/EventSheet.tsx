@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { eventWallTime } from '../../domain/eventTime';
 import type { CalendarEvent } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
-import type { EventPatch, NewEventInput, NewTodoInput } from '../../storage/localRepository';
+import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
 
 export interface EventSheetProps {
   open: boolean;

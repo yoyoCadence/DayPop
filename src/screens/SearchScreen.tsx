@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { searchEntries } from '../domain/search';
-import { useDayPopData } from '../hooks/useDayPopData';
+import { useDayPopData } from '../data/dataContext';
 import './screens.css';
 import './search.css';
 
