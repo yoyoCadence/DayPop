@@ -22,7 +22,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 
 ## 本機開發
 
-需要 Node.js 24+ 與 npm。
+需要 Node.js 24（major 版本以 `.nvmrc` 為準，`package.json` 的 `engines` 宣告同一範圍）與 npm 11 以上。使用 nvm 的話可先 `nvm use`。
 
 ```bash
 npm install
@@ -37,6 +37,10 @@ npm run typecheck
 npm run test
 npm run build
 ```
+
+## 持續整合
+
+PR 與 `main` 的 push 會由 GitHub Actions（`.github/workflows/ci.yml`）執行 `npm ci`，再依序跑上面四項檢查；Node 版本直接讀 `.nvmrc`，與本機一致。CI 目前不需要任何環境變數或密鑰，Supabase 未設定時 build 仍可通過。日後若某個步驟需要密鑰，只能使用 GitHub Secrets 注入，不得寫進 workflow 或 repository。Supabase `db reset`／pgTAP 與 Playwright e2e 會隨 DP-033／DP-030 再加入。
 
 Production preview：
 

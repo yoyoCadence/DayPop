@@ -64,18 +64,16 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> DP-031 進行中；依交接順序，完成後才把下一項（DP-013）移入。
+- [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。依交接順序此階段不使用 Supabase MCP，遠端整合驗收留到 DP-026。
 
 ## In Progress
 
-- [ ] **DP-031 — 建立最小 CI 與 Node toolchain pin：** 對 PR 執行 `npm ci`、lint、typecheck、unit、build；加入一致的 Node major `engines`／版本檔，任何 secret 只用 GitHub Secrets。Supabase reset、pgTAP 與 Playwright 隨 DP-030／033 再加入。
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
 ## Backlog
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-013 — 建立 repository/service 邊界：** UI 不直接呼叫 browser storage 或 Supabase；建立 guest local adapter 與 authenticated Supabase adapter，兩者共用 domain contract、runtime validation 與測試。
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）與搜尋／綜覽（DP-058）已完成，接著是設定其餘區塊與其他 dialog。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。主題顯示字體已由 DP-052 先行處理，本任務保留 unpkg React 移除、CSP 政策與整體資源盤點；若日後決定連中文字體也自託管，需先解決 subset 與體積問題。
 - [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest（目前仍是舊的紫色骨架色）；把保存的偏好與六套 theme id 接進 DP-050 的 `ThemeProvider`，既有保存值一律優先於預設；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
@@ -133,6 +131,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
+- CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci` 與四項驗證。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
 - `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 套用／驗證 migration 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
@@ -140,6 +139,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-031 — 建立最小 CI 與 Node toolchain pin：** `.github/workflows/ci.yml` 對 PR 與 `main` 的 push 依序執行 `npm ci`、`npm run lint`、`npm run typecheck`、`npm run test`、`npm run build`，四項與本機 verification commands 完全相同，且拆成獨立步驟以便一眼看出是哪一關失敗。Node 版本以 `.nvmrc`（major 24）為單一事實來源，由 `actions/setup-node` 的 `node-version-file` 讀取，並在 `package.json` 的 `engines` 宣告同一個 major（`>=24.0.0 <25.0.0`、npm `>=11.0.0`）；`package-lock.json` 的 root entry 同步鏡像該 `engines`，未變動任何相依版本。workflow 不設定任何 env secret，也不需要 Supabase 變數即可 build；`permissions` 限制為 `contents: read`，checkout 使用 `persist-credentials: false`，並以 concurrency group 取消同分支尚未完成的舊 run。已在乾淨目錄實測 `npm ci` 通過（242 packages），四項驗證在本機皆通過（110 個單元測試）。Supabase `db reset`／pgTAP 與 Playwright e2e 依交接順序留給 DP-033／030；本任務未使用 Supabase MCP，也未變更遠端專案。
 - [x] **DP-012 — 定案共用 domain ↔ DB contract：** `src/domain/types.ts` 已建立 Calendar、全天／timed Event discriminated union、RFC 5545 Recurrence、EventException、完整 Todo、Sticker 與 Preferences canonical contract；timed event 保存 ISO instant＋IANA timezone，全天 `endDate` 明確採 inclusive。`validation.ts` 對日期、instant、timezone、時間順序、default calendar 與跨資料 reference 做 runtime validation，`databaseMapping.ts` 以 generated `Row`／`Insert` types 明確轉換 calendars、events、exceptions、todos、stickers、preferences，client insert 不帶 DB 控制的 timestamp。遊客 envelope 升至 schema v2，保留 v1 JSON fixture 與 migration test；首次啟動／migration 都會持久化一個 UUID default calendar，舊 event／todo 全部接到它，23:xx 跨日 migration 正確。既有 UI 只做欄位相容搬移，日曆管理／貼圖／完整事件欄位仍依 DP-014／055，recurrence expansion／DST／ICS 仍依 DP-027，`month_weeks` DB rename 仍依 DP-018，提醒與 DB invariant hardening 仍依 DP-036。單元測試目前 110 個。
 - [x] **DP-017 — 處理 browser storage 不可用：** 所有儲存存取改走 `src/storage/browserStorage.ts` 的 `AppStorage`。開機前先 probe：讀 `window.localStorage` 這個動作本身會丟例外（無痕視窗、封鎖網站資料）、`setItem` 會丟例外，也可能寫得進去卻讀不回來，三種都判為不可用。不可用或 session 中途遭拒（多為 `QuotaExceededError`）就把**本分頁**降級為 `MemoryStorage`，把 `daypop.*` 與 legacy key 帶過去讓畫面維持一致，原始位元組完全不動。降級後不會自動切回持久化，否則同一 session 會半在磁碟半在記憶體。`StorageWarningBanner` 由 `AppShell` 的新 `banner` prop 固定在 App body 之上，四個分頁與復原畫面都看得到，且刻意不可關閉。記憶體模式下復原畫面的備份文案改為指向下載的檔案，因為此時只有它是真備份。`LocalDayPopRepository` 改為每次操作重新解析共用 store，否則降級後仍會寫進舊 delegate。補 14 個單元測試涵蓋 probe 三種失敗、降級與訂閱、不自動復原，以及「重新載入後編輯確實消失」。本機 schema version 的提升前置至此完成。
 - [x] **DP-016 — 阻斷本機資料毀損覆寫：** `readUserData()` 改為回傳 `ready`／`corrupt`／`future` 三態，不再把讀不出來的資料當成空資料。`LocalDayPopRepository` 每次寫入前重讀，非 `ready` 一律丟出 `LocalDataBlockedError` 而不覆寫；`App` 在任何畫面掛載前檢查，改渲染 `DataRecoveryScreen` 並隱藏底部分頁。復原流程是「先備份再重設」：備份寫到帶時間戳的 `daypop.user-data.backup.*` 並下載檔案，`resetUserData()` 在沒有備份時直接拒絕。session 中途被其他分頁破壞也會擋下並切到復原畫面。補 10 個回歸測試涵蓋 malformed、future schema、中途損壞與備份／重設閘門。本機 schema version 的提升仍等 DP-017。
