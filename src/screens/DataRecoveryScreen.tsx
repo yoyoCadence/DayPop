@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useStorageMode } from '../hooks/useStorageMode';
 import {
   backupRawUserData,
   listUserDataBackups,
@@ -30,6 +31,9 @@ export function DataRecoveryScreen({ result, onRecovered }: DataRecoveryScreenPr
   );
   const [error, setError] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState(false);
+  // In memory mode the copy in storage disappears on reload, so the downloaded
+  // file is the only real backup and the wording must say so — DP-017.
+  const persists = useStorageMode().kind === 'persistent';
 
   const isFuture = result.status === 'future';
 
@@ -102,8 +106,18 @@ export function DataRecoveryScreen({ result, onRecovered }: DataRecoveryScreenPr
         </button>
         {backupKey && (
           <div className="recovery-ok">
-            已複製到這台裝置的 <code>{backupKey}</code>
-            {downloaded ? '，並已開始下載檔案。' : '。'}
+            {persists ? (
+              <>
+                已複製到這台裝置的 <code>{backupKey}</code>
+                {downloaded ? '，並已開始下載檔案。' : '。'}
+              </>
+            ) : (
+              <>
+                {downloaded ? '已開始下載 ' : '已準備 '}
+                <code>{backupKey}.json</code>
+                。這個瀏覽器目前無法保存資料，請務必確認這個檔案已經存到裝置上，它是唯一的備份。
+              </>
+            )}
           </div>
         )}
 
