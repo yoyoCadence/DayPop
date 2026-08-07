@@ -1,5 +1,6 @@
+import { sortedCalendars } from './calendars';
 import { eventWallTime, timedEventFromWallTime } from './eventTime';
-import type { CalendarEvent, DayPopUserData, Sticker, TodoItem } from './types';
+import type { Calendar, CalendarEvent, DayPopUserData, Sticker, TodoItem } from './types';
 
 /**
  * Pure domain edits shared by every repository adapter.
@@ -45,11 +46,121 @@ export interface EventPatch {
   end?: string;
 }
 
+export interface NewCalendarInput {
+  name: string;
+  color: string;
+}
+
+/** Fields the 我的日曆 list and the edit dialog can change. */
+export interface CalendarPatch {
+  name?: string;
+  color?: string;
+  isVisible?: boolean;
+}
+
 export interface CreateContext {
   /** Client-generated UUID for the new row. */
   id: string;
   /** ISO instant used for both `createdAt` and `updatedAt`. */
   now: string;
+}
+
+/** The原檔's fallback when the name field is left empty. */
+export const UNNAMED_CALENDAR_NAME = '未命名日曆';
+
+export function createCalendarFromInput(
+  data: DayPopUserData,
+  input: NewCalendarInput,
+  context: CreateContext,
+): Calendar {
+  return {
+    id: context.id,
+    name: input.name.trim() || UNNAMED_CALENDAR_NAME,
+    color: input.color,
+    isVisible: true,
+    // Only the bootstrap calendar is the default; a new one never steals it.
+    isDefault: false,
+    sortOrder: data.calendars.length,
+    createdAt: context.now,
+    updatedAt: context.now,
+  };
+}
+
+export function applyCalendarPatch(
+  calendar: Calendar,
+  patch: CalendarPatch,
+  updatedAt: string,
+): Calendar {
+  return {
+    ...calendar,
+    name: patch.name === undefined ? calendar.name : patch.name.trim() || UNNAMED_CALENDAR_NAME,
+    color: patch.color ?? calendar.color,
+    isVisible: patch.isVisible ?? calendar.isVisible,
+    updatedAt,
+  };
+}
+
+export function findCalendarById(data: DayPopUserData, id: string): Calendar | undefined {
+  return data.calendars.find((calendar) => calendar.id === id);
+}
+
+export function withCalendar(data: DayPopUserData, calendar: Calendar): DayPopUserData {
+  const exists = data.calendars.some((candidate) => candidate.id === calendar.id);
+  return {
+    ...data,
+    calendars: exists
+      ? data.calendars.map((candidate) => (candidate.id === calendar.id ? calendar : candidate))
+      : [...data.calendars, calendar],
+  };
+}
+
+/**
+ * Which calendar inherits the rows of one being deleted.
+ *
+ * The原檔 simply drops the calendar and leaves its events pointing at nothing.
+ * DayPop cannot: the domain contract requires every event, todo and sticker to
+ * reference a live calendar, and losing them would be data loss rather than a
+ * display change. So the rows move to the surviving default, and if the
+ * default itself is deleted the next calendar in order is promoted.
+ */
+export function calendarDeletionPlan(
+  data: DayPopUserData,
+  id: string,
+): { target: Calendar; promote: boolean } | null {
+  const doomed = findCalendarById(data, id);
+  // The原檔 refuses to delete the last calendar; so does the domain contract,
+  // which requires exactly one default to exist.
+  if (!doomed || data.calendars.length <= 1) return null;
+
+  const survivors = sortedCalendars(data.calendars.filter((calendar) => calendar.id !== id));
+  const existingDefault = survivors.find((calendar) => calendar.isDefault);
+  const target = existingDefault ?? survivors[0]!;
+  return { target, promote: !existingDefault };
+}
+
+export function withoutCalendar(data: DayPopUserData, id: string, now: string): DayPopUserData {
+  const plan = calendarDeletionPlan(data, id);
+  if (!plan) return data;
+  const { target, promote } = plan;
+
+  const reassign = <T extends { calendarId: string; updatedAt: string }>(rows: T[]): T[] =>
+    rows.map((row) =>
+      row.calendarId === id ? { ...row, calendarId: target.id, updatedAt: now } : row,
+    );
+
+  return {
+    ...data,
+    calendars: data.calendars
+      .filter((calendar) => calendar.id !== id)
+      .map((calendar) =>
+        promote && calendar.id === target.id
+          ? { ...calendar, isDefault: true, updatedAt: now }
+          : calendar,
+      ),
+    events: reassign(data.events),
+    todos: reassign(data.todos),
+    stickers: reassign(data.stickers),
+  };
 }
 
 export function resolveDefaultCalendarId(data: DayPopUserData): string {

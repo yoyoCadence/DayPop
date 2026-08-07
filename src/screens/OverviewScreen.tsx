@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { calendarColor } from '../domain/calendars';
 import { toDateKey } from '../domain/date';
 import {
   buildOverviewGroups,
@@ -193,7 +194,11 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
                             <span
                               className="overview-item-bar"
                               style={{
-                                background: item.done ? 'var(--faint)' : 'var(--accent)',
+                                background: item.done
+                                  ? 'var(--faint)'
+                                  : item.calendarId
+                                    ? calendarColor(data.calendars, item.calendarId)
+                                    : 'var(--accent)',
                               }}
                             />
                           )}

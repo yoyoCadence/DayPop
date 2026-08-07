@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { addDays, startOfDay, toDateKey } from '../../domain/date';
+import { calendarColor } from '../../domain/calendars';
 import { eventDate, eventStartTime } from '../../domain/eventTime';
-import type { CalendarEvent, TodoItem } from '../../domain/types';
+import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
 
 /** The原檔 looks ahead 16 days and drops empty days after tomorrow. */
 const LOOKAHEAD_DAYS = 16;
@@ -10,6 +11,7 @@ const WEEKDAY_LABELS = ['週日', '週一', '週二', '週三', '週四', '週�
 export interface AgendaViewProps {
   events: CalendarEvent[];
   todos: TodoItem[];
+  calendars: Calendar[];
   onOpenEvent(id: string): void;
   onToggleTodo(id: string): void;
 }
@@ -28,7 +30,13 @@ export interface AgendaViewProps {
  * `when=today|tomorrow` for todos; DayPop stores real dates, so todos appear on
  * the day they are actually due.
  */
-export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaViewProps) {
+export function AgendaView({
+  events,
+  todos,
+  calendars,
+  onOpenEvent,
+  onToggleTodo,
+}: AgendaViewProps) {
   const days = useMemo(() => {
     const today = startOfDay(new Date());
     const todayKey = toDateKey(today);
@@ -56,6 +64,7 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
           time: event.allDay ? '全天' : eventStartTime(event),
           title: event.title,
           done: false,
+          color: calendarColor(calendars, event.calendarId),
         }));
 
       const todoItems: AgendaItem[] = todos
@@ -66,6 +75,8 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
           time: '待辦',
           title: todo.title,
           done: todo.completedAt !== null,
+          // Todos have no calendar colour in the原檔 either.
+          color: 'var(--accent)',
         }));
 
       const items = [...eventItems, ...todoItems];
@@ -81,7 +92,7 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
     }
 
     return result;
-  }, [events, todos]);
+  }, [calendars, events, todos]);
 
   return (
     <div className="cal-view-pane cal-agenda">
@@ -105,14 +116,7 @@ export function AgendaView({ events, todos, onOpenEvent, onToggleTodo }: AgendaV
               type="button"
               onClick={() => (item.kind === 'event' ? onOpenEvent(item.id) : onToggleTodo(item.id))}
             >
-              <span
-                className="cal-agenda-bar"
-                style={{
-                  // Per-calendar colours are wired with DP-014/DP-026; todos
-                  // use the accent in the原檔 too.
-                  background: 'var(--accent)',
-                }}
-              />
+              <span className="cal-agenda-bar" style={{ background: item.color }} />
               <span className="cal-agenda-time">{item.time}</span>
               <span className="cal-agenda-body">
                 <span
@@ -147,4 +151,6 @@ interface AgendaItem {
   time: string;
   title: string;
   done: boolean;
+  /** Owning calendar's colour for events; the accent for todos. */
+  color: string;
 }

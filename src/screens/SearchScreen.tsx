@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { calendarColor, sortedCalendars } from '../domain/calendars';
 import { searchEntries } from '../domain/search';
 import { useDayPopData } from '../data/dataContext';
 import './screens.css';
@@ -14,16 +15,17 @@ export interface SearchScreenProps {
 /**
  * 搜尋 tab, ported from the search screen of `日曆桌寵 Calendar Pet.dc.html`.
  *
- * The原檔 puts a per-calendar filter chip row under the field. The Calendar
- * model exists; the row keeps its single working 全部 chip until DP-014 wires
- * the filter interaction.
+ * The chip row under the field is the原檔's `searchCal` filter: 全部 plus one
+ * chip per calendar. It filters events only — see `searchEntries`.
  */
 export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
   const { data } = useDayPopData();
   const [query, setQuery] = useState('');
+  const [calendarFilter, setCalendarFilter] = useState<string | null>(null);
+  const calendars = sortedCalendars(data.calendars);
   const results = useMemo(
-    () => searchEntries(query, data.events, data.todos),
-    [query, data.events, data.todos],
+    () => searchEntries(query, data.events, data.todos, calendarFilter),
+    [query, data.events, data.todos, calendarFilter],
   );
   const trimmed = query.trim();
 
@@ -54,12 +56,28 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
         </div>
       </div>
 
-      <div className="search-chips">
-        <button className="search-chip" type="button" aria-pressed="true">
+      <div className="search-chips" role="group" aria-label="依日曆篩選">
+        <button
+          className="search-chip"
+          type="button"
+          aria-pressed={calendarFilter === null}
+          onClick={() => setCalendarFilter(null)}
+        >
           <span className="search-chip-dot" />
           全部
         </button>
-        <span className="search-chip-pending">依日曆篩選待 DP-014</span>
+        {calendars.map((calendar) => (
+          <button
+            key={calendar.id}
+            className="search-chip"
+            type="button"
+            aria-pressed={calendarFilter === calendar.id}
+            onClick={() => setCalendarFilter(calendar.id)}
+          >
+            <span className="search-chip-dot" style={{ background: calendar.color }} />
+            {calendar.name}
+          </button>
+        ))}
       </div>
 
       <div className="search-results">
@@ -84,7 +102,14 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
                 : onOpenDay(data.todos.find((todo) => todo.id === result.id)?.dueDate ?? '')
             }
           >
-            <span className="search-result-dot" />
+            <span
+              className="search-result-dot"
+              style={
+                result.calendarId
+                  ? { background: calendarColor(data.calendars, result.calendarId) }
+                  : undefined
+              }
+            />
             <span className="search-result-body">
               <span className="search-result-title">{result.title}</span>
               <span className="search-result-sub">{result.sub}</span>

@@ -46,6 +46,7 @@ function render(stickers: Sticker[]) {
         weekStartsOn={0}
         events={[]}
         stickers={stickers}
+        calendars={[]}
         selectedDate={TODAY}
         todayKey={TODAY}
         flashToday={false}

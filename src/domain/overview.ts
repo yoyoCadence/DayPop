@@ -24,6 +24,8 @@ export interface OverviewItem {
   done: boolean;
   /** Stickers show their glyph where events and todos show a colour bar. */
   glyph?: string;
+  /** Owning calendar, so an event bar takes that calendar's colour. */
+  calendarId?: string;
 }
 
 export interface OverviewDay {
@@ -170,6 +172,7 @@ function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[
         title: event.title,
         sub: '',
         done: false,
+        calendarId: event.calendarId,
       }));
   }
 

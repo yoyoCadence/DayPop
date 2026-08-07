@@ -16,12 +16,21 @@ export interface SearchResult {
   title: string;
   /** Secondary line: time for events, 待辦 · date (· 已完成) for todos. */
   sub: string;
+  /** Owning calendar, for the result dot. Todos are not filtered by calendar. */
+  calendarId?: string;
 }
 
+/**
+ * `calendarFilter` is the原檔's `searchCal`: `null` means 全部. It applies to
+ * events only, because a todo has no calendar in the原檔 and filtering DayPop's
+ * todos by one would silently hide every todo whenever a non-default calendar
+ * is picked.
+ */
 export function searchEntries(
   query: string,
   events: CalendarEvent[],
   todos: TodoItem[],
+  calendarFilter: string | null = null,
 ): SearchResult[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
@@ -29,12 +38,14 @@ export function searchEntries(
   const results: SearchResult[] = [];
 
   for (const event of events) {
+    if (calendarFilter !== null && event.calendarId !== calendarFilter) continue;
     if (!event.title.toLowerCase().includes(needle)) continue;
     results.push({
       kind: 'event',
       id: event.id,
       title: event.title,
       sub: `${event.allDay ? '全天' : eventStartTime(event)} · ${formatDate(eventDate(event))}`,
+      calendarId: event.calendarId,
     });
   }
 

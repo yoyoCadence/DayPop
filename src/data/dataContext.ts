@@ -1,6 +1,8 @@
 import { createContext, useContext } from 'react';
 import type {
+  CalendarPatch,
   EventPatch,
+  NewCalendarInput,
   NewEventInput,
   NewStickerInput,
   NewTodoInput,
@@ -33,6 +35,9 @@ export interface DataActions {
   deleteTodo(id: string): void;
   addSticker(input: NewStickerInput): void;
   deleteSticker(id: string): void;
+  addCalendar(input: NewCalendarInput): void;
+  updateCalendar(id: string, patch: CalendarPatch): void;
+  deleteCalendar(id: string): void;
 }
 
 export interface DataContextValue {
