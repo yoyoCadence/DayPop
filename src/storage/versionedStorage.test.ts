@@ -151,12 +151,15 @@ describe('backup and reset', () => {
   });
 });
 
+// The repository contract is async (DP-013) so one interface can cover both
+// the local and the Supabase adapter. The guarantees asserted here are the
+// DP-016 ones and are unchanged: refuse the write, leave the bytes alone.
 describe('repository write barrier', () => {
-  it('refuses to overwrite malformed data on the next mutation', () => {
+  it('refuses to overwrite malformed data on the next mutation', async () => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, 'not-json');
     const repository = new LocalDayPopRepository();
 
-    expect(() =>
+    await expect(
       repository.addEvent({
         title: '會議',
         date: '2026-08-06',
@@ -164,12 +167,12 @@ describe('repository write barrier', () => {
         start: '09:00',
         end: '10:00',
       }),
-    ).toThrow(LocalDataBlockedError);
+    ).rejects.toThrow(LocalDataBlockedError);
 
     expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('not-json');
   });
 
-  it('refuses to overwrite data written by a newer schema', () => {
+  it('refuses to overwrite data written by a newer schema', async () => {
     const raw = JSON.stringify({
       schemaVersion: 99,
       revision: 3,
@@ -179,29 +182,31 @@ describe('repository write barrier', () => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
     const repository = new LocalDayPopRepository();
 
-    expect(() => repository.addTodo({ title: '買菜', date: '2026-08-06' })).toThrow(
+    await expect(repository.addTodo({ title: '買菜', date: '2026-08-06' })).rejects.toThrow(
       LocalDataBlockedError,
     );
-    expect(() => repository.load()).toThrow(LocalDataBlockedError);
+    await expect(repository.load()).rejects.toThrow(LocalDataBlockedError);
+    // The synchronous first-paint read must fail closed in exactly the same way.
+    expect(() => repository.loadSync()).toThrow(LocalDataBlockedError);
     expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
   });
 
-  it('blocks even when the session started with readable data', () => {
+  it('blocks even when the session started with readable data', async () => {
     const repository = new LocalDayPopRepository();
-    repository.addTodo({ title: '第一筆', date: '2026-08-06' });
+    await repository.addTodo({ title: '第一筆', date: '2026-08-06' });
 
     // Something outside this tab damaged the key mid-session.
     localStorage.setItem(USER_DATA_STORAGE_KEY, '{{{');
 
-    expect(() => repository.addTodo({ title: '第二筆', date: '2026-08-06' })).toThrow(
+    await expect(repository.addTodo({ title: '第二筆', date: '2026-08-06' })).rejects.toThrow(
       LocalDataBlockedError,
     );
     expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('{{{');
   });
 
-  it('still writes normally when the data is readable', () => {
+  it('still writes normally when the data is readable', async () => {
     const repository = new LocalDayPopRepository();
-    const next = repository.addTodo({ title: '買菜', date: '2026-08-06' });
+    const next = await repository.addTodo({ title: '買菜', date: '2026-08-06' });
 
     expect(next.todos).toHaveLength(1);
     expect(readyEnvelope().data.todos[0]?.title).toBe('買菜');

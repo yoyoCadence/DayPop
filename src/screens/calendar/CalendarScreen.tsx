@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
-import { useDayPopData } from '../../hooks/useDayPopData';
+import { useDayPopData } from '../../data/dataContext';
 import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
 import { EventSheet } from './EventSheet';

@@ -107,14 +107,14 @@ describe('degrading to memory', () => {
     expect(browser.entries.get('daypop.user-data')).toBe('first');
   });
 
-  it('does not report the failed write as saved', () => {
+  it('does not report the failed write as saved', async () => {
     const browser = new FlakyStorage();
     const storage = new AppStorage(browser);
     writeUserData(createEmptyUserData(), 0, storage);
     browser.failWrites = quotaError();
 
     const repository = new LocalDayPopRepository(storage);
-    repository.addTodo({ title: '買菜', date: '2026-08-06' });
+    await repository.addTodo({ title: '買菜', date: '2026-08-06' });
 
     // Visible in this tab…
     const inSession = readUserData(storage);
