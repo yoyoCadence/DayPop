@@ -64,10 +64,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-055 — 搬移貼圖完整體驗：** 依交接順序的第 3 項；DP-012 的 Sticker 模型與 DP-013 的 repository 邊界都已就緒，只接 canonical domain／repository，不新增遠端 schema。詳細範圍見 Backlog 的 DP-055。
+> DP-055 進行中；依交接順序，完成後才把下一項（DP-014）移入。
 
 ## In Progress
 
+- [ ] **DP-055 — 搬移貼圖完整體驗：** 依交接順序的第 3 項；DP-012 的 Sticker 模型與 DP-013 的 repository 邊界都已就緒，只接 canonical domain／repository，不新增遠端 schema。詳細範圍見 Backlog 的 DP-055。
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
 ## Backlog
