@@ -29,6 +29,10 @@
   align-items: center;
   gap: 11px;
   min-width: 0;
+  /* There is no global button reset in this app; every button states its own
+     border, or it inherits the UA's 2px outset. */
+  border: 0;
+  padding: 0;
   background: none;
   text-align: initial;
 }
@@ -63,6 +67,8 @@
   width: 40px;
   height: 23px;
   flex: none;
+  border: 0;
+  padding: 0;
   border-radius: 20px;
   background: var(--surface-2);
   transition: background 0.2s;
@@ -182,9 +188,12 @@
   margin-bottom: 18px;
 }
 
+/* The selected ring is a box-shadow, so the button itself carries no border. */
 .cal-manage-swatch {
   width: 30px;
   height: 30px;
+  border: 0;
+  padding: 0;
   border-radius: 50%;
 }
 
@@ -218,6 +227,7 @@
 .cal-manage-delete {
   width: 100%;
   margin-top: 8px;
+  border: 0;
   padding: 9px;
   background: none;
   color: #e4002b;
