@@ -1,16 +1,20 @@
 import {
   applyEventPatch,
   createEventFromInput,
+  createStickerFromInput,
   createTodoFromInput,
   findEvent,
   findTodo,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
+  withoutSticker,
   withoutTodo,
+  withSticker,
   withTodo,
   type EventPatch,
   type NewEventInput,
+  type NewStickerInput,
   type NewTodoInput,
 } from '../domain/mutations';
 import { createDomainId, type DayPopUserData } from '../domain/types';
@@ -116,6 +120,17 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
       if (!todo) return data;
       return withTodo(data, toggleTodoCompletion(todo, now));
     });
+  }
+
+  addSticker(input: NewStickerInput): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) =>
+      withSticker(data, createStickerFromInput(data, input, { id: createDomainId(), now })),
+    );
+  }
+
+  deleteSticker(id: string): Promise<DayPopUserData> {
+    return this.#mutate((data) => withoutSticker(data, id));
   }
 
   async #mutate(

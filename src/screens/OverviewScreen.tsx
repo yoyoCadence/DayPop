@@ -14,6 +14,8 @@ import './overview.css';
 export interface OverviewScreenProps {
   /** Opens the event on the 日曆 tab, as the原檔 does. */
   onOpenEvent(id: string): void;
+  /** Tapping a sticker opens its day, since a sticker has nothing to edit. */
+  onOpenDay(dateKey: string): void;
 }
 
 const TYPE_OPTIONS: { type: OverviewType; label: string }[] = [
@@ -33,11 +35,11 @@ const PERIOD_OPTIONS: { period: OverviewPeriod; label: string }[] = [
  * `日曆桌寵 Calendar Pet.dc.html`: type and period segmented controls, period
  * stepper, collapsible groups and a total count.
  *
- * 貼圖 keeps its place in the type control. DP-055 still needs to wire Sticker
- * storage into this view, so it shows an explicit note rather than an empty
- * state that would imply the user simply has none.
+ * All three types are live. A sticker row shows its glyph where events and
+ * todos show a colour bar, and tapping one opens that day — the原檔's
+ * `mapItem()` behaviour.
  */
-export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
+export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) {
   const { data, toggleTodo } = useDayPopData();
   const [type, setType] = useState<OverviewType>('events');
   const [period, setPeriod] = useState<OverviewPeriod>('month');
@@ -51,13 +53,14 @@ export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
       buildOverviewGroups({
         events: data.events,
         todos: data.todos,
+        stickers: data.stickers,
         type,
         period,
         cursor,
         weekStartsOn,
         todayKey,
       }),
-    [data.events, data.todos, type, period, cursor, weekStartsOn, todayKey],
+    [data.events, data.todos, data.stickers, type, period, cursor, weekStartsOn, todayKey],
   );
   const total = groups.reduce((sum, group) => sum + group.count, 0);
   const collapsedSet = new Set(collapsed);
@@ -144,15 +147,7 @@ export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
       </div>
 
       <div className="overview-body">
-        {type === 'stickers' && (
-          <div className="dp-note">
-            <span className="dp-note-task">DP-055</span>
-            <strong>貼圖統計尚未接上</strong>
-            <p>Sticker 已可保存；原稿的區間統計與列表會在 DP-055 接上，現在不顯示假的空資料。</p>
-          </div>
-        )}
-
-        {type !== 'stickers' && groups.length === 0 && (
+        {groups.length === 0 && (
           <div className="overview-empty">
             這個區間沒有資料
             <br />
@@ -186,16 +181,22 @@ export function OverviewScreen({ onOpenEvent }: OverviewScreenProps) {
                           className="overview-item"
                           key={`${item.kind}-${item.id}`}
                           type="button"
-                          onClick={() =>
-                            item.kind === 'event' ? onOpenEvent(item.id) : toggleTodo(item.id)
-                          }
+                          onClick={() => {
+                            if (item.kind === 'event') onOpenEvent(item.id);
+                            else if (item.kind === 'todo') toggleTodo(item.id);
+                            else onOpenDay(day.dateKey);
+                          }}
                         >
-                          <span
-                            className="overview-item-bar"
-                            style={{
-                              background: item.done ? 'var(--faint)' : 'var(--accent)',
-                            }}
-                          />
+                          {item.kind === 'sticker' ? (
+                            <span className="overview-item-glyph">{item.glyph}</span>
+                          ) : (
+                            <span
+                              className="overview-item-bar"
+                              style={{
+                                background: item.done ? 'var(--faint)' : 'var(--accent)',
+                              }}
+                            />
+                          )}
                           <span className="overview-item-time">{item.time}</span>
                           <span className="overview-item-body">
                             <span

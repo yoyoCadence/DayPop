@@ -69,6 +69,12 @@ function shape(data: DayPopUserData) {
       sortOrder: todo.sortOrder,
       parentId: todo.parentId,
     })),
+    stickers: data.stickers.map((sticker) => ({
+      date: sticker.date,
+      glyph: sticker.glyph,
+      assetKey: sticker.assetKey,
+      sortOrder: sticker.sortOrder,
+    })),
   };
 }
 
@@ -103,6 +109,7 @@ describe.each(adapters)('%s adapter honours the shared contract', (_name, create
         },
       ],
       todos: [],
+      stickers: [],
     });
   });
 
@@ -190,16 +197,47 @@ describe.each(adapters)('%s adapter honours the shared contract', (_name, create
     expect(shape(await repository.deleteTodo(id)).todos).toEqual([]);
   });
 
+  it('adds stickers to a day, numbering them per day', async () => {
+    await repository.addSticker({ date: '2026-08-06', glyph: '🎂' });
+    const data = await repository.addSticker({ date: '2026-08-06', glyph: '✈️' });
+    const other = await repository.addSticker({ date: '2026-08-07', glyph: '❤️' });
+
+    expect(shape(data).stickers).toEqual([
+      { date: '2026-08-06', glyph: '🎂', assetKey: null, sortOrder: 0 },
+      { date: '2026-08-06', glyph: '✈️', assetKey: null, sortOrder: 1 },
+    ]);
+    // A second day starts its own numbering rather than continuing the first.
+    expect(shape(other).stickers.at(-1)).toEqual({
+      date: '2026-08-07',
+      glyph: '❤️',
+      assetKey: null,
+      sortOrder: 0,
+    });
+  });
+
+  it('deletes a sticker without touching the others', async () => {
+    const created = await repository.addSticker({ date: '2026-08-06', glyph: '🎂' });
+    await repository.addSticker({ date: '2026-08-06', glyph: '✈️' });
+
+    const data = await repository.deleteSticker(created.stickers[0]!.id);
+
+    expect(shape(data).stickers).toEqual([
+      { date: '2026-08-06', glyph: '✈️', assetKey: null, sortOrder: 1 },
+    ]);
+  });
+
   it('treats editing a missing id as a no-op rather than an error', async () => {
     const before = shape(await repository.load());
 
     const afterEvent = await repository.updateEvent(CALENDAR, { title: '不存在' });
     const afterTodo = await repository.toggleTodo(CALENDAR);
     const afterDelete = await repository.deleteEvent(CALENDAR);
+    const afterSticker = await repository.deleteSticker(CALENDAR);
 
     expect(shape(afterEvent)).toEqual(before);
     expect(shape(afterTodo)).toEqual(before);
     expect(shape(afterDelete)).toEqual(before);
+    expect(shape(afterSticker)).toEqual(before);
   });
 
   it('returns the whole document from every write', async () => {

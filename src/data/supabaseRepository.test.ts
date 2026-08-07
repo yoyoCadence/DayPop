@@ -186,6 +186,28 @@ describe('SupabaseDayPopRepository writes', () => {
     expect(undone.todos[0]?.completedAt).toBeNull();
   });
 
+  it('writes a sticker row with its date and glyph', async () => {
+    const { db, repository } = bootstrapped();
+    await repository.load();
+
+    const data = await repository.addSticker({ date: '2026-08-07', glyph: '🎂' });
+
+    const written = db.writes.at(-1);
+    expect(written?.table).toBe('stickers');
+    expect(written?.row).toMatchObject({
+      owner_id: OWNER,
+      calendar_id: CALENDAR,
+      sticker_date: '2026-08-07',
+      glyph: '🎂',
+      asset_key: null,
+    });
+    expect(data.stickers[0]).toMatchObject({ date: '2026-08-07', glyph: '🎂', assetKey: null });
+
+    const id = data.stickers[0]!.id;
+    expect((await repository.deleteSticker(id)).stickers).toHaveLength(0);
+    expect(db.rows('stickers')).toHaveLength(0);
+  });
+
   it('leaves an unknown id alone instead of writing', async () => {
     const { db, repository } = bootstrapped();
     await repository.load();

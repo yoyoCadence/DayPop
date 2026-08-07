@@ -1,5 +1,10 @@
 import { createContext, useContext } from 'react';
-import type { EventPatch, NewEventInput, NewTodoInput } from '../domain/mutations';
+import type {
+  EventPatch,
+  NewEventInput,
+  NewStickerInput,
+  NewTodoInput,
+} from '../domain/mutations';
 import type { DayPopUserData } from '../domain/types';
 import type { StorageReadResult } from '../storage/versionedStorage';
 
@@ -26,6 +31,8 @@ export interface DataActions {
   addTodo(input: NewTodoInput): void;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;
+  addSticker(input: NewStickerInput): void;
+  deleteSticker(id: string): void;
 }
 
 export interface DataContextValue {

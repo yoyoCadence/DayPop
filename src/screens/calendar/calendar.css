@@ -301,6 +301,19 @@
   font-weight: 700;
 }
 
+/* Pinned to the bottom of the cell by `margin-top:auto`, as in the原檔.
+   Glyph size comes from `stickerFontSize()` and is set inline per cell. */
+.cal-cell-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+  margin-top: auto;
+  padding-bottom: 1px;
+  line-height: 1;
+}
+
 /* ---------- week ---------- */
 
 .cal-week {
@@ -834,6 +847,59 @@
   color: var(--muted);
   font-size: 14px;
   font-weight: 700;
+}
+
+/* ---------- day detail: stickers ---------- */
+
+.cal-day-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 14px;
+}
+
+.cal-day-sticker {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 7px;
+  background: var(--surface-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.cal-day-sticker-add {
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Negative top margin tucks the picker under the row above, matching the原檔. */
+.cal-day-sticker-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -8px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: var(--surface-2);
+  max-height: 172px;
+  overflow-y: auto;
+}
+
+.cal-day-sticker-option {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  font-size: 22px;
+  line-height: 1;
 }
 
 .cal-day-section {

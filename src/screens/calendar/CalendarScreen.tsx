@@ -42,8 +42,17 @@ const VIEW_OPTIONS: { view: CalendarView; label: string }[] = [
  * (日詳情 and 新增／編輯行程).
  */
 export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps) {
-  const { data, addEvent, updateEvent, deleteEvent, addTodo, toggleTodo, deleteTodo } =
-    useDayPopData();
+  const {
+    data,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    addSticker,
+    deleteSticker,
+  } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
   const todayKey = toDateKey(new Date());
@@ -249,6 +258,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
             ref={monthRef}
             weekStartsOn={weekStartsOn}
             events={data.events}
+            stickers={data.stickers}
             selectedDate={selected}
             todayKey={todayKey}
             flashToday={flashToday}
@@ -300,12 +310,15 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         dateKey={dayDetailKey}
         events={data.events}
         todos={data.todos}
+        stickers={data.stickers}
         onClose={() => setDayDetailKey(null)}
         onOpenEvent={openEvent}
         onNewEvent={() => setSheetOpen(true)}
         onAddTodo={addTodo}
         onToggleTodo={toggleTodo}
         onDeleteTodo={deleteTodo}
+        onAddSticker={addSticker}
+        onDeleteSticker={deleteSticker}
       />
 
       <EventSheet

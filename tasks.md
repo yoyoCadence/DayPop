@@ -64,7 +64,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-055 — 搬移貼圖完整體驗：** 依交接順序的第 3 項；DP-012 的 Sticker 模型與 DP-013 的 repository 邊界都已就緒，只接 canonical domain／repository，不新增遠端 schema。詳細範圍見 Backlog 的 DP-055。
+- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 交接順序第 4 項，同樣不使用 Supabase MCP。詳細範圍見 Backlog 的 DP-014。
 
 ## In Progress
 
@@ -103,7 +103,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | 原型假功能 | 現況 | 由誰補上 |
 | --- | --- | --- |
 | 天氣 | DP-053 起在列表檢視保留版面位置但不顯示 | DP-054 |
-| 貼圖 | 月格保留格位但沒有資料來源 | DP-012（模型）＋ DP-055（UI） |
+| ~~貼圖~~ | 已完成：DP-012 模型＋DP-055 UI | — |
 | 資料匯入匯出（JSON／ICS） | 尚未搬移 | DP-056 |
 | 附件 | 原稿的按鈕行為是假的 | DP-028 |
 | 雲端「已同步」狀態 | 尚未搬移，接通前不得顯示 | DP-026 |
@@ -111,7 +111,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | AI 助理 | 模擬且會把 key 存在前端 | DP-043 |
 
 - [ ] **DP-054 — 補回天氣欄位：** 先定案資料來源、是否需要位置權限、離線與失敗時的顯示，再接回列表檢視每日標題右側與日詳情。在來源定案前維持停用；不得沿用原稿依日期取固定字串的假資料。
-- [ ] **DP-055 — 搬移貼圖 UI：** DP-012 的 Sticker 模型完成後，補上月格的貼圖顯示（原稿依數量調整字級：1 個 19px、2 個 15px、3 個 12px、4 個以上 10px）、日詳情的貼圖區與貼圖選擇器；保留未來由 emoji 遷移到素材 ID 的空間。
 - [ ] **DP-056 — 搬移資料匯入匯出：** JSON 與 ICS 的匯出與匯入，含 schema validation、匯入預覽與筆數、重複 ID 處理、失敗回復與 round-trip 測試；匯入成功前不得覆寫既有資料，且禁止匯入舊 AI key。ICS 的 exclusive `DTEND` 轉換依 DP-027。
 
 ### Deferred product features
@@ -139,6 +138,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-055 — 搬移貼圖完整體驗：** 三處貼圖 UI 都依原稿接上。月格：`stickerFontSize()` 逐值移植原檔 `stkSize`（1／2／3／4+ → 19／15／12／10px），貼圖列以 `margin-top:auto` 置底、置中換行。日詳情：貼圖列在標題與「行程」之間，點既有貼圖即刪除（原稿沒有另外的刪除鈕），`＋ 貼圖` 展開 63 個 glyph 的選擇器，選一個後關閉；sheet 以 `key={dateKey}` 重建，換一天時選擇器跟著關閉，對應原檔 `openDay()` 重設 `stickerPick`。綜覽：貼圖分頁改為真實資料，glyph（23px／26px 寬）取代色條、時間欄留空、標題固定「貼圖」、點一列開啟該日。`STICKER_GLYPHS` 逐字移植原檔 `get STK()` 的 63 個 emoji 與順序。資料面沿用 DP-013 的合約：新增 `addSticker`／`deleteSticker` 到 `DayPopRepository`、`domain/mutations.ts` 與兩個 adapter，`sortOrder` 依「當日既有張數」計算而非全域計數，Sticker 仍同時保留 `glyph` 與 `assetKey`，未來換素材集不需要資料遷移。未新增任何遠端 schema／DDL，也未使用 Supabase MCP。單元測試 152 → 168，新增月格字級與過濾、日詳情選擇器互動、綜覽貼圖分組，以及雙 adapter 的貼圖平行合約測試。三處的 CSS 皆自原檔 inline style 逐值移植，但未以 Playwright 做像素比對（Playwright 仍等 DP-030），建議合併後在瀏覽器實看一次。
 - [x] **DP-013 — 建立 repository/service 邊界：** `src/data/repository.ts` 的 `DayPopRepository` 是 UI 唯一可依賴的資料合約，七個方法一律回傳完整文件並改為 async，好讓本機與遠端 adapter 可互換。`src/domain/mutations.ts` 收攏兩個 adapter 共用的純領域編輯（預設日曆、trim、時間戳、all-day／timed 轉換、跨午夜順延），`LocalDayPopRepository` 與新的 `SupabaseDayPopRepository` 都用同一組函式，差別只在寫到哪裡。Supabase adapter 以 DP-012 的 `databaseMapping` 與 generated types 讀寫 calendars／events／exceptions／todos／stickers／preferences，寫入後以回傳的 row 重建快照（因此 `created_at`／`updated_at` 一律取 DB 值），並區分 `RemoteDataError` 與 `AccountNotBootstrappedError`；它**尚未接進 App**，切換 adapter、裝置快取與短暫失敗處理仍是 DP-026。UI 端新增 `DataProvider`／`dataContext` 作為唯一 seam：`App` 與四個分頁不再 import 任何 storage 或 Supabase 模組，`LOCAL_DATA_BLOCKED_EVENT` 這個 window 事件與 `LocalDayPopRepository.read()` 因此成為多餘並移除，改由 provider 直接接住 `LocalDataBlockedError` 進入復原畫面。遊客路徑保留同步首屏（`SyncLoadCapable`），第一次 render 就有真資料、不會閃空白。單元測試自 110 增至 152：新增雙 adapter 平行合約測試、Supabase adapter 的 mapping／owner 範圍／錯誤不落地、純 mutation 邊界，以及以 React `act` 驗證 provider 與整棵 App 真的掛得起來（含 DP-016 復原閘門仍優先於分頁）。`DataRecoveryScreen` 仍直接呼叫本機備份／重設，這是刻意保留的本機專屬例外。
 - [x] **DP-031 — 建立最小 CI 與 Node toolchain pin：** `.github/workflows/ci.yml` 對 PR 與 `main` 的 push 依序執行 `npm ci`、`npm run lint`、`npm run typecheck`、`npm run test`、`npm run build`，四項與本機 verification commands 完全相同，且拆成獨立步驟以便一眼看出是哪一關失敗。Node 版本以 `.nvmrc`（major 24）為單一事實來源，由 `actions/setup-node` 的 `node-version-file` 讀取，並在 `package.json` 的 `engines` 宣告同一個 major（`>=24.0.0 <25.0.0`、npm `>=11.0.0`）；`package-lock.json` 的 root entry 同步鏡像該 `engines`，未變動任何相依版本。workflow 不設定任何 env secret，也不需要 Supabase 變數即可 build；`permissions` 限制為 `contents: read`，checkout 使用 `persist-credentials: false`，並以 concurrency group 取消同分支尚未完成的舊 run。已在乾淨目錄實測 `npm ci` 通過（242 packages），四項驗證在本機皆通過（110 個單元測試）。Supabase `db reset`／pgTAP 與 Playwright e2e 依交接順序留給 DP-033／030；本任務未使用 Supabase MCP，也未變更遠端專案。
 - [x] **DP-012 — 定案共用 domain ↔ DB contract：** `src/domain/types.ts` 已建立 Calendar、全天／timed Event discriminated union、RFC 5545 Recurrence、EventException、完整 Todo、Sticker 與 Preferences canonical contract；timed event 保存 ISO instant＋IANA timezone，全天 `endDate` 明確採 inclusive。`validation.ts` 對日期、instant、timezone、時間順序、default calendar 與跨資料 reference 做 runtime validation，`databaseMapping.ts` 以 generated `Row`／`Insert` types 明確轉換 calendars、events、exceptions、todos、stickers、preferences，client insert 不帶 DB 控制的 timestamp。遊客 envelope 升至 schema v2，保留 v1 JSON fixture 與 migration test；首次啟動／migration 都會持久化一個 UUID default calendar，舊 event／todo 全部接到它，23:xx 跨日 migration 正確。既有 UI 只做欄位相容搬移，日曆管理／貼圖／完整事件欄位仍依 DP-014／055，recurrence expansion／DST／ICS 仍依 DP-027，`month_weeks` DB rename 仍依 DP-018，提醒與 DB invariant hardening 仍依 DP-036。單元測試目前 110 個。

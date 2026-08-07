@@ -7,7 +7,7 @@ import {
   stepOverviewCursor,
   type BuildOverviewInput,
 } from './overview';
-import type { CalendarEvent, TodoItem } from './types';
+import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 const CURSOR = new Date(2026, 7, 6); // Thursday 2026-08-06
 
@@ -45,10 +45,24 @@ function todo(id: string, date: string, done = false): TodoItem {
   };
 }
 
+function sticker(id: string, date: string, glyph: string): Sticker {
+  return {
+    id,
+    calendarId: 'calendar-1',
+    date,
+    glyph,
+    assetKey: null,
+    sortOrder: 0,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  };
+}
+
 function input(overrides: Partial<BuildOverviewInput> = {}): BuildOverviewInput {
   return {
     events: [],
     todos: [],
+    stickers: [],
     type: 'events',
     period: 'month',
     cursor: CURSOR,
@@ -145,8 +159,32 @@ describe('buildOverviewGroups', () => {
     expect(items[1]).toMatchObject({ time: '完成', sub: '', done: true });
   });
 
-  it('returns nothing for stickers until DP-055 wires them into the overview input', () => {
-    expect(buildOverviewGroups(input({ type: 'stickers' }))).toEqual([]);
+  it('lists stickers with their glyph and no time column', () => {
+    const groups = buildOverviewGroups(
+      input({
+        type: 'stickers',
+        stickers: [sticker('a', '2026-08-03', '🎂'), sticker('b', '2026-08-03', '✈️')],
+      }),
+    );
+
+    const items = groups.flatMap((group) => group.days.flatMap((day) => day.items));
+    expect(items).toEqual([
+      { kind: 'sticker', id: 'a', time: '', title: '貼圖', sub: '', done: false, glyph: '🎂' },
+      { kind: 'sticker', id: 'b', time: '', title: '貼圖', sub: '', done: false, glyph: '✈️' },
+    ]);
+    expect(groups[0]?.count).toBe(2);
+  });
+
+  it('counts stickers alongside the other types across a year', () => {
+    const groups = buildOverviewGroups(
+      input({
+        type: 'stickers',
+        period: 'year',
+        stickers: [sticker('a', '2026-02-14', '❤️'), sticker('b', '2026-08-03', '🎂')],
+      }),
+    );
+
+    expect(groups.map((group) => group.title)).toEqual(['2月', '8月']);
   });
 
   it('ignores data outside the selected period', () => {

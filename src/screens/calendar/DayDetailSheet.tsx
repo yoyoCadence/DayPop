@@ -2,9 +2,10 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { fromDateKey, toDateKey } from '../../domain/date';
 import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { minutesFromTime } from '../../domain/timeGrid';
-import type { CalendarEvent, TodoItem } from '../../domain/types';
+import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
+import type { CalendarEvent, Sticker, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
-import type { NewTodoInput } from '../../domain/mutations';
+import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -13,38 +14,47 @@ export interface DayDetailSheetProps {
   dateKey: string | null;
   events: CalendarEvent[];
   todos: TodoItem[];
+  stickers: Sticker[];
   onClose(): void;
   onOpenEvent(id: string): void;
   onNewEvent(): void;
   onAddTodo(input: NewTodoInput): void;
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
+  onAddSticker(input: NewStickerInput): void;
+  onDeleteSticker(id: string): void;
 }
 
 /**
  * 日詳情 sheet, ported from the `dayOpen` block of
  * `日曆桌寵 Calendar Pet.dc.html`. Opened by tapping a month cell.
  *
- * Sticker, subtask and ordering fields now exist in the domain. Their visual
- * controls remain deliberately deferred to DP-055／DP-014.
+ * Todo subtasks and drag ordering exist in the domain but still have no visual
+ * controls — that remains DP-014.
  */
 export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
   if (!dateKey) return null;
-  return <DayDetailSheetBody dateKey={dateKey} {...rest} />;
+  // Keyed by date so the picker closes when another day is opened, matching
+  // the原檔's `openDay()`, which resets `stickerPick`.
+  return <DayDetailSheetBody key={dateKey} dateKey={dateKey} {...rest} />;
 }
 
 function DayDetailSheetBody({
   dateKey,
   events,
   todos,
+  stickers,
   onClose,
   onOpenEvent,
   onNewEvent,
   onAddTodo,
   onToggleTodo,
   onDeleteTodo,
+  onAddSticker,
+  onDeleteSticker,
 }: DayDetailSheetProps & { dateKey: string }) {
   const [todoDraft, setTodoDraft] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Escape is handled by `CalendarScreen`, not here: the event sheet can be open
   // on top of this one, and two window listeners would close both at once.
@@ -66,6 +76,11 @@ function DayDetailSheetBody({
       conflict: conflicting.has(event.id),
     }));
   }, [dateKey, events]);
+
+  const dayStickers = useMemo(
+    () => stickers.filter((sticker) => sticker.date === dateKey),
+    [dateKey, stickers],
+  );
 
   const dayTodos = useMemo(
     () =>
@@ -98,10 +113,49 @@ function DayDetailSheetBody({
             </button>
           </div>
 
-          <div className="cal-day-pending">
-            <span className="dp-note-task">DP-055</span>
-            貼圖列與貼圖選擇器在原稿就在這個位置，資料模型已完成，等 DP-055 接上 UI。
+          <div className="cal-day-stickers">
+            {dayStickers.map((sticker) => (
+              // Tapping an existing sticker removes it, as in the原檔 — there
+              // is no separate delete affordance.
+              <button
+                className="cal-day-sticker"
+                key={sticker.id}
+                type="button"
+                aria-label={`移除貼圖 ${sticker.glyph ?? ''}`}
+                onClick={() => onDeleteSticker(sticker.id)}
+              >
+                {sticker.glyph}
+              </button>
+            ))}
+            <button
+              className="cal-day-sticker-add"
+              type="button"
+              aria-expanded={pickerOpen}
+              onClick={() => setPickerOpen((open) => !open)}
+            >
+              ＋ 貼圖
+            </button>
           </div>
+
+          {pickerOpen && (
+            <div className="cal-day-sticker-pick" role="group" aria-label="選擇貼圖">
+              {STICKER_GLYPHS.map((glyph) => (
+                <button
+                  className="cal-day-sticker-option"
+                  key={glyph}
+                  type="button"
+                  aria-label={`加入貼圖 ${glyph}`}
+                  onClick={() => {
+                    onAddSticker({ date: dateKey, glyph });
+                    // The原檔 closes the picker after one pick.
+                    setPickerOpen(false);
+                  }}
+                >
+                  {glyph}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="cal-day-section">行程</div>
           {dayEvents.length === 0 && <div className="cal-day-empty">這天沒有行程</div>}

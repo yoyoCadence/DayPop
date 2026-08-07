@@ -191,6 +191,15 @@
   border-radius: 3px;
 }
 
+/* Stands in for `.overview-item-bar` on a sticker row. */
+.overview-item-glyph {
+  width: 26px;
+  flex: none;
+  font-size: 23px;
+  line-height: 1;
+  text-align: center;
+}
+
 .overview-item-time {
   width: 44px;
   flex: none;
