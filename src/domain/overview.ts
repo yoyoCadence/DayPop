@@ -1,6 +1,6 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
 import { eventDate, eventStartTime } from './eventTime';
-import type { CalendarEvent, TodoItem } from './types';
+import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 /**
  * Grouping for the 綜覽 screen, ported from `overviewGroups()` and
@@ -14,14 +14,16 @@ export type OverviewType = 'events' | 'todos' | 'stickers';
 export type OverviewPeriod = 'year' | 'month' | 'week';
 
 export interface OverviewItem {
-  kind: 'event' | 'todo';
+  kind: 'event' | 'todo' | 'sticker';
   id: string;
-  /** Left column: 全天／HH:MM for events, 待辦／完成 for todos. */
+  /** Left column: 全天／HH:MM for events, 待辦／完成 for todos, empty for stickers. */
   time: string;
   title: string;
   /** Secondary line, currently only the overdue marker on todos. */
   sub: string;
   done: boolean;
+  /** Stickers show their glyph where events and todos show a colour bar. */
+  glyph?: string;
 }
 
 export interface OverviewDay {
@@ -96,6 +98,7 @@ export function stepOverviewCursor(
 export interface BuildOverviewInput {
   events: CalendarEvent[];
   todos: TodoItem[];
+  stickers: Sticker[];
   type: OverviewType;
   period: OverviewPeriod;
   cursor: Date;
@@ -188,6 +191,17 @@ function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[
       });
   }
 
-  // Sticker storage now exists, but wiring it into this input and UI is DP-055.
-  return [];
+  // The原檔 gives a sticker no time column and the literal title 貼圖; the
+  // glyph itself stands in for the colour bar.
+  return input.stickers
+    .filter((sticker) => sticker.date === dateKey)
+    .map((sticker) => ({
+      kind: 'sticker' as const,
+      id: sticker.id,
+      time: '',
+      title: '貼圖',
+      sub: '',
+      done: false,
+      glyph: sticker.glyph ?? '',
+    }));
 }

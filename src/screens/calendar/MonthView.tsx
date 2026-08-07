@@ -11,7 +11,8 @@ import {
 import { addDays, fromDateKey, startOfWeek, toDateKey, weeksBetween } from '../../domain/date';
 import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { lunarCell } from '../../domain/lunar';
-import type { CalendarEvent } from '../../domain/types';
+import { stickerFontSize } from '../../domain/stickerGlyphs';
+import type { CalendarEvent, Sticker } from '../../domain/types';
 
 /**
  * Continuously scrolling month grid, ported from the `data-month-scroll` block
@@ -46,6 +47,7 @@ export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
   weekStartsOn: 0 | 1;
   events: CalendarEvent[];
+  stickers: Sticker[];
   selectedDate: string;
   todayKey: string;
   flashToday: boolean;
@@ -58,6 +60,7 @@ export function MonthView({
   ref,
   weekStartsOn,
   events,
+  stickers,
   selectedDate,
   todayKey,
   flashToday,
@@ -75,6 +78,7 @@ export function MonthView({
   const pendingScrollAdjust = useRef(0);
 
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+  const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
 
   const scrollToToday = useCallback(
     (smooth: boolean, height?: number) => {
@@ -180,6 +184,7 @@ export function MonthView({
           key,
           date,
           dayEvents,
+          dayStickers: stickersByDate.get(key) ?? [],
           isFirstOfMonth: date.getDate() === 1,
           // Alternating month shading, so month boundaries stay readable while
           // scrolling continuously.
@@ -189,7 +194,7 @@ export function MonthView({
         };
       }),
     );
-  }, [bufferStart, bufferWeeks, eventsByDate, weekStartsOn]);
+  }, [bufferStart, bufferWeeks, eventsByDate, stickersByDate, weekStartsOn]);
 
   return (
     <div className="cal-view-pane">
@@ -252,6 +257,18 @@ export function MonthView({
                     </div>
                   ))}
                   {hidden > 0 && <div className="cal-cell-more">+{hidden}</div>}
+                  {cell.dayStickers.length > 0 && (
+                    // `margin-top:auto` in CSS pins the row to the bottom of
+                    // the cell, as in the原檔, whatever else the cell holds.
+                    <div
+                      className="cal-cell-stickers"
+                      style={{ fontSize: `${stickerFontSize(cell.dayStickers.length)}px` }}
+                    >
+                      {cell.dayStickers.map((sticker) => (
+                        <span key={sticker.id}>{sticker.glyph}</span>
+                      ))}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -282,6 +299,17 @@ function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]
       if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
       return eventStartTime(left).localeCompare(eventStartTime(right));
     });
+  }
+  return map;
+}
+
+/** Stored order per day, matching the原檔's `stickersOn()`. */
+function groupStickersByDate(stickers: Sticker[]): Map<string, Sticker[]> {
+  const map = new Map<string, Sticker[]>();
+  for (const sticker of stickers) {
+    const list = map.get(sticker.date);
+    if (list) list.push(sticker);
+    else map.set(sticker.date, [sticker]);
   }
   return map;
 }

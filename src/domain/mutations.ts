@@ -1,5 +1,5 @@
 import { eventWallTime, timedEventFromWallTime } from './eventTime';
-import type { CalendarEvent, DayPopUserData, TodoItem } from './types';
+import type { CalendarEvent, DayPopUserData, Sticker, TodoItem } from './types';
 
 /**
  * Pure domain edits shared by every repository adapter.
@@ -26,6 +26,13 @@ export interface NewEventInput {
 export interface NewTodoInput {
   title: string;
   date: string;
+  calendarId?: string;
+}
+
+export interface NewStickerInput {
+  date: string;
+  /** Emoji today; `assetKey` stays open for a future art set. */
+  glyph: string;
   calendarId?: string;
 }
 
@@ -135,12 +142,42 @@ export function toggleTodoCompletion(todo: TodoItem, now: string): TodoItem {
   return { ...todo, completedAt: todo.completedAt === null ? now : null, updatedAt: now };
 }
 
+export function createStickerFromInput(
+  data: DayPopUserData,
+  input: NewStickerInput,
+  context: CreateContext,
+): Sticker {
+  return {
+    id: context.id,
+    calendarId: input.calendarId ?? resolveDefaultCalendarId(data),
+    date: input.date,
+    glyph: input.glyph,
+    // Reserved for the future art set; a glyph sticker never sets both.
+    assetKey: null,
+    // Per day rather than per document: the原檔 renders each day's stickers in
+    // the order they were added, and a global counter would not survive a
+    // sticker being deleted from another day.
+    sortOrder: stickersOn(data, input.date).length,
+    createdAt: context.now,
+    updatedAt: context.now,
+  };
+}
+
+/** The原檔's `stickersOn(ds)`, in stored order. */
+export function stickersOn(data: DayPopUserData, dateKey: string): Sticker[] {
+  return data.stickers.filter((sticker) => sticker.date === dateKey);
+}
+
 export function findEvent(data: DayPopUserData, id: string): CalendarEvent | undefined {
   return data.events.find((event) => event.id === id);
 }
 
 export function findTodo(data: DayPopUserData, id: string): TodoItem | undefined {
   return data.todos.find((todo) => todo.id === id);
+}
+
+export function findSticker(data: DayPopUserData, id: string): Sticker | undefined {
+  return data.stickers.find((sticker) => sticker.id === id);
 }
 
 /** Replaces the event with the same id, keeping its position, or appends it. */
@@ -170,4 +207,18 @@ export function withTodo(data: DayPopUserData, todo: TodoItem): DayPopUserData {
 
 export function withoutTodo(data: DayPopUserData, id: string): DayPopUserData {
   return { ...data, todos: data.todos.filter((todo) => todo.id !== id) };
+}
+
+export function withSticker(data: DayPopUserData, sticker: Sticker): DayPopUserData {
+  const exists = data.stickers.some((candidate) => candidate.id === sticker.id);
+  return {
+    ...data,
+    stickers: exists
+      ? data.stickers.map((candidate) => (candidate.id === sticker.id ? sticker : candidate))
+      : [...data.stickers, sticker],
+  };
+}
+
+export function withoutSticker(data: DayPopUserData, id: string): DayPopUserData {
+  return { ...data, stickers: data.stickers.filter((sticker) => sticker.id !== id) };
 }

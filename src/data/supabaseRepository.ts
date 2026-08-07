@@ -6,22 +6,27 @@ import {
   eventToInsert,
   preferencesFromRow,
   stickerFromRow,
+  stickerToInsert,
   todoFromRow,
   todoToInsert,
 } from '../domain/databaseMapping';
 import {
   applyEventPatch,
   createEventFromInput,
+  createStickerFromInput,
   createTodoFromInput,
   findEvent,
   findTodo,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
+  withoutSticker,
   withoutTodo,
+  withSticker,
   withTodo,
   type EventPatch,
   type NewEventInput,
+  type NewStickerInput,
   type NewTodoInput,
 } from '../domain/mutations';
 import {
@@ -171,6 +176,27 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     return this.#commit(withoutTodo(data, id));
   }
 
+  async addSticker(input: NewStickerInput): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = createStickerFromInput(data, input, {
+      id: createDomainId(),
+      now: new Date().toISOString(),
+    });
+    const { data: row, error } = await this.client
+      .from('stickers')
+      .upsert(stickerToInsert(draft, this.userId))
+      .select('*')
+      .single();
+    if (error || !row) throw new RemoteDataError('寫入貼圖', error);
+    return this.#commit(withSticker(data, stickerFromRow(row)));
+  }
+
+  async deleteSticker(id: string): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    await this.#delete('stickers', id);
+    return this.#commit(withoutSticker(data, id));
+  }
+
   /**
    * Writes go back through `*FromRow`, so the snapshot holds what the database
    * actually stored — including the `created_at`/`updated_at` the client is
@@ -196,7 +222,7 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     return todoFromRow(data);
   }
 
-  async #delete(table: 'events' | 'todos', id: string) {
+  async #delete(table: 'events' | 'todos' | 'stickers', id: string) {
     const { error } = await this.client
       .from(table)
       .delete()

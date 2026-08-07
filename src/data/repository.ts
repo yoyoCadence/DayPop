@@ -1,4 +1,9 @@
-import type { EventPatch, NewEventInput, NewTodoInput } from '../domain/mutations';
+import type {
+  EventPatch,
+  NewEventInput,
+  NewStickerInput,
+  NewTodoInput,
+} from '../domain/mutations';
 import type { DayPopUserData } from '../domain/types';
 
 /**
@@ -27,6 +32,8 @@ export interface DayPopRepository {
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
+  addSticker(input: NewStickerInput): Promise<DayPopUserData>;
+  deleteSticker(id: string): Promise<DayPopUserData>;
 }
 
 /**

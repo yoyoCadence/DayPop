@@ -29,6 +29,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - 點日期開啟日詳情 sheet；新增、編輯與刪除行程
 - 快速新增自然語言解析日期與時間；讀到目前存不下來的重複／地點／提醒會明講，不靜靜丟掉
 - 新增、完成與刪除待辦
+- 日詳情可貼上貼圖（63 個 emoji），月格依當日數量自動縮放，綜覽可依區間統計
 - 搜尋分頁與綜覽分頁（行程／待辦切換、年／月／週期間）
 - 六套外觀主題 × 淺／深色、農曆與節日標示、App 內浮動寵物
 - 版本檢查、更新內容公告與使用者選擇更新
@@ -38,7 +39,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
 - Supabase migrations、9 張核心表、owner-only RLS 與產生的 TypeScript database types
 
-日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁除外觀主題外的其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、貼圖、附件、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
+日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁除外觀主題外的其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、附件、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數；貼圖已於 DP-055 接上真實資料。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
 
 ## 本機開發
 

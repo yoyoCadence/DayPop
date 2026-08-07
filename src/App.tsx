@@ -101,7 +101,10 @@ export default function App() {
         />
       )}
       {tab === 'overview' && (
-        <OverviewScreen onOpenEvent={(id) => focusCalendar({ kind: 'event', id })} />
+        <OverviewScreen
+          onOpenEvent={(id) => focusCalendar({ kind: 'event', id })}
+          onOpenDay={(dateKey) => focusCalendar({ kind: 'day', dateKey })}
+        />
       )}
       {tab === 'settings' && (
         <SettingsScaffoldScreen updater={updater} onOpenAuth={() => setAuthOpen(true)} />

@@ -86,6 +86,13 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       deleteTodo(id) {
         run(() => activeRepository.deleteTodo(id));
       },
+      addSticker(input) {
+        if (!input.glyph.trim()) return;
+        run(() => activeRepository.addSticker(input));
+      },
+      deleteSticker(id) {
+        run(() => activeRepository.deleteSticker(id));
+      },
     };
   }, [activeRepository]);
 
