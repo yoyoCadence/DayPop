@@ -2,6 +2,21 @@
 
 DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；Supabase Auth 與資料庫安全基礎已接入，帳號日曆 CRUD／匯入仍是下一階段。
 
+## 畫面
+
+> 實機截圖，`npm run dev` 後拍攝。日曆本身不需要登入或 Supabase 設定即可操作。
+
+![月檢視](docs/screenshots/month.png)
+
+月檢視：連續捲動的月格，附農曆與節日（七夕、中元等），今日高亮，
+上方是月／週／列表切換與自然語言快速新增。
+
+六套外觀主題 × 淺／深色，於「設定」即時切換：
+
+| 像素 | 鮮活 |
+|---|---|
+| ![像素主題](docs/screenshots/theme-pixel.png) | ![鮮活主題](docs/screenshots/theme-vivid.png) |
+
 ## 目前可用
 
 - 日曆分頁：連續捲動的月格、7 欄時間格週檢視、列表檢視，以及今天與前後期
