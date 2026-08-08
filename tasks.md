@@ -64,9 +64,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-018 — 接上主題與月曆列數偏好：** DP-014 剩下的設定區塊（寵物、一般偏好）都需要偏好寫入路徑，先做這一項才不會做兩次。**這是交接順序的停止點：需要 Supabase MCP，請改由可使用 MCP 的 agent 接手。** 詳細範圍見 Backlog 的 DP-018。
+> DP-014 剩下的設定區塊（寵物、一般偏好）卡在 DP-018 的偏好寫入路徑，而 DP-018 需要 Supabase MCP，因此先做交接順序第 5 項的 DP-015。**DP-018 仍是交接順序的停止點，需由可使用 MCP 的 agent 接手。**
 
 ## In Progress
+
+- [ ] **DP-015 — 自託管／打包必要前端資源：** 交接順序第 5 項，不使用 Supabase MCP。移除執行期遠端依賴、建立 CSP 政策與資源盤點。
 
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
