@@ -80,6 +80,18 @@ function optionalText(value: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * Next ordering key for a set of rows.
+ *
+ * Deliberately `max + 1` rather than `length`: after anything is deleted the
+ * count no longer matches the highest key, so `length` hands out a value that
+ * is already taken. Gaps in the sequence are fine — this is an ordering key,
+ * not a position.
+ */
+function nextSortOrder(existing: { sortOrder: number }[]): number {
+  return existing.reduce((highest, row) => Math.max(highest, row.sortOrder + 1), 0);
+}
+
 export function createCalendarFromInput(
   data: DayPopUserData,
   input: NewCalendarInput,
@@ -92,7 +104,7 @@ export function createCalendarFromInput(
     isVisible: true,
     // Only the bootstrap calendar is the default; a new one never steals it.
     isDefault: false,
-    sortOrder: data.calendars.length,
+    sortOrder: nextSortOrder(data.calendars),
     createdAt: context.now,
     updatedAt: context.now,
   };
@@ -254,7 +266,7 @@ export function createTodoFromInput(
     dueDate: input.date,
     priority: 'none',
     completedAt: null,
-    sortOrder: data.todos.length,
+    sortOrder: nextSortOrder(data.todos),
     sharingScope: 'inherit',
     createdAt: context.now,
     updatedAt: context.now,
@@ -280,7 +292,7 @@ export function createStickerFromInput(
     // Per day rather than per document: the原檔 renders each day's stickers in
     // the order they were added, and a global counter would not survive a
     // sticker being deleted from another day.
-    sortOrder: stickersOn(data, input.date).length,
+    sortOrder: nextSortOrder(stickersOn(data, input.date)),
     createdAt: context.now,
     updatedAt: context.now,
   };

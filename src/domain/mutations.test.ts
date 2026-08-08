@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyEventPatch,
+  createCalendarFromInput,
   createEventFromInput,
+  createStickerFromInput,
   resolveDefaultCalendarId,
+  withCalendar,
   withEvent,
+  withoutSticker,
+  withSticker,
   withTodo,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
@@ -167,6 +172,44 @@ describe('applyEventPatch', () => {
       startsAt: '2026-08-06T01:00:00.000Z',
       timezone: 'Asia/Taipei',
     });
+  });
+});
+
+describe('sortOrder', () => {
+  // Regression: deriving the next key from `.length` hands out a value that is
+  // still in use as soon as anything has been deleted.
+  it('does not reuse a live sticker sortOrder after a delete', () => {
+    let data = baseData();
+    const date = '2026-08-06';
+    const make = (id: string, glyph: string) =>
+      createStickerFromInput(data, { date, glyph }, { id, now: NOW });
+
+    data = withSticker(data, make('11111111-1111-4111-8111-111111111111', '🎂'));
+    data = withSticker(data, make('22222222-2222-4222-8222-222222222222', '✈️'));
+    data = withoutSticker(data, '11111111-1111-4111-8111-111111111111');
+    data = withSticker(data, make('33333333-3333-4333-8333-333333333333', '❤️'));
+
+    const orders = data.stickers.map((sticker) => sticker.sortOrder);
+    expect(new Set(orders).size).toBe(orders.length);
+  });
+
+  it('does not reuse a live calendar sortOrder after a delete', () => {
+    let data = baseData();
+    const make = (id: string, name: string) =>
+      createCalendarFromInput(data, { name, color: '#2563eb' }, { id, now: NOW });
+
+    data = withCalendar(data, make('11111111-1111-4111-8111-111111111111', 'A'));
+    data = withCalendar(data, make('22222222-2222-4222-8222-222222222222', 'B'));
+    data = {
+      ...data,
+      calendars: data.calendars.filter(
+        (calendar) => calendar.id !== '11111111-1111-4111-8111-111111111111',
+      ),
+    };
+    data = withCalendar(data, make('33333333-3333-4333-8333-333333333333', 'C'));
+
+    const orders = data.calendars.map((calendar) => calendar.sortOrder);
+    expect(new Set(orders).size).toBe(orders.length);
   });
 });
 
