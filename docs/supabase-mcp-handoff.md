@@ -33,6 +33,16 @@
 - Repo pgTAP 已擴成 15 項；另以 12 項會在失敗時直接 raise 的 transaction 驗證 reminder 邊界、時間先後、server timestamps、owner RLS、跨帳號 child ownership 與 cascade，最後完整 rollback。固定假帳號／事件另行確認不存在。
 - 下一項是 DP-027；已放進 `Next`，但必須等專案擁有者親自合併 DP-036 PR 後才開始。
 
+## 0.2 DP-027 完成後更新（2026-08-08）
+
+- 專案擁有者已親自合併 DP-036；DP-027 從最新 `main` 建立獨立分支。開工前 read-only MCP 確認遠端／repo 同為 6 檔、DP-036 constraints／triggers 正確、9 張 public tables RLS 全開且 advisor 0，沒有 drift。
+- 第七檔 migration `20260808100626_validate_event_timezones.sql` 已由專案擁有者在 PowerShell 完成 CLI list／dry-run／push；畫面最後的 Docker 訊息仍只是無法快取本機 pg-delta catalog，遠端 migration 已成功。MCP 沒有套正式 DDL，也沒有 Dashboard 手改、remote reset 或查改正式使用者資料。
+- `user_preferences.timezone` 與 `events.timezone` 現在由兩個 write trigger 查詢 PostgreSQL 支援的 timezone；沒有建立錯誤的 immutable CHECK。`validate_daypop_timezone()` 是 security invoker、固定空 `search_path`，並撤銷 public／anon／authenticated 直接 execute。
+- 套用後確認遠端／repo 正好 7 檔，兩個 triggers、function security、9 張 public tables RLS 與 schema 均符合 migration；security advisor 仍 0。遠端 generated TypeScript types 與 repo 的 16,501 字元逐字相同，trigger 不產生型別 diff。
+- Repo pgTAP 已擴成 24 項，涵蓋合法／非法 preference 與 event timezone、trigger 數量、function security、既有 timestamp／RLS／cascade；完整 rollback 後確認 pgTAP extension、固定假帳號與事件均不存在。`supabase test db --linked` 仍因本機沒有 Docker 而未宣稱通過。
+- Domain 已完成 RFC 5545 RECUR validation、DST-safe occurrence expansion、single cancel／replacement、series cleanup 與 ICS inclusive／exclusive round-trip。事件 sheet 控制項與 occurrence UI 仍歸 DP-014，檔案匯入預覽／合併仍歸 DP-056，不得在 DP-024 偷帶。
+- 下一項是 DP-024；已放進 `Next`，但必須等專案擁有者親自合併 DP-027 PR 後才開始。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -85,9 +95,9 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 第五檔 migration 已將 `6` 轉為 fixed-six、`4`／`5` 轉為 adaptive，runtime mapping 現在只理解 `fixed_six_week_grid boolean`。Domain、UI、`buildMonthGrid`、repository 與 generated types 均已更新；後續任務不得重新引入數字列數或用預設覆寫既有主題。
 
-### 3.4 DP-027 要沿用 DP-063 定下的時間規則
+### 3.4 DP-027 已落實 DP-063 定下的時間規則，後續不得回退
 
-跨日順延必須**在目標日期上重新解析同一個牆上時鐘**，不能對 instant 加固定 24 小時 — DST 當晚的本地日是 23 或 25 小時。詳見 [`architecture-decisions.md` §6 的 DP-063 實作結果](architecture-decisions.md)。recurrence occurrence 展開適用同一條規則：「隔天的同一個時間」是日曆運算，不是加 86400000 毫秒。回歸測試在 `src/domain/eventTime.test.ts`，請不要在重構時把它改成固定位移。
+跨日順延必須**在目標日期上重新解析同一個牆上時鐘**，不能對 instant 加固定 24 小時 — DST 當晚的本地日是 23 或 25 小時。詳見 [`architecture-decisions.md` §6 的 DP-063／027 實作結果](architecture-decisions.md)。`src/domain/recurrence.ts` 先產生日曆欄位，再逐次經 `wallTimeToInstant()` 解析；「隔天的同一個時間」不是加 86400000 毫秒。回歸測試在 `src/domain/eventTime.test.ts` 與 `src/domain/recurrence.test.ts`，後續 repository／UI 接線不得改回固定位移。
 
 ---
 
@@ -106,10 +116,10 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 5. 下一位 MCP agent 的第一步
 
-1. 不得在 DP-036 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-027 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-027 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述、`architecture-decisions.md` §6 與 DP-063／036 的實作結果。
-3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 6 個檔案一致、DP-036 constraints／triggers 應存在、advisor 應仍為 0 警告；有 drift 就停止。
-4. DP-027 仍是一個任務一個中文 PR，明寫 `--base main`；schema 只走 repo migration＋正式 CLI workflow，不用 MCP 或 Dashboard 手改。
+1. 不得在 DP-027 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-024 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-024 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述、`architecture-decisions.md` §2／§6 與本文件 §3.1；bootstrap 不可偷偷接線 DP-026 的 adapter switch。
+3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 7 個檔案一致、兩個 timezone triggers 與 DP-036 invariants 應存在、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
+4. DP-024 仍是一個任務一個中文 PR，明寫 `--base main`。Bootstrap 必須 idempotent，使用固定測試帳號／rollback 安全測試或由專案擁有者明確提供的真實驗收流程；不得查改其他正式使用者資料，也不得在 adapter 裡建立第二條隱含 bootstrap 路徑。
 
 ## 6. 不需要 MCP 也能做的事
 

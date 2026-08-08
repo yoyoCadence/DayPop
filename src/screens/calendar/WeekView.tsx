@@ -51,8 +51,9 @@ interface DragState {
  * bottom edge, snapping to 15 minutes. All-day events are not drawn on the grid
  * in the原檔 either; the 全天 row is part of DP-014's remaining work.
  *
- * The recurrence model exists, but occurrence splitting and DST semantics are
- * DP-027, so a drag still updates the base event for now.
+ * DP-027 provides occurrence splitting and DST-safe domain mutations. Wiring
+ * a generated block to the canonical single/all scope dialog remains DP-014,
+ * so this view still receives base events and a drag updates the base for now.
  */
 export function WeekView({
   weekStartsOn,

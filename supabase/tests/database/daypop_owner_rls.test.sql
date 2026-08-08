@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(24);
 
 insert into auth.users (id)
 values
@@ -179,6 +179,132 @@ begin
 end;
 $$;
 select pass('timed events reject an end at or before the start');
+
+update public.user_preferences
+set timezone = 'America/New_York'
+where user_id = '00000000-0000-4000-8000-0000000000a1';
+
+select is(
+  (
+    select timezone
+    from public.user_preferences
+    where user_id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  'America/New_York',
+  'preferences accept a supported IANA timezone'
+);
+
+do $$
+begin
+  begin
+    update public.user_preferences
+    set timezone = 'Not/A_Timezone'
+    where user_id = '00000000-0000-4000-8000-0000000000a1';
+    raise exception 'invalid preference timezone unexpectedly succeeded';
+  exception
+    when invalid_parameter_value then null;
+  end;
+end;
+$$;
+select pass('preferences reject an unsupported timezone');
+
+insert into public.events (
+  owner_id,
+  calendar_id,
+  title,
+  is_all_day,
+  starts_at,
+  ends_at,
+  timezone
+)
+values (
+  '00000000-0000-4000-8000-0000000000a1',
+  '10000000-0000-4000-8000-0000000000a1',
+  'valid timezone event',
+  false,
+  timestamptz '2026-08-02 13:00:00+00',
+  timestamptz '2026-08-02 14:00:00+00',
+  'America/New_York'
+);
+select pass('timed events accept a supported IANA timezone');
+
+do $$
+begin
+  begin
+    insert into public.events (
+      owner_id,
+      calendar_id,
+      title,
+      is_all_day,
+      starts_at,
+      ends_at,
+      timezone
+    )
+    values (
+      '00000000-0000-4000-8000-0000000000a1',
+      '10000000-0000-4000-8000-0000000000a1',
+      'invalid timezone event',
+      false,
+      timestamptz '2026-08-02 13:00:00+00',
+      timestamptz '2026-08-02 14:00:00+00',
+      'Not/A_Timezone'
+    );
+    raise exception 'invalid event timezone unexpectedly succeeded';
+  exception
+    when invalid_parameter_value then null;
+  end;
+end;
+$$;
+select pass('timed events reject an unsupported timezone');
+
+select is(
+  (
+    select count(*)::integer
+    from pg_trigger
+    where tgname in ('events_validate_timezone', 'user_preferences_validate_timezone')
+      and not tgisinternal
+  ),
+  2,
+  'both public timezone write boundaries use the controlled trigger'
+);
+
+select is(
+  (
+    select prosecdef
+    from pg_catalog.pg_proc
+    where oid = 'public.validate_daypop_timezone()'::regprocedure
+  ),
+  false,
+  'timezone validation uses security invoker'
+);
+
+select is(
+  (
+    select proconfig[1]
+    from pg_catalog.pg_proc
+    where oid = 'public.validate_daypop_timezone()'::regprocedure
+  ),
+  concat('search_path=', chr(34), chr(34)),
+  'timezone validation fixes an empty search_path'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.validate_daypop_timezone()',
+    'execute'
+  ),
+  'anon cannot invoke the timezone trigger function directly'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.validate_daypop_timezone()',
+    'execute'
+  ),
+  'authenticated cannot invoke the timezone trigger function directly'
+);
 
 insert into public.todos (owner_id, calendar_id, title, due_date)
 values (

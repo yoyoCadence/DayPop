@@ -7,6 +7,7 @@ import type {
   TodoItem,
   UserPreferences,
 } from './types';
+import { isRecurrenceRule } from './recurrence';
 
 export const MAX_REMINDER_COUNT = 10;
 export const MAX_REMINDER_MINUTES = 7 * 24 * 60;
@@ -89,16 +90,30 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
     }
   }
 
-  const eventIds = new Set(events.map((event) => event.id));
+  const eventsById = new Map(events.map((event) => [event.id, event]));
   for (const [index, exception] of exceptions.entries()) {
-    if (!eventIds.has(exception.eventId)) {
+    const source = eventsById.get(exception.eventId);
+    if (!source) {
       issues.push(`eventExceptions[${index}].eventId references a missing event`);
+    } else {
+      if (source.recurrence === null) {
+        issues.push(`eventExceptions[${index}].eventId must reference a recurring event`);
+      }
+      const expectedKind = source.allDay ? 'all-day' : 'timed';
+      if (exception.occurrence.kind !== expectedKind) {
+        issues.push(`eventExceptions[${index}].occurrence must match the source event shape`);
+      }
     }
     if (
       exception.replacementEventId !== null &&
-      !eventIds.has(exception.replacementEventId)
+      !eventsById.has(exception.replacementEventId)
     ) {
       issues.push(`eventExceptions[${index}].replacementEventId references a missing event`);
+    } else if (exception.replacementEventId !== null) {
+      const replacement = eventsById.get(exception.replacementEventId)!;
+      if (replacement.recurrence !== null) {
+        issues.push(`eventExceptions[${index}] replacement event must not recur`);
+      }
     }
   }
 
@@ -178,12 +193,12 @@ function validateEvent(value: unknown, path: string, issues: string[]): Calendar
     validateNullableString(value.location, `${path}.location`, issues) &&
     validateNullableString(value.notes, `${path}.notes`, issues) &&
     validateReminderMinutes(value.reminderMinutes, `${path}.reminderMinutes`, issues) &&
-    validateRecurrence(value.recurrence, `${path}.recurrence`, issues) &&
     validateEnum(value.sharingScope, ['inherit', 'private'], `${path}.sharingScope`, issues) &&
     validateInstant(value.createdAt, `${path}.createdAt`, issues) &&
     validateInstant(value.updatedAt, `${path}.updatedAt`, issues);
 
   if (value.allDay === true) {
+    valid = validateRecurrence(value.recurrence, `${path}.recurrence`, issues, true) && valid;
     valid = validateDate(value.startDate, `${path}.startDate`, issues) && valid;
     valid = validateDate(value.endDate, `${path}.endDate`, issues) && valid;
     if (hasDefined(value, ['startsAt', 'endsAt', 'timezone'])) {
@@ -195,6 +210,7 @@ function validateEvent(value: unknown, path: string, issues: string[]): Calendar
       valid = false;
     }
   } else if (value.allDay === false) {
+    valid = validateRecurrence(value.recurrence, `${path}.recurrence`, issues, false) && valid;
     valid = validateInstant(value.startsAt, `${path}.startsAt`, issues) && valid;
     valid = validateInstant(value.endsAt, `${path}.endsAt`, issues) && valid;
     valid = validateTimezone(value.timezone, `${path}.timezone`, issues) && valid;
@@ -473,9 +489,15 @@ function validateHexColor(value: unknown, path: string, issues: string[]): value
   return false;
 }
 
-function validateRecurrence(value: unknown, path: string, issues: string[]): boolean {
+function validateRecurrence(
+  value: unknown,
+  path: string,
+  issues: string[],
+  allDay: boolean,
+): boolean {
   if (value === null) return true;
-  if (isRecord(value) && validateTrimmedString(value.rule, `${path}.rule`, issues)) return true;
+  if (isRecord(value) && isRecurrenceRule(value.rule, allDay)) return true;
+  if (isRecord(value)) issues.push(`${path}.rule must be a valid RFC 5545 recurrence rule`);
   if (!isRecord(value)) issues.push(`${path} must be an object or null`);
   return false;
 }

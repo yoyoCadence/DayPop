@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyEventPatch,
+  cancelEventOccurrence,
   createCalendarFromInput,
   createEventFromInput,
   createStickerFromInput,
   resolveDefaultCalendarId,
+  replaceEventOccurrence,
   withCalendar,
   withEvent,
   withoutSticker,
   withSticker,
   withTodo,
+  withoutEvent,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
+import { resolveEventOccurrences } from './recurrence';
 
 const NOW = '2026-08-04T00:00:00.000Z';
 const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
@@ -270,6 +274,126 @@ describe('sortOrder', () => {
 
     const orders = data.calendars.map((calendar) => calendar.sortOrder);
     expect(new Set(orders).size).toBe(orders.length);
+  });
+});
+
+describe('recurring occurrence mutations', () => {
+  const SOURCE = '88888888-8888-4888-8888-888888888888';
+  const EXCEPTION = '99999999-9999-4999-8999-999999999999';
+  const REPLACEMENT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const SECOND_NOW = '2026-08-05T00:00:00.000Z';
+
+  function recurringData(): DayPopUserData {
+    const data = baseData();
+    const event = createEventFromInput(
+      data,
+      {
+        title: '每日站會',
+        date: '2026-08-06',
+        allDay: true,
+        start: '',
+        end: '',
+        recurrenceRule: 'FREQ=DAILY;COUNT=3',
+      },
+      { id: SOURCE, now: NOW },
+    );
+    return withEvent(data, event);
+  }
+
+  it('replaces only one occurrence and reuses its row ids on a second edit', () => {
+    const context = {
+      exceptionId: EXCEPTION,
+      replacementEventId: REPLACEMENT,
+      now: SECOND_NOW,
+    };
+    let data = replaceEventOccurrence(
+      recurringData(),
+      SOURCE,
+      { kind: 'all-day', date: '2026-08-07' },
+      { title: '改期站會', date: '2026-08-10' },
+      context,
+    );
+    data = replaceEventOccurrence(
+      data,
+      SOURCE,
+      { kind: 'all-day', date: '2026-08-07' },
+      { title: '再次改名' },
+      { ...context, exceptionId: crypto.randomUUID(), replacementEventId: crypto.randomUUID() },
+    );
+
+    expect(data.eventExceptions).toHaveLength(1);
+    expect(data.eventExceptions[0]).toMatchObject({
+      id: EXCEPTION,
+      eventId: SOURCE,
+      isCancelled: false,
+      replacementEventId: REPLACEMENT,
+    });
+    expect(data.events.find((event) => event.id === REPLACEMENT)).toMatchObject({
+      title: '再次改名',
+      recurrence: null,
+      startDate: '2026-08-10',
+    });
+    expect(
+      resolveEventOccurrences(data, {
+        startDate: '2026-08-06',
+        endDate: '2026-08-10',
+      }).map(({ event }) => (event.allDay ? [event.startDate, event.title] : [])),
+    ).toEqual([
+      ['2026-08-06', '每日站會'],
+      ['2026-08-08', '每日站會'],
+      ['2026-08-10', '再次改名'],
+    ]);
+  });
+
+  it('cancels one occurrence and removes a previous replacement', () => {
+    const occurrence = { kind: 'all-day' as const, date: '2026-08-07' };
+    const context = {
+      exceptionId: EXCEPTION,
+      replacementEventId: REPLACEMENT,
+      now: SECOND_NOW,
+    };
+    const replaced = replaceEventOccurrence(
+      recurringData(),
+      SOURCE,
+      occurrence,
+      { title: '單次修改' },
+      context,
+    );
+    const cancelled = cancelEventOccurrence(replaced, SOURCE, occurrence, {
+      ...context,
+      now: '2026-08-06T00:00:00.000Z',
+    });
+
+    expect(cancelled.events.some((event) => event.id === REPLACEMENT)).toBe(false);
+    expect(cancelled.eventExceptions[0]).toMatchObject({
+      id: EXCEPTION,
+      isCancelled: true,
+      replacementEventId: null,
+    });
+    expect(
+      resolveEventOccurrences(cancelled, {
+        startDate: '2026-08-06',
+        endDate: '2026-08-08',
+      }).map(({ event }) => (event.allDay ? event.startDate : '')),
+    ).toEqual(['2026-08-06', '2026-08-08']);
+  });
+
+  it('deleting all occurrences removes exception and replacement rows together', () => {
+    const replaced = replaceEventOccurrence(
+      recurringData(),
+      SOURCE,
+      { kind: 'all-day', date: '2026-08-07' },
+      { title: '單次修改' },
+      {
+        exceptionId: EXCEPTION,
+        replacementEventId: REPLACEMENT,
+        now: SECOND_NOW,
+      },
+    );
+
+    const deleted = withoutEvent(replaced, SOURCE);
+    expect(deleted.events).toHaveLength(0);
+    expect(deleted.eventExceptions).toHaveLength(0);
   });
 });
 

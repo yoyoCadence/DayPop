@@ -17,7 +17,7 @@ export interface Calendar {
   updatedAt: IsoInstant;
 }
 
-/** RFC 5545 rule text. Expansion and DST behaviour belong to DP-027. */
+/** RFC 5545 RECUR value; DTSTART and timezone come from the owning event. */
 export interface Recurrence {
   rule: string;
 }

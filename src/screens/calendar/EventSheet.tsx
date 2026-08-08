@@ -39,11 +39,11 @@ type SheetMode = 'event' | 'todo';
  * Carries the原檔's fields that DayPop can actually store today: 標題, 日曆,
  * 全天, 日期, 開始／結束, 地點 and 備註.
  *
- * The rest stay listed but unbuilt on purpose, because storing them would
- * promise behaviour that does not exist yet: 重複 needs occurrence expansion
- * (DP-027), 提醒 needs a delivery mechanism (DP-042) or it is a reminder that
- * never fires, 時區 needs the DST work in DP-027, 附件 needs Storage (DP-028),
- * and 邀請對象 has no domain type at all yet.
+ * The rest stay listed but unbuilt on purpose. DP-027 completed recurrence,
+ * exception, timezone and DST domain behaviour; their controls and the
+ * single/all scope dialog remain canonical UI work in DP-014. 提醒 needs a
+ * delivery mechanism (DP-042) or it is a reminder that never fires, 附件 needs
+ * Storage (DP-028), and 邀請對象 has no domain type at all yet.
  *
  * 待辦 is a mode here rather than its own screen because the原檔 adds todos
  * through the pet bubble, which is DP-040. Keeping it reachable avoids losing a
@@ -279,9 +279,9 @@ function EventSheetForm({
 
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
-                  重複與時區要等 DP-027 的 occurrence 展開與 DST 處理；提醒要等 DP-042
-                  真的送得出通知，否則只是一個不會響的提醒；附件等 DP-028 的 Storage；
-                  邀請對象目前連 domain 型別都還沒有。
+                  重複、單次／全部範圍與時區的底層行為已由 DP-027 完成，控制項仍待
+                  DP-014 依原稿接回；提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
+                  附件等 DP-028 的 Storage；邀請對象目前連 domain 型別都還沒有。
                 </div>
               </>
             )}
