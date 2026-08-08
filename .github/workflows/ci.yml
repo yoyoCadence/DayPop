@@ -51,3 +51,7 @@ jobs:
       # prebuild 會產生 public/version.json 與版本化的 public/sw.js。
       - name: Build
         run: npm run build
+
+      # DP-015：production build 不得有執行期遠端依賴，且必須帶 CSP。
+      - name: Check build assets
+        run: npm run check:build

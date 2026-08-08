@@ -48,7 +48,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | 2 | DP-013 repository/service boundary | 不使用 | 以既有 generated types、mock 與本機測試完成邊界；遠端整合驗收留到 DP-026。 |
 | 3 | DP-055 貼圖完整體驗 | 不使用 | 只接 canonical domain／repository，不新增遠端 schema。 |
 | 4 | DP-014 MVP CRUD UI | 不使用 | UI 與 repository contract 對接；不直接呼叫 Supabase client。 |
-| 5 | DP-015 素材安全與 CSP | 不使用 | 不變更 Supabase Storage 或遠端政策。 |
+| ~~5~~ | ~~DP-015 素材安全與 CSP~~ | 不使用 | 已完成。 |
 | **停止點** | **Supabase MCP 交接** | **開始需要** | agent 必須先提醒專案擁有者：「下一階段將使用 Supabase MCP，請改由可使用 MCP 的 agent 接手。」未收到確認前不得開始下列任務的遠端操作。 |
 | 6 | DP-018 主題／月格偏好 migration | 需要 | migration 先在本機落檔並走正式 migration workflow；MCP agent 負責核對專案狀態、型別與 advisor，不得用 MCP 直接下 DDL。 |
 | 7 | DP-036 DB invariants | 需要 | 以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
@@ -64,9 +64,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-018 — 接上主題與月曆列數偏好：** DP-014 剩下的設定區塊（寵物、一般偏好）都需要偏好寫入路徑，先做這一項才不會做兩次。**這是交接順序的停止點：需要 Supabase MCP，請改由可使用 MCP 的 agent 接手。** 詳細範圍見 Backlog 的 DP-018。
+> DP-014 剩下的設定區塊（寵物、一般偏好）卡在 DP-018 的偏好寫入路徑，而 DP-018 需要 Supabase MCP，因此先做交接順序第 5 項的 DP-015。**DP-018 仍是交接順序的停止點，需由可使用 MCP 的 agent 接手。**
 
 ## In Progress
+
 
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
@@ -74,8 +75,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（重複範圍選擇依 DP-027、匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、週檢視全天列、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
-- [ ] **DP-015 — 自託管／打包必要前端資源：** 移除執行期 unpkg React 與非必要遠端字型依賴，建立 CSP 相容且可重現的 production build。主題顯示字體已由 DP-052 先行處理，本任務保留 unpkg React 移除、CSP 政策與整體資源盤點；若日後決定連中文字體也自託管，需先解決 subset 與體積問題。
+- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（重複範圍選擇依 DP-027、匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
+  > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest（目前仍是舊的紫色骨架色）；把保存的偏好與六套 theme id 接進 DP-050 的 `ThemeProvider`，既有保存值一律優先於預設；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
 
 ### Supabase / auth / data
@@ -138,6 +139,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-015 — 自託管／打包必要前端資源：** 先核實再動手：`index.html` 與整個 `dist/` 都沒有遠端 `<script>`／`<link>`，`support.js` 也不在建置輸出裡 — 原稿的 unpkg React 只存在於設計來源檔，production build 本來就沒有執行期第三方依賴（DP-052 已處理字體）。因此本任務的實際產出是把這件事變成**可驗證且不會回退**的：`src/lib/csp.ts` 在建置期產生 CSP，由 Vite plugin 注入 `index.html` 的 meta；`connect-src` 依 `VITE_SUPABASE_URL` 帶入該次建置的 Supabase origin（含 `wss:`），沒設定時就只有 `'self'`。`scripts/check-build-assets.mjs`（`npm run check:build`，已加進 CI）掃描建置輸出：HTML／CSS／manifest／SVG 內任何會被瀏覽器抓取的遠端 URL、任何檔案內的 CDN 主機名，以及 CSP meta 是否存在；JS bundle 內的 URL **字串**（React 錯誤說明連結、supabase-js 文件連結、public 的專案 URL）刻意不掃，否則全是誤報、大家就會開始忽略這個檢查。已用植入 `<script src="https://unpkg.com/react...">` 的反向測試確認檢查真的會擋。CSP 以 Playwright 實跑驗證，並因此修掉一個真的 bug：Vite 會把小於 inline 上限的字體檔直接以 `data:` base64 塞進 stylesheet，原本的 `font-src 'self'` 擋掉了三個主題字體 — 改成 `font-src 'self' data:` 後 CSP violation 為 0、console 0 error、service worker 正常註冊、逐日曆顏色的 inline style 屬性正常套用（`style-src-attr 'unsafe-inline'`，但不開放 `<style>` 注入）。單元測試 198 → 206。中文字體維持不自託管（subset 體積問題未解），meta CSP 無法涵蓋 `frame-ancestors`，選定 hosting 後應改以 response header 補上（DP-033）。
 - [x] **DP-060 — 補齊事件 sheet 欄位並讓快速新增交給它確認（DP-014 第五段）：** 事件 sheet 補上原稿中 DayPop 真的存得下的三個欄位：**日曆** chip 列（選中者以該日曆顏色填滿）、**地點**、**備註**；`全天` 也依原稿移到 `日期` 之上。其餘欄位刻意仍不做，因為接上就是空頭支票：重複與時區要等 DP-027 的 occurrence 展開與 DST，提醒要等 DP-042 真的送得出通知（否則是一個不會響的提醒），附件等 DP-028，邀請對象連 domain 型別都還沒有 — sheet 內的說明改成寫清楚每一項卡在哪裡。**快速新增不再直接建立事件**，改為依原稿把解析結果交給事件 sheet 確認（DP-051 的過渡措施至此收掉）：解析到的標題／日期／時間／地點會預填，取消或 Escape 就整筆丟棄，不留半筆資料。`NewEventInput` 與 `EventPatch` 因此加上 `calendarId`／`location`／`notes`，空字串一律存成 `null`（`optionalText()`），`EventPatch` 中「沒有這個 key」= 不變、「有 key 但空字串」= 清除。單元測試 188 → 198。已用 Playwright 驗證：快速新增送出後月格事件數維持 0（確認前不建立）、取消後仍為 0、確認後為 1，地點與備註可完整 round-trip，把事件改到另一個日曆後月格色塊即刻變色，390px 無水平溢出、console 0 error／warning。
 - [x] **DP-059 — 搬移日曆管理（DP-014 第四段）：** 設定的「我的日曆」區塊依原稿完成：每列有 14px 色點、名稱、「編輯」與 40×23 顯示開關，下方是 `＋ 新增日曆`；日曆編輯 dialog（新增與編輯共用）含名稱欄、10 色 swatch 選擇、儲存／取消與只在超過一個日曆時出現的「刪除此日曆」。`CALENDAR_PALETTE` 逐值移植原檔 `_calPalette()`，空名稱沿用原檔的「未命名日曆」。日曆顏色與顯示狀態同時接進所有檢視：月格事件色塊、週檢視色塊、列表與日詳情色條、綜覽事件色條、搜尋結果圓點都改用該日曆顏色（文字色統一白色，與原檔每個 calendar 的 `text:'#fff'` 一致），搜尋的日曆篩選 chip 列也接上（依原檔只篩事件，不篩待辦）。隱藏日曆是顯示過濾，由 `visibleEvents()` 在 `CalendarScreen` 統一套用，資料不動。**與原檔的一處刻意差異**：原檔刪除日曆會讓其事件變成孤兒，DayPop 的 domain contract 不允許，因此改為把該日曆的事件／待辦／貼圖移到倖存的預設日曆（刪到預設日曆時自動把下一個提升為預設），並在 dialog 顯示會移動幾筆與移到哪裡；只剩一個日曆時拒絕刪除。Supabase adapter 依相同順序先搬 child rows 再刪日曆，否則複合外鍵會擋下。單元測試 168 → 188。未新增遠端 schema／DDL，也未使用 Supabase MCP。已用 Playwright／Chromium 實機檢查（390px 與 1280px、console 0 error／warning）：長名稱以 ellipsis 截斷不撐開版面、深色主題的 swatch 選取環清楚可見、換色後月格／週格／列表／日詳情／搜尋圓點同步變色、隱藏日曆使月格事件由 2 個變 0 個、搜尋日曆篩選由 1 筆變 0 筆。過程中修掉一個實際 bug：`.cal-manage-open`／`-toggle`／`-swatch`／`-delete` 沒宣告 `border`，被瀏覽器預設的 `2px outset` 畫出黑框（本專案沒有全域 button reset，每個按鈕都得自行宣告）。
 - [x] **DP-055 — 搬移貼圖完整體驗：** 三處貼圖 UI 都依原稿接上。月格：`stickerFontSize()` 逐值移植原檔 `stkSize`（1／2／3／4+ → 19／15／12／10px），貼圖列以 `margin-top:auto` 置底、置中換行。日詳情：貼圖列在標題與「行程」之間，點既有貼圖即刪除（原稿沒有另外的刪除鈕），`＋ 貼圖` 展開 63 個 glyph 的選擇器，選一個後關閉；sheet 以 `key={dateKey}` 重建，換一天時選擇器跟著關閉，對應原檔 `openDay()` 重設 `stickerPick`。綜覽：貼圖分頁改為真實資料，glyph（23px／26px 寬）取代色條、時間欄留空、標題固定「貼圖」、點一列開啟該日。`STICKER_GLYPHS` 逐字移植原檔 `get STK()` 的 63 個 emoji 與順序。資料面沿用 DP-013 的合約：新增 `addSticker`／`deleteSticker` 到 `DayPopRepository`、`domain/mutations.ts` 與兩個 adapter，`sortOrder` 依「當日既有張數」計算而非全域計數，Sticker 仍同時保留 `glyph` 與 `assetKey`，未來換素材集不需要資料遷移。未新增任何遠端 schema／DDL，也未使用 Supabase MCP。單元測試 152 → 168，新增月格字級與過濾、日詳情選擇器互動、綜覽貼圖分組，以及雙 adapter 的貼圖平行合約測試。三處的 CSS 皆自原檔 inline style 逐值移植；DP-059 期間補做 Playwright 實機檢查，確認 5 張貼圖同格時字級為 10px、貼圖列置底且不與事件色塊重疊（cell 內容 139px < 格高 142px）、選擇器寬度 358px 未超出 390px sheet，綜覽貼圖分頁正確列出 5 筆。

@@ -13,6 +13,7 @@
     "release:assets": "node scripts/generate-release-assets.mjs",
     "prebuild": "node scripts/generate-release-assets.mjs",
     "build": "tsc -b && vite build",
+    "check:build": "node scripts/check-build-assets.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
