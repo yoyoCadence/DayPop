@@ -51,8 +51,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~5~~ | ~~DP-015 素材安全與 CSP~~ | 不使用 | 已完成。 |
 | **停止點** | **Supabase MCP 交接** | **開始需要** | **2026-08-08 已抵達並完成交接提醒**，專案擁有者確認改由可使用 MCP 的 agent 接手。接手前請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)：那份文件記錄交接當下已驗證的狀態、必須先處理的前置，以及不得做的事。 |
 | ~~6~~ | ~~DP-018 主題／月格偏好 migration~~ | 需要 | 已完成；migration 由正式 CLI workflow 套用，MCP 僅做套用前後的 schema／advisor 驗證、型別產生與 rollback 安全測試。 |
-| **7** | **DP-036 DB invariants** | **需要** | **下一項；等 DP-018 PR 由專案擁有者親自合併後才開始。**以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
-| 8 | DP-027 日期／時區邊界 | 需要 | 先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
+| ~~7~~ | ~~DP-036 DB invariants~~ | 需要 | 已完成；第六檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與完整 rollback 驗證。 |
+| **8** | **DP-027 日期／時區邊界** | **需要** | **下一項；等 DP-036 PR 由專案擁有者親自合併後才開始。**先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
 | 9 | DP-024 帳號資料 bootstrap | 需要 | 以真實帳號驗證初始化、RLS 與重試安全性。 |
 | 10 | DP-026 核心 CRUD 遠端持久化 | 需要 | 驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
 | 11 | DP-025 legacy 匯入 | 需要 | 在 durable CRUD 穩定後才驗證一次性匯入與可回復流程。 |
@@ -66,7 +66,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-036 — 強化 CRUD 前資料 invariant：** 以 migration 限制 reminder array 的數量與分鐘範圍，讓 `created_at` 由 DB／repository 控制；修正 23:xx 新增行程跨日，並為提醒、時間順序與 client 偽造建立時間補測試。完成後重新產生 DB types 並跑 advisor。**必須等 DP-018 PR 由專案擁有者親自合併後才移入 In Progress。**
+- [ ] **DP-027 — 完成 recurrence／timezone 正確性：** 以 RFC 5545 規則與 exception model 處理單次／全部修改、IANA timezone、DST 與 ICS round-trip；DayPop 全天 `end_date` 採 inclusive，ICS adapter 明確轉換 exclusive `DTEND`。timezone 由 domain 與可測的受控 DB 邊界驗證，不使用讀取 `pg_timezone_names` 的 immutable CHECK 假設。**必須等 DP-036 PR 由專案擁有者親自合併後才移入 In Progress。**
 
 ## In Progress
 
@@ -85,7 +85,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-025 — 建立 legacy localStorage migration：** 偵測 `calpet.v2`、schema validate、顯示預覽與筆數、一次性匯入 Supabase、處理重複 ID／失敗回復；成功前不刪除原資料，並禁止匯入舊 AI key。
 - [ ] **DP-062 — 寫入順序保護（DP-026 前置）：** `DataProvider` 的寫入是 fire-and-forget，兩筆同時在途時**最後 resolve 的會覆蓋畫面**，即使它比較早發出。本機 adapter 依呼叫順序 resolve，所以目前不會發生；遠端 adapter 一定會遇到。`src/data/DataProviderRace.test.tsx` 已用 characterization test 釘住現況。DP-026 接上遠端前必須決定策略（序號丟棄過期結果、或改為序列化寫入），不要讓它預設帶著這個行為上線。
 - [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
-- [ ] **DP-027 — 完成 recurrence／timezone 正確性：** 以 RFC 5545 規則與 exception model 處理單次／全部修改、IANA timezone、DST 與 ICS round-trip；DayPop 全天 `end_date` 採 inclusive，ICS adapter 明確轉換 exclusive `DTEND`。timezone 由 domain 與可測的受控 DB 邊界驗證，不使用讀取 `pg_timezone_names` 的 immutable CHECK 假設。
 - [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
 
 ### Quality / release
@@ -139,6 +138,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-036 — 強化 CRUD 前資料 invariant：** 第六檔 migration `20260808093254_enforce_crud_invariants.sql` 以正式 CLI dry-run／push 套用，沒有 MCP DDL、Dashboard 手改或 remote reset。`events.reminder_minutes` 與 `user_preferences.default_reminder_minutes` 現在最多 10 項、每項為 0–10080 分鐘且不可含 `null`；上限沿用原稿自訂提醒的七日 clamp。既有 `set_updated_at()` trigger function 擴充為 insert 時強制 DB 時間、update 時保留原 `created_at` 並刷新 `updated_at`，九張公開資料表各有 insert trigger，repository mapping 持續不送 client timestamps。23:xx 跨日核心沿用 DP-063 的「到隔天重新解析牆上時間」，新增 `createEventFromInput()` 的 23:30→00:30 回歸。Domain runtime validation 與 DB constraint 使用同一組界線；時間先後、提醒陣列與偽造建立時間均有測試。套用前 MCP 確認 5 檔 history、DP-018 欄位與 advisor 0；套用後確認正好 6 檔、constraints／9 triggers／function／RLS 正確，security advisor 仍 0。Repo 的 15 項 rollback pgTAP 與額外 12 項會丟錯的 transactional assertions 通過，固定假帳號／事件確認不存在；遠端重新產生的 TypeScript types 與 repo 完全一致，無需製造 generated diff。本機 lint／typecheck／30 files 269 tests／build／check:build 全部通過。下一項 DP-027 已放入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 
 - [x] **DP-018 — 接上主題與月曆列數偏好：** Supabase migration `20260808083912_replace_month_weeks_with_fixed_grid.sql` 以正式 CLI workflow 套用：既有 `month_weeks = 6` 轉成 `fixed_six_week_grid = true`，`4`／`5` 轉成 adaptive，原有 `theme` 值不改；新資料預設為 `theme = light`、`theme_id = manga`、adaptive。開工前 read-only MCP 確認遠端 4 檔 migration 與 repo 一致且 security advisor 0 警告；套用後再次確認遠端正好 5 檔、欄位／constraint／default 與 migration 一致、RLS 仍啟用、advisor 仍 0 警告，沒有使用 MCP 套正式 DDL、remote reset 或查改正式使用者資料。Domain／generated DB mapping／兩個 repository adapter 已改用六套 `themeId` 與語意化 grid mode；設定可保存 theme、system／light／dark 與自動 4–6 列／固定六列。ThemeProvider 即時追蹤 `prefers-color-scheme` 並同步 CSS、theme-color meta／manifest 與 `color-scheme`。本機 envelope 升至 schema v3，v2 fixture 驗證 migration 保留所有既有偏好、revision 與 timestamp，只補上原本不存在的漫畫 theme id；v1 與 future／corrupt write barrier 回歸仍保留。Vitest 為 30 files／266 tests，遠端 7 項 rollback pgTAP 全數通過，暫時 pgTAP extension、固定測試帳號與資料均確認已回滾。CLI 在 Codex sandbox 內有 Bun transport 相容問題，因此 owner 只代跑正式 link／dry-run／push；`supabase test db --linked` 又被本機 Docker 前置擋下，因此未宣稱 pgTAP CLI 已重跑，改由 MCP 執行 repo 同一份 rollback pgTAP；transaction 內的暫時 extension 也一併回滾。下一項 DP-036 已放入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 

@@ -69,6 +69,47 @@ describe('DayPop runtime contract', () => {
     expect(validateDayPopUserData(timed)).toMatchObject({ success: false });
   });
 
+  it('accepts reminder boundaries and rejects negative, oversized, or excessive reminders', () => {
+    expect(
+      validateDayPopUserData(
+        withEvent({
+          ...eventCommon(),
+          reminderMinutes: [0, 10_080],
+          allDay: true,
+          startDate: '2026-08-04',
+          endDate: '2026-08-04',
+        }),
+      ).success,
+    ).toBe(true);
+
+    for (const reminderMinutes of [[-1], [10_081], Array.from({ length: 11 }, (_, index) => index)]) {
+      const result = validateDayPopUserData(
+        withEvent({
+          ...eventCommon(),
+          reminderMinutes,
+          allDay: true,
+          startDate: '2026-08-04',
+          endDate: '2026-08-04',
+        }),
+      );
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.issues.join(' ')).toMatch(/reminderMinutes/);
+    }
+  });
+
+  it('applies the same reminder bounds to preferences', () => {
+    const data = createEmptyUserData({ idFactory: () => CALENDAR_ID, now: NOW });
+
+    for (const defaultReminderMinutes of [[10_081], Array.from({ length: 11 }, () => 10)]) {
+      const result = validateDayPopUserData({
+        ...data,
+        preferences: { ...data.preferences, defaultReminderMinutes },
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.issues.join(' ')).toMatch(/defaultReminderMinutes/);
+    }
+  });
+
   it('rejects mixed all-day and timed shapes', () => {
     const data = withEvent({
       ...eventCommon(),

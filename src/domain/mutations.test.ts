@@ -80,6 +80,29 @@ describe('createEventFromInput', () => {
 
     expect(event.calendarId).toBe(OTHER_CALENDAR);
   });
+
+  it('stores a 23:xx event end on the next day through the new-event path', () => {
+    const data = baseData();
+    data.preferences.timezone = 'UTC';
+
+    const event = createEventFromInput(
+      data,
+      {
+        title: '深夜行程',
+        date: '2026-08-06',
+        allDay: false,
+        start: '23:30',
+        end: '00:30',
+      },
+      { id: '88888888-8888-4888-8888-888888888888', now: NOW },
+    );
+
+    expect(event).toMatchObject({
+      allDay: false,
+      startsAt: '2026-08-06T23:30:00.000Z',
+      endsAt: '2026-08-07T00:30:00.000Z',
+    });
+  });
 });
 
 describe('optional text fields', () => {

@@ -28,6 +28,7 @@ interface CalendarEventBase {
   title: string;
   location: string | null;
   notes: string | null;
+  /** Up to 10 reminders, each 0–10080 minutes before the event. */
   reminderMinutes: number[];
   recurrence: Recurrence | null;
   sharingScope: SharingScope;
@@ -106,6 +107,7 @@ export interface UserPreferences {
   theme: ThemePreference;
   themeId: ThemeId;
   calendarGridMode: CalendarGridMode;
+  /** Up to 10 reminders, each 0–10080 minutes before an event. */
   defaultReminderMinutes: number[];
   petName: string;
   petEnabled: boolean;
