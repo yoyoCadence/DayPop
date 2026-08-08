@@ -148,6 +148,37 @@ describe('DayPop runtime contract', () => {
     }
   });
 
+  it('rejects malformed RRULEs and exception rows outside a recurring series', () => {
+    const source = {
+      ...eventCommon(),
+      allDay: true as const,
+      startDate: '2026-08-04',
+      endDate: '2026-08-04',
+      recurrence: { rule: 'FREQ=DAILY;COUNT=0' },
+    };
+    const malformed = validateDayPopUserData(withEvent(source));
+    expect(malformed.success).toBe(false);
+    if (!malformed.success) expect(malformed.issues.join(' ')).toMatch(/RFC 5545/);
+
+    const data = withEvent({ ...source, recurrence: null });
+    data.eventExceptions = [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        eventId: EVENT_ID,
+        occurrence: { kind: 'all-day', date: '2026-08-05' },
+        isCancelled: true,
+        replacementEventId: null,
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+    ];
+    const strayException = validateDayPopUserData(data);
+    expect(strayException.success).toBe(false);
+    if (!strayException.success) {
+      expect(strayException.issues.join(' ')).toMatch(/must reference a recurring event/);
+    }
+  });
+
   it('rejects unknown visual themes and calendar grid modes', () => {
     const data = createEmptyUserData({ idFactory: () => CALENDAR_ID, now: NOW });
     const unknownTheme = validateDayPopUserData({

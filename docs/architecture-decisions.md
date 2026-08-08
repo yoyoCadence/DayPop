@@ -44,7 +44,7 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - `src/domain/databaseMapping.ts` 是 domain 與 generated Supabase `Row`／`Insert` types 的唯一 mapping；client insert 刻意不帶 `created_at`／`updated_at`。這層只定義 contract，不在 DP-012 接上網路 CRUD。
 - 本機 envelope 已升到 schema v2。首次啟動與 v1 migration 都會立即持久化一個 UUID default calendar，避免每次讀取產生不同 ID；v1 的非 UUID event／todo ID 會在一次性 migration 重建為 UUID 並指向該 calendar。v1 fixture、migration 與 future-version 測試持續保留。
 - DP-012 當時的 `month_weeks` 暫時相容編碼已由 DP-018 收掉；歷史值 `6` migration 為 fixed-six，`4`／`5` migration 為 adaptive，runtime mapping 不再理解數字列數。
-- Recurrence 在本階段只保存 RFC 5545 rule text；展開 occurrence、DST、單次修改與 ICS round-trip 仍屬 DP-027。提醒上限、DB timezone 受控驗證與 `created_at` hardening 仍依 DP-036／027，不在 mapping 層假裝完成。
+- DP-012 當時只保存 RFC 5545 rule text；DP-027 已在獨立 domain 層補齊 occurrence expansion、DST、single／all exception mutation 與 ICS round-trip。提醒上限、`created_at` hardening 與 DB timezone 受控驗證也已分別由 DP-036／027 完成；mapping 層仍只負責列轉換。
 
 ## 3. 偏好設定語意
 
@@ -81,7 +81,7 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 以上 invariant 必須在 account CRUD 接線前完成 migration、generated types 與測試。
 
-DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。Reminder array 上限與 `created_at` 防偽已由 DP-036 完成；DB timezone 受控驗證仍依 DP-027 處理，完成前不得把 account CRUD 視為已可上線。
+DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。Reminder array 上限與 `created_at` 防偽已由 DP-036 完成，DB timezone 受控驗證由 DP-027 完成。上述 account CRUD 前置 invariant 現在已就位；實際 bootstrap 與遠端持久化仍分別依 DP-024／026 驗證。
 
 ### 實作結果（DP-063）— 牆上時間位移一律以日曆日重算，不用固定毫秒
 
@@ -90,7 +90,7 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - `src/domain/eventTime.ts` 的 `timedEventFromWallTime()` 是這個規則的唯一實作點，回歸測試在 `src/domain/eventTime.test.ts`。
 - `src/domain/date.ts` 的 `daysBetween()`／`weeksBetween()` 以 `Math.round` 取整，同樣是為了讓 23／25 小時的一天仍然算一天。
 - 例外只有 `src/storage/localDataMigration.ts`：v1 資料固定錨在無 DST 的 `+08:00`，每一天都剛好 24 小時，因此保留固定位移並在原地註明原因。
-- **DP-027 展開 recurrence occurrence 時適用同一條規則**：「隔天的同一個時間」是日曆運算，不是加 86400000 毫秒；每日／每週／每月重複跨越 DST 時，使用者期待的是牆上時鐘不變。
+- **DP-027 的 recurrence occurrence 已套用同一條規則**：「隔天的同一個時間」是日曆運算，不是加 86400000 毫秒；每日／每週／每月重複跨越 DST 時會維持牆上時鐘，春季快轉中不存在的 local start 依 RFC 略過。
 - 全天事件的 `endDate` 是 inclusive 且可以晚於 `startDate`，因此任何編輯都必須讓兩端一起移動（DP-063 修正 `applyEventPatch()`）。DP-026 從 `events` 讀回的多日全天事件就是這個形狀。
 
 ### 實作結果（DP-036）— 提醒與時間戳由 domain／DB 雙層保護
@@ -100,6 +100,15 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - Repository 的 domain → DB insert mapping 原本就刻意不送 `created_at`／`updated_at`；DB trigger 是阻擋繞過 repository 的第二道邊界，不取代 mapping contract。
 - 23:xx 新增行程沿用 DP-063 的 `timedEventFromWallTime()`，DP-036 再從 `createEventFromInput()` 驗證 UTC 23:30–00:30 會保存為隔日結束。DB 的 `events_time_shape` 繼續保證 `ends_at > starts_at`。
 - 第六檔 migration 已以 CLI workflow 套用；遠端 generated types 與 repo 相同（constraint／trigger 不改變列型別）。Rollback pgTAP、12 項會丟錯的 transactional assertions、RLS 與 security advisor 均通過。
+
+### 實作結果（DP-027）— Recurrence 使用日曆欄位展開，timezone 在 domain／DB 雙邊界驗證
+
+- Canonical recurrence 欄位只保存 RFC 5545 RECUR value，不混入 `RRULE:`、`DTSTART` 或 `TZID`。`src/domain/recurrence.ts` 以精確固定的 `rrule@2.8.1` parse 規則，拒絕 duplicate part、無效 `COUNT`／`UNTIL` 組合與 all-day 不相容時間欄位；單一查詢 window 超過 10,000 occurrences 時 fail closed，不靜默截斷。
+- RRule 只在 floating UTC frame 產生日曆欄位；timed occurrence 再逐筆以 event 的 IANA timezone 經 `wallTimeToInstant()` 解析。因此 daily／weekly／monthly 規則不靠固定毫秒位移，跨 DST 保持牆上時間；不存在的 local start 略過。Timed `UNTIL` 是真 UTC instant，必須在 wall-time 解析後比較。
+- EventException 以原 occurrence identity 表示單次取消或指向 non-recurring replacement；重複編輯同一次會重用 exception／replacement id。更新或刪除 base event 是「全部」操作，刪除 series 同時清掉 exception 與 replacement，避免 orphan。
+- `src/domain/ics.ts` 是純 adapter，不負責檔案 IO 或匯入合併。DayPop all-day inclusive `endDate` 在 export 轉為 exclusive `DTEND`、import 再轉回；timed event 保存 TZID，single cancel／replacement 分別對應 EXDATE／RECURRENCE-ID，並實作 UTF-8 75-octet folding。DP-056 仍負責檔案選擇、preview、duplicate handling 與 all-or-nothing merge。
+- 第七檔 migration `20260808100626_validate_event_timezones.sql` 在 `user_preferences.timezone` 與 `events.timezone` 的 INSERT／UPDATE 邊界查詢 `pg_timezone_names`；不建立錯誤的 immutable CHECK。Trigger function 是 security invoker、固定空 `search_path`，且撤銷 public／anon／authenticated 直接 execute。Migration 由 CLI workflow 套用；24 項 rollback pgTAP、9 張 public tables RLS、generated types 與 security advisor 均通過。
+- 事件 sheet 的 recurrence／timezone 控制項、畫面 occurrence wiring 與 single／all scope dialog 是 DP-014 的 UI 搬移，不在 domain task 內自行改設計。跨午夜事件如何跨兩日呈現在月格／週格仍是 DP-064，不能因 occurrence engine 完成就暗自決定。
 
 **尚未決定：跨午夜行程在檢視層怎麼呈現。** 月格／日詳情的衝突偵測與週檢視的色塊高度都用同日 `HH:MM` 比較，與原稿逐行一致（原檔只存 `HH:MM` 字串才不會遇到）。DayPop 存 instant，因此這是新的產品決策，記在 DP-064，未定案前不要各檢視各改各的。
 

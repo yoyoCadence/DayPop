@@ -52,8 +52,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | **停止點** | **Supabase MCP 交接** | **開始需要** | **2026-08-08 已抵達並完成交接提醒**，專案擁有者確認改由可使用 MCP 的 agent 接手。接手前請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)：那份文件記錄交接當下已驗證的狀態、必須先處理的前置，以及不得做的事。 |
 | ~~6~~ | ~~DP-018 主題／月格偏好 migration~~ | 需要 | 已完成；migration 由正式 CLI workflow 套用，MCP 僅做套用前後的 schema／advisor 驗證、型別產生與 rollback 安全測試。 |
 | ~~7~~ | ~~DP-036 DB invariants~~ | 需要 | 已完成；第六檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與完整 rollback 驗證。 |
-| **8** | **DP-027 日期／時區邊界** | **需要** | **下一項；等 DP-036 PR 由專案擁有者親自合併後才開始。**先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
-| 9 | DP-024 帳號資料 bootstrap | 需要 | 以真實帳號驗證初始化、RLS 與重試安全性。 |
+| ~~8~~ | ~~DP-027 日期／時區邊界~~ | 需要 | 已完成；第七檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與 rollback 安全測試。 |
+| **9** | **DP-024 帳號資料 bootstrap** | **需要** | **下一項；等 DP-027 PR 由專案擁有者親自合併後才開始。**以真實帳號驗證初始化、RLS 與重試安全性。 |
 | 10 | DP-026 核心 CRUD 遠端持久化 | 需要 | 驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
 | 11 | DP-025 legacy 匯入 | 需要 | 在 durable CRUD 穩定後才驗證一次性匯入與可回復流程。 |
 | 12 | DP-028 附件 Storage | 需要 | bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
@@ -66,7 +66,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-027 — 完成 recurrence／timezone 正確性：** 以 RFC 5545 規則與 exception model 處理單次／全部修改、IANA timezone、DST 與 ICS round-trip；DayPop 全天 `end_date` 採 inclusive，ICS adapter 明確轉換 exclusive `DTEND`。timezone 由 domain 與可測的受控 DB 邊界驗證，不使用讀取 `pg_timezone_names` 的 immutable CHECK 假設。**必須等 DP-036 PR 由專案擁有者親自合併後才移入 In Progress。**
+- [ ] **DP-024 — 建立 account bootstrap：** 新帳號建立 profile、preferences 與預設 calendars；流程需 idempotent，重試不得產生重複預設資料。**必須等 DP-027 PR 由專案擁有者親自合併後才開始。**
 
 ## In Progress
 
@@ -76,12 +76,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（重複範圍選擇依 DP-027、匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
+- [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（DP-027 已完成重複／時區底層，這裡接回事件 sheet 控制項、畫面 occurrence 與單次／全部範圍選擇；匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。要決定的是：跨午夜行程要不要在隔天的格子也出現、週檢視要不要畫到 24:00 再於隔天欄續畫、衝突判定是否改用 instant 直接比較（順帶解決兩個不同時區的事件互比 wall clock 的問題）。決定前不要各檢視各改各的。
 ### Supabase / auth / data
 
-- [ ] **DP-024 — 建立 account bootstrap：** 新帳號建立 profile、preferences 與預設 calendars；流程需 idempotent，重試不得產生重複預設資料。
 - [ ] **DP-025 — 建立 legacy localStorage migration：** 偵測 `calpet.v2`、schema validate、顯示預覽與筆數、一次性匯入 Supabase、處理重複 ID／失敗回復；成功前不刪除原資料，並禁止匯入舊 AI key。
 - [ ] **DP-062 — 寫入順序保護（DP-026 前置）：** `DataProvider` 的寫入是 fire-and-forget，兩筆同時在途時**最後 resolve 的會覆蓋畫面**，即使它比較早發出。本機 adapter 依呼叫順序 resolve，所以目前不會發生；遠端 adapter 一定會遇到。`src/data/DataProviderRace.test.tsx` 已用 characterization test 釘住現況。DP-026 接上遠端前必須決定策略（序號丟棄過期結果、或改為序列化寫入），不要讓它預設帶著這個行為上線。
 - [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
@@ -132,12 +131,14 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci` 與四項驗證。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
-- `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
+- `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；production dependency audit 為 0 個已知漏洞。Playwright e2e 套件仍等對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-027 — 完成 recurrence／timezone 正確性：** `src/domain/recurrence.ts` 以精確固定的 `rrule@2.8.1` 驗證 RFC 5545 RECUR value、依 event DTSTART 展開 occurrence，並把 timed recurrence 放在 floating calendar frame 後逐次經 DayPop wall-time → instant 邊界解析，跨 DST 維持牆上時間、略過不存在的 local start，且過密 window 會 fail closed。`cancelEventOccurrence()`／`replaceEventOccurrence()` 以 EventException 處理單次取消／改期並重用 row id；base update／delete 代表全部，刪除 series 會一起清掉 exception 與 replacement。純 ICS adapter 完成全天 inclusive end ↔ exclusive `DTEND`、TZID、RRULE、EXDATE／RECURRENCE-ID、UTF-8 line folding 與 round-trip；檔案選擇、預覽、重複處理仍歸 DP-056，事件 sheet 控制項、畫面 occurrence 與單次／全部 dialog 仍歸 DP-014。第七檔 migration `20260808100626_validate_event_timezones.sql` 由專案擁有者以 CLI list／dry-run／push 套用；MCP 未下正式 DDL、未 remote reset、未查改正式使用者資料。套用前確認 6 檔 history／RLS／advisor 0，套用後確認遠端與 repo 正好 7 檔、兩個 timezone triggers、security-invoker＋空 `search_path`、anon／authenticated 無直接 execute、9 張 public tables RLS 全開、generated types 逐字一致且 advisor 仍 0。Repo 的 24 項 rollback pgTAP 全數通過；暫時 extension、固定假帳號與事件均確認不存在。本機 lint／typecheck／32 files 285 tests／build／check:build 與 production dependency audit 全部通過。下一項 DP-024 已放入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 
 - [x] **DP-036 — 強化 CRUD 前資料 invariant：** 第六檔 migration `20260808093254_enforce_crud_invariants.sql` 以正式 CLI dry-run／push 套用，沒有 MCP DDL、Dashboard 手改或 remote reset。`events.reminder_minutes` 與 `user_preferences.default_reminder_minutes` 現在最多 10 項、每項為 0–10080 分鐘且不可含 `null`；上限沿用原稿自訂提醒的七日 clamp。既有 `set_updated_at()` trigger function 擴充為 insert 時強制 DB 時間、update 時保留原 `created_at` 並刷新 `updated_at`，九張公開資料表各有 insert trigger，repository mapping 持續不送 client timestamps。23:xx 跨日核心沿用 DP-063 的「到隔天重新解析牆上時間」，新增 `createEventFromInput()` 的 23:30→00:30 回歸。Domain runtime validation 與 DB constraint 使用同一組界線；時間先後、提醒陣列與偽造建立時間均有測試。套用前 MCP 確認 5 檔 history、DP-018 欄位與 advisor 0；套用後確認正好 6 檔、constraints／9 triggers／function／RLS 正確，security advisor 仍 0。Repo 的 15 項 rollback pgTAP 與額外 12 項會丟錯的 transactional assertions 通過，固定假帳號／事件確認不存在；遠端重新產生的 TypeScript types 與 repo 完全一致，無需製造 generated diff。本機 lint／typecheck／30 files 269 tests／build／check:build 全部通過。下一項 DP-027 已放入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 

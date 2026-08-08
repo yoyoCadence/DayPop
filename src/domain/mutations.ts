@@ -1,10 +1,14 @@
 import { sortedCalendars } from './calendars';
 import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
 import { eventWallTime, timedEventFromWallTime } from './eventTime';
+import { instantDateInZone } from './eventTime';
+import { resolveEventOccurrences } from './recurrence';
 import type {
   Calendar,
   CalendarEvent,
   DayPopUserData,
+  EventException,
+  EventOccurrence,
   Sticker,
   TodoItem,
   UserPreferences,
@@ -32,6 +36,10 @@ export interface NewEventInput {
   calendarId?: string;
   location?: string;
   notes?: string;
+  /** RFC 5545 RECUR value, without the RRULE: prefix. */
+  recurrenceRule?: string | null;
+  /** Timed events default to the account preference when omitted. */
+  timezone?: string;
 }
 
 export interface NewTodoInput {
@@ -58,6 +66,10 @@ export interface EventPatch {
   /** Empty string clears the field, since the domain stores `null`. */
   location?: string;
   notes?: string;
+  /** Undefined keeps the series; null makes the event non-recurring. */
+  recurrenceRule?: string | null;
+  /** Reanchors the same wall time in a different IANA timezone. */
+  timezone?: string;
 }
 
 export interface NewCalendarInput {
@@ -223,7 +235,7 @@ export function createEventFromInput(
     location: optionalText(input.location),
     notes: optionalText(input.notes),
     reminderMinutes: [],
-    recurrence: null,
+    recurrence: input.recurrenceRule ? { rule: input.recurrenceRule } : null,
     sharingScope: 'inherit' as const,
     createdAt: context.now,
     updatedAt: context.now,
@@ -233,7 +245,7 @@ export function createEventFromInput(
     : timedEventFromWallTime(
         common,
         { date: input.date, start: input.start, end: input.end },
-        data.preferences.timezone,
+        input.timezone ?? data.preferences.timezone,
       );
 }
 
@@ -252,7 +264,12 @@ export function applyEventPatch(
     location: patch.location === undefined ? event.location : optionalText(patch.location),
     notes: patch.notes === undefined ? event.notes : optionalText(patch.notes),
     reminderMinutes: event.reminderMinutes,
-    recurrence: event.recurrence,
+    recurrence:
+      patch.recurrenceRule === undefined
+        ? event.recurrence
+        : patch.recurrenceRule === null
+          ? null
+          : { rule: patch.recurrenceRule },
     sharingScope: event.sharingScope,
     createdAt: event.createdAt,
     updatedAt,
@@ -282,8 +299,108 @@ export function applyEventPatch(
       end: (patch.end ?? previous.end) || '10:00',
     },
     // An all-day event has no timezone of its own to keep.
-    event.allDay ? defaultTimezone : event.timezone,
+    patch.timezone ?? (event.allDay ? defaultTimezone : event.timezone),
   );
+}
+
+export interface OccurrenceMutationContext {
+  /** Used only when this occurrence does not already have an exception row. */
+  exceptionId: string;
+  /** Used only when this occurrence does not already have a replacement row. */
+  replacementEventId: string;
+  now: string;
+}
+
+/**
+ * Cancel one generated occurrence. Updating or deleting the base event remains
+ * the explicit “all occurrences” operation used by both repositories.
+ */
+export function cancelEventOccurrence(
+  data: DayPopUserData,
+  eventId: string,
+  occurrence: EventOccurrence,
+  context: OccurrenceMutationContext,
+): DayPopUserData {
+  const source = requireRecurringOccurrence(data, eventId, occurrence);
+  const existing = findEventException(data, eventId, occurrence);
+  const exception: EventException = {
+    id: existing?.id ?? context.exceptionId,
+    eventId: source.id,
+    occurrence,
+    isCancelled: true,
+    replacementEventId: null,
+    createdAt: existing?.createdAt ?? context.now,
+    updatedAt: context.now,
+  };
+  const events =
+    existing?.replacementEventId === null || existing?.replacementEventId === undefined
+      ? data.events
+      : data.events.filter((event) => event.id !== existing.replacementEventId);
+  return withEventException({ ...data, events }, exception);
+}
+
+/**
+ * Replace one generated occurrence with a standalone, non-recurring event.
+ *
+ * Re-editing the same occurrence reuses both row ids. That keeps the operation
+ * idempotent for a retried repository write and avoids orphan replacement rows.
+ */
+export function replaceEventOccurrence(
+  data: DayPopUserData,
+  eventId: string,
+  occurrence: EventOccurrence,
+  patch: EventPatch,
+  context: OccurrenceMutationContext,
+): DayPopUserData {
+  const source = requireRecurringOccurrence(data, eventId, occurrence);
+  const existing = findEventException(data, eventId, occurrence);
+  const previousReplacement =
+    existing?.replacementEventId === null
+      ? undefined
+      : data.events.find((event) => event.id === existing?.replacementEventId);
+  const occurrenceDate =
+    occurrence.kind === 'all-day'
+      ? occurrence.date
+      : instantDateInZone(occurrence.startsAt, source.allDay ? data.preferences.timezone : source.timezone);
+  const concrete =
+    previousReplacement ??
+    resolveEventOccurrences(
+      {
+        events: data.events,
+        eventExceptions: data.eventExceptions.filter(
+          (candidate) => !sameEventOccurrence(candidate, eventId, occurrence),
+        ),
+      },
+      { startDate: occurrenceDate, endDate: occurrenceDate },
+    ).find(
+      (candidate) =>
+        candidate.sourceEventId === eventId && sameOccurrence(candidate.occurrence, occurrence),
+    )?.event;
+  if (!concrete) throw new RangeError('occurrence is not generated by the recurring event');
+
+  const replacementId = existing?.replacementEventId ?? context.replacementEventId;
+  const replacement: CalendarEvent = {
+    ...applyEventPatch(
+      concrete,
+      { ...patch, recurrenceRule: null },
+      data.preferences.timezone,
+      context.now,
+    ),
+    id: replacementId,
+    recurrence: null,
+    createdAt: previousReplacement?.createdAt ?? context.now,
+    updatedAt: context.now,
+  };
+  const exception: EventException = {
+    id: existing?.id ?? context.exceptionId,
+    eventId: source.id,
+    occurrence,
+    isCancelled: false,
+    replacementEventId: replacement.id,
+    createdAt: existing?.createdAt ?? context.now,
+    updatedAt: context.now,
+  };
+  return withEventException(withEvent(data, replacement), exception);
 }
 
 export function createTodoFromInput(
@@ -360,7 +477,80 @@ export function withEvent(data: DayPopUserData, event: CalendarEvent): DayPopUse
 }
 
 export function withoutEvent(data: DayPopUserData, id: string): DayPopUserData {
-  return { ...data, events: data.events.filter((event) => event.id !== id) };
+  const ownedExceptions = data.eventExceptions.filter((exception) => exception.eventId === id);
+  const replacementIds = new Set(
+    ownedExceptions
+      .map((exception) => exception.replacementEventId)
+      .filter((replacementId): replacementId is string => replacementId !== null),
+  );
+  replacementIds.add(id);
+  return {
+    ...data,
+    events: data.events.filter((event) => !replacementIds.has(event.id)),
+    eventExceptions: data.eventExceptions.filter(
+      (exception) =>
+        exception.eventId !== id &&
+        (exception.replacementEventId === null || !replacementIds.has(exception.replacementEventId)),
+    ),
+  };
+}
+
+function findEventException(
+  data: DayPopUserData,
+  eventId: string,
+  occurrence: EventOccurrence,
+): EventException | undefined {
+  return data.eventExceptions.find((candidate) =>
+    sameEventOccurrence(candidate, eventId, occurrence),
+  );
+}
+
+function sameEventOccurrence(
+  exception: EventException,
+  eventId: string,
+  occurrence: EventOccurrence,
+): boolean {
+  return exception.eventId === eventId && sameOccurrence(exception.occurrence, occurrence);
+}
+
+function sameOccurrence(left: EventOccurrence, right: EventOccurrence): boolean {
+  if (left.kind !== right.kind) return false;
+  return left.kind === 'all-day'
+    ? left.date === (right as Extract<EventOccurrence, { kind: 'all-day' }>).date
+    : left.startsAt === (right as Extract<EventOccurrence, { kind: 'timed' }>).startsAt;
+}
+
+function requireRecurringOccurrence(
+  data: DayPopUserData,
+  eventId: string,
+  occurrence: EventOccurrence,
+): CalendarEvent {
+  const source = findEvent(data, eventId);
+  if (!source || source.recurrence === null) {
+    throw new RangeError('occurrence operation requires a recurring event');
+  }
+  if ((source.allDay && occurrence.kind !== 'all-day') || (!source.allDay && occurrence.kind !== 'timed')) {
+    throw new RangeError('occurrence shape must match the recurring event');
+  }
+  return source;
+}
+
+function withEventException(
+  data: DayPopUserData,
+  exception: EventException,
+): DayPopUserData {
+  const existing = data.eventExceptions.findIndex((candidate) =>
+    sameEventOccurrence(candidate, exception.eventId, exception.occurrence),
+  );
+  return {
+    ...data,
+    eventExceptions:
+      existing < 0
+        ? [...data.eventExceptions, exception]
+        : data.eventExceptions.map((candidate, index) =>
+            index === existing ? exception : candidate,
+          ),
+  };
 }
 
 export function withTodo(data: DayPopUserData, todo: TodoItem): DayPopUserData {

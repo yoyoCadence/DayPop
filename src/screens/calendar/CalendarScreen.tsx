@@ -196,7 +196,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     setQuick('');
 
     // 重複 and 提醒 are recognised but still have nowhere honest to go — the
-    // sheet deliberately does not offer them yet (DP-027／DP-042).
+    // sheet's recurrence controls remain DP-014 UI work, and reminder delivery
+    // remains DP-042.
     const dropped = unsupportedQuickAddParts(parsed).filter((part) => part !== '地點');
     setQuickNote(
       dropped.length > 0

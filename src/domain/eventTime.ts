@@ -71,12 +71,12 @@ export function timedEventFromWallTime(
   return { ...common, allDay: false, startsAt, endsAt, timezone };
 }
 
-function instantDateInZone(instant: string, timezone: string): string {
+export function instantDateInZone(instant: string, timezone: string): string {
   const parts = zonedParts(new Date(instant), timezone);
   return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
-function instantTimeInZone(instant: string, timezone: string): string {
+export function instantTimeInZone(instant: string, timezone: string): string {
   const parts = zonedParts(new Date(instant), timezone);
   return `${pad(parts.hour)}:${pad(parts.minute)}`;
 }
