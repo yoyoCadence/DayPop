@@ -78,6 +78,16 @@ function shape(data: DayPopUserData) {
   };
 }
 
+/** Calendars are compared separately so the existing shape assertions stay short. */
+function calendarShape(data: DayPopUserData) {
+  return data.calendars.map((calendar) => ({
+    name: calendar.name,
+    color: calendar.color,
+    isVisible: calendar.isVisible,
+    isDefault: calendar.isDefault,
+  }));
+}
+
 describe.each(adapters)('%s adapter honours the shared contract', (_name, create) => {
   let repository: DayPopRepository;
 
@@ -224,6 +234,74 @@ describe.each(adapters)('%s adapter honours the shared contract', (_name, create
     expect(shape(data).stickers).toEqual([
       { date: '2026-08-06', glyph: '✈️', assetKey: null, sortOrder: 1 },
     ]);
+  });
+
+  it('adds, renames and recolours a calendar', async () => {
+    const added = await repository.addCalendar({ name: '  工作  ', color: '#2563eb' });
+
+    expect(calendarShape(added)).toEqual([
+      { name: '我的日曆', color: '#F06C5C', isVisible: true, isDefault: true },
+      // Trimmed, visible, and never stealing the default flag.
+      { name: '工作', color: '#2563eb', isVisible: true, isDefault: false },
+    ]);
+
+    const id = added.calendars[1]!.id;
+    const renamed = await repository.updateCalendar(id, { name: '專案', color: '#16a34a' });
+    expect(calendarShape(renamed)[1]).toMatchObject({ name: '專案', color: '#16a34a' });
+
+    const hidden = await repository.updateCalendar(id, { isVisible: false });
+    expect(calendarShape(hidden)[1]?.isVisible).toBe(false);
+  });
+
+  it('falls back to 未命名日曆 for a blank name', async () => {
+    const data = await repository.addCalendar({ name: '   ', color: '#2563eb' });
+    expect(calendarShape(data)[1]?.name).toBe('未命名日曆');
+  });
+
+  it('moves the rows of a deleted calendar to the surviving default', async () => {
+    const added = await repository.addCalendar({ name: '工作', color: '#2563eb' });
+    const target = added.calendars[1]!.id;
+    await repository.addEvent({
+      title: '工作會議',
+      date: '2026-08-06',
+      allDay: true,
+      start: '',
+      end: '',
+      calendarId: target,
+    });
+    await repository.addTodo({ title: '工作待辦', date: '2026-08-06', calendarId: target });
+
+    const data = await repository.deleteCalendar(target);
+
+    expect(calendarShape(data)).toEqual([
+      { name: '我的日曆', color: '#F06C5C', isVisible: true, isDefault: true },
+    ]);
+    // Nothing is lost — the rows follow the surviving default calendar.
+    expect(data.events).toHaveLength(1);
+    expect(data.todos).toHaveLength(1);
+    const survivor = data.calendars[0]!.id;
+    expect(data.events[0]?.calendarId).toBe(survivor);
+    expect(data.todos[0]?.calendarId).toBe(survivor);
+  });
+
+  it('promotes another calendar when the default one is deleted', async () => {
+    const added = await repository.addCalendar({ name: '工作', color: '#2563eb' });
+    const original = added.calendars[0]!.id;
+
+    const data = await repository.deleteCalendar(original);
+
+    expect(data.calendars).toHaveLength(1);
+    expect(data.calendars[0]?.name).toBe('工作');
+    // The contract requires exactly one default at all times.
+    expect(data.calendars[0]?.isDefault).toBe(true);
+  });
+
+  it('refuses to delete the last calendar', async () => {
+    const before = await repository.load();
+
+    const data = await repository.deleteCalendar(before.calendars[0]!.id);
+
+    expect(calendarShape(data)).toEqual(calendarShape(before));
   });
 
   it('treats editing a missing id as a no-op rather than an error', async () => {

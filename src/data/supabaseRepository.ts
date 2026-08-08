@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   calendarFromRow,
+  calendarToInsert,
   eventExceptionFromRow,
   eventFromRow,
   eventToInsert,
@@ -11,8 +12,16 @@ import {
   todoToInsert,
 } from '../domain/databaseMapping';
 import {
+  applyCalendarPatch,
   applyEventPatch,
+  calendarDeletionPlan,
+  createCalendarFromInput,
   createEventFromInput,
+  findCalendarById,
+  withCalendar,
+  withoutCalendar,
+  type CalendarPatch,
+  type NewCalendarInput,
   createStickerFromInput,
   createTodoFromInput,
   findEvent,
@@ -197,6 +206,64 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     return this.#commit(withoutSticker(data, id));
   }
 
+  async addCalendar(input: NewCalendarInput): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = createCalendarFromInput(data, input, {
+      id: createDomainId(),
+      now: new Date().toISOString(),
+    });
+    return this.#commit(withCalendar(data, await this.#upsertCalendar(draft)));
+  }
+
+  async updateCalendar(id: string, patch: CalendarPatch): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const calendar = findCalendarById(data, id);
+    if (!calendar) return data;
+    const draft = applyCalendarPatch(calendar, patch, new Date().toISOString());
+    return this.#commit(withCalendar(data, await this.#upsertCalendar(draft)));
+  }
+
+  async deleteCalendar(id: string): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const plan = calendarDeletionPlan(data, id);
+    // Refused (last calendar, or unknown id) — nothing reaches the server.
+    if (!plan) return data;
+
+    // Child rows move first. The composite foreign key would reject the delete
+    // while anything still points at this calendar, so the order is required,
+    // not just tidy.
+    for (const table of ['events', 'todos', 'stickers'] as const) {
+      const { error } = await this.client
+        .from(table)
+        .update({ calendar_id: plan.target.id })
+        .eq('calendar_id', id)
+        .eq('owner_id', this.userId);
+      if (error) throw new RemoteDataError(`搬移 ${table}`, error);
+    }
+
+    if (plan.promote) {
+      const { error } = await this.client
+        .from('calendars')
+        .update({ is_default: true })
+        .eq('id', plan.target.id)
+        .eq('owner_id', this.userId);
+      if (error) throw new RemoteDataError('指定預設日曆', error);
+    }
+
+    await this.#delete('calendars', id);
+    return this.#commit(withoutCalendar(data, id, new Date().toISOString()));
+  }
+
+  async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {
+    const { data, error } = await this.client
+      .from('calendars')
+      .upsert(calendarToInsert(calendar, this.userId))
+      .select('*')
+      .single();
+    if (error || !data) throw new RemoteDataError('寫入日曆', error);
+    return calendarFromRow(data);
+  }
+
   /**
    * Writes go back through `*FromRow`, so the snapshot holds what the database
    * actually stored — including the `created_at`/`updated_at` the client is
@@ -222,7 +289,7 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     return todoFromRow(data);
   }
 
-  async #delete(table: 'events' | 'todos' | 'stickers', id: string) {
+  async #delete(table: 'events' | 'todos' | 'stickers' | 'calendars', id: string) {
     const { error } = await this.client
       .from(table)
       .delete()

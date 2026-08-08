@@ -1,0 +1,252 @@
+/* 我的日曆 list in 設定, and the 日曆編輯 dialog.
+   Values are ported from the inline styles of the matching blocks in
+   `日曆桌寵 Calendar Pet.dc.html`. */
+
+.cal-manage-list {
+  overflow: hidden;
+  margin-bottom: 9px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.cal-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid var(--line);
+  padding: 11px 13px;
+}
+
+.cal-manage-row:last-child {
+  border-bottom: none;
+}
+
+.cal-manage-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  /* There is no global button reset in this app; every button states its own
+     border, or it inherits the UA's 2px outset. */
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: initial;
+}
+
+.cal-manage-dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.cal-manage-name {
+  overflow: hidden;
+  flex: 1;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-manage-edit-hint {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Track and knob, sized as in the原檔 rather than a native checkbox. */
+.cal-manage-toggle {
+  position: relative;
+  width: 40px;
+  height: 23px;
+  flex: none;
+  border: 0;
+  padding: 0;
+  border-radius: 20px;
+  background: var(--surface-2);
+  transition: background 0.2s;
+}
+
+.cal-manage-toggle[aria-pressed='true'] {
+  background: var(--accent);
+}
+
+.cal-manage-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.2s;
+}
+
+.cal-manage-toggle[aria-pressed='true'] .cal-manage-knob {
+  left: 19px;
+}
+
+.cal-manage-add {
+  width: 100%;
+  margin-bottom: 18px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- dialog ---------- */
+
+.cal-manage-layer {
+  position: absolute;
+  z-index: 94;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  inset: 0;
+}
+
+.cal-manage-backdrop {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+}
+
+.cal-manage-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 20px 18px 16px;
+  box-shadow: var(--shadow);
+  animation: cal-manage-pop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cal-manage-pop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-manage-dialog {
+    animation: none;
+  }
+}
+
+.cal-manage-title {
+  margin-bottom: 12px;
+  color: var(--fg);
+  font-family: var(--font-head);
+  font-size: 20px;
+  letter-spacing: var(--title-ls);
+}
+
+.cal-manage-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cal-manage-input {
+  width: 100%;
+  margin-bottom: 14px;
+  border: var(--bd) solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
+  padding: 10px 11px;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.cal-manage-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+/* The selected ring is a box-shadow, so the button itself carries no border. */
+.cal-manage-swatch {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.cal-manage-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cal-manage-save {
+  flex: 1;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cal-manage-cancel {
+  flex: none;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 16px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cal-manage-delete {
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  padding: 9px;
+  background: none;
+  color: #e4002b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cal-manage-delete-note {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.cal-manage-dialog button:focus-visible,
+.cal-manage-dialog input:focus-visible,
+.cal-manage-list button:focus-visible,
+.cal-manage-add:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

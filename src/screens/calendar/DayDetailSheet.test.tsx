@@ -45,6 +45,7 @@ function render(overrides: Partial<DayDetailSheetProps> = {}) {
     events: [],
     todos: [],
     stickers: [],
+    calendars: [],
     onClose: vi.fn(),
     onOpenEvent: vi.fn(),
     onNewEvent: vi.fn(),

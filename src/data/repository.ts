@@ -1,5 +1,7 @@
 import type {
+  CalendarPatch,
   EventPatch,
+  NewCalendarInput,
   NewEventInput,
   NewStickerInput,
   NewTodoInput,
@@ -34,6 +36,14 @@ export interface DayPopRepository {
   deleteTodo(id: string): Promise<DayPopUserData>;
   addSticker(input: NewStickerInput): Promise<DayPopUserData>;
   deleteSticker(id: string): Promise<DayPopUserData>;
+  addCalendar(input: NewCalendarInput): Promise<DayPopUserData>;
+  updateCalendar(id: string, patch: CalendarPatch): Promise<DayPopUserData>;
+  /**
+   * Deleting the last calendar is refused, and the rows of a deleted calendar
+   * move to the surviving default rather than disappearing — see
+   * `calendarDeletionPlan`.
+   */
+  deleteCalendar(id: string): Promise<DayPopUserData>;
 }
 
 /**

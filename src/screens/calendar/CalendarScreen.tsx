@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { visibleEvents } from '../../domain/calendars';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { useDayPopData } from '../../data/dataContext';
 import { AgendaView } from './AgendaView';
@@ -54,6 +55,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     deleteSticker,
   } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
+
+  // Hiding a calendar is a display filter — the events stay in storage. Doing
+  // it once here keeps every pane consistent, as the原檔's `dayEvents()` does.
+  const events = useMemo(() => visibleEvents(data), [data]);
 
   const todayKey = toDateKey(new Date());
   const [view, setView] = useState<CalendarView>('month');
@@ -257,8 +262,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
           <MonthView
             ref={monthRef}
             weekStartsOn={weekStartsOn}
-            events={data.events}
+            events={events}
             stickers={data.stickers}
+            calendars={data.calendars}
             selectedDate={selected}
             todayKey={todayKey}
             flashToday={flashToday}
@@ -272,7 +278,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
             weekStartsOn={weekStartsOn}
             cursor={cursor}
             todayKey={todayKey}
-            events={data.events}
+            events={events}
+            calendars={data.calendars}
             onUpdateEvent={updateEvent}
             onOpenEvent={openEvent}
           />
@@ -280,8 +287,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
         {view === 'agenda' && (
           <AgendaView
-            events={data.events}
+            events={events}
             todos={data.todos}
+            calendars={data.calendars}
             onOpenEvent={openEvent}
             onToggleTodo={toggleTodo}
           />
@@ -308,9 +316,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
       <DayDetailSheet
         dateKey={dayDetailKey}
-        events={data.events}
+        events={events}
         todos={data.todos}
         stickers={data.stickers}
+        calendars={data.calendars}
         onClose={() => setDayDetailKey(null)}
         onOpenEvent={openEvent}
         onNewEvent={() => setSheetOpen(true)}

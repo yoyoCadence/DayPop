@@ -15,7 +15,8 @@ import {
   timeFromMinutes,
   type DragRange,
 } from '../../domain/timeGrid';
-import type { CalendarEvent } from '../../domain/types';
+import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
+import type { Calendar, CalendarEvent } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -26,6 +27,7 @@ export interface WeekViewProps {
   cursor: string;
   todayKey: string;
   events: CalendarEvent[];
+  calendars: Calendar[];
   onUpdateEvent(id: string, patch: EventPatch): void;
   /** A press that did not turn into a drag opens the event, as in the原檔. */
   onOpenEvent(id: string): void;
@@ -57,6 +59,7 @@ export function WeekView({
   cursor,
   todayKey,
   events,
+  calendars,
   onUpdateEvent,
   onOpenEvent,
 }: WeekViewProps) {
@@ -250,7 +253,12 @@ export function WeekView({
                           onOpenEvent(block.event.id);
                         }
                       }}
-                      style={{ top: `${block.top}px`, height: `${block.height}px` }}
+                      style={{
+                        top: `${block.top}px`,
+                        height: `${block.height}px`,
+                        background: calendarColor(calendars, block.event.calendarId),
+                        color: CALENDAR_TEXT_COLOR,
+                      }}
                     >
                       <div className="cal-week-event-time">{block.timeLabel}</div>
                       <div className="cal-week-event-title">{block.event.title}</div>

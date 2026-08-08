@@ -73,13 +73,12 @@
   background: currentcolor;
 }
 
-/* The原檔 lists one chip per calendar here. Named rather than faked until the
-   Calendar filter interaction is pending DP-014. */
-.search-chip-pending {
-  flex: none;
-  color: var(--faint);
-  font-size: 10.5px;
-  white-space: nowrap;
+/* Unselected chips keep the calendar's own colour on a neutral surface, so the
+   row still reads as a legend when nothing is filtered. */
+.search-chip[aria-pressed='false'] {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
 }
 
 .search-results {
@@ -115,7 +114,6 @@
   height: 10px;
   flex: none;
   border-radius: 50%;
-  /* Per-calendar colours are wired with DP-014/DP-026. */
   background: var(--accent);
 }
 

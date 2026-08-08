@@ -46,7 +46,7 @@ type QueryResult = { data: unknown; error: { message: string } | null };
 
 class FakeQuery implements PromiseLike<QueryResult> {
   #filters: [string, unknown][] = [];
-  #mode: 'select' | 'upsert' | 'delete' = 'select';
+  #mode: 'select' | 'upsert' | 'delete' | 'update' = 'select';
   #payload: FakeRow | null = null;
   #single = false;
 
@@ -67,6 +67,13 @@ class FakeQuery implements PromiseLike<QueryResult> {
   upsert(row: FakeRow) {
     this.#mode = 'upsert';
     this.#payload = row;
+    return this;
+  }
+
+  /** Patches every row matching the filters, like a PostgREST `PATCH`. */
+  update(patch: FakeRow) {
+    this.#mode = 'update';
+    this.#payload = patch;
     return this;
   }
 
@@ -101,6 +108,22 @@ class FakeQuery implements PromiseLike<QueryResult> {
       const row = this.#store(rows);
       return { data: row, error: null };
     }
+    if (this.#mode === 'update') {
+      const patch = this.#payload ?? {};
+      const updated: FakeRow[] = [];
+      this.db.tables.set(
+        this.table,
+        rows.map((row) => {
+          if (!this.#matches(row)) return row;
+          const next = { ...row, ...patch, updated_at: this.db.serverTime };
+          this.db.writes.push({ table: this.table, row: patch });
+          updated.push(next);
+          return next;
+        }),
+      );
+      return { data: updated, error: null };
+    }
+
     if (this.#mode === 'delete') {
       this.db.tables.set(
         this.table,

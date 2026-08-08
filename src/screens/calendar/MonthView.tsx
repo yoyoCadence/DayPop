@@ -10,9 +10,10 @@ import {
 } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey, weeksBetween } from '../../domain/date';
 import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
+import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
-import type { CalendarEvent, Sticker } from '../../domain/types';
+import type { Calendar, CalendarEvent, Sticker } from '../../domain/types';
 
 /**
  * Continuously scrolling month grid, ported from the `data-month-scroll` block
@@ -48,6 +49,7 @@ export interface MonthViewProps {
   weekStartsOn: 0 | 1;
   events: CalendarEvent[];
   stickers: Sticker[];
+  calendars: Calendar[];
   selectedDate: string;
   todayKey: string;
   flashToday: boolean;
@@ -61,6 +63,7 @@ export function MonthView({
   weekStartsOn,
   events,
   stickers,
+  calendars,
   selectedDate,
   todayKey,
   flashToday,
@@ -250,8 +253,10 @@ export function MonthView({
                     <div
                       className="cal-cell-event"
                       key={event.id}
-                      // Per-calendar colour rendering is wired with settings／CRUD.
-                      style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
+                      style={{
+                        background: calendarColor(calendars, event.calendarId),
+                        color: CALENDAR_TEXT_COLOR,
+                      }}
                     >
                       {event.allDay ? event.title : `${eventStartTime(event)} ${event.title}`}
                     </div>

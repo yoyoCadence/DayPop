@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/authContext';
+import { useDayPopData } from '../data/dataContext';
+import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
+import type { Calendar } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS, type ThemeMode } from '../theme/themes';
+import { CalendarEditDialog } from './CalendarEditDialog';
 import './screens.css';
+import './calendarManage.css';
 
 export interface SettingsScaffoldScreenProps {
   updater: AppUpdateState;
@@ -18,15 +23,42 @@ const MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
 /**
  * 設定 tab.
  *
- * The 外觀主題 section is ported from the原檔 設定 screen and is the way to
- * verify all six themes in light and dark. Account and version blocks are the
- * DP-010/DP-011/DP-023 capabilities kept working inside the canonical shell;
- * they still carry scaffold styling and are redesigned in DP-014.
+ * The 外觀主題 and 我的日曆 sections are ported from the原檔 設定 screen.
+ * Account and version blocks are the DP-010/DP-011/DP-023 capabilities kept
+ * working inside the canonical shell; they still carry scaffold styling and
+ * are redesigned in a later DP-014 segment.
  */
 export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffoldScreenProps) {
   const { themeId, mode, selectTheme, selectMode } = useTheme();
   const auth = useAuth();
+  const { data, addCalendar, updateCalendar, deleteCalendar } = useDayPopData();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
+  /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
+  const [editing, setEditing] = useState<string | 'new' | null>(null);
+
+  const calendars = sortedCalendars(data.calendars);
+  const editingCalendar =
+    editing && editing !== 'new'
+      ? (calendars.find((calendar) => calendar.id === editing) ?? null)
+      : null;
+  // The原檔 keeps the delete option away from the last remaining calendar.
+  const canDelete = editing !== 'new' && editingCalendar !== null && calendars.length > 1;
+
+  function itemsOn(calendar: Calendar | null): number {
+    if (!calendar) return 0;
+    const belongs = (row: { calendarId: string }) => row.calendarId === calendar.id;
+    return (
+      data.events.filter(belongs).length +
+      data.todos.filter(belongs).length +
+      data.stickers.filter(belongs).length
+    );
+  }
+
+  function saveCalendar(values: { name: string; color: string }) {
+    if (editing === 'new') addCalendar(values);
+    else if (editingCalendar) updateCalendar(editingCalendar.id, values);
+    setEditing(null);
+  }
 
   async function signOut() {
     setAuthActionError(null);
@@ -103,6 +135,59 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
         </div>
 
         <div className="dp-section-label" style={{ marginTop: 18 }}>
+          我的日曆
+        </div>
+        <div className="cal-manage-list">
+          {calendars.map((calendar) => (
+            <div className="cal-manage-row" key={calendar.id}>
+              <button
+                className="cal-manage-open"
+                type="button"
+                onClick={() => setEditing(calendar.id)}
+              >
+                <span className="cal-manage-dot" style={{ background: calendar.color }} />
+                <span className="cal-manage-name">{calendar.name}</span>
+                <span className="cal-manage-edit-hint">編輯</span>
+              </button>
+              <button
+                className="cal-manage-toggle"
+                type="button"
+                aria-pressed={calendar.isVisible}
+                aria-label={`${calendar.isVisible ? '隱藏' : '顯示'} ${calendar.name}`}
+                onClick={() => updateCalendar(calendar.id, { isVisible: !calendar.isVisible })}
+              >
+                <span className="cal-manage-knob" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button className="cal-manage-add" type="button" onClick={() => setEditing('new')}>
+          ＋ 新增日曆
+        </button>
+
+        {editing && (
+          <CalendarEditDialog
+            calendar={editingCalendar}
+            suggestedColor={nextCalendarColor(calendars.length)}
+            canDelete={canDelete}
+            itemCount={itemsOn(editingCalendar)}
+            reassignTargetName={
+              calendars.find(
+                (calendar) => calendar.isDefault && calendar.id !== editingCalendar?.id,
+              )?.name ??
+              calendars.find((calendar) => calendar.id !== editingCalendar?.id)?.name ??
+              ''
+            }
+            onSave={saveCalendar}
+            onDelete={() => {
+              if (editingCalendar) deleteCalendar(editingCalendar.id);
+              setEditing(null);
+            }}
+            onClose={() => setEditing(null)}
+          />
+        )}
+
+        <div className="dp-section-label" style={{ marginTop: 18 }}>
           帳號
         </div>
         <div className="dp-legacy-scaffold">
@@ -155,7 +240,6 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           <p>這些區塊會依原稿逐段搬移，不會被合併或改成別的版面：</p>
           <ul>
             <li>AI 助理區塊（安全代理方案見 DP-043）</li>
-            <li>日曆管理：顯示切換、改名與顏色</li>
             <li>寵物：命名、品種與開關</li>
             <li>一般偏好：週起始日、時區、月曆列數、滑動方向</li>
             <li>通知與預設提醒</li>

@@ -1,6 +1,13 @@
 import {
+  applyCalendarPatch,
   applyEventPatch,
+  createCalendarFromInput,
   createEventFromInput,
+  findCalendarById,
+  withCalendar,
+  withoutCalendar,
+  type CalendarPatch,
+  type NewCalendarInput,
   createStickerFromInput,
   createTodoFromInput,
   findEvent,
@@ -131,6 +138,27 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   deleteSticker(id: string): Promise<DayPopUserData> {
     return this.#mutate((data) => withoutSticker(data, id));
+  }
+
+  addCalendar(input: NewCalendarInput): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) =>
+      withCalendar(data, createCalendarFromInput(data, input, { id: createDomainId(), now })),
+    );
+  }
+
+  updateCalendar(id: string, patch: CalendarPatch): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => {
+      const calendar = findCalendarById(data, id);
+      if (!calendar) return data;
+      return withCalendar(data, applyCalendarPatch(calendar, patch, now));
+    });
+  }
+
+  deleteCalendar(id: string): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => withoutCalendar(data, id, now));
   }
 
   async #mutate(

@@ -2,8 +2,9 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { fromDateKey, toDateKey } from '../../domain/date';
 import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { minutesFromTime } from '../../domain/timeGrid';
+import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
-import type { CalendarEvent, Sticker, TodoItem } from '../../domain/types';
+import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
 
@@ -15,6 +16,7 @@ export interface DayDetailSheetProps {
   events: CalendarEvent[];
   todos: TodoItem[];
   stickers: Sticker[];
+  calendars: Calendar[];
   onClose(): void;
   onOpenEvent(id: string): void;
   onNewEvent(): void;
@@ -44,6 +46,7 @@ function DayDetailSheetBody({
   events,
   todos,
   stickers,
+  calendars,
   onClose,
   onOpenEvent,
   onNewEvent,
@@ -168,7 +171,11 @@ function DayDetailSheetBody({
             >
               <span
                 className="cal-day-bar"
-                style={{ background: row.conflict ? '#e4002b' : 'var(--accent)' }}
+                style={{
+                  background: row.conflict
+                    ? '#e4002b'
+                    : calendarColor(calendars, row.event.calendarId),
+                }}
               />
               <span className="cal-day-time">{row.time}</span>
               <span className="cal-day-event-title">{row.event.title}</span>
