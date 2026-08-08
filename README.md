@@ -139,4 +139,4 @@ docs/             原型行為、架構決策與審查交接文件
 supabase/         CLI config、migrations 與本機 seed
 ```
 
-跨模組設計見 [架構決策](docs/architecture-decisions.md)，後續工作與資料架構見 [tasks.md](tasks.md)。
+跨模組設計見 [架構決策](docs/architecture-decisions.md)，後續工作與資料架構見 [tasks.md](tasks.md)。接手 Supabase 階段前請先讀 [Supabase MCP 階段交接](docs/supabase-mcp-handoff.md)。

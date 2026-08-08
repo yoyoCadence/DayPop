@@ -44,12 +44,12 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 | 順序 | 任務 | Supabase MCP | 交接規則 |
 | --- | --- | --- | --- |
-| 1 | DP-031 CI | 不使用 | 只建立 repository CI 與既有驗證。 |
-| 2 | DP-013 repository/service boundary | 不使用 | 以既有 generated types、mock 與本機測試完成邊界；遠端整合驗收留到 DP-026。 |
-| 3 | DP-055 貼圖完整體驗 | 不使用 | 只接 canonical domain／repository，不新增遠端 schema。 |
-| 4 | DP-014 MVP CRUD UI | 不使用 | UI 與 repository contract 對接；不直接呼叫 Supabase client。 |
+| ~~1~~ | ~~DP-031 CI~~ | 不使用 | 已完成。 |
+| ~~2~~ | ~~DP-013 repository/service boundary~~ | 不使用 | 已完成；遠端整合驗收仍在 DP-026。 |
+| ~~3~~ | ~~DP-055 貼圖完整體驗~~ | 不使用 | 已完成。 |
+| ~~4~~ | ~~DP-014 MVP CRUD UI~~ | 不使用 | 週／列表、日詳情、搜尋／綜覽、日曆管理與事件 sheet 已完成；剩下的設定區塊本身卡在下一列的 DP-018。 |
 | ~~5~~ | ~~DP-015 素材安全與 CSP~~ | 不使用 | 已完成。 |
-| **停止點** | **Supabase MCP 交接** | **開始需要** | agent 必須先提醒專案擁有者：「下一階段將使用 Supabase MCP，請改由可使用 MCP 的 agent 接手。」未收到確認前不得開始下列任務的遠端操作。 |
+| **停止點** | **Supabase MCP 交接** | **開始需要** | **2026-08-08 已抵達並完成交接提醒**，專案擁有者確認改由可使用 MCP 的 agent 接手。接手前請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)：那份文件記錄交接當下已驗證的狀態、必須先處理的前置，以及不得做的事。 |
 | 6 | DP-018 主題／月格偏好 migration | 需要 | migration 先在本機落檔並走正式 migration workflow；MCP agent 負責核對專案狀態、型別與 advisor，不得用 MCP 直接下 DDL。 |
 | 7 | DP-036 DB invariants | 需要 | 以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
 | 8 | DP-027 日期／時區邊界 | 需要 | 先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
@@ -64,7 +64,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> 交接順序第 1–5 項（DP-031／013／055／014 已搬移段落／015）都已完成，**下一項就是停止點**：DP-018 起的每一項都需要 Supabase MCP，必須由可使用 MCP 的 agent 接手。在那之前只剩不需要遠端的工作可做，例如 DP-064 的跨午夜檢視決策、DP-030 的 e2e 與 DP-019 的安裝圖示。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑。
+- [ ] **DP-018 — 接上主題與月曆列數偏好**（詳細內容見下方 Backlog）。**這是 Supabase MCP 階段的第一項**：交接順序第 1–5 項都已完成，停止點已於 2026-08-08 抵達並交接。接手的 agent 請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)。
+
+> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
 ## In Progress
 
@@ -97,6 +99,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
 - [ ] **DP-019 — 補齊 PWA 安裝圖示：** 由現有識別產出並實機驗證 180×180 Apple touch icon、192×192／512×512 PNG 與適當 maskable icon；manifest／HTML 保留 SVG 作補充但不再把 SVG 當 Apple icon。
+- [ ] **DP-065 — release note 已落後整個日曆搬移：** `release-notes.json` 最後一次更新是 PR #2（`4634cf4`，v0.2.0「帳號與資料安全基礎」），`package.json` 也仍是 `0.2.0`。但 DP-050 之後的 DP-051／052／053／055／057／058／059／060／015／061／063 已經把整個日曆搬進 App。結果是設定分頁的「查看這個版本更新了什麼」只列得出五條登入相關項目，`version.json` 與 `sw.js` 的版本化 cache 名稱也停在 0.2.0 — 對使用者而言，更新公告描述的不是他手上的 App。**沒有一併處理是刻意的**：升版號是專案擁有者的發布決策（要一次發 0.3.0 還是拆成幾版、標題怎麼寫），而且會連帶重新產生 `version.json` 與 `sw.js`，屬於 DP-033／034 的發布流程而不是功能任務。需要決定：這幾段搬移合併成哪一個版本號、release note 怎麼寫、以及是否在選定 hosting（DP-033）之前就先升。注意 AGENTS.md 的規則 — 已正式部署版本的 release note 不可回寫修改；目前尚未選定 hosting，所以 0.2.0 還沒進入不可變狀態。
 - [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
 ### 原型假功能與待補能力
