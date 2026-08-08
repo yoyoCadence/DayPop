@@ -59,6 +59,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run build
+npm run check:build   # 需先 build：檢查建置輸出沒有遠端依賴且帶有 CSP
 ```
 
 ## 持續整合
@@ -112,7 +113,8 @@ Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴
 - `localStorage` 不可用（無痕視窗、封鎖網站資料）或中途寫入被拒（`QuotaExceededError`）時，只降級為本分頁的記憶體模式，並以不可關閉的橫幅持續告知內容不會保存；降級後不會自動切回。
 - 舊原型的 `calpet.v2` 不會被覆寫或刪除；正式匯入流程會另案實作並在成功前保留原資料。
 - 不呼叫 `localStorage.clear()`，也不因 App 版本更新重設行程或偏好。
-- Supabase 前端只允許 project URL 與 publishable key；不得放入 `service_role` 或其他伺服器密鑰。
+- Supabase 前端只允許 project URL 與 publishable key；不得放入 `service_role` 或其他伺服器密鑰。這兩個值依設計是公開的，會被打包進 bundle。
+- production build 不含任何執行期第三方依賴：`default-src 'self'` 的 CSP 在建置期產生並注入 `index.html`，`connect-src` 只額外允許該次建置的 Supabase origin。`npm run check:build` 會擋下新的遠端依賴或遺失的 CSP，CI 每次都跑。meta 形式的 CSP 無法涵蓋 `frame-ancestors`，選定 hosting 後應再以 response header 補上。
 - 登入／登出不會自動上傳、清除或改綁目前的遊客資料；帳號匯入會另做可預覽、可確認、失敗可回復的流程。
 
 目前登入只建立安全 session；介面會明確提示帳號資料 CRUD 尚未接線，避免把「已登入」誤解成「已同步」。所有畫面都經 `src/data` 的 repository 合約存取資料，不直接呼叫 browser storage 或 Supabase；authenticated adapter 已存在並通過單元測試，但要等 DP-026 才會依 session 接上，屆時才會有資料真的寫進帳號。
