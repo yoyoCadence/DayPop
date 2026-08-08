@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(36);
 
 insert into auth.users (id)
 values
@@ -10,12 +10,39 @@ values
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000a1', true);
+select set_config(
+  'daypop.test_calendar_id',
+  (
+    select id::text
+    from public.calendars
+    where owner_id = '00000000-0000-4000-8000-0000000000a1'
+      and is_default
+  ),
+  true
+);
 
-insert into public.profiles (id, display_name)
-values ('00000000-0000-4000-8000-0000000000a1', 'RLS A');
+select is(
+  (
+    select count(*)::integer
+    from public.profiles
+    where id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  1,
+  'auth signup bootstraps one profile'
+);
 
-insert into public.user_preferences (user_id)
-values ('00000000-0000-4000-8000-0000000000a1');
+select is(
+  (
+    select (
+      name || ':' || color || ':' || is_visible::text || ':' ||
+      is_default::text || ':' || sort_order::text
+    )
+    from public.calendars
+    where owner_id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  '我的日曆:#F06C5C:true:true:0',
+  'auth signup bootstraps the canonical default calendar'
+);
 
 select has_column(
   'public',
@@ -34,12 +61,138 @@ select is(
   'new preferences use canonical light manga and adaptive-grid defaults'
 );
 
-insert into public.calendars (id, owner_id, name, is_default)
-values (
-  '10000000-0000-4000-8000-0000000000a1',
-  '00000000-0000-4000-8000-0000000000a1',
-  'A calendar',
-  true
+update public.profiles
+set display_name = 'RLS A'
+where id = '00000000-0000-4000-8000-0000000000a1';
+
+update public.user_preferences
+set pet_name = '保留摩卡'
+where user_id = '00000000-0000-4000-8000-0000000000a1';
+
+update public.calendars
+set name = 'A calendar'
+where id = current_setting('daypop.test_calendar_id')::uuid;
+
+reset role;
+
+do $$
+begin
+  perform daypop_private.bootstrap_account(
+    '00000000-0000-4000-8000-0000000000a1'
+  );
+  perform daypop_private.bootstrap_account(
+    '00000000-0000-4000-8000-0000000000a1'
+  );
+end;
+$$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000a1', true);
+
+select is(
+  (
+    select count(*)::integer
+    from public.profiles
+    where id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  1,
+  'bootstrap retries do not duplicate profiles'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.user_preferences
+    where user_id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  1,
+  'bootstrap retries do not duplicate preferences'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.calendars
+    where owner_id = '00000000-0000-4000-8000-0000000000a1'
+      and is_default
+  ),
+  1,
+  'bootstrap retries keep exactly one default calendar'
+);
+
+select is(
+  (
+    select p.display_name || ':' || prefs.pet_name || ':' || c.name
+    from public.profiles as p
+    join public.user_preferences as prefs on prefs.user_id = p.id
+    join public.calendars as c on c.owner_id = p.id and c.is_default
+    where p.id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  'RLS A:保留摩卡:A calendar',
+  'bootstrap retries preserve saved account values'
+);
+
+select ok(
+  not has_schema_privilege('authenticated', 'daypop_private', 'usage'),
+  'authenticated cannot access the private bootstrap schema'
+);
+
+select ok(
+  not (
+    select has_function_privilege('authenticated', p.oid, 'execute')
+    from pg_catalog.pg_proc as p
+    join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'daypop_private'
+      and p.proname = 'bootstrap_account'
+  ),
+  'authenticated cannot execute the bootstrap helper'
+);
+
+select ok(
+  not (
+    select has_function_privilege('anon', p.oid, 'execute')
+    from pg_catalog.pg_proc as p
+    join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'daypop_private'
+      and p.proname = 'bootstrap_account'
+  ),
+  'anon cannot execute the bootstrap helper'
+);
+
+select is(
+  (
+    select p.prosecdef
+    from pg_catalog.pg_proc as p
+    join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'daypop_private'
+      and p.proname = 'handle_new_auth_user'
+  ),
+  true,
+  'auth trigger handler runs as its controlled definer'
+);
+
+select is(
+  (
+    select p.proconfig[1]
+    from pg_catalog.pg_proc as p
+    join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'daypop_private'
+      and p.proname = 'handle_new_auth_user'
+  ),
+  concat('search_path=', chr(34), chr(34)),
+  'auth trigger handler fixes an empty search_path'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from pg_catalog.pg_trigger
+    where tgrelid = 'auth.users'::regclass
+      and tgname = 'daypop_bootstrap_auth_user'
+      and not tgisinternal
+  ),
+  1,
+  'auth.users has one DayPop bootstrap trigger'
 );
 
 insert into public.events (
@@ -53,7 +206,7 @@ insert into public.events (
 )
 values (
   '00000000-0000-4000-8000-0000000000a1',
-  '10000000-0000-4000-8000-0000000000a1',
+  current_setting('daypop.test_calendar_id')::uuid,
   'cascade event',
   true,
   date '2026-08-01',
@@ -165,7 +318,7 @@ begin
       timezone
     ) values (
       '00000000-0000-4000-8000-0000000000a1',
-      '10000000-0000-4000-8000-0000000000a1',
+      current_setting('daypop.test_calendar_id')::uuid,
       'backwards timed event',
       false,
       timestamptz '2026-08-02 10:00:00+00',
@@ -219,7 +372,7 @@ insert into public.events (
 )
 values (
   '00000000-0000-4000-8000-0000000000a1',
-  '10000000-0000-4000-8000-0000000000a1',
+  current_setting('daypop.test_calendar_id')::uuid,
   'valid timezone event',
   false,
   timestamptz '2026-08-02 13:00:00+00',
@@ -242,7 +395,7 @@ begin
     )
     values (
       '00000000-0000-4000-8000-0000000000a1',
-      '10000000-0000-4000-8000-0000000000a1',
+      current_setting('daypop.test_calendar_id')::uuid,
       'invalid timezone event',
       false,
       timestamptz '2026-08-02 13:00:00+00',
@@ -309,7 +462,7 @@ select ok(
 insert into public.todos (owner_id, calendar_id, title, due_date)
 values (
   '00000000-0000-4000-8000-0000000000a1',
-  '10000000-0000-4000-8000-0000000000a1',
+  current_setting('daypop.test_calendar_id')::uuid,
   'cascade todo',
   date '2026-08-01'
 );
@@ -317,7 +470,7 @@ values (
 insert into public.stickers (owner_id, calendar_id, sticker_date, glyph)
 values (
   '00000000-0000-4000-8000-0000000000a1',
-  '10000000-0000-4000-8000-0000000000a1',
+  current_setting('daypop.test_calendar_id')::uuid,
   date '2026-08-01',
   '🌱'
 );
@@ -344,7 +497,11 @@ select pass('owner cannot insert a row for another user');
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-0000000000b2', true);
 
 select is(
-  (select count(*)::integer from public.calendars),
+  (
+    select count(*)::integer
+    from public.calendars
+    where owner_id = '00000000-0000-4000-8000-0000000000a1'
+  ),
   0,
   'second user cannot read the first user calendar'
 );
@@ -355,7 +512,7 @@ declare
 begin
   update public.calendars
   set name = 'forged update'
-  where id = '10000000-0000-4000-8000-0000000000a1';
+  where id = current_setting('daypop.test_calendar_id')::uuid;
   get diagnostics changed_count = row_count;
   if changed_count <> 0 then
     raise exception 'second user updated first user calendar';
@@ -372,7 +529,7 @@ begin
     )
     values (
       '00000000-0000-4000-8000-0000000000b2',
-      '10000000-0000-4000-8000-0000000000a1',
+      current_setting('daypop.test_calendar_id')::uuid,
       'cross-owner child',
       true,
       date '2026-08-01',

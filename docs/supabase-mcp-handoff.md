@@ -43,6 +43,15 @@
 - Domain 已完成 RFC 5545 RECUR validation、DST-safe occurrence expansion、single cancel／replacement、series cleanup 與 ICS inclusive／exclusive round-trip。事件 sheet 控制項與 occurrence UI 仍歸 DP-014，檔案匯入預覽／合併仍歸 DP-056，不得在 DP-024 偷帶。
 - 下一項是 DP-024；已放進 `Next`，但必須等專案擁有者親自合併 DP-027 PR 後才開始。
 
+## 0.3 DP-024 完成後更新（2026-08-08）
+
+- 專案擁有者已親自合併 DP-027；DP-024 從最新 `main` 建立獨立分支。開工前 read-only MCP 確認遠端／repo 同為 7 檔、既有 invariants／timezone triggers、9 張 public tables RLS 與 advisor 0 都沒有 drift。
+- 第八檔 migration `20260808123919_bootstrap_daypop_accounts.sql` 已由專案擁有者在 PowerShell 完成 CLI list／dry-run／push；畫面最後的 Docker 訊息只表示本機 pg-delta catalog 無法快取，遠端 migration 已成功。MCP 沒有套正式 DDL、Dashboard 手改或 remote reset，也沒有查改正式使用者資料。
+- Account bootstrap 現在只有一條 DB 路徑：`auth.users` AFTER INSERT trigger 呼叫 `daypop_private.bootstrap_account(uuid)`，同一交易建立缺少的 profile、canonical preferences 與一個預設 calendar。Helper 使用 account-scoped transaction advisory lock＋conflict-safe insert；重試不重複，migration backfill 只補缺列、不覆寫既有值。
+- `daypop_private` 不 exposed，public／anon／authenticated 無 schema usage 或 function execute；helper 是 security invoker，只有 auth trigger handler 是 SECURITY DEFINER 且固定空 `search_path`。它只使用受信任 trigger row 的 `new.id`，不是 client 可傳任意 user id 的 RPC。
+- 套用後確認遠端／repo 正好 8 檔、bootstrap trigger 正好 1 個、9 張 public tables RLS 全開、generated TypeScript types 忽略 CRLF／末尾換行後逐字一致，security advisor 仍 0。Repo rollback pgTAP 擴為 36 項並 36／36 通過；暫時 pgTAP extension、固定假帳號、profiles 與 calendars 均確認不存在。
+- DP-024 沒有接線 authenticated adapter。下一項是**不使用 MCP**的 DP-062 寫入順序保護；必須等本 PR 由專案擁有者親自合併後，從最新 `main` 開始。DP-062 合併後才進 DP-026 遠端 CRUD。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -85,7 +94,7 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 `src/data/supabaseRepository.ts` 已完成並通過 stub client 單元測試，但 `DataProvider` 目前**永遠**使用 `LocalDayPopRepository`。登入只建立 session，資料仍只在本機。把 adapter 依 session 接上是 **DP-026**，不是 DP-024 的順手工作。
 
-它刻意會丟兩種錯：`AccountNotBootstrappedError`（帳號沒有預設日曆 — 建立預設資料是 DP-024 的責任，adapter 不做第二條 bootstrap 路徑）與 `RemoteDataError`（伺服器拒絕／失敗，與 domain validation 失敗分開）。不要為了讓畫面跑起來而在 adapter 裡補建預設日曆。
+它刻意會丟兩種錯：`AccountNotBootstrappedError`（DP-024 後代表遠端 drift、帳號初始化失敗或資料被異常刪除；adapter 仍不做第二條 bootstrap 路徑）與 `RemoteDataError`（伺服器拒絕／失敗，與 domain validation 失敗分開）。不要為了讓畫面跑起來而在 adapter 裡補建預設日曆。
 
 ### 3.2 **DP-062 必須在 DP-026 之前決定**
 
@@ -114,17 +123,18 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ---
 
-## 5. 下一位 MCP agent 的第一步
+## 5. 下一段的第一步
 
-1. 不得在 DP-027 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-024 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-024 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述、`architecture-decisions.md` §2／§6 與本文件 §3.1；bootstrap 不可偷偷接線 DP-026 的 adapter switch。
-3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 7 個檔案一致、兩個 timezone triggers 與 DP-036 invariants 應存在、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
-4. DP-024 仍是一個任務一個中文 PR，明寫 `--base main`。Bootstrap 必須 idempotent，使用固定測試帳號／rollback 安全測試或由專案擁有者明確提供的真實驗收流程；不得查改其他正式使用者資料，也不得在 adapter 裡建立第二條隱含 bootstrap 路徑。
+1. 不得在 DP-024 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-062 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-062 從 `Next` 移到 `In Progress`。此任務只處理 `DataProvider` 的 stale-result／寫入排序策略與回歸測試，**不使用 Supabase MCP**、不碰遠端 schema，也不順手接線 DP-026。
+3. DP-062 合併後才建立 DP-026 分支。DP-026 開工前再用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、bootstrap trigger 與 private function 權限仍正確、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
+4. DP-062／026 各自一個中文 PR，並明寫 `--base main`；DP-026 才驗證 authenticated adapter、RLS、重載、裝置快取與跨帳號隔離，不得把 legacy import 或 Storage 附件混入。
 
 ## 6. 不需要 MCP 也能做的事
 
 若要先暖身或 MCP 額度需要保留，這幾項不碰遠端：
 
+- **DP-062** — 下一項；完成 `DataProvider` 寫入順序保護，作為 DP-026 前置。
 - **DP-064** — 跨午夜行程在月格衝突偵測與週檢視色塊的呈現（需要產品決策，不是還原原稿）。
 - **DP-030** — Playwright e2e。
 - **DP-019** — PWA 安裝圖示（PNG／Apple touch icon）。
