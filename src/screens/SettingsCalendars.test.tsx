@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataProvider } from '../data/DataProvider';
 import { ThemeProvider } from '../theme/ThemeProvider';
+import { readUserData } from '../storage/versionedStorage';
 import { SettingsScaffoldScreen } from './SettingsScaffoldScreen';
 
 /**
@@ -29,6 +30,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  localStorage.clear();
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -42,11 +44,11 @@ afterEach(() => {
 async function render() {
   await act(async () => {
     root.render(
-      <ThemeProvider>
-        <DataProvider>
+      <DataProvider>
+        <ThemeProvider>
           <SettingsScaffoldScreen updater={updater} onOpenAuth={vi.fn()} />
-        </DataProvider>
-      </ThemeProvider>,
+        </ThemeProvider>
+      </DataProvider>,
     );
   });
 }
@@ -135,5 +137,27 @@ describe('設定 我的日曆', () => {
 
     await click(container.querySelector('.cal-manage-delete'));
     expect(names()).toEqual(['我的日曆']);
+  });
+});
+
+describe('設定 顯示偏好', () => {
+  it('persists the theme id, display mode and semantic grid choice', async () => {
+    await render();
+    const buttons = () => [...container.querySelectorAll('button')];
+
+    await click(buttons().find((button) => button.textContent?.includes('像素')));
+    await click(buttons().find((button) => button.textContent?.includes('深色')));
+    await click(buttons().find((button) => button.textContent?.includes('固定 6 列')));
+
+    const stored = readUserData();
+    expect(stored.status).toBe('ready');
+    if (stored.status === 'ready') {
+      expect(stored.envelope.data.preferences).toMatchObject({
+        themeId: 'pixel',
+        theme: 'dark',
+        calendarGridMode: 'fixed-six',
+      });
+    }
+    expect(document.documentElement.style.colorScheme).toBe('dark');
   });
 });

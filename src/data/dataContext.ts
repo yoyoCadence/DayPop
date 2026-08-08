@@ -6,6 +6,7 @@ import type {
   NewEventInput,
   NewStickerInput,
   NewTodoInput,
+  PreferencesPatch,
 } from '../domain/mutations';
 import type { DayPopUserData } from '../domain/types';
 import type { StorageReadResult } from '../storage/versionedStorage';
@@ -38,6 +39,7 @@ export interface DataActions {
   addCalendar(input: NewCalendarInput): void;
   updateCalendar(id: string, patch: CalendarPatch): void;
   deleteCalendar(id: string): void;
+  updatePreferences(patch: PreferencesPatch): void;
 }
 
 export interface DataContextValue {

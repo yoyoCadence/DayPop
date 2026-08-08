@@ -5,6 +5,7 @@ import type {
   NewEventInput,
   NewStickerInput,
   NewTodoInput,
+  PreferencesPatch,
 } from '../domain/mutations';
 import type { DayPopUserData } from '../domain/types';
 
@@ -44,6 +45,7 @@ export interface DayPopRepository {
    * `calendarDeletionPlan`.
    */
   deleteCalendar(id: string): Promise<DayPopUserData>;
+  updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData>;
 }
 
 /**

@@ -282,6 +282,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
           <MonthView
             ref={monthRef}
             weekStartsOn={weekStartsOn}
+            calendarGridMode={data.preferences.calendarGridMode}
             events={events}
             stickers={data.stickers}
             calendars={data.calendars}

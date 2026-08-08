@@ -143,7 +143,7 @@ describe('weeksBetween', () => {
 
 describe('buildMonthGrid', () => {
   it('always returns six weeks of consecutive days', () => {
-    const grid = buildMonthGrid(new Date(2026, 7, 15), 0);
+    const grid = buildMonthGrid(new Date(2026, 7, 15), 0, 'fixed-six');
 
     expect(grid).toHaveLength(42);
     for (let index = 1; index < grid.length; index += 1) {
@@ -152,12 +152,12 @@ describe('buildMonthGrid', () => {
   });
 
   it('starts on the configured first day of the week', () => {
-    expect(buildMonthGrid(new Date(2026, 7, 15), 0)[0]?.getDay()).toBe(0);
-    expect(buildMonthGrid(new Date(2026, 7, 15), 1)[0]?.getDay()).toBe(1);
+    expect(buildMonthGrid(new Date(2026, 7, 15), 0, 'fixed-six')[0]?.getDay()).toBe(0);
+    expect(buildMonthGrid(new Date(2026, 7, 15), 1, 'fixed-six')[0]?.getDay()).toBe(1);
   });
 
   it('covers the whole cursor month with leading and trailing days', () => {
-    const grid = buildMonthGrid(new Date(2026, 7, 15), 0).map(toDateKey);
+    const grid = buildMonthGrid(new Date(2026, 7, 15), 0, 'fixed-six').map(toDateKey);
 
     // 2026-08-01 is a Saturday, so a Sunday-start grid opens on 2026-07-26.
     expect(grid[0]).toBe('2026-07-26');
@@ -167,10 +167,18 @@ describe('buildMonthGrid', () => {
   });
 
   it('does not depend on which day of the month the cursor is', () => {
-    const first = buildMonthGrid(new Date(2026, 7, 1), 1).map(toDateKey);
-    const last = buildMonthGrid(new Date(2026, 7, 31), 1).map(toDateKey);
+    const first = buildMonthGrid(new Date(2026, 7, 1), 1, 'fixed-six').map(toDateKey);
+    const last = buildMonthGrid(new Date(2026, 7, 31), 1, 'fixed-six').map(toDateKey);
 
     expect(first).toEqual(last);
+  });
+
+  it('uses only the 4-6 weeks an adaptive month actually needs', () => {
+    // February 2026 starts on Sunday and has exactly four complete weeks.
+    expect(buildMonthGrid(new Date(2026, 1, 1), 0, 'adaptive')).toHaveLength(28);
+    expect(buildMonthGrid(new Date(2026, 5, 1), 0, 'adaptive')).toHaveLength(35);
+    expect(buildMonthGrid(new Date(2026, 7, 1), 0, 'adaptive')).toHaveLength(42);
+    expect(buildMonthGrid(new Date(2026, 1, 1), 0, 'fixed-six')).toHaveLength(42);
   });
 });
 

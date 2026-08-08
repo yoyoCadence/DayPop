@@ -306,6 +306,12 @@ function validatePreferences(
     validateEnum(value.weekStartsOn, [0, 1], `${path}.weekStartsOn`, issues) &&
     validateEnum(value.theme, ['system', 'light', 'dark'], `${path}.theme`, issues) &&
     validateEnum(
+      value.themeId,
+      ['manga', 'minimal', 'warm', 'business', 'vivid', 'pixel'],
+      `${path}.themeId`,
+      issues,
+    ) &&
+    validateEnum(
       value.calendarGridMode,
       ['adaptive', 'fixed-six'],
       `${path}.calendarGridMode`,

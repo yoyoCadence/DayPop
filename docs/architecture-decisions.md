@@ -43,7 +43,7 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - Canonical event 改為全天／timed discriminated union；全天使用 inclusive `startDate`／`endDate`，timed 使用 ISO instant `startsAt`／`endsAt` 與 IANA `timezone`。Calendar、Recurrence、EventException、Todo、Sticker、Preferences 皆有對應 runtime validation。
 - `src/domain/databaseMapping.ts` 是 domain 與 generated Supabase `Row`／`Insert` types 的唯一 mapping；client insert 刻意不帶 `created_at`／`updated_at`。這層只定義 contract，不在 DP-012 接上網路 CRUD。
 - 本機 envelope 已升到 schema v2。首次啟動與 v1 migration 都會立即持久化一個 UUID default calendar，避免每次讀取產生不同 ID；v1 的非 UUID event／todo ID 會在一次性 migration 重建為 UUID 並指向該 calendar。v1 fixture、migration 與 future-version 測試持續保留。
-- DB 目前的 `month_weeks` 在 mapping 中只作暫時相容編碼：`6` 對應 fixed-six，`4`／`5` 讀成 adaptive，寫回 adaptive 暫用 `4`。欄位正式改為 `fixed_six_week_grid`、UI 偏好接線與既有值 migration 仍屬 DP-018。
+- DP-012 當時的 `month_weeks` 暫時相容編碼已由 DP-018 收掉；歷史值 `6` migration 為 fixed-six，`4`／`5` migration 為 adaptive，runtime mapping 不再理解數字列數。
 - Recurrence 在本階段只保存 RFC 5545 rule text；展開 occurrence、DST、單次修改與 ICS round-trip 仍屬 DP-027。提醒上限、DB timezone 受控驗證與 `created_at` hardening 仍依 DP-036／027，不在 mapping 層假裝完成。
 
 ## 3. 偏好設定語意
@@ -51,6 +51,13 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。
 - `month_weeks` 不作為長期模型。它會由明確的二選一設定取代：固定六列或依當月自動顯示 4–6 列；migration 前採用 `fixed_six_week_grid boolean` 作為資料庫名稱，domain 可用語意化 enum 暴露給 UI。
 - `pet_enabled` 保留。浮動寵物可以暫時拖走，也必須可以永久關閉。
+
+### 實作結果（DP-018）
+
+- 視覺主題 id 與色彩模式是兩個獨立偏好：`themeId` 保存六套 canonical theme，`theme` 保存 `system | light | dark`。新資料預設為漫畫淺色；既有本機／DB 的 `theme` 值不因 migration 被覆寫。
+- `system` 會即時追蹤 `prefers-color-scheme`；解析後的 palette 同步套用 CSS variables、`meta[name="theme-color"]` 與 `color-scheme`。Manifest 的靜態啟動畫面色改為 canonical 漫畫淺色白底，不能假裝追蹤尚未執行 JavaScript 時的個人偏好。
+- Domain 使用 `calendarGridMode = adaptive | fixed-six`；DB 使用 `fixed_six_week_grid boolean`。連續捲動月格在 adaptive 模式依目前月份顯示 4–6 列，fixed-six 一律顯示六列。
+- 本機 user-data envelope 升到 schema v3；保留 v1 fixture，另新增 v2 fixture，v2→v3 只補上當時不存在的 `themeId = manga`，其餘已保存偏好與 revision／timestamp 原樣保留。future／corrupt write barrier 不變。
 
 ## 4. App 內浮動寵物
 

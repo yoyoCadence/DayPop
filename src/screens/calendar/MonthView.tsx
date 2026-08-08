@@ -8,12 +8,19 @@ import {
   useState,
   type RefObject,
 } from 'react';
-import { addDays, fromDateKey, startOfWeek, toDateKey, weeksBetween } from '../../domain/date';
+import {
+  addDays,
+  fromDateKey,
+  monthGridWeekCount,
+  startOfWeek,
+  toDateKey,
+  weeksBetween,
+} from '../../domain/date';
 import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
-import type { Calendar, CalendarEvent, Sticker } from '../../domain/types';
+import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../domain/types';
 
 /**
  * Continuously scrolling month grid, ported from the `data-month-scroll` block
@@ -25,8 +32,6 @@ import type { Calendar, CalendarEvent, Sticker } from '../../domain/types';
  * is reproduced here rather than replaced with a 6×7 page.
  */
 
-/** Week rows visible at once. DP-018 turns this into a stored preference. */
-const WEEKS_SHOWN = 4;
 /** Buffer starts 26 weeks back and covers a year, matching the原檔. */
 const INITIAL_WEEKS_BEFORE = 26;
 const INITIAL_BUFFER_WEEKS = 53;
@@ -47,6 +52,7 @@ export interface MonthViewHandle {
 export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
   weekStartsOn: 0 | 1;
+  calendarGridMode: CalendarGridMode;
   events: CalendarEvent[];
   stickers: Sticker[];
   calendars: Calendar[];
@@ -61,6 +67,7 @@ export interface MonthViewProps {
 export function MonthView({
   ref,
   weekStartsOn,
+  calendarGridMode,
   events,
   stickers,
   calendars,
@@ -76,6 +83,9 @@ export function MonthView({
   );
   const [bufferWeeks, setBufferWeeks] = useState(INITIAL_BUFFER_WEEKS);
   const [rowHeight, setRowHeight] = useState(INITIAL_ROW_HEIGHT);
+  const rowHeightRef = useRef(INITIAL_ROW_HEIGHT);
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
+  const weeksShown = monthGridWeekCount(visibleMonth, weekStartsOn, calendarGridMode);
   const labelRef = useRef('');
   // Scroll compensation for rows prepended above the current position.
   const pendingScrollAdjust = useRef(0);
@@ -100,31 +110,37 @@ export function MonthView({
       scrollToToday: (smooth: boolean) => scrollToToday(smooth),
       page: (direction: 1 | -1) => {
         scrollRef.current?.scrollBy({
-          top: direction * rowHeight * WEEKS_SHOWN,
+          top: direction * rowHeight * weeksShown,
           behavior: 'smooth',
         });
       },
     }),
-    [rowHeight, scrollToToday],
+    [rowHeight, scrollToToday, weeksShown],
   );
 
-  // Row height follows the available space, so a full screenful is WEEKS_SHOWN
-  // rows on any device. Re-measured whenever the viewport resizes.
+  // Fixed mode shows six rows. Adaptive mode follows the 4-6 rows required by
+  // the month currently at the top, while preserving that top week when the
+  // row height changes.
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
 
     const measure = () => {
       if (element.clientHeight <= 0) return;
-      const next = Math.max(MIN_ROW_HEIGHT, Math.floor(element.clientHeight / WEEKS_SHOWN));
-      setRowHeight((current) => (current === next ? current : next));
+      const next = Math.max(MIN_ROW_HEIGHT, Math.floor(element.clientHeight / weeksShown));
+      const previous = rowHeightRef.current;
+      if (previous === next) return;
+      const topWeek = element.scrollTop / previous;
+      rowHeightRef.current = next;
+      element.scrollTop = topWeek * next;
+      setRowHeight(next);
     };
 
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [weeksShown]);
 
   // Land on today once the real row height is known.
   const initialised = useRef(false);
@@ -152,6 +168,11 @@ export function MonthView({
 
     if (label !== labelRef.current) {
       labelRef.current = label;
+      setVisibleMonth((current) =>
+        current.getFullYear() === middle.getFullYear() && current.getMonth() === middle.getMonth()
+          ? current
+          : new Date(middle.getFullYear(), middle.getMonth(), 1),
+      );
       onPeriodLabelChange(label);
     }
 

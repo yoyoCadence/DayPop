@@ -212,9 +212,8 @@ export function preferencesFromRow(row: Tables<'user_preferences'>): UserPrefere
     timezone: row.timezone,
     weekStartsOn: row.week_starts_on,
     theme: row.theme,
-    // DB rename to fixed_six_week_grid remains DP-018. Until then 4/5 both
-    // collapse to the only meaningful non-fixed domain state.
-    calendarGridMode: row.month_weeks === 6 ? 'fixed-six' : 'adaptive',
+    themeId: row.theme_id,
+    calendarGridMode: row.fixed_six_week_grid ? 'fixed-six' : 'adaptive',
     defaultReminderMinutes: row.default_reminder_minutes,
     petName: row.pet_name,
     petEnabled: row.pet_enabled,
@@ -232,8 +231,8 @@ export function preferencesToInsert(
     timezone: valid.timezone,
     week_starts_on: valid.weekStartsOn,
     theme: valid.theme,
-    // Compatibility encoding only; DP-018 replaces this numeric DB column.
-    month_weeks: valid.calendarGridMode === 'fixed-six' ? 6 : 4,
+    theme_id: valid.themeId,
+    fixed_six_week_grid: valid.calendarGridMode === 'fixed-six',
     default_reminder_minutes: valid.defaultReminderMinutes,
     pet_name: valid.petName,
     pet_enabled: valid.petEnabled,

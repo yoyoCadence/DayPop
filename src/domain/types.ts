@@ -3,6 +3,8 @@ export type IsoInstant = string;
 export type SharingScope = 'inherit' | 'private';
 export type TodoPriority = 'none' | 'low' | 'medium' | 'high';
 export type CalendarGridMode = 'adaptive' | 'fixed-six';
+export type ThemeId = 'manga' | 'minimal' | 'warm' | 'business' | 'vivid' | 'pixel';
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface Calendar {
   id: string;
@@ -101,7 +103,8 @@ export interface Sticker {
 export interface UserPreferences {
   timezone: string;
   weekStartsOn: 0 | 1;
-  theme: 'system' | 'light' | 'dark';
+  theme: ThemePreference;
+  themeId: ThemeId;
   calendarGridMode: CalendarGridMode;
   defaultReminderMinutes: number[];
   petName: string;
@@ -148,7 +151,10 @@ export function createEmptyUserData(options: EmptyUserDataOptions = {}): DayPopU
     preferences: {
       timezone: 'Asia/Taipei',
       weekStartsOn: 0,
-      theme: 'system',
+      // New users start in the canonical 漫畫 light theme. Existing saved
+      // values are preserved by the v2 -> v3 local migration and DB migration.
+      theme: 'light',
+      themeId: 'manga',
       calendarGridMode: 'adaptive',
       defaultReminderMinutes: [],
       petName: '摩卡',

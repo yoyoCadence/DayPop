@@ -1,6 +1,7 @@
 import {
   applyCalendarPatch,
   applyEventPatch,
+  applyPreferencesPatch,
   createCalendarFromInput,
   createEventFromInput,
   findCalendarById,
@@ -23,6 +24,7 @@ import {
   type NewEventInput,
   type NewStickerInput,
   type NewTodoInput,
+  type PreferencesPatch,
 } from '../domain/mutations';
 import { createDomainId, type DayPopUserData } from '../domain/types';
 import { parseDayPopUserData } from '../domain/validation';
@@ -159,6 +161,13 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
   deleteCalendar(id: string): Promise<DayPopUserData> {
     const now = new Date().toISOString();
     return this.#mutate((data) => withoutCalendar(data, id, now));
+  }
+
+  updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {
+    return this.#mutate((data) => ({
+      ...data,
+      preferences: applyPreferencesPatch(data.preferences, patch),
+    }));
   }
 
   async #mutate(

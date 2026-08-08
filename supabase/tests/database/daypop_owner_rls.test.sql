@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(5);
+select plan(7);
 
 insert into auth.users (id)
 values
@@ -16,6 +16,23 @@ values ('00000000-0000-4000-8000-0000000000a1', 'RLS A');
 
 insert into public.user_preferences (user_id)
 values ('00000000-0000-4000-8000-0000000000a1');
+
+select has_column(
+  'public',
+  'user_preferences',
+  'fixed_six_week_grid',
+  'preferences expose the semantic fixed-six grid column'
+);
+
+select is(
+  (
+    select (theme || ':' || theme_id || ':' || fixed_six_week_grid::text)
+    from public.user_preferences
+    where user_id = '00000000-0000-4000-8000-0000000000a1'
+  ),
+  'light:manga:false',
+  'new preferences use canonical light manga and adaptive-grid defaults'
+);
 
 insert into public.calendars (id, owner_id, name, is_default)
 values (

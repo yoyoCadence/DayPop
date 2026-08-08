@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "revision": 11,
+  "updatedAt": "2026-08-08T00:00:00.000Z",
+  "data": {
+    "calendars": [
+      {
+        "id": "10000000-0000-4000-8000-0000000000a1",
+        "name": "我的日曆",
+        "color": "#F06C5C",
+        "isVisible": true,
+        "isDefault": true,
+        "sortOrder": 0,
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "updatedAt": "2026-08-01T00:00:00.000Z"
+      }
+    ],
+    "events": [],
+    "eventExceptions": [],
+    "todos": [],
+    "stickers": [],
+    "preferences": {
+      "timezone": "Asia/Taipei",
+      "weekStartsOn": 1,
+      "theme": "dark",
+      "calendarGridMode": "fixed-six",
+      "defaultReminderMinutes": [10],
+      "petName": "小蹦",
+      "petEnabled": false
+    }
+  }
+}

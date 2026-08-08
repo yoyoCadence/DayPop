@@ -78,6 +78,7 @@ function fixedRepository(data: DayPopUserData): DayPopRepository & SyncLoadCapab
     addCalendar: respond,
     updateCalendar: respond,
     deleteCalendar: respond,
+    updatePreferences: respond,
   };
 }
 

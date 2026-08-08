@@ -108,6 +108,25 @@ export function migrateV1UserData(value: V1UserData, migratedAt: string): DayPop
   return parseDayPopUserData(next);
 }
 
+/**
+ * Schema v2 already has the canonical calendar/event model. DP-018 only adds
+ * the separately persisted visual theme id, so every existing preference is
+ * carried forward unchanged and the previously impossible field gets the
+ * canonical manga default.
+ */
+export function migrateV2UserData(value: unknown): DayPopUserData {
+  if (!isRecord(value) || !isRecord(value.preferences)) {
+    throw new Error('schema v2 資料內容不完整');
+  }
+  return parseDayPopUserData({
+    ...value,
+    preferences: {
+      ...value.preferences,
+      themeId: value.preferences.themeId ?? 'manga',
+    },
+  });
+}
+
 function isV1Event(value: unknown): value is V1CalendarEvent {
   return (
     isRecord(value) &&

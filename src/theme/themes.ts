@@ -10,13 +10,15 @@
  * default and the first visual parity target; the other five are still part of
  * the design and must not be deleted.
  *
- * This module is presentation-only. Persisting a user's chosen theme is DP-018
- * and must never overwrite an existing saved preference with the default.
+ * This module is presentation-only. DP-018 persists the selected id separately
+ * from light/dark/system behaviour; defaults apply only when no saved value exists.
  */
+
+import type { ThemeId as DomainThemeId } from '../domain/types';
 
 export const THEME_IDS = ['manga', 'minimal', 'warm', 'business', 'vivid', 'pixel'] as const;
 
-export type ThemeId = (typeof THEME_IDS)[number];
+export type ThemeId = DomainThemeId;
 export type ThemeMode = 'light' | 'dark';
 
 /** Colour tokens that differ between the light and dark mode of one theme. */

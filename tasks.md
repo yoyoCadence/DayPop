@@ -50,8 +50,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~4~~ | ~~DP-014 MVP CRUD UI~~ | 不使用 | 週／列表、日詳情、搜尋／綜覽、日曆管理與事件 sheet 已完成；剩下的設定區塊本身卡在下一列的 DP-018。 |
 | ~~5~~ | ~~DP-015 素材安全與 CSP~~ | 不使用 | 已完成。 |
 | **停止點** | **Supabase MCP 交接** | **開始需要** | **2026-08-08 已抵達並完成交接提醒**，專案擁有者確認改由可使用 MCP 的 agent 接手。接手前請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)：那份文件記錄交接當下已驗證的狀態、必須先處理的前置，以及不得做的事。 |
-| 6 | DP-018 主題／月格偏好 migration | 需要 | migration 先在本機落檔並走正式 migration workflow；MCP agent 負責核對專案狀態、型別與 advisor，不得用 MCP 直接下 DDL。 |
-| 7 | DP-036 DB invariants | 需要 | 以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
+| ~~6~~ | ~~DP-018 主題／月格偏好 migration~~ | 需要 | 已完成；migration 由正式 CLI workflow 套用，MCP 僅做套用前後的 schema／advisor 驗證、型別產生與 rollback 安全測試。 |
+| **7** | **DP-036 DB invariants** | **需要** | **下一項；等 DP-018 PR 由專案擁有者親自合併後才開始。**以 migration 落實 constraint／index；MCP 用於 advisor 與隔離驗證，不可手改遠端 schema 或直接下 DDL。 |
 | 8 | DP-027 日期／時區邊界 | 需要 | 先定案 DB 邊界與 migration，再讓帳號 CRUD 寫入正式資料。 |
 | 9 | DP-024 帳號資料 bootstrap | 需要 | 以真實帳號驗證初始化、RLS 與重試安全性。 |
 | 10 | DP-026 核心 CRUD 遠端持久化 | 需要 | 驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
@@ -64,12 +64,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-018 — 接上主題與月曆列數偏好**（詳細內容見下方 Backlog）。**這是 Supabase MCP 階段的第一項**：交接順序第 1–5 項都已完成，停止點已於 2026-08-08 抵達並交接。接手的 agent 請先讀 [`docs/supabase-mcp-handoff.md`](docs/supabase-mcp-handoff.md)。
-
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-## In Progress
+- [ ] **DP-036 — 強化 CRUD 前資料 invariant：** 以 migration 限制 reminder array 的數量與分鐘範圍，讓 `created_at` 由 DB／repository 控制；修正 23:xx 新增行程跨日，並為提醒、時間順序與 client 偽造建立時間補測試。完成後重新產生 DB types 並跑 advisor。**必須等 DP-018 PR 由專案擁有者親自合併後才移入 In Progress。**
 
+## In Progress
 
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
@@ -80,8 +79,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（重複範圍選擇依 DP-027、匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。要決定的是：跨午夜行程要不要在隔天的格子也出現、週檢視要不要畫到 24:00 再於隔天欄續畫、衝突判定是否改用 instant 直接比較（順帶解決兩個不同時區的事件互比 wall clock 的問題）。決定前不要各檢視各改各的。
-- [ ] **DP-018 — 接上主題與月曆列數偏好：** 保留 `theme = system/light/dark` 並同步 CSS、system preference、theme-color meta／manifest（目前仍是舊的紫色骨架色）；把保存的偏好與六套 theme id 接進 DP-050 的 `ThemeProvider`，既有保存值一律優先於預設；以 fixed-six vs adaptive 取代數字型 `month_weeks`，更新 domain、DB migration、UI 與 `buildMonthGrid` 測試。
-
 ### Supabase / auth / data
 
 - [ ] **DP-024 — 建立 account bootstrap：** 新帳號建立 profile、preferences 與預設 calendars；流程需 idempotent，重試不得產生重複預設資料。
@@ -90,7 +87,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
 - [ ] **DP-027 — 完成 recurrence／timezone 正確性：** 以 RFC 5545 規則與 exception model 處理單次／全部修改、IANA timezone、DST 與 ICS round-trip；DayPop 全天 `end_date` 採 inclusive，ICS adapter 明確轉換 exclusive `DTEND`。timezone 由 domain 與可測的受控 DB 邊界驗證，不使用讀取 `pg_timezone_names` 的 immutable CHECK 假設。
 - [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
-- [ ] **DP-036 — 強化 CRUD 前資料 invariant：** 以 migration 限制 reminder array 的數量與分鐘範圍，讓 `created_at` 由 DB／repository 控制；修正 23:xx 新增行程跨日，並為提醒、時間順序與 client 偽造建立時間補測試。完成後重新產生 DB types 並跑 advisor。
 
 ### Quality / release
 
@@ -139,10 +135,12 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci` 與四項驗證。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
 - `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。日期／recurrence runtime validation 與 Playwright e2e 套件等到對應任務選定，避免先加入未使用依賴。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
-- MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 套用／驗證 migration 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
+- MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-018 — 接上主題與月曆列數偏好：** Supabase migration `20260808083912_replace_month_weeks_with_fixed_grid.sql` 以正式 CLI workflow 套用：既有 `month_weeks = 6` 轉成 `fixed_six_week_grid = true`，`4`／`5` 轉成 adaptive，原有 `theme` 值不改；新資料預設為 `theme = light`、`theme_id = manga`、adaptive。開工前 read-only MCP 確認遠端 4 檔 migration 與 repo 一致且 security advisor 0 警告；套用後再次確認遠端正好 5 檔、欄位／constraint／default 與 migration 一致、RLS 仍啟用、advisor 仍 0 警告，沒有使用 MCP 套正式 DDL、remote reset 或查改正式使用者資料。Domain／generated DB mapping／兩個 repository adapter 已改用六套 `themeId` 與語意化 grid mode；設定可保存 theme、system／light／dark 與自動 4–6 列／固定六列。ThemeProvider 即時追蹤 `prefers-color-scheme` 並同步 CSS、theme-color meta／manifest 與 `color-scheme`。本機 envelope 升至 schema v3，v2 fixture 驗證 migration 保留所有既有偏好、revision 與 timestamp，只補上原本不存在的漫畫 theme id；v1 與 future／corrupt write barrier 回歸仍保留。Vitest 為 30 files／266 tests，遠端 7 項 rollback pgTAP 全數通過，暫時 pgTAP extension、固定測試帳號與資料均確認已回滾。CLI 在 Codex sandbox 內有 Bun transport 相容問題，因此 owner 只代跑正式 link／dry-run／push；`supabase test db --linked` 又被本機 Docker 前置擋下，因此未宣稱 pgTAP CLI 已重跑，改由 MCP 執行 repo 同一份 rollback pgTAP；transaction 內的暫時 extension 也一併回滾。下一項 DP-036 已放入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 
 - [x] **DP-063 — 全 App 審視：修掉六個缺陷並補上日期／時間邊界測試：** 逐檔讀過 `src/` 全部模組與 25 個測試檔，對照原稿確認哪些是「還沒搬」、哪些是「忠實移植」，修掉六個真的缺陷。**（1）跨午夜行程在日光節約夜會被拉長：** `timedEventFromWallTime()` 原本把結束 instant 直接 `+24h`，但 DST 當晚的本地日只有 23 或 25 小時，所以 America/New_York 2026-03-08 的 23:00–00:30 被存成 23:00–01:30 — 90 分鐘變成 150 分鐘。改為在**隔天那一天**重新解析同一個牆上時鐘。`localDataMigration.ts` 的同一段可以保留 `+24h`（v1 資料固定錨在無 DST 的 +08:00），已加註說明兩者為何不同。**（2）搜尋只比對標題：** 原稿的 `hay` 是 `title + location + notes`，欄位提示也寫著「搜尋事件、地點、待辦…」；DP-058 當時沒有欄位可存才只比對標題，DP-060 存了之後這就是漏搬。已補齊，並依原稿把地點放進結果副標（`14:00 · 會議室A · 8月6日`），待辦仍依原稿只比對標題。**（3）日詳情行程列缺少地點：** 原稿的 `e.hasLoc` 會在標題下方多一行地點，同樣是 DP-060 之後才補得起來的漏搬。**（4）搜尋點到沒有到期日的待辦會讓日曆跳到 1900 年：** 原本 fallback 是空字串，而 `fromDateKey('')` 會解析成 year 0、被 `Date` 映射成 1900 — 週檢視標題實測變成 `12/31 – 1/6`。`SearchResult` 改為帶 `dueDate`，沒有到期日的結果停用且維持顯示「待辦 · 無到期日」；`CalendarScreen` 另外驗證 focus 的日期鍵，無效就退回今天。**（5）`applyEventPatch()` 會把多日全天事件壓成一天：** `endDate` 是 inclusive 且可以晚於 `startDate`，但兩端都由同一個 `date` 推導，所以只是改個標題就會讓三天的出差變成一天。改為保留天數並讓兩端一起移動；timed → 全天仍是一天。UI 目前建立不出多日全天事件，但 domain 合約允許，DP-026 接上遠端後會從 `events` 讀到這個形狀。**（6）兩個小問題：** `CalendarScreen` 的 `flashTimer` 沒有在 unmount 清除（按「今天」後 1.3 秒內換分頁，timer 會打到已卸載的元件）；`CalendarEditDialog` 少了 `role="dialog"`／`aria-modal`，另外兩個 sheet 都有。**測試 209 → 259：** 新增 `src/domain/date.test.ts`（20 案例，補上先前完全沒有測試的日期模組：date key 往返、跨月／跨年／閏年、`startOfWeek` 兩種週起始、`buildMonthGrid` 42 格與邊界、`weeksBetween` 取整，並用「走完一整年、每一步都必須剛好一天」涵蓋任何時區的 DST），以及 `src/domain/eventTime.test.ts`（13 案例，明確指定 IANA 時區：半小時偏移、春季快轉／秋季回撥、不存在與重複的牆上時間、跨午夜長度）。另補搜尋畫面、日詳情地點、`CalendarScreen` focus 與多日全天事件的回歸測試。**提出但未實作：** 跨午夜行程在月格衝突偵測與週檢視色塊的呈現與原稿逐行一致，要改是新的產品決策，已開 DP-064；`date.ts` 的 `formatMonthTitle()`／`formatDayTitle()` 沒有任何呼叫端（畫面標題依原稿以字串組出），是否刪除留給專案擁有者決定，目前已補測試釘住行為。未新增任何遠端 schema／DDL，也未使用 Supabase MCP。
 - [x] **DP-061 — 自我審查最近幾個 PR 並修正發現的缺陷：** 逐項回頭檢查 DP-013／055／059／060／015，修掉三個真的缺陷。**（1）CSP 在 dev 也被套用，導致 `npm run dev` 完全沒有樣式**：Vite 開發時以 JS 注入 `<style>` 供應 CSS，被 `style-src 'self'` 全數擋下（實測 10 筆 violation、`document.styleSheets.length` 為 0、畫面裸奔）。DP-015 當時只驗了 production build 才沒抓到。CSP plugin 改為 `apply: 'build'` — 它描述的是「出貨的 bundle 需要什麼」，本來就不該套用在 dev。**（2）綜覽沒有套用日曆顯示狀態**：原稿的綜覽事件列走 `dayEvents()`，會濾掉隱藏日曆；DP-059 加可見性時只接了 `CalendarScreen`，漏了 `OverviewScreen`。已改用 `visibleEvents(data)`；待辦與貼圖依原稿維持不濾，搜尋也依原稿維持不濾。**（3）`sortOrder` 用 `.length` 推導，刪除後會發出重複的排序鍵**：日曆刪中間一個再新增會得到 `[0,2,2]`，貼圖同理。改為 `max+1` 的 `nextSortOrder()`（日曆、貼圖、待辦三處），並補上回歸測試。另修兩個小問題：`vite.config.ts` 的 extensionless import 會在 Vite 未來的 native config loader 失效（已補副檔名，警告消失）、事件 sheet 在沒有任何日曆時會送出 `calendarId: ''` 而非 fallback（已改送 `undefined`）。**未修但已登記**：`DataProvider` 併發寫入是最後 resolve 者勝，已開 DP-062 交給 DP-026 決定策略，並留下 characterization test。單元測試 206 → 209，並以 Playwright 驗證 dev 恢復樣式（10 個 stylesheet、header 180.59px）、production CSP 仍在且 0 violation、隱藏日曆後綜覽由「共 1 筆」變「共 0 筆」而搜尋仍找得到。

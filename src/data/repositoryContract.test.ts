@@ -304,6 +304,20 @@ describe.each(adapters)('%s adapter honours the shared contract', (_name, create
     expect(calendarShape(data)).toEqual(calendarShape(before));
   });
 
+  it('persists visual, display-mode and month-grid preferences together', async () => {
+    const data = await repository.updatePreferences({
+      themeId: 'pixel',
+      theme: 'dark',
+      calendarGridMode: 'fixed-six',
+    });
+
+    expect(data.preferences).toMatchObject({
+      themeId: 'pixel',
+      theme: 'dark',
+      calendarGridMode: 'fixed-six',
+    });
+  });
+
   it('treats editing a missing id as a no-op rather than an error', async () => {
     const before = shape(await repository.load());
 
