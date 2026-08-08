@@ -1167,6 +1167,46 @@
   font-size: 13px;
 }
 
+.cal-textarea {
+  width: 100%;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 10px 11px;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+}
+
+/* 日曆 chips in the event sheet; the selected one fills with its own colour. */
+.cal-cal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.cal-cal-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 11px;
+  background: none;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cal-cal-chip-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+}
+
 .cal-field-row {
   display: flex;
   gap: 8px;

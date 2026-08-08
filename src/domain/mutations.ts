@@ -22,6 +22,8 @@ export interface NewEventInput {
   start: string;
   end: string;
   calendarId?: string;
+  location?: string;
+  notes?: string;
 }
 
 export interface NewTodoInput {
@@ -44,6 +46,10 @@ export interface EventPatch {
   allDay?: boolean;
   start?: string;
   end?: string;
+  calendarId?: string;
+  /** Empty string clears the field, since the domain stores `null`. */
+  location?: string;
+  notes?: string;
 }
 
 export interface NewCalendarInput {
@@ -67,6 +73,12 @@ export interface CreateContext {
 
 /** The原檔's fallback when the name field is left empty. */
 export const UNNAMED_CALENDAR_NAME = '未命名日曆';
+
+/** The domain stores an absent optional string as `null`, never as `''`. */
+function optionalText(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
 
 export function createCalendarFromInput(
   data: DayPopUserData,
@@ -178,8 +190,8 @@ export function createEventFromInput(
     id: context.id,
     calendarId: input.calendarId ?? resolveDefaultCalendarId(data),
     title: input.title.trim(),
-    location: null,
-    notes: null,
+    location: optionalText(input.location),
+    notes: optionalText(input.notes),
     reminderMinutes: [],
     recurrence: null,
     sharingScope: 'inherit' as const,
@@ -205,10 +217,10 @@ export function applyEventPatch(
   const allDay = patch.allDay ?? event.allDay;
   const common = {
     id: event.id,
-    calendarId: event.calendarId,
+    calendarId: patch.calendarId ?? event.calendarId,
     title: patch.title?.trim() ?? event.title,
-    location: event.location,
-    notes: event.notes,
+    location: patch.location === undefined ? event.location : optionalText(patch.location),
+    notes: patch.notes === undefined ? event.notes : optionalText(patch.notes),
     reminderMinutes: event.reminderMinutes,
     recurrence: event.recurrence,
     sharingScope: event.sharingScope,
