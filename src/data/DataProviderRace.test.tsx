@@ -82,6 +82,7 @@ describe('DataProvider concurrent writes', () => {
       addCalendar: pending,
       updateCalendar: pending,
       deleteCalendar: pending,
+      updatePreferences: pending,
     };
 
     seen.length = 0;

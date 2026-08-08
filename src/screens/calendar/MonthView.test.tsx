@@ -44,6 +44,7 @@ function render(stickers: Sticker[]) {
     root.render(
       <MonthView
         weekStartsOn={0}
+        calendarGridMode="fixed-six"
         events={[]}
         stickers={stickers}
         calendars={[]}

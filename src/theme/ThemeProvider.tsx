@@ -1,53 +1,72 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useDayPopDataState } from '../data/dataContext';
+import type { ThemePreference } from '../domain/types';
 import { ThemeContext, type ThemeContextValue } from './themeContext';
 import {
   DEFAULT_THEME_ID,
-  DEFAULT_THEME_MODE,
   getTheme,
+  isThemeId,
   themeCssVariables,
-  type ThemeId,
   type ThemeMode,
 } from './themes';
 
 export interface ThemeProviderProps {
   children: ReactNode;
-  /**
-   * Starting theme. Defaults to 漫畫 — the canonical new-user default decided on
-   * 2026-08-02 and the first visual parity target.
-   */
-  initialThemeId?: ThemeId;
-  initialMode?: ThemeMode;
 }
 
 /**
- * Holds the active design theme for the current session.
- *
- * DP-050 deliberately keeps this in memory only: the local data model is not
- * touched by this task, and the stored preference must never be overwritten by
- * a default. DP-018 replaces the `useState` seeds below with the persisted
- * `system / light / dark` preference plus a stored theme id, keeping any value
- * an existing user already saved.
+ * Resolves the persisted theme preferences owned by `DataProvider`.
+ * `system` follows the live media query; explicit light/dark never does.
  */
-export function ThemeProvider({
-  children,
-  initialThemeId = DEFAULT_THEME_ID,
-  initialMode = DEFAULT_THEME_MODE,
-}: ThemeProviderProps) {
-  const [themeId, setThemeId] = useState<ThemeId>(initialThemeId);
-  const [mode, setMode] = useState<ThemeMode>(initialMode);
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const { state, actions } = useDayPopDataState();
+  const preferences = state.status === 'ready' ? state.data.preferences : null;
+  const themeId = isThemeId(preferences?.themeId) ? preferences.themeId : DEFAULT_THEME_ID;
+  const mode: ThemePreference = preferences?.theme ?? 'light';
+  const [systemMode, setSystemMode] = useState<ThemeMode>(readSystemMode);
+  const resolvedMode: ThemeMode = mode === 'system' ? systemMode : mode;
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setSystemMode(query.matches ? 'dark' : 'light');
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   const value = useMemo<ThemeContextValue>(() => {
     const theme = getTheme(themeId);
     return {
       themeId,
       mode,
+      resolvedMode,
       theme,
-      palette: mode === 'dark' ? theme.dark : theme.light,
-      cssVariables: themeCssVariables(themeId, mode) as CSSProperties,
-      selectTheme: setThemeId,
-      selectMode: setMode,
+      palette: resolvedMode === 'dark' ? theme.dark : theme.light,
+      cssVariables: themeCssVariables(themeId, resolvedMode) as CSSProperties,
+      selectTheme: (id) => actions.updatePreferences({ themeId: id }),
+      selectMode: (nextMode) => actions.updatePreferences({ theme: nextMode }),
     };
-  }, [themeId, mode]);
+  }, [actions, mode, resolvedMode, themeId]);
+
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const previousMeta = meta?.content;
+    const previousScheme = document.documentElement.style.colorScheme;
+    if (meta) meta.content = value.palette.bg;
+    document.documentElement.style.colorScheme = resolvedMode;
+    return () => {
+      if (meta && previousMeta !== undefined) meta.content = previousMeta;
+      document.documentElement.style.colorScheme = previousScheme;
+    };
+  }, [resolvedMode, value.palette.bg]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+function readSystemMode(): ThemeMode {
+  return typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 }

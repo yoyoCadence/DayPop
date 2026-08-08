@@ -102,6 +102,9 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       deleteCalendar(id) {
         run(() => activeRepository.deleteCalendar(id));
       },
+      updatePreferences(patch) {
+        run(() => activeRepository.updatePreferences(patch));
+      },
     };
   }, [activeRepository]);
 

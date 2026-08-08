@@ -52,7 +52,7 @@ export function AppShell({
   banner,
   hideTabBar = false,
 }: AppShellProps) {
-  const { cssVariables, theme, mode } = useTheme();
+  const { cssVariables, theme, mode, resolvedMode } = useTheme();
   // Published so sheets and dialogs can portal into the viewport instead of
   // escaping the preview frame — see `ViewportLayer`.
   const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
@@ -74,8 +74,8 @@ export function AppShell({
         </div>
       </div>
       <div className="dp-preview-caption">
-        目前主題：<b>{theme.name}</b>（{mode === 'dark' ? '深色' : '淺色'}）· 到「設定」可切換 6
-        種風格與淺／深色
+        目前主題：<b>{theme.name}</b>（{resolvedMode === 'dark' ? '深色' : '淺色'}
+        {mode === 'system' ? '・跟隨系統' : ''}）· 到「設定」可切換 6 種風格與顯示模式
       </div>
     </div>
   );

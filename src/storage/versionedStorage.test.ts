@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptyUserData } from '../domain/types';
 import v1Fixture from './fixtures/user-data-v1.json';
+import v2Fixture from './fixtures/user-data-v2.json';
 import { LocalDataBlockedError, LocalDayPopRepository } from './localRepository';
 import {
   backupRawUserData,
@@ -29,7 +30,7 @@ describe('versioned user storage', () => {
 
     const stored = writeUserData(data, 0);
 
-    expect(stored.schemaVersion).toBe(2);
+    expect(stored.schemaVersion).toBe(3);
     expect(stored.revision).toBe(1);
     expect(readyEnvelope().data.preferences.petName).toBe('小蹦');
   });
@@ -45,14 +46,14 @@ describe('versioned user storage', () => {
     }
   });
 
-  it('migrates the retained v1 fixture to v2 and persists one stable default calendar', () => {
+  it('migrates the retained v1 fixture to v3 and persists one stable default calendar', () => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(v1Fixture));
 
     const first = readyEnvelope();
     const second = readyEnvelope();
     const calendarId = first.data.calendars[0]!.id;
 
-    expect(first.schemaVersion).toBe(2);
+    expect(first.schemaVersion).toBe(3);
     expect(second.data.calendars[0]!.id).toBe(calendarId);
     expect(first.revision).toBe(7);
     expect(first.data.events.every((event) => event.calendarId === calendarId)).toBe(true);
@@ -61,6 +62,7 @@ describe('versioned user storage', () => {
       timezone: 'Asia/Taipei',
       weekStartsOn: 1,
       theme: 'dark',
+      themeId: 'manga',
       petName: '小蹦',
     });
 
@@ -76,6 +78,25 @@ describe('versioned user storage', () => {
       endDate: '2026-08-05',
     });
     expect(first.data.todos[0]?.completedAt).toBe('2026-08-04T03:00:00.000Z');
+  });
+
+  it('migrates v2 without replacing saved display or grid preferences', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(v2Fixture));
+
+    const migrated = readyEnvelope();
+
+    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.revision).toBe(11);
+    expect(migrated.updatedAt).toBe('2026-08-08T00:00:00.000Z');
+    expect(migrated.data.preferences).toMatchObject({
+      weekStartsOn: 1,
+      theme: 'dark',
+      themeId: 'manga',
+      calendarGridMode: 'fixed-six',
+      defaultReminderMinutes: [10],
+      petName: '小蹦',
+      petEnabled: false,
+    });
   });
 
   it('never removes unrelated or legacy localStorage data', () => {

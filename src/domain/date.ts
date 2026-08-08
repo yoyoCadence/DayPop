@@ -1,3 +1,5 @@
+import type { CalendarGridMode } from './types';
+
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -45,11 +47,26 @@ export function weeksBetween(from: Date, to: Date): number {
   return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / (7 * 86_400_000));
 }
 
-export function buildMonthGrid(cursor: Date, weekStartsOn: 0 | 1): Date[] {
+export function buildMonthGrid(
+  cursor: Date,
+  weekStartsOn: 0 | 1,
+  mode: CalendarGridMode,
+): Date[] {
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const offset = (first.getDay() - weekStartsOn + 7) % 7;
   const start = addDays(first, -offset);
-  return Array.from({ length: 42 }, (_, index) => addDays(start, index));
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  const adaptiveWeeks = Math.ceil((offset + daysInMonth) / 7);
+  const weeks = mode === 'fixed-six' ? 6 : adaptiveWeeks;
+  return Array.from({ length: weeks * 7 }, (_, index) => addDays(start, index));
+}
+
+export function monthGridWeekCount(
+  cursor: Date,
+  weekStartsOn: 0 | 1,
+  mode: CalendarGridMode,
+): number {
+  return buildMonthGrid(cursor, weekStartsOn, mode).length / 7;
 }
 
 export function formatMonthTitle(date: Date): string {

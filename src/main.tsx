@@ -9,13 +9,13 @@ import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        {/* Below AuthProvider: DP-026 picks the adapter from the session. */}
-        <DataProvider>
+    <AuthProvider>
+      {/* Below AuthProvider: DP-026 picks the adapter from the session. */}
+      <DataProvider>
+        <ThemeProvider>
           <App />
-        </DataProvider>
-      </AuthProvider>
-    </ThemeProvider>
+        </ThemeProvider>
+      </DataProvider>
+    </AuthProvider>
   </StrictMode>,
 );

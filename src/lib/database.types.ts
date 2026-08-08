@@ -386,10 +386,11 @@ export type Database = {
         Row: {
           created_at: string
           default_reminder_minutes: number[]
-          month_weeks: number
+          fixed_six_week_grid: boolean
           pet_enabled: boolean
           pet_name: string
           theme: string
+          theme_id: string
           timezone: string
           updated_at: string
           user_id: string
@@ -398,10 +399,11 @@ export type Database = {
         Insert: {
           created_at?: string
           default_reminder_minutes?: number[]
-          month_weeks?: number
+          fixed_six_week_grid?: boolean
           pet_enabled?: boolean
           pet_name?: string
           theme?: string
+          theme_id?: string
           timezone?: string
           updated_at?: string
           user_id: string
@@ -410,10 +412,11 @@ export type Database = {
         Update: {
           created_at?: string
           default_reminder_minutes?: number[]
-          month_weeks?: number
+          fixed_six_week_grid?: boolean
           pet_enabled?: boolean
           pet_name?: string
           theme?: string
+          theme_id?: string
           timezone?: string
           updated_at?: string
           user_id?: string

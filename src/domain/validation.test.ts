@@ -107,6 +107,23 @@ describe('DayPop runtime contract', () => {
     }
   });
 
+  it('rejects unknown visual themes and calendar grid modes', () => {
+    const data = createEmptyUserData({ idFactory: () => CALENDAR_ID, now: NOW });
+    const unknownTheme = validateDayPopUserData({
+      ...data,
+      preferences: { ...data.preferences, themeId: 'unknown' },
+    });
+    expect(unknownTheme.success).toBe(false);
+    if (!unknownTheme.success) expect(unknownTheme.issues.join(' ')).toMatch(/themeId/);
+
+    const numericGrid = validateDayPopUserData({
+      ...data,
+      preferences: { ...data.preferences, calendarGridMode: 6 },
+    });
+    expect(numericGrid.success).toBe(false);
+    if (!numericGrid.success) expect(numericGrid.issues.join(' ')).toMatch(/calendarGridMode/);
+  });
+
   it('throws a diagnostic error for malformed imported data', () => {
     expect(() => parseDayPopUserData({ events: [] })).toThrow(DomainValidationError);
   });

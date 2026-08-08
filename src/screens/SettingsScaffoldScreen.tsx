@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '../auth/authContext';
 import { useDayPopData } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
-import type { Calendar } from '../domain/types';
+import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
 import { useTheme } from '../theme/themeContext';
-import { THEMES, THEME_IDS, type ThemeMode } from '../theme/themes';
+import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
 import './screens.css';
 import './calendarManage.css';
@@ -15,9 +15,15 @@ export interface SettingsScaffoldScreenProps {
   onOpenAuth(): void;
 }
 
-const MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
+const MODE_OPTIONS: { mode: ThemePreference; label: string }[] = [
+  { mode: 'system', label: '◐ 跟隨系統' },
   { mode: 'light', label: '☀ 淺色' },
   { mode: 'dark', label: '☾ 深色' },
+];
+
+const GRID_OPTIONS: { mode: CalendarGridMode; label: string }[] = [
+  { mode: 'adaptive', label: '自動 4–6 列' },
+  { mode: 'fixed-six', label: '固定 6 列' },
 ];
 
 /**
@@ -31,7 +37,7 @@ const MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
 export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffoldScreenProps) {
   const { themeId, mode, selectTheme, selectMode } = useTheme();
   const auth = useAuth();
-  const { data, addCalendar, updateCalendar, deleteCalendar } = useDayPopData();
+  const { data, addCalendar, updateCalendar, deleteCalendar, updatePreferences } = useDayPopData();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -125,13 +131,19 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           ))}
         </div>
 
-        <div className="dp-note">
-          <span className="dp-note-task">DP-018</span>
-          <strong>主題偏好還沒有保存</strong>
-          <p>
-            這裡的切換只影響目前這個瀏覽階段，重新載入會回到新使用者預設的「漫畫．淺色」。保存與
-            system／light／dark 同步由 DP-018 接上，屆時不會覆寫你已經保存過的偏好。
-          </p>
+        <div className="dp-section-label">月曆列數</div>
+        <div className="dp-mode-toggle" role="group" aria-label="月曆列數">
+          {GRID_OPTIONS.map((option) => (
+            <button
+              key={option.mode}
+              className="dp-mode-button"
+              type="button"
+              aria-pressed={data.preferences.calendarGridMode === option.mode}
+              onClick={() => updatePreferences({ calendarGridMode: option.mode })}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
 
         <div className="dp-section-label" style={{ marginTop: 18 }}>
@@ -241,7 +253,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           <ul>
             <li>AI 助理區塊（安全代理方案見 DP-043）</li>
             <li>寵物：命名、品種與開關</li>
-            <li>一般偏好：週起始日、時區、月曆列數、滑動方向</li>
+            <li>一般偏好：週起始日、時區、滑動方向</li>
             <li>通知與預設提醒</li>
             <li>資料匯入匯出與開發／示範資料控制</li>
           </ul>

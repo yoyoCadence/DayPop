@@ -66,6 +66,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
     addCalendar: respond,
     updateCalendar: respond,
     deleteCalendar: respond,
+    updatePreferences: respond,
   };
 }
 

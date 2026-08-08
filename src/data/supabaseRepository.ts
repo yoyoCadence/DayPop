@@ -6,6 +6,7 @@ import {
   eventFromRow,
   eventToInsert,
   preferencesFromRow,
+  preferencesToInsert,
   stickerFromRow,
   stickerToInsert,
   todoFromRow,
@@ -14,6 +15,7 @@ import {
 import {
   applyCalendarPatch,
   applyEventPatch,
+  applyPreferencesPatch,
   calendarDeletionPlan,
   createCalendarFromInput,
   createEventFromInput,
@@ -37,6 +39,7 @@ import {
   type NewEventInput,
   type NewStickerInput,
   type NewTodoInput,
+  type PreferencesPatch,
 } from '../domain/mutations';
 import {
   createDomainId,
@@ -252,6 +255,18 @@ export class SupabaseDayPopRepository implements DayPopRepository {
 
     await this.#delete('calendars', id);
     return this.#commit(withoutCalendar(data, id, new Date().toISOString()));
+  }
+
+  async updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = applyPreferencesPatch(data.preferences, patch);
+    const { data: row, error } = await this.client
+      .from('user_preferences')
+      .upsert(preferencesToInsert(draft, this.userId))
+      .select('*')
+      .single();
+    if (error || !row) throw new RemoteDataError('寫入偏好', error);
+    return this.#commit({ ...data, preferences: preferencesFromRow(row) });
   }
 
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {

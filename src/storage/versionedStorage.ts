@@ -1,7 +1,12 @@
 import { createEmptyUserData, type DayPopUserData } from '../domain/types';
 import { isIsoInstant, parseDayPopUserData } from '../domain/validation';
 import { getAppStorage, type StorageLike } from './browserStorage';
-import { isV1UserData, migrateV1UserData, type V1UserData } from './localDataMigration';
+import {
+  isV1UserData,
+  migrateV1UserData,
+  migrateV2UserData,
+  type V1UserData,
+} from './localDataMigration';
 
 export type { StorageLike };
 
@@ -73,6 +78,20 @@ export function readUserData(storage: StorageLike = getAppStorage()): StorageRea
     const envelope = migrateEnvelope({ ...parsed, data: parsed.data });
     storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
     return { status: 'ready', envelope };
+  }
+
+  if (schemaVersion === 2) {
+    try {
+      const envelope = migrateV2Envelope(parsed);
+      storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
+      return { status: 'ready', envelope };
+    } catch (cause) {
+      return {
+        status: 'corrupt',
+        raw,
+        reason: cause instanceof Error ? cause.message : 'schema v2 migration failed',
+      };
+    }
   }
 
   if (parsed.schemaVersion !== __DATA_SCHEMA_VERSION__) {
@@ -182,5 +201,14 @@ function migrateEnvelope(envelope: RawEnvelope & { data: V1UserData }): StoredEn
     revision: envelope.revision,
     updatedAt: envelope.updatedAt,
     data: migrateV1UserData(envelope.data, envelope.updatedAt),
+  };
+}
+
+function migrateV2Envelope(envelope: RawEnvelope): StoredEnvelope {
+  return {
+    schemaVersion: __DATA_SCHEMA_VERSION__,
+    revision: envelope.revision,
+    updatedAt: envelope.updatedAt,
+    data: migrateV2UserData(envelope.data),
   };
 }

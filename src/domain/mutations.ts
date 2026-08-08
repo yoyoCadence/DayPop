@@ -1,7 +1,14 @@
 import { sortedCalendars } from './calendars';
 import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
 import { eventWallTime, timedEventFromWallTime } from './eventTime';
-import type { Calendar, CalendarEvent, DayPopUserData, Sticker, TodoItem } from './types';
+import type {
+  Calendar,
+  CalendarEvent,
+  DayPopUserData,
+  Sticker,
+  TodoItem,
+  UserPreferences,
+} from './types';
 
 /**
  * Pure domain edits shared by every repository adapter.
@@ -63,6 +70,16 @@ export interface CalendarPatch {
   name?: string;
   color?: string;
   isVisible?: boolean;
+}
+
+/** Preference fields are merged, then validated by each repository boundary. */
+export type PreferencesPatch = Partial<UserPreferences>;
+
+export function applyPreferencesPatch(
+  preferences: UserPreferences,
+  patch: PreferencesPatch,
+): UserPreferences {
+  return { ...preferences, ...patch };
 }
 
 export interface CreateContext {

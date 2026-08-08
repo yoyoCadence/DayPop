@@ -51,11 +51,11 @@ async function mount() {
   await act(async () => {
     // The same nesting as main.tsx, minus the stubbed AuthProvider.
     root.render(
-      <ThemeProvider>
-        <DataProvider>
+      <DataProvider>
+        <ThemeProvider>
           <App />
-        </DataProvider>
-      </ThemeProvider>,
+        </ThemeProvider>
+      </DataProvider>,
     );
   });
 }

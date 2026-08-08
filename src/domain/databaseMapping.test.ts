@@ -165,13 +165,14 @@ describe('domain ↔ DB mapping', () => {
     });
   });
 
-  it('uses the documented month_weeks compatibility mapping until DP-018', () => {
+  it('maps semantic grid and visual theme preferences without numeric encoding', () => {
     const row: Tables<'user_preferences'> = {
       user_id: OWNER_ID,
       timezone: 'Asia/Taipei',
       week_starts_on: 1,
-      month_weeks: 5,
+      fixed_six_week_grid: false,
       theme: 'dark',
+      theme_id: 'warm',
       default_reminder_minutes: [10],
       pet_name: '摩卡',
       pet_enabled: true,
@@ -180,9 +181,11 @@ describe('domain ↔ DB mapping', () => {
     };
     const domain = preferencesFromRow(row);
     expect(domain.calendarGridMode).toBe('adaptive');
+    expect(domain.themeId).toBe('warm');
     expect(preferencesToInsert(domain, OWNER_ID)).toMatchObject({
       user_id: OWNER_ID,
-      month_weeks: 4,
+      fixed_six_week_grid: false,
+      theme_id: 'warm',
     });
   });
 });

@@ -1,9 +1,12 @@
 import { createContext, useContext, type CSSProperties } from 'react';
+import type { ThemePreference } from '../domain/types';
 import type { ThemeDefinition, ThemeId, ThemeMode, ThemePalette } from './themes';
 
 export interface ThemeContextValue {
   themeId: ThemeId;
-  mode: ThemeMode;
+  /** Saved preference; `system` resolves through prefers-color-scheme. */
+  mode: ThemePreference;
+  resolvedMode: ThemeMode;
   theme: ThemeDefinition;
   palette: ThemePalette;
   /**
@@ -12,7 +15,7 @@ export interface ThemeContextValue {
    */
   cssVariables: CSSProperties;
   selectTheme(id: ThemeId): void;
-  selectMode(mode: ThemeMode): void;
+  selectMode(mode: ThemePreference): void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

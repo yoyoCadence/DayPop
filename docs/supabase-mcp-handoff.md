@@ -13,6 +13,19 @@
 
 ---
 
+## 0. DP-018 完成後更新（2026-08-08）
+
+這份文件的「交接當下」段落保留歷史快照；目前基準已由 DP-018 往前推進：
+
+- 遠端 migration history 與 repo 現在正好是 5 檔；第五檔為 `20260808083912_replace_month_weeks_with_fixed_grid.sql`。它以正式 CLI dry-run／push 套用，沒有透過 MCP DDL 或 Dashboard SQL Editor。
+- `user_preferences` 已以 `theme_id` 保存六套外觀、以 `fixed_six_week_grid` 保存 fixed-six／adaptive；數字 `month_weeks` 已移除。Generated DB types 已由遠端 schema 重新產生，security advisor 仍為 0 警告。
+- 本機 user-data envelope 已升到 schema v3；v2→v3 保留所有既有偏好、revision 與 timestamp，只補上當時不存在的 `themeId = manga`。ThemeProvider、設定 UI 與連續月格都已接上保存。
+- 此機器的 Supabase CLI 2.111.0 在 Codex sandbox 內會以 Bun `TransportError` 卡在 Management API login role；DP-018 的 link／dry-run／push 因此由專案擁有者在自己的 PowerShell 執行。這是該工作階段的 CLI 相容問題，不代表 schema 工作改用 Dashboard。
+- `supabase test db --linked` 仍會要求本機 Docker，不能再宣稱 linked pgTAP 不需 Docker。DP-018 改由 MCP 執行 repo 同一份 7 項 rollback pgTAP；transaction 內暫時建立 pgTAP extension、使用固定假 UUID，結束後 extension 與測試帳號均確認不存在。這不是正式 schema DDL，pgTAP CLI 本身未重跑。
+- 下一項是 DP-036；已放進 `Next`，但必須等專案擁有者親自合併 DP-018 PR 後才開始。
+
+---
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：
@@ -41,7 +54,7 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 2. 這台機器的環境限制
 
-- **沒有 Docker。** `npm run supabase:start`／`supabase:reset`／`supabase:test`（local）都跑不起來。要對已連結的專案驗證，用 `npm run supabase:test:linked`（需先 `npx supabase link --project-ref <ref>`）。安裝容器 runtime 前請先問過專案擁有者。
+- **沒有 Docker。** `npm run supabase:start`／`supabase:reset`／`supabase:test`（local）都跑不起來；目前 CLI 2.111.0 的 `npm run supabase:test:linked` 也會以 Docker prerequisite 終止。可用 MCP 執行 repo 同一份、固定假資料且完整 rollback 的 pgTAP 安全測試，但 transaction 內的暫時 extension 必須一起回滾並另行確認；不可把它寫成「pgTAP CLI 已通過」。安裝容器 runtime 前請先問過專案擁有者。
 - **含中文的檔案不要用 PowerShell 讀取－取代－寫回**，Windows PowerShell 5.1 會以 ANSI codepage 讀入並把中文寫成亂碼。用 Write／Edit 工具改檔。
 - Playwright 不是專案相依，過去的視覺驗證是從 npx cache 直接 import 的一次性腳本。
 
@@ -59,9 +72,9 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 `DataProvider` 的寫入是 fire-and-forget，兩筆同時在途時**最後 resolve 的會覆蓋畫面**，即使它比較早發出。本機 adapter 依呼叫順序 resolve 所以現在不會發生，**遠端 adapter 一定會遇到**。`src/data/DataProviderRace.test.tsx` 已用 characterization test 釘住現況。要在接遠端前決定策略（序號丟棄過期結果，或改為序列化寫入），不要讓它預設帶著這個行為上線。
 
-### 3.3 `month_weeks` 目前是暫時相容編碼，DP-018 要收掉
+### 3.3 `month_weeks` 暫時相容編碼已由 DP-018 收掉
 
-`src/domain/databaseMapping.ts` 現在把 DB 的 `month_weeks` 編碼成 domain 的 `calendarGridMode`：`6` → fixed-six，`4`／`5` → adaptive，寫回 adaptive 暫用 `4`。DP-018 要以 migration 改成語意明確的 `fixed_six_week_grid`，同時更新 domain、UI 與 `buildMonthGrid` 測試，並**重新產生 generated types**。既有使用者已保存的偏好不得被預設值覆寫（AGENTS.md architecture constraints）。
+第五檔 migration 已將 `6` 轉為 fixed-six、`4`／`5` 轉為 adaptive，runtime mapping 現在只理解 `fixed_six_week_grid boolean`。Domain、UI、`buildMonthGrid`、repository 與 generated types 均已更新；後續任務不得重新引入數字列數或用預設覆寫既有主題。
 
 ### 3.4 DP-027 要沿用 DP-063 定下的時間規則
 
@@ -82,12 +95,12 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ---
 
-## 5. 建議的第一步
+## 5. 下一位 MCP agent 的第一步
 
-1. 讀 `tasks.md` 的「建議執行順序」表第 6 列之後，以及 Backlog 中 DP-018／036／027／024／026／025／028 的完整描述。
-2. 依 AGENTS.md §8 把 DP-018 從 `Next` 移到 `In Progress` 再開始。
-3. 先用 MCP 做 **read-only** 的專案狀態核對（migration history 是否仍與 repo 的 4 個檔案一致、advisor 是否仍為 0 警告），確認交接狀態沒有漂移，再動手寫 migration。
-4. 一個任務一個中文 PR，`--base main`，等專案擁有者親自合併後再開始下一段。
+1. 不得在 DP-018 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-036 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-036 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述與 `architecture-decisions.md` §6。
+3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 5 個檔案一致、`user_preferences` 應已有 DP-018 欄位、advisor 應仍為 0 警告；有 drift 就停止。
+4. DP-036 仍是一個任務一個中文 PR，明寫 `--base main`；schema 只走 repo migration＋正式 CLI workflow，不用 MCP 或 Dashboard 手改。
 
 ## 6. 不需要 MCP 也能做的事
 
