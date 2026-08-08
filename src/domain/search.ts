@@ -6,8 +6,12 @@ import type { CalendarEvent, TodoItem } from './types';
  * Search over events and todos, ported from the `searchResults` block of
  * `日曆桌寵 Calendar Pet.dc.html`.
  *
- * The原檔 matches an event's title, location and notes. The current UI keeps its
- * title-only behaviour; widening search fields belongs to the screen follow-up.
+ * The原檔 builds one haystack per event out of title, location and notes, so an
+ * event is found by where it is or by what was written about it — which is what
+ * the field's own 「搜尋事件、地點、待辦…」 placeholder promises. DP-058 could
+ * only match titles because DayPop had nowhere to store the other two; DP-060
+ * added them, so the full haystack is restored here. Todos still match on title
+ * alone, as in the原檔, because a todo has neither field.
  */
 
 export interface SearchResult {
@@ -18,6 +22,12 @@ export interface SearchResult {
   sub: string;
   /** Owning calendar, for the result dot. Todos are not filtered by calendar. */
   calendarId?: string;
+  /**
+   * Day a todo result opens. Absent when the todo has no due date, which the
+   * domain allows — the screen must then have nothing to navigate to rather
+   * than send an empty date key on to the calendar.
+   */
+  dueDate?: string;
 }
 
 /**
@@ -39,12 +49,18 @@ export function searchEntries(
 
   for (const event of events) {
     if (calendarFilter !== null && event.calendarId !== calendarFilter) continue;
-    if (!event.title.toLowerCase().includes(needle)) continue;
+    if (!eventHaystack(event).includes(needle)) continue;
     results.push({
       kind: 'event',
       id: event.id,
       title: event.title,
-      sub: `${event.allDay ? '全天' : eventStartTime(event)} · ${formatDate(eventDate(event))}`,
+      // The原檔 puts the location between the time and the rest of the line, so
+      // a result matched on its location says why it matched.
+      sub: [
+        event.allDay ? '全天' : eventStartTime(event),
+        ...(event.location ? [event.location] : []),
+        formatDate(eventDate(event)),
+      ].join(' · '),
       calendarId: event.calendarId,
     });
   }
@@ -56,10 +72,16 @@ export function searchEntries(
       id: todo.id,
       title: todo.title,
       sub: `待辦 · ${todo.dueDate ? formatDate(todo.dueDate) : '無到期日'}${todo.completedAt ? ' · 已完成' : ''}`,
+      ...(todo.dueDate ? { dueDate: todo.dueDate } : {}),
     });
   }
 
   return results;
+}
+
+/** `title + location + notes`, lowercased — the原檔's `hay`. */
+function eventHaystack(event: CalendarEvent): string {
+  return `${event.title} ${event.location ?? ''} ${event.notes ?? ''}`.toLowerCase();
 }
 
 function formatDate(dateKey: string): string {

@@ -74,6 +74,34 @@ describe('searchEntries', () => {
     expect(searchEntries('生日', EVENTS, TODOS)[0]?.sub).toBe('全天 · 8月9日');
   });
 
+  it('matches an event by its location and by its notes, as the原檔 does', () => {
+    const events: CalendarEvent[] = [
+      { ...EVENTS[0]!, location: '會議室A', notes: '記得帶合約' },
+    ];
+
+    expect(searchEntries('會議室', events, []).map((result) => result.id)).toEqual(['e1']);
+    expect(searchEntries('合約', events, []).map((result) => result.id)).toEqual(['e1']);
+  });
+
+  it('says where a location match came from', () => {
+    const events: CalendarEvent[] = [{ ...EVENTS[0]!, location: '會議室A' }];
+
+    expect(searchEntries('會議室', events, [])[0]?.sub).toBe('14:00 · 會議室A · 8月6日');
+  });
+
+  it('does not match a todo on anything but its title', () => {
+    // A todo has neither field, so nothing else may be invented for it.
+    expect(searchEntries('會議室', [], TODOS)).toEqual([]);
+  });
+
+  it('carries the day a todo result opens, and omits it when there is none', () => {
+    const undated = { ...todo('t3', '有空再做', '2026-08-08', false), dueDate: null };
+
+    expect(searchEntries('報銷', [], TODOS)[0]?.dueDate).toBe('2026-08-07');
+    expect(searchEntries('有空', [], [undated])[0]?.dueDate).toBeUndefined();
+    expect(searchEntries('有空', [], [undated])[0]?.sub).toBe('待辦 · 無到期日');
+  });
+
   it('marks completed todos', () => {
     expect(searchEntries('照片', EVENTS, TODOS)[0]?.sub).toBe('待辦 · 8月8日 · 已完成');
     expect(searchEntries('報銷', EVENTS, TODOS)[0]?.sub).toBe('待辦 · 8月7日');

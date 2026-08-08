@@ -2,6 +2,7 @@
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { visibleEvents } from '../../domain/calendars';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
+import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
 import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
@@ -61,9 +62,14 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const events = useMemo(() => visibleEvents(data), [data]);
 
   const todayKey = toDateKey(new Date());
+  // Only a real `YYYY-MM-DD` is honoured. `fromDateKey('')` parses to year 0,
+  // which `Date` maps to 1900, so seeding the cursor with an empty key sent the
+  // period label and the week grid to January 1900 with nothing to explain it.
+  // An unusable focus is dropped here rather than propagated into the screen.
+  const focusDay = focus?.kind === 'day' && isDateKey(focus.dateKey) ? focus.dateKey : null;
   const [view, setView] = useState<CalendarView>('month');
-  const [cursor, setCursor] = useState(focus?.kind === 'day' ? focus.dateKey : todayKey);
-  const [selected, setSelected] = useState(focus?.kind === 'day' ? focus.dateKey : todayKey);
+  const [cursor, setCursor] = useState(focusDay ?? todayKey);
+  const [selected, setSelected] = useState(focusDay ?? todayKey);
   const [monthLabel, setMonthLabel] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}年 ${now.getMonth() + 1}月`;
@@ -75,9 +81,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const [editingId, setEditingId] = useState<string | null>(
     focus?.kind === 'event' ? focus.id : null,
   );
-  const [dayDetailKey, setDayDetailKey] = useState<string | null>(
-    focus?.kind === 'day' ? focus.dateKey : null,
-  );
+  const [dayDetailKey, setDayDetailKey] = useState<string | null>(focusDay);
   /** Parsed quick-add line waiting in the sheet for confirmation. */
   const [quickDraft, setQuickDraft] = useState<EventDraft | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
@@ -101,6 +105,11 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     // Abandoning the sheet discards the quick-add draft; nothing was saved.
     setQuickDraft(null);
   }
+
+  // 今天 flashes the cell for 1.3s. Switching tab inside that window unmounts
+  // this screen, so the timer has to be dropped with it rather than firing into
+  // a component that is gone.
+  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
 
   // One Escape handler for both sheets, so a keypress closes only the topmost.
   // The event sheet can be opened from inside 日詳情, and two independent window

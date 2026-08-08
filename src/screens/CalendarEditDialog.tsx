@@ -54,6 +54,11 @@ export function CalendarEditDialog({
         <form
           className="cal-manage-dialog"
           onSubmit={submit}
+          // Announced as a modal like the two calendar sheets are. Without this
+          // a screen reader keeps reading the 設定 list behind the backdrop as
+          // if it were still reachable.
+          role="dialog"
+          aria-modal="true"
           aria-label={calendar ? '編輯日曆' : '新增日曆'}
         >
           <div className="cal-manage-title">{calendar ? '編輯日曆' : '新增日曆'}</div>

@@ -109,6 +109,13 @@
   text-align: left;
 }
 
+/* A result with nothing to open. Dimmed rather than hidden, so the match is
+   still reported and the 無到期日 sub line explains it. */
+.search-result:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .search-result-dot {
   width: 10px;
   height: 10px;

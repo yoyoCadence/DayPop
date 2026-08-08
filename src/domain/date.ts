@@ -30,6 +30,16 @@ export function startOfWeek(date: Date, weekStartsOn: 0 | 1): Date {
   return next;
 }
 
+/**
+ * Whole days from `from` to `to`; negative when `to` is earlier.
+ *
+ * Rounded rather than truncated because a local day is 23 or 25 hours long
+ * across a DST transition, which would otherwise turn one day into zero.
+ */
+export function daysBetween(from: Date, to: Date): number {
+  return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / 86_400_000);
+}
+
 /** Whole weeks from `from` to `to`; negative when `to` is earlier. */
 export function weeksBetween(from: Date, to: Date): number {
   return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / (7 * 86_400_000));

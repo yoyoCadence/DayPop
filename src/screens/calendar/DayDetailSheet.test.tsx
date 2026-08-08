@@ -1,8 +1,9 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { timedEventFromWallTime } from '../../domain/eventTime';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
-import type { Sticker } from '../../domain/types';
+import type { CalendarEvent, Sticker } from '../../domain/types';
 import { DayDetailSheet, type DayDetailSheetProps } from './DayDetailSheet';
 
 /**
@@ -11,6 +12,7 @@ import { DayDetailSheet, type DayDetailSheetProps } from './DayDetailSheet';
  */
 
 const DATE = '2026-08-06';
+const CALENDAR = '33333333-3333-4333-8333-333333333333';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -26,10 +28,29 @@ afterEach(() => {
   container.remove();
 });
 
+function event(id: string, title: string, location: string | null): CalendarEvent {
+  return timedEventFromWallTime(
+    {
+      id,
+      calendarId: CALENDAR,
+      title,
+      location,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    },
+    { date: DATE, start: '09:00', end: '10:00' },
+    'Asia/Taipei',
+  );
+}
+
 function sticker(id: string, glyph: string, date = DATE): Sticker {
   return {
     id,
-    calendarId: '33333333-3333-4333-8333-333333333333',
+    calendarId: CALENDAR,
     date,
     glyph,
     assetKey: null,
@@ -113,5 +134,23 @@ describe('DayDetailSheet stickers', () => {
     act(() => root.render(<DayDetailSheet {...props} dateKey="2026-08-07" />));
 
     expect(picker()).toBeNull();
+  });
+});
+
+describe('DayDetailSheet event rows', () => {
+  // The原檔 puts the location on a second line under the title. DP-058 had no
+  // location to show; DP-060 stored one, so the line belongs back here.
+  it('shows the location under the title when the event has one', () => {
+    render({ events: [event('e1', '客戶會議', '會議室A')] });
+
+    expect(container.querySelector('.cal-day-event-title')?.textContent).toBe('客戶會議');
+    expect(container.querySelector('.cal-day-event-loc')?.textContent).toBe('會議室A');
+  });
+
+  it('leaves the second line out entirely when there is no location', () => {
+    render({ events: [event('e1', '客戶會議', null)] });
+
+    expect(container.querySelector('.cal-day-event-title')?.textContent).toBe('客戶會議');
+    expect(container.querySelector('.cal-day-event-loc')).toBeNull();
   });
 });
