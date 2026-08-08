@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { calendarColor } from '../domain/calendars';
+import { calendarColor, visibleEvents } from '../domain/calendars';
 import { toDateKey } from '../domain/date';
 import {
   buildOverviewGroups,
@@ -52,7 +52,10 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
   const groups = useMemo(
     () =>
       buildOverviewGroups({
-        events: data.events,
+        // The原檔 builds its event rows from `dayEvents()`, which drops hidden
+        // calendars. Todos and stickers are not filtered there, so they are
+        // not filtered here either.
+        events: visibleEvents(data),
         todos: data.todos,
         stickers: data.stickers,
         type,
@@ -61,7 +64,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
         weekStartsOn,
         todayKey,
       }),
-    [data.events, data.todos, data.stickers, type, period, cursor, weekStartsOn, todayKey],
+    [data, type, period, cursor, weekStartsOn, todayKey],
   );
   const total = groups.reduce((sum, group) => sum + group.count, 0);
   const collapsedSet = new Set(collapsed);

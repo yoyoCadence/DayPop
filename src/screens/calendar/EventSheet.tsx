@@ -93,12 +93,23 @@ function EventSheetForm({
     event.preventDefault();
     if (!title.trim()) return;
     const times = { start: allDay ? '09:00' : start, end: allDay ? '10:00' : end };
+    // Never send an empty id: `calendarId ?? default` would keep `''`, which is
+    // not a UUID and would fail domain validation instead of falling back.
+    const chosen = calendarId || undefined;
     if (editing) {
-      onUpdateEvent(editing.id, { title, date, allDay, ...times, calendarId, location, notes });
+      onUpdateEvent(editing.id, {
+        title,
+        date,
+        allDay,
+        ...times,
+        ...(chosen ? { calendarId: chosen } : {}),
+        location,
+        notes,
+      });
     } else if (mode === 'event') {
-      onAddEvent({ title, date, allDay, ...times, calendarId, location, notes });
+      onAddEvent({ title, date, allDay, ...times, calendarId: chosen, location, notes });
     } else {
-      onAddTodo({ title, date, calendarId });
+      onAddTodo({ title, date, calendarId: chosen });
     }
     onClose();
   }
