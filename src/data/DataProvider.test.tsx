@@ -6,8 +6,10 @@ import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRe
 import { MemoryStorage } from '../storage/browserStorage';
 import { readUserData } from '../storage/versionedStorage';
 import { DataProvider } from './DataProvider';
+import { CachedRemoteLoadError } from './cachedSupabaseRepository';
 import { useDayPopDataState, type DataContextValue } from './dataContext';
 import type { DayPopRepository } from './repository';
+import { RemoteDataError } from './supabaseRepository';
 
 /**
  * Covers the seam itself: that screens get their data from the provider and
@@ -200,5 +202,100 @@ describe('DataProvider', () => {
     const state = latest().state;
     expect(state.status).toBe('blocked');
     expect(state.status === 'blocked' && state.result.status).toBe('future');
+  });
+
+  it('shows a validated account cache with a persistent warning after a transient load failure', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    let loadCount = 0;
+    const repository: DayPopRepository = {
+      ...asyncRepository(data),
+      load: () => {
+        loadCount += 1;
+        return loadCount === 1
+          ? Promise.reject(
+              new CachedRemoteLoadError(
+                data,
+                new RemoteDataError('讀取帳號資料', new Error('network down')),
+              ),
+            )
+          : Promise.resolve(structuredClone(data));
+      },
+    };
+
+    await render(
+      <DataProvider repository={repository}>
+        <Probe />
+      </DataProvider>,
+    );
+
+    expect(latest().state).toMatchObject({
+      status: 'ready',
+      warning: { kind: 'cached' },
+    });
+
+    await act(async () => {
+      latest().refresh();
+    });
+
+    const refreshed = latest().state;
+    expect(refreshed.status).toBe('ready');
+    expect(refreshed.status === 'ready' ? refreshed.warning : null).toBeUndefined();
+  });
+
+  it('keeps the last confirmed remote snapshot when a write fails', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    const repository: DayPopRepository = {
+      ...asyncRepository(data),
+      addTodo: () =>
+        Promise.reject(new RemoteDataError('新增待辦', new Error('network down'))),
+    };
+
+    await render(
+      <DataProvider repository={repository}>
+        <Probe />
+      </DataProvider>,
+    );
+
+    await act(async () => {
+      latest().actions.addTodo({ title: '不應樂觀落地', date: '2026-08-08' });
+    });
+
+    const state = latest().state;
+    expect(state.status).toBe('ready');
+    expect(state.status === 'ready' ? state.data.todos : []).toHaveLength(0);
+    expect(state.status === 'ready' ? state.warning?.kind : null).toBe('write-failed');
+  });
+
+  it('reports saving until every queued repository write has settled', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    let resolveWrite: ((value: DayPopUserData) => void) | null = null;
+    const repository: DayPopRepository = {
+      ...asyncRepository(data),
+      addTodo: () =>
+        new Promise<DayPopUserData>((resolve) => {
+          resolveWrite = resolve;
+        }),
+    };
+
+    await render(
+      <DataProvider repository={repository}>
+        <Probe />
+      </DataProvider>,
+    );
+
+    await act(async () => {
+      latest().actions.addTodo({ title: '保存中', date: '2026-08-08' });
+      await Promise.resolve();
+    });
+    const saving = latest().state;
+    expect(saving.status === 'ready' ? saving.saving : false).toBe(true);
+
+    const completeWrite = resolveWrite as ((value: DayPopUserData) => void) | null;
+    expect(completeWrite).not.toBeNull();
+    await act(async () => {
+      completeWrite?.(structuredClone(data));
+    });
+    const saved = latest().state;
+    expect(saved.status === 'ready' ? saved.saving : null).toBeUndefined();
   });
 });

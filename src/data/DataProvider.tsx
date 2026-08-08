@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
+import { CachedRemoteLoadError } from './cachedSupabaseRepository';
 import { DataContext, type DataActions, type DataContextValue, type DataState } from './dataContext';
 import { canLoadSync, type DayPopRepository } from './repository';
+import { RemoteDataError } from './supabaseRepository';
 
 interface DataProviderProps {
   /** Injected by tests. Production uses the guest adapter — see below. */
@@ -15,10 +17,10 @@ interface DataProviderProps {
  * This is the seam the whole boundary exists for. Screens ask for data and
  * writes; only this component knows which adapter is answering.
  *
- * It is still always the guest adapter. Choosing `SupabaseDayPopRepository`
- * once a session exists — plus the device cache and transient-failure
- * handling that goes with it — is DP-026; doing it here would mean writing to
- * real accounts before that task has verified RLS and reload behaviour.
+ * `SessionDataProvider` chooses the guest or authenticated adapter after Auth
+ * resolves. Keeping that decision one level above this component lets an
+ * identity change remount the data boundary and discard both the previous
+ * snapshot and its pending mutation queue.
  */
 export function DataProvider({ children, repository }: PropsWithChildren<DataProviderProps>) {
   const activeRepository = useMemo(
@@ -29,6 +31,7 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
   // Bumping this re-runs the async load; the recovery screen uses it after a reset.
   const [generation, setGeneration] = useState(0);
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
+  const pendingWriteCount = useRef(0);
 
   const refresh = useCallback(() => {
     setState(bootstrap(activeRepository));
@@ -65,11 +68,32 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
      * queue or preventing a write the user already issued from running next.
      */
     function run(operation: () => Promise<DayPopUserData>) {
+      pendingWriteCount.current += 1;
+      setState((current) =>
+        current.status === 'ready' ? { ...current, saving: true } : current,
+      );
+
+      const finishWrite = () => {
+        pendingWriteCount.current = Math.max(0, pendingWriteCount.current - 1);
+        return pendingWriteCount.current > 0;
+      };
+
       pendingWrite.current = pendingWrite.current
         .then(operation)
         .then(
-          (data) => setState({ status: 'ready', data }),
-          (error: unknown) => setState(toFailureState(error)),
+          (data) => {
+            const saving = finishWrite();
+            setState({ status: 'ready', data, ...(saving ? { saving: true } : {}) });
+          },
+          (error: unknown) => {
+            const saving = finishWrite();
+            setState((current) => {
+              const failure = toWriteFailureState(error, current);
+              return failure.status === 'ready' && saving
+                ? { ...failure, saving: true }
+                : failure;
+            });
+          },
         );
     }
 
@@ -134,6 +158,13 @@ function bootstrap(repository: DayPopRepository): DataState {
 }
 
 function toFailureState(error: unknown): DataState {
+  if (error instanceof CachedRemoteLoadError) {
+    return {
+      status: 'ready',
+      data: error.cachedData,
+      warning: { kind: 'cached', message: error.message },
+    };
+  }
   if (error instanceof LocalDataBlockedError) {
     return { status: 'blocked', result: error.result };
   }
@@ -141,4 +172,20 @@ function toFailureState(error: unknown): DataState {
     status: 'failed',
     message: error instanceof Error ? error.message : '資料存取失敗。',
   };
+}
+
+function toWriteFailureState(error: unknown, current: DataState): DataState {
+  if (error instanceof LocalDataBlockedError) {
+    return { status: 'blocked', result: error.result };
+  }
+  if (error instanceof RemoteDataError && current.status === 'ready') {
+    return {
+      ...current,
+      warning: {
+        kind: 'write-failed',
+        message: '剛才的變更沒有保存。' + error.message,
+      },
+    };
+  }
+  return toFailureState(error);
 }

@@ -68,11 +68,29 @@ function todoRow(overrides: FakeRow = {}): FakeRow {
   };
 }
 
+function preferencesRow(overrides: FakeRow = {}): FakeRow {
+  return {
+    user_id: OWNER,
+    timezone: 'Asia/Taipei',
+    week_starts_on: 0,
+    theme: 'light',
+    theme_id: 'manga',
+    fixed_six_week_grid: false,
+    default_reminder_minutes: [],
+    pet_name: '摩卡',
+    pet_enabled: true,
+    created_at: '2026-08-01T00:00:00.000Z',
+    updated_at: '2026-08-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 function bootstrapped() {
   const db = new FakeSupabase();
   db.seed('calendars', [calendarRow()]);
   db.seed('events', [eventRow()]);
   db.seed('todos', [todoRow()]);
+  db.seed('user_preferences', [preferencesRow()]);
   return { db, repository: new SupabaseDayPopRepository(db.asClient(), OWNER) };
 }
 
@@ -93,12 +111,14 @@ describe('SupabaseDayPopRepository load', () => {
     expect(data.todos[0]?.title).toBe('既有待辦');
   });
 
-  it('falls back to the domain default preferences until DP-024 writes a row', async () => {
+  it('loads the canonical preferences created by DP-024', async () => {
     const { repository } = bootstrapped();
 
     const data = await repository.load();
 
     expect(data.preferences.timezone).toBe('Asia/Taipei');
+    expect(data.preferences.theme).toBe('light');
+    expect(data.preferences.themeId).toBe('manga');
     expect(data.preferences.petEnabled).toBe(true);
   });
 
@@ -118,6 +138,15 @@ describe('SupabaseDayPopRepository load', () => {
 
   it('fails loudly for an account with no default calendar', async () => {
     const db = new FakeSupabase();
+    db.seed('user_preferences', [preferencesRow()]);
+    const repository = new SupabaseDayPopRepository(db.asClient(), OWNER);
+
+    await expect(repository.load()).rejects.toThrow(AccountNotBootstrappedError);
+  });
+
+  it('fails loudly instead of inventing missing bootstrap preferences', async () => {
+    const db = new FakeSupabase();
+    db.seed('calendars', [calendarRow()]);
     const repository = new SupabaseDayPopRepository(db.asClient(), OWNER);
 
     await expect(repository.load()).rejects.toThrow(AccountNotBootstrappedError);
@@ -237,6 +266,26 @@ describe('SupabaseDayPopRepository writes', () => {
     // The snapshot must still match the server, or the UI would show a row
     // that does not exist anywhere.
     db.failures.clear();
+    const reloaded = await repository.load();
+    expect(reloaded.events.map((event) => event.title)).toEqual(['既有會議']);
+  });
+
+  it('normalizes a rejected transport promise without applying the draft', async () => {
+    const { db, repository } = bootstrapped();
+    await repository.load();
+    db.rejections.set('events', 'fetch failed');
+
+    await expect(
+      repository.addEvent({
+        title: '傳輸失敗的會議',
+        date: '2026-08-07',
+        allDay: true,
+        start: '',
+        end: '',
+      }),
+    ).rejects.toThrow(RemoteDataError);
+
+    db.rejections.clear();
     const reloaded = await repository.load();
     expect(reloaded.events.map((event) => event.title)).toEqual(['既有會議']);
   });

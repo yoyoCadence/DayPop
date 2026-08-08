@@ -59,6 +59,14 @@
 - Rejection 會進既有 failure state，但 queue tail 會被消化，使用者已送出的下一筆操作仍會依序執行。Race tests 涵蓋等待前一筆 settled 與 rejection 後續跑；本機 32 files／286 tests、lint、typecheck、build、check:build 全數通過。
 - 下一項是需要 MCP 的 DP-026。必須等 DP-062 PR 由專案擁有者親自合併後，從最新 `main` 開始，並先依下方規則做 read-only preflight。
 
+## 0.5 DP-026 完成後更新（2026-08-08）
+
+- 專案擁有者已親自合併 DP-062；DP-026 從最新 `main` 建立獨立分支。開工前 read-only MCP 確認遠端／repo 同為 8 檔、bootstrap trigger／private function 權限、9 張 public tables RLS 與 advisor 0 都沒有 drift。
+- `SessionDataProvider` 現在等 Auth initial session 完成後，依 user id 切換 guest／authenticated adapter；identity remount 隔離 guest 與不同帳號的 snapshot／mutation queue。登入模式以 Supabase 為 durable store，帳號快取採獨立、版本化、同帳號驗證的 `daypop.account-cache.*` envelope。
+- 短暫 remote load error 只有在同帳號有效快取存在時才 fallback，並保持持續警告；write error 保留最後確認 snapshot、標示未同步且不自動 replay。Missing bootstrap、corrupt／future／mismatched cache 都 fail closed。Guest `daypop.user-data` 不會因登入自動上傳或刪除。
+- 本任務沒有新增 migration、DDL 或 generated types diff。MCP rollback transaction 以固定假 UUID 驗證 calendars、events、todos／subtasks、stickers、preferences 的 owner CRUD／reload／delete 與跨帳號 read／update／delete／insert RLS；rollback 後固定假 auth users 與 public rows 都是 0。Postflight 仍為 8 檔 migration、9 張 RLS 表、security advisor 0。
+- 本機 lint、typecheck、36 files／306 tests、build、check:build 全數通過。下一項是需要 MCP 的 DP-025 legacy import；必須等 DP-026 PR 由專案擁有者親自合併後，從最新 `main` 開始。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -97,9 +105,9 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 3. 開工前必須先知道的四件事
 
-### 3.1 `SupabaseDayPopRepository` 存在，但**沒有接進 App**
+### 3.1 `SupabaseDayPopRepository` 已由 DP-026 接進 App
 
-`src/data/supabaseRepository.ts` 已完成並通過 stub client 單元測試，但 `DataProvider` 目前**永遠**使用 `LocalDayPopRepository`。登入只建立 session，資料仍只在本機。把 adapter 依 session 接上是 **DP-026**，不是 DP-024 的順手工作。
+`src/data/supabaseRepository.ts` 維持 canonical row adapter；`SessionDataProvider` 在 initial session 完成後選擇 guest 或 authenticated adapter，`CachedSupabaseDayPopRepository` 負責同帳號版本化 cache 與短暫讀取失敗 fallback。登入資料已走 Supabase；guest 本機文件仍完全分離且不自動匯入。
 
 它刻意會丟兩種錯：`AccountNotBootstrappedError`（DP-024 後代表遠端 drift、帳號初始化失敗或資料被異常刪除；adapter 仍不做第二條 bootstrap 路徑）與 `RemoteDataError`（伺服器拒絕／失敗，與 domain validation 失敗分開）。不要為了讓畫面跑起來而在 adapter 裡補建預設日曆。
 
@@ -132,10 +140,10 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 5. 下一段的第一步
 
-1. 不得在 DP-062 PR 合併前開始 DP-026；專案擁有者親自合併後，從最新 `main` 建立 DP-026 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-026 從 `Next` 移到 `In Progress`。
-3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、bootstrap trigger 與 private function 權限仍正確、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
-4. DP-026 使用獨立中文 PR，並明寫 `--base main`；只驗證 authenticated adapter、RLS、重載、裝置快取與跨帳號隔離，不得把 legacy import 或 Storage 附件混入。
+1. 不得在 DP-026 PR 合併前開始 DP-025；專案擁有者親自合併後，從最新 `main` 建立 DP-025 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-025 從 `Next` 移到 `In Progress`。
+3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
+4. DP-025 使用獨立中文 PR，並明寫 `--base main`；只處理 `calpet.v2` 的 validate／preview／一次性匯入／重複與失敗回復，成功前不得修改或刪除原 key，也不得匯入舊 AI key。不得混入 Storage 附件。
 
 ## 6. 不需要 MCP 也能做的事
 

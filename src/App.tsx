@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
+import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
 import { useStorageMode } from './hooks/useStorageMode';
 import { UpdateDialog } from './pwa/UpdateDialog';
@@ -10,6 +11,7 @@ import { OverviewScreen } from './screens/OverviewScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
+import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
 import type { ShellTab } from './shell/tabs';
 
@@ -27,18 +29,32 @@ export default function App() {
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
   const updater = useAppUpdate();
+  const { user } = useAuth();
+
+  const { state, refresh } = useDayPopDataState();
 
   // Shown on every tab while the browser refuses to persist data — DP-017.
   const storageMode = useStorageMode();
+  const storageWarning =
+    storageMode.kind === 'memory' ? (
+      <StorageWarningBanner reason={storageMode.reason} accountBacked={Boolean(user)} />
+    ) : null;
+  const remoteWarning =
+    state.status === 'ready' && state.warning ? (
+      <RemoteDataWarningBanner warning={state.warning} onRefresh={refresh} />
+    ) : null;
   const banner =
-    storageMode.kind === 'memory' ? <StorageWarningBanner reason={storageMode.reason} /> : null;
+    storageWarning || remoteWarning ? (
+      <>
+        {storageWarning}
+        {remoteWarning}
+      </>
+    ) : null;
 
   // Checked before any screen mounts. A screen that mounted over unreadable
   // data would write a blank state over it on the first edit — DP-016. The
   // provider owns this state now, so a write refused mid-session lands here
   // too, without every screen having to plumb the error up.
-  const { state, refresh } = useDayPopDataState();
-
   if (state.status === 'blocked') {
     return (
       <AppShell tab="cal" onTabChange={() => {}} banner={banner} hideTabBar>
@@ -47,14 +63,16 @@ export default function App() {
     );
   }
 
-  // Unreachable with the guest adapter, which loads synchronously. Kept as a
-  // plain engineering placeholder until DP-026 wires the remote adapter in and
-  // decides what a load failure should actually look like.
   if (state.status !== 'ready') {
     return (
       <AppShell tab="cal" onTabChange={() => {}} banner={banner} hideTabBar>
         <div className="dp-screen-body">
           <p className="dp-note">{state.status === 'failed' ? state.message : '載入中…'}</p>
+          {state.status === 'failed' ? (
+            <button className="button secondary" type="button" onClick={refresh}>
+              重試載入
+            </button>
+          ) : null}
         </div>
       </AppShell>
     );

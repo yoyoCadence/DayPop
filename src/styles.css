@@ -205,6 +205,18 @@ input:focus-visible {
   margin: 0;
 }
 
+.account-sync-status {
+  display: inline-block;
+  margin-top: 7px;
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-sync-status.synced {
+  color: #178a55;
+}
+
 .storage-scope-banner strong {
   font-size: 0.88rem;
 }

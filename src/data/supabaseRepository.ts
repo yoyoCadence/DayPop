@@ -43,7 +43,6 @@ import {
 } from '../domain/mutations';
 import {
   createDomainId,
-  createEmptyUserData,
   type CalendarEvent,
   type DayPopUserData,
   type TodoItem,
@@ -73,13 +72,13 @@ export class RemoteDataError extends Error {
 /**
  * Thrown when the account has no rows to build a valid document from.
  *
- * A brand-new account has no default calendar, and the domain contract
- * requires exactly one. Creating it here would be a second, competing
- * bootstrap path — DP-024 owns that, so this fails loudly instead.
+ * DP-024 guarantees a default calendar and preferences row for every new
+ * account. Creating either one here would be a second, competing bootstrap
+ * path, so missing bootstrap rows fail loudly instead.
  */
 export class AccountNotBootstrappedError extends Error {
   constructor() {
-    super('這個帳號尚未建立預設日曆，請先完成帳號初始化（DP-024）。');
+    super('這個帳號的初始化資料不完整，請稍後重試或聯絡支援。');
     this.name = 'AccountNotBootstrappedError';
   }
 }
@@ -88,10 +87,9 @@ export class AccountNotBootstrappedError extends Error {
  * Authenticated adapter: the same contract as the guest adapter, backed by
  * Supabase rows instead of one local envelope.
  *
- * DP-013 builds and unit-tests this boundary against a stubbed client. It is
- * deliberately **not** wired into `DataProvider` yet — switching the live app
- * over to remote persistence, together with the device cache and transient
- * failure handling, is DP-026. Until then nothing here touches real accounts.
+ * DP-013 built and unit-tested this boundary against a stubbed client. DP-026
+ * wires it through `SessionDataProvider` and adds the account-scoped cache;
+ * this adapter remains responsible only for canonical rows and mutations.
  *
  * Reads and writes rely on owner RLS rather than trusting this filter alone;
  * the explicit `owner_id` filter is there so a mis-scoped query fails as an
@@ -103,24 +101,34 @@ export class SupabaseDayPopRepository implements DayPopRepository {
   constructor(
     private readonly client: SupabaseClient<Database>,
     private readonly userId: string,
-  ) {}
+    initialSnapshot?: DayPopUserData,
+  ) {
+    if (initialSnapshot) this.#snapshot = parseDayPopUserData(initialSnapshot);
+  }
 
   async load(): Promise<DayPopUserData> {
     const owner = this.userId;
     // Table names stay literal so the generated row types survive; a generic
     // helper over table names collapses them into an unusable union.
     const [calendars, events, exceptions, todos, stickers, preferences] = await Promise.all([
-      this.client.from('calendars').select('*').eq('owner_id', owner),
-      this.client.from('events').select('*').eq('owner_id', owner),
-      this.client.from('event_exceptions').select('*').eq('owner_id', owner),
-      this.client.from('todos').select('*').eq('owner_id', owner),
-      this.client.from('stickers').select('*').eq('owner_id', owner),
-      this.client.from('user_preferences').select('*').eq('user_id', owner).maybeSingle(),
-    ]);
+        this.client.from('calendars').select('*').eq('owner_id', owner),
+        this.client.from('events').select('*').eq('owner_id', owner),
+        this.client.from('event_exceptions').select('*').eq('owner_id', owner),
+        this.client.from('todos').select('*').eq('owner_id', owner),
+        this.client.from('stickers').select('*').eq('owner_id', owner),
+        this.client.from('user_preferences').select('*').eq('user_id', owner).maybeSingle(),
+      ]).catch((cause: unknown) => {
+        throw new RemoteDataError('讀取帳號資料', cause);
+      });
 
     const calendarRows = unwrap('讀取日曆', calendars);
-    if (calendarRows.length === 0) throw new AccountNotBootstrappedError();
     if (preferences.error) throw new RemoteDataError('讀取偏好', preferences.error);
+    // DP-024 creates both rows in the auth.users transaction. Missing either
+    // one is drift or a failed bootstrap, not permission to invent a second
+    // initialization path in the browser.
+    if (calendarRows.length === 0 || !preferences.data) {
+      throw new AccountNotBootstrappedError();
+    }
 
     return this.#commit({
       calendars: calendarRows.map(calendarFromRow),
@@ -128,12 +136,7 @@ export class SupabaseDayPopRepository implements DayPopRepository {
       eventExceptions: unwrap('讀取例外', exceptions).map(eventExceptionFromRow),
       todos: unwrap('讀取待辦', todos).map(todoFromRow),
       stickers: unwrap('讀取貼圖', stickers).map(stickerFromRow),
-      // A missing preferences row is expected until DP-024 creates one, and the
-      // domain defaults are the values bootstrap will write, so reading is not
-      // blocked by it.
-      preferences: preferences.data
-        ? preferencesFromRow(preferences.data)
-        : createEmptyUserData().preferences,
+      preferences: preferencesFromRow(preferences.data),
     });
   }
 
@@ -194,11 +197,14 @@ export class SupabaseDayPopRepository implements DayPopRepository {
       id: createDomainId(),
       now: new Date().toISOString(),
     });
-    const { data: row, error } = await this.client
-      .from('stickers')
-      .upsert(stickerToInsert(draft, this.userId))
-      .select('*')
-      .single();
+    const { data: row, error } = await requestRemote(
+      '寫入貼圖',
+      this.client
+        .from('stickers')
+        .upsert(stickerToInsert(draft, this.userId))
+        .select('*')
+        .single(),
+    );
     if (error || !row) throw new RemoteDataError('寫入貼圖', error);
     return this.#commit(withSticker(data, stickerFromRow(row)));
   }
@@ -236,20 +242,26 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     // while anything still points at this calendar, so the order is required,
     // not just tidy.
     for (const table of ['events', 'todos', 'stickers'] as const) {
-      const { error } = await this.client
-        .from(table)
-        .update({ calendar_id: plan.target.id })
-        .eq('calendar_id', id)
-        .eq('owner_id', this.userId);
+      const { error } = await requestRemote(
+        `搬移 ${table}`,
+        this.client
+          .from(table)
+          .update({ calendar_id: plan.target.id })
+          .eq('calendar_id', id)
+          .eq('owner_id', this.userId),
+      );
       if (error) throw new RemoteDataError(`搬移 ${table}`, error);
     }
 
     if (plan.promote) {
-      const { error } = await this.client
-        .from('calendars')
-        .update({ is_default: true })
-        .eq('id', plan.target.id)
-        .eq('owner_id', this.userId);
+      const { error } = await requestRemote(
+        '指定預設日曆',
+        this.client
+          .from('calendars')
+          .update({ is_default: true })
+          .eq('id', plan.target.id)
+          .eq('owner_id', this.userId),
+      );
       if (error) throw new RemoteDataError('指定預設日曆', error);
     }
 
@@ -260,21 +272,27 @@ export class SupabaseDayPopRepository implements DayPopRepository {
   async updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const draft = applyPreferencesPatch(data.preferences, patch);
-    const { data: row, error } = await this.client
-      .from('user_preferences')
-      .upsert(preferencesToInsert(draft, this.userId))
-      .select('*')
-      .single();
+    const { data: row, error } = await requestRemote(
+      '寫入偏好',
+      this.client
+        .from('user_preferences')
+        .upsert(preferencesToInsert(draft, this.userId))
+        .select('*')
+        .single(),
+    );
     if (error || !row) throw new RemoteDataError('寫入偏好', error);
     return this.#commit({ ...data, preferences: preferencesFromRow(row) });
   }
 
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {
-    const { data, error } = await this.client
-      .from('calendars')
-      .upsert(calendarToInsert(calendar, this.userId))
-      .select('*')
-      .single();
+    const { data, error } = await requestRemote(
+      '寫入日曆',
+      this.client
+        .from('calendars')
+        .upsert(calendarToInsert(calendar, this.userId))
+        .select('*')
+        .single(),
+    );
     if (error || !data) throw new RemoteDataError('寫入日曆', error);
     return calendarFromRow(data);
   }
@@ -285,31 +303,40 @@ export class SupabaseDayPopRepository implements DayPopRepository {
    * not allowed to set — rather than what this session hoped it would store.
    */
   async #upsertEvent(event: CalendarEvent) {
-    const { data, error } = await this.client
-      .from('events')
-      .upsert(eventToInsert(event, this.userId))
-      .select('*')
-      .single();
+    const { data, error } = await requestRemote(
+      '寫入行程',
+      this.client
+        .from('events')
+        .upsert(eventToInsert(event, this.userId))
+        .select('*')
+        .single(),
+    );
     if (error || !data) throw new RemoteDataError('寫入行程', error);
     return eventFromRow(data);
   }
 
   async #upsertTodo(todo: TodoItem) {
-    const { data, error } = await this.client
-      .from('todos')
-      .upsert(todoToInsert(todo, this.userId))
-      .select('*')
-      .single();
+    const { data, error } = await requestRemote(
+      '寫入待辦',
+      this.client
+        .from('todos')
+        .upsert(todoToInsert(todo, this.userId))
+        .select('*')
+        .single(),
+    );
     if (error || !data) throw new RemoteDataError('寫入待辦', error);
     return todoFromRow(data);
   }
 
   async #delete(table: 'events' | 'todos' | 'stickers' | 'calendars', id: string) {
-    const { error } = await this.client
-      .from(table)
-      .delete()
-      .eq('id', id)
-      .eq('owner_id', this.userId);
+    const { error } = await requestRemote(
+      `刪除 ${table}`,
+      this.client
+        .from(table)
+        .delete()
+        .eq('id', id)
+        .eq('owner_id', this.userId),
+    );
     if (error) throw new RemoteDataError(`刪除 ${table}`, error);
   }
 
@@ -333,6 +360,19 @@ function unwrap<Row>(
 ): Row[] {
   if (result.error) throw new RemoteDataError(operation, result.error);
   return result.data ?? [];
+}
+
+/** Normalizes both PostgREST error results and rejected transport promises. */
+async function requestRemote<Result>(
+  operation: string,
+  request: PromiseLike<Result>,
+): Promise<Result> {
+  try {
+    return await request;
+  } catch (cause) {
+    if (cause instanceof RemoteDataError) throw cause;
+    throw new RemoteDataError(operation, cause);
+  }
 }
 
 function describe(cause: unknown): string {

@@ -34,7 +34,7 @@
 | 附件 | 假功能 | 使用 Supabase 私人 Storage、signed URL、限制與 RLS 後才啟用。 |
 | 天氣 | 假功能 | 未選資料來源、權限與失敗體驗前維持停用。 |
 | AI 助理 | 模擬／不安全原型 | 延後；若恢復必須走 server-side／Edge Function，禁止把 API key 放前端。 |
-| 雲端同步狀態 | 假功能 | Supabase CRUD 真正接通前不得顯示「已同步」。 |
+| 雲端同步狀態 | 原稿是假功能 | 已接上（DP-026）：登入帳號依真實 repository pending／warning 顯示「已同步／同步中／尚未同步」；短暫讀取失敗顯示同帳號最後確認快取與持續警告，寫入失敗不冒充成功。遊客模式仍只顯示本機保存。 |
 
 ## 每段搬移的 smoke checklist
 
@@ -55,5 +55,5 @@
 
 - 原型以單一 `calpet.v2` JSON blob 儲存所有資料，沒有 schema version、使用者隔離或 migration。
 - AI provider key 與一般設定混存在瀏覽器資料中，不得搬入正式架構。
-- 「同步」、附件、天氣與 AI 的部分 UI 是展示效果，不可當成已完成能力。
+- 附件、天氣與 AI 的部分 UI 仍是展示效果，不可當成已完成能力；同步狀態已由 DP-026 改接真實 repository 狀態，但不代表已實作 Realtime、多裝置 merge 或完整離線寫入。
 - 重複事件、時區、DST、ICS、提醒與通知需要獨立測試資料，不能只靠畫面 smoke test。

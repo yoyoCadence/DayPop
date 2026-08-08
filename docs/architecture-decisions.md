@@ -60,6 +60,14 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - 每筆成功或失敗都會消化 queue tail。失敗沿用既有 `failed`／`blocked` 狀態，但不會讓 queue 永久 rejected，也不會阻止使用者在錯誤回來前已送出的下一筆操作。
 - DP-062 不提供離線寫入佇列、retry、Realtime 或多裝置 conflict merge；短暫失敗復原與 adapter／cache lifecycle 仍由 DP-026 處理。
 
+### 實作結果（DP-026）— Auth identity 決定 adapter，Supabase 是唯一 durable store
+
+- `SessionDataProvider` 必須等 Supabase Auth 的 initial session 判定完成，才選擇 guest `LocalDayPopRepository` 或 authenticated `CachedSupabaseDayPopRepository`。identity 使用 user id；guest、帳號 A、帳號 B 以 keyed `DataProvider` remount 隔離 React snapshot 與 DP-062 mutation queue，同帳號 token refresh 不重建資料邊界。
+- 帳號快取 key 為 `daypop.account-cache.<encoded user id>`，envelope 同時保存 schema version 與 account id，並再次做 canonical runtime validation。它與 `daypop.user-data` 分離，只能由成功的遠端 load／mutation 更新；corrupt、future-version 或 account mismatch 都不得視為空資料、不得跨帳號 fallback，也不得整份上傳 Supabase。
+- Supabase load 成功才顯示遠端文件；短暫讀取失敗且同帳號快取有效時可顯示最後確認資料，但必須保持持續警告與手動重新載入。DP-024 已保證 default calendar 與 preferences；缺任一 bootstrap row 是 drift／初始化失敗，不能用舊快取掩蓋或在 browser 建立第二條 bootstrap。
+- 遠端 mutation 失敗時保留最後確認 snapshot 並標示「尚未同步」。不自動 replay：request 的 response 可能在 server commit 後才遺失，自動重送可能產生重複 event／todo／sticker。使用者重新載入後以 Supabase 狀態 reconcile；MVP 不加入離線 write queue、Realtime 或多裝置 conflict merge。
+- 設定頁的「已同步／同步中／尚未同步」直接來自 repository pending count 與 persistent warning，不再顯示原稿的固定假字串。遊客模式仍明講只保存於本機，登入不會自動上傳既有 guest document；一次性匯入屬 DP-025。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。

@@ -14,6 +14,10 @@ import type { StorageReadResult } from '../storage/versionedStorage';
 /** The non-`ready` half of a local read — what the recovery screen works on. */
 export type BlockedRead = Exclude<StorageReadResult, { status: 'ready' }>;
 
+export type DataWarning =
+  | { kind: 'cached'; message: string }
+  | { kind: 'write-failed'; message: string };
+
 /**
  * `blocked` is the DP-016 fail-closed state: the stored bytes could not be
  * read, so nothing may be written until the user has backed them up.
@@ -22,7 +26,13 @@ export type BlockedRead = Exclude<StorageReadResult, { status: 'ready' }>;
  */
 export type DataState =
   | { status: 'loading' }
-  | { status: 'ready'; data: DayPopUserData }
+  | {
+      status: 'ready';
+      data: DayPopUserData;
+      warning?: DataWarning;
+      /** True while one or more serialized repository mutations are unsettled. */
+      saving?: boolean;
+    }
   | { status: 'blocked'; result: BlockedRead }
   | { status: 'failed'; message: string };
 
