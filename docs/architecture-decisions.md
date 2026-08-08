@@ -46,6 +46,13 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - DP-012 當時的 `month_weeks` 暫時相容編碼已由 DP-018 收掉；歷史值 `6` migration 為 fixed-six，`4`／`5` migration 為 adaptive，runtime mapping 不再理解數字列數。
 - DP-012 當時只保存 RFC 5545 rule text；DP-027 已在獨立 domain 層補齊 occurrence expansion、DST、single／all exception mutation 與 ICS round-trip。提醒上限、`created_at` hardening 與 DB timezone 受控驗證也已分別由 DP-036／027 完成；mapping 層仍只負責列轉換。
 
+### 實作結果（DP-024）— Account bootstrap 是 DB 單一路徑
+
+- 新帳號由 `auth.users` AFTER INSERT trigger 在 Auth 建立帳號的同一交易內初始化；任何一步失敗都會讓 signup 一起失敗，不會留下只有 profile 或只有 calendar 的半套帳號。`AuthProvider`、`SupabaseDayPopRepository` 與 DP-026 不另做第二條隱含 bootstrap。
+- `daypop_private.bootstrap_account(uuid)` 依 canonical domain defaults 建立缺少的 profile、漫畫淺色 preferences 與一個「我的日曆」預設 calendar。它先取得 account-scoped transaction advisory lock，再使用 conflict-safe insert；重試不增加預設資料，既有 profile／preferences／default calendar 也不被覆寫。Migration 套用時以同一 helper 補齊舊帳號。
+- `daypop_private` 不在 exposed schema；public／anon／authenticated 都沒有 schema usage 或 function execute。Helper 維持 security invoker，只有不可由 client 呼叫的 auth trigger handler 使用 SECURITY DEFINER，且固定空 `search_path`；handler 只接受受信任 trigger row 的 `new.id`，不是接收 client account id 的 RPC。
+- DP-024 只保證帳號資料已可安全初始化。Authenticated adapter 切換、遠端 CRUD、裝置快取與重載仍屬 DP-026；在此之前必須先完成 DP-062 的寫入順序保護。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。
