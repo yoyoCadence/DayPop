@@ -76,6 +76,18 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。尚未完成的 DB timezone 受控驗證、reminder array 上限與 `created_at` 防偽依 DP-027／036 處理，完成前不得把 account CRUD 視為已可上線。
 
+### 實作結果（DP-063）— 牆上時間位移一律以日曆日重算，不用固定毫秒
+
+上面「23:xx 行程必須正確跨到次日」的 invariant，實作上還有一個更嚴格的條件：**跨日順延必須在目標日期上重新解析同一個牆上時鐘，不能對 instant 加固定的 24 小時。** DST 當晚的本地日是 23 或 25 小時，固定位移會落在錯誤的牆上時鐘 — 實測 America/New_York 2026-03-08 的 23:00–00:30 被存成 23:00–01:30，90 分鐘變成 150 分鐘。
+
+- `src/domain/eventTime.ts` 的 `timedEventFromWallTime()` 是這個規則的唯一實作點，回歸測試在 `src/domain/eventTime.test.ts`。
+- `src/domain/date.ts` 的 `daysBetween()`／`weeksBetween()` 以 `Math.round` 取整，同樣是為了讓 23／25 小時的一天仍然算一天。
+- 例外只有 `src/storage/localDataMigration.ts`：v1 資料固定錨在無 DST 的 `+08:00`，每一天都剛好 24 小時，因此保留固定位移並在原地註明原因。
+- **DP-027 展開 recurrence occurrence 時適用同一條規則**：「隔天的同一個時間」是日曆運算，不是加 86400000 毫秒；每日／每週／每月重複跨越 DST 時，使用者期待的是牆上時鐘不變。
+- 全天事件的 `endDate` 是 inclusive 且可以晚於 `startDate`，因此任何編輯都必須讓兩端一起移動（DP-063 修正 `applyEventPatch()`）。DP-026 從 `events` 讀回的多日全天事件就是這個形狀。
+
+**尚未決定：跨午夜行程在檢視層怎麼呈現。** 月格／日詳情的衝突偵測與週檢視的色塊高度都用同日 `HH:MM` 比較，與原稿逐行一致（原檔只存 `HH:MM` 字串才不會遇到）。DayPop 存 instant，因此這是新的產品決策，記在 DP-064，未定案前不要各檢視各改各的。
+
 ## 7. 工程治理
 
 - 最小 CI 優先建立：`npm ci` → lint → typecheck → unit test → build；之後再加入 Supabase local reset、pgTAP 與 Playwright。
