@@ -54,8 +54,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~7~~ | ~~DP-036 DB invariants~~ | 需要 | 已完成；第六檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與完整 rollback 驗證。 |
 | ~~8~~ | ~~DP-027 日期／時區邊界~~ | 需要 | 已完成；第七檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與 rollback 安全測試。 |
 | ~~9~~ | ~~DP-024 帳號資料 bootstrap~~ | 需要 | 已完成；第八檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與 rollback 安全測試。 |
-| **10** | **DP-062 寫入順序保護** | **不使用** | **下一項；必須先於 DP-026。**先決定並實作遠端延遲下的 stale result 防護，不碰 Supabase 遠端。 |
-| 11 | DP-026 核心 CRUD 遠端持久化 | 需要 | 驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
+| ~~10~~ | ~~DP-062 寫入順序保護~~ | 不使用 | 已完成；`DataProvider` 的 mutation 依 UI 呼叫順序序列化。 |
+| **11** | **DP-026 核心 CRUD 遠端持久化** | **需要** | **下一項。**驗證 authenticated adapter、RLS、重載與跨帳號隔離。 |
 | 12 | DP-025 legacy 匯入 | 需要 | 在 durable CRUD 穩定後才驗證一次性匯入與可回復流程。 |
 | 13 | DP-028 附件 Storage | 需要 | bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
 
@@ -67,7 +67,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-062 — 寫入順序保護（DP-026 前置）：** `DataProvider` 的寫入是 fire-and-forget，兩筆同時在途時**最後 resolve 的會覆蓋畫面**，即使它比較早發出。本機 adapter 依呼叫順序 resolve，所以目前不會發生；遠端 adapter 一定會遇到。`src/data/DataProviderRace.test.tsx` 已用 characterization test 釘住現況。DP-026 接上遠端前必須決定策略（序號丟棄過期結果、或改為序列化寫入），不要讓它預設帶著這個行為上線。此任務不使用 Supabase MCP。
+- [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
 
 ## In Progress
 
@@ -83,7 +83,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ### Supabase / auth / data
 
 - [ ] **DP-025 — 建立 legacy localStorage migration：** 偵測 `calpet.v2`、schema validate、顯示預覽與筆數、一次性匯入 Supabase、處理重複 ID／失敗回復；成功前不刪除原資料，並禁止匯入舊 AI key。
-- [ ] **DP-026 — 接上核心 CRUD 與帳號資料保存：** events、calendars、todos、subtasks、stickers、preferences 逐項改走 repository；完成 Supabase load／upsert／delete、本機快取、短暫失敗復原與同裝置重新登入測試。此任務不包含 Realtime 或多裝置衝突合併。
 - [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
 
 ### Quality / release
@@ -137,6 +136,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-062 — 保證 repository mutation 依 UI 呼叫順序落地：** `DataProvider` 保留 fire-and-forget 的 screen API，但所有 mutation 共用一條 promise queue，上一筆 settled 後才呼叫下一筆 repository method。採序列化而不是只丟棄 stale response，因為 `SupabaseDayPopRepository` 會從共享 snapshot 建立下一份完整文件；若 request 真正並行，較早操作最後寫入時仍可能讓 durable store 倒退，畫面忽略 response 也救不了重新載入。成功與失敗兩個分支都消化 queue tail；失敗會進既有 `failed`／`blocked` 狀態，但不會毒化 queue 或阻止使用者已經送出的下一筆操作。`DataProviderRace.test.tsx` 由舊行為 characterization 改為兩項回歸：第二筆在第一筆 settled 前不啟動、第一筆 rejection 後第二筆仍依序執行並恢復 ready。Vitest 32 files／286 tests、lint、typecheck、build、check:build 全數通過；未使用 Supabase MCP、未碰遠端或 schema。下一項 DP-026 已移入 Next。
 
 - [x] **DP-024 — 建立 account bootstrap：** 第八檔 migration `20260808123919_bootstrap_daypop_accounts.sql` 建立非 exposed 的 `daypop_private` schema、idempotent `bootstrap_account(uuid)` helper 與 `auth.users` AFTER INSERT trigger；同一交易內補齊 profile、canonical 漫畫淺色 preferences 與一個「我的日曆」預設 calendar。Helper 以 account-scoped transaction advisory lock＋`ON CONFLICT DO NOTHING` 防止重試／併發重複，migration 也補齊舊帳號缺列但不覆寫既有值。只有 trigger handler 使用 SECURITY DEFINER，固定空 `search_path`；private schema 與 functions 對 public／anon／authenticated 無 usage／execute。專案擁有者以 CLI list／dry-run／push 套用，MCP 未下正式 DDL、未 remote reset、未查改正式使用者資料。套用後確認 repo／remote 正好 8 檔、trigger／權限／9 張表 RLS 正確、generated types 忽略換行格式後逐字一致、security advisor 0；repo rollback pgTAP 36／36 通過，暫時 extension 與固定假帳號／資料均為 0。未接線 DP-026 adapter；下一項先做 DP-062。
 
