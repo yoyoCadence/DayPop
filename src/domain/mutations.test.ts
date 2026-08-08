@@ -28,6 +28,20 @@ function timedEvent(data: DayPopUserData): CalendarEvent {
   );
 }
 
+/**
+ * A four-day all-day event. Nothing in the UI creates one yet, but the domain
+ * contract allows it — `endDate` is inclusive — and the Supabase adapter will
+ * read exactly this shape back out of `events` (DP-026).
+ */
+function multiDayEvent(): CalendarEvent {
+  const event = createEventFromInput(
+    baseData(),
+    { title: '出差', date: '2026-08-06', allDay: true, start: '', end: '' },
+    { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+  );
+  return { ...event, allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' };
+}
+
 describe('resolveDefaultCalendarId', () => {
   it('prefers the flagged default over the first calendar', () => {
     const data = baseData();
@@ -172,6 +186,29 @@ describe('applyEventPatch', () => {
       startsAt: '2026-08-06T01:00:00.000Z',
       timezone: 'Asia/Taipei',
     });
+  });
+
+  // Regression: deriving both ends from one date turned a multi-day all-day
+  // event into a single day on any edit that never asked to shorten it.
+  it('keeps the length of a multi-day all-day event when something else changes', () => {
+    const renamed = applyEventPatch(multiDayEvent(), { title: '出差（改）' }, 'Asia/Taipei', NOW);
+
+    expect(renamed).toMatchObject({ startDate: '2026-08-06', endDate: '2026-08-09' });
+  });
+
+  it('moves both ends of a multi-day all-day event together', () => {
+    const moved = applyEventPatch(multiDayEvent(), { date: '2026-09-01' }, 'Asia/Taipei', NOW);
+
+    // The span is three days either side of the move, not a collapsed single day.
+    expect(moved).toMatchObject({ startDate: '2026-09-01', endDate: '2026-09-04' });
+  });
+
+  it('still creates a single day when a timed event becomes all-day', () => {
+    const data = baseData();
+
+    const allDay = applyEventPatch(timedEvent(data), { allDay: true }, 'Asia/Taipei', NOW);
+
+    expect(allDay).toMatchObject({ startDate: '2026-08-06', endDate: '2026-08-06' });
   });
 });
 

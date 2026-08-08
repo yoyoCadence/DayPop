@@ -1,3 +1,4 @@
+import { addDays, fromDateKey, toDateKey } from './date';
 import type { CalendarEvent, TimedCalendarEvent } from './types';
 
 export interface EventWallTime {
@@ -56,7 +57,16 @@ export function timedEventFromWallTime(
   const startsAt = wallTimeToInstant(wallTime.date, wallTime.start, timezone);
   let endsAt = wallTimeToInstant(wallTime.date, wallTime.end, timezone);
   if (Date.parse(endsAt) <= Date.parse(startsAt)) {
-    endsAt = new Date(Date.parse(endsAt) + 24 * 60 * 60 * 1000).toISOString();
+    // An end at or before the start means the event runs into the next day.
+    // The end wall time is resolved again *on that day* rather than shifted by
+    // 24 hours: on the night the clocks change a local day is 23 or 25 hours
+    // long, so a fixed shift lands on the wrong wall clock — a 23:00–00:30
+    // event became 23:00–01:30 across a spring-forward boundary.
+    endsAt = wallTimeToInstant(
+      toDateKey(addDays(fromDateKey(wallTime.date), 1)),
+      wallTime.end,
+      timezone,
+    );
   }
   return { ...common, allDay: false, startsAt, endsAt, timezone };
 }

@@ -945,13 +945,26 @@
   font-weight: 800;
 }
 
-.cal-day-event-title {
+.cal-day-event-body {
   min-width: 0;
   flex: 1;
+}
+
+.cal-day-event-title {
+  display: block;
   overflow: hidden;
   color: var(--fg);
   font-size: 14px;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-day-event-loc {
+  display: block;
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

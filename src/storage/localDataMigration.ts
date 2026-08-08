@@ -78,6 +78,10 @@ export function migrateV1UserData(value: V1UserData, migratedAt: string): DayPop
     const startsAt = taipeiWallTimeToInstant(event.date, event.start);
     let endsAt = taipeiWallTimeToInstant(event.date, event.end);
     if (Date.parse(endsAt) <= Date.parse(startsAt)) {
+      // A flat 24-hour shift is only correct because v1 data is anchored to
+      // +08:00, which has no DST — every Taipei day is exactly 24 hours long.
+      // `timedEventFromWallTime` cannot take this shortcut: it works in whatever
+      // zone the user is in, so it re-resolves the wall clock on the next day.
       endsAt = new Date(Date.parse(endsAt) + 24 * 60 * 60 * 1000).toISOString();
     }
     return {

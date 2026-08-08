@@ -178,7 +178,14 @@ function DayDetailSheetBody({
                 }}
               />
               <span className="cal-day-time">{row.time}</span>
-              <span className="cal-day-event-title">{row.event.title}</span>
+              <span className="cal-day-event-body">
+                <span className="cal-day-event-title">{row.event.title}</span>
+                {/* The原檔 puts the location on a second line under the title
+                    whenever the event has one — its `e.hasLoc` branch. */}
+                {row.event.location && (
+                  <span className="cal-day-event-loc">{row.event.location}</span>
+                )}
+              </span>
               {row.conflict && <span className="cal-day-conflict">衝突</span>}
             </button>
           ))}

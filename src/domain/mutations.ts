@@ -1,4 +1,5 @@
 import { sortedCalendars } from './calendars';
+import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
 import { eventWallTime, timedEventFromWallTime } from './eventTime';
 import type { Calendar, CalendarEvent, DayPopUserData, Sticker, TodoItem } from './types';
 
@@ -240,7 +241,22 @@ export function applyEventPatch(
     updatedAt,
   };
   const date = patch.date ?? previous.date;
-  if (allDay) return { ...common, allDay: true, startDate: date, endDate: date };
+  if (allDay) {
+    // `endDate` is inclusive and may be later than `startDate`, so both ends
+    // have to move together. Deriving them from one date instead would shorten
+    // a multi-day all-day event to a single day on an edit that never asked to
+    // — renaming it, for example. Converting a timed event to all-day starts as
+    // one day, which is what the sheet offers.
+    const spanDays = event.allDay
+      ? daysBetween(fromDateKey(event.startDate), fromDateKey(event.endDate))
+      : 0;
+    return {
+      ...common,
+      allDay: true,
+      startDate: date,
+      endDate: spanDays > 0 ? toDateKey(addDays(fromDateKey(date), spanDays)) : date,
+    };
+  }
   return timedEventFromWallTime(
     common,
     {
