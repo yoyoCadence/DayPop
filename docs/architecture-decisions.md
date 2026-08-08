@@ -81,7 +81,7 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 以上 invariant 必須在 account CRUD 接線前完成 migration、generated types 與測試。
 
-DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。尚未完成的 DB timezone 受控驗證、reminder array 上限與 `created_at` 防偽依 DP-027／036 處理，完成前不得把 account CRUD 視為已可上線。
+DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusive 全天邊界與 generated DB mapping；既有 DB 的全天／timed shape constraint 也已有對應測試資料。Reminder array 上限與 `created_at` 防偽已由 DP-036 完成；DB timezone 受控驗證仍依 DP-027 處理，完成前不得把 account CRUD 視為已可上線。
 
 ### 實作結果（DP-063）— 牆上時間位移一律以日曆日重算，不用固定毫秒
 
@@ -92,6 +92,14 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 例外只有 `src/storage/localDataMigration.ts`：v1 資料固定錨在無 DST 的 `+08:00`，每一天都剛好 24 小時，因此保留固定位移並在原地註明原因。
 - **DP-027 展開 recurrence occurrence 時適用同一條規則**：「隔天的同一個時間」是日曆運算，不是加 86400000 毫秒；每日／每週／每月重複跨越 DST 時，使用者期待的是牆上時鐘不變。
 - 全天事件的 `endDate` 是 inclusive 且可以晚於 `startDate`，因此任何編輯都必須讓兩端一起移動（DP-063 修正 `applyEventPatch()`）。DP-026 從 `events` 讀回的多日全天事件就是這個形狀。
+
+### 實作結果（DP-036）— 提醒與時間戳由 domain／DB 雙層保護
+
+- 原稿自訂提醒會把數值 clamp 在 10080 分鐘（七天）；canonical domain 與 DB 因此統一採每個值 `0..10080`，每個陣列最多 10 項且不可含 `null`。這同時套用 `events.reminder_minutes` 與 `user_preferences.default_reminder_minutes`。
+- `public.set_updated_at()` 保留既有名稱與九個 UPDATE trigger，新增九個 INSERT trigger。INSERT 一律以 `statement_timestamp()` 覆寫 `created_at`／`updated_at`；UPDATE 保留 `old.created_at` 並刷新 `updated_at`。Function 維持 security invoker、固定空 `search_path`，並撤銷 `public`／`anon`／`authenticated` 的直接 execute。
+- Repository 的 domain → DB insert mapping 原本就刻意不送 `created_at`／`updated_at`；DB trigger 是阻擋繞過 repository 的第二道邊界，不取代 mapping contract。
+- 23:xx 新增行程沿用 DP-063 的 `timedEventFromWallTime()`，DP-036 再從 `createEventFromInput()` 驗證 UTC 23:30–00:30 會保存為隔日結束。DB 的 `events_time_shape` 繼續保證 `ends_at > starts_at`。
+- 第六檔 migration 已以 CLI workflow 套用；遠端 generated types 與 repo 相同（constraint／trigger 不改變列型別）。Rollback pgTAP、12 項會丟錯的 transactional assertions、RLS 與 security advisor 均通過。
 
 **尚未決定：跨午夜行程在檢視層怎麼呈現。** 月格／日詳情的衝突偵測與週檢視的色塊高度都用同日 `HH:MM` 比較，與原稿逐行一致（原檔只存 `HH:MM` 字串才不會遇到）。DayPop 存 instant，因此這是新的產品決策，記在 DP-064，未定案前不要各檢視各改各的。
 

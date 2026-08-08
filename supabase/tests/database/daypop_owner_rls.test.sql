@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(15);
 
 insert into auth.users (id)
 values
@@ -48,7 +48,8 @@ insert into public.events (
   title,
   is_all_day,
   start_date,
-  end_date
+  end_date,
+  created_at
 )
 values (
   '00000000-0000-4000-8000-0000000000a1',
@@ -56,8 +57,128 @@ values (
   'cascade event',
   true,
   date '2026-08-01',
-  date '2026-08-01'
+  date '2026-08-01',
+  timestamptz '2000-01-01 00:00:00+00'
 );
+
+select is(
+  (
+    select created_at <> timestamptz '2000-01-01 00:00:00+00'
+    from public.events
+    where title = 'cascade event'
+  ),
+  true,
+  'server overrides a client-forged created_at on insert'
+);
+
+update public.events
+set created_at = timestamptz '1999-01-01 00:00:00+00'
+where title = 'cascade event';
+
+select is(
+  (
+    select created_at <> timestamptz '1999-01-01 00:00:00+00'
+    from public.events
+    where title = 'cascade event'
+  ),
+  true,
+  'server keeps created_at immutable on update'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from pg_trigger
+    where tgname like '%_set_server_timestamps_on_insert'
+      and not tgisinternal
+  ),
+  9,
+  'all nine public data tables enforce server timestamps on insert'
+);
+
+do $$
+begin
+  begin
+    update public.events
+    set reminder_minutes = array[-1]
+    where title = 'cascade event';
+    raise exception 'negative reminder unexpectedly succeeded';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pass('event reminders reject negative minutes');
+
+do $$
+begin
+  begin
+    update public.events
+    set reminder_minutes = array[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    where title = 'cascade event';
+    raise exception 'excessive reminder count unexpectedly succeeded';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pass('event reminders reject more than ten entries');
+
+do $$
+begin
+  begin
+    update public.user_preferences
+    set default_reminder_minutes = array[10081]
+    where user_id = '00000000-0000-4000-8000-0000000000a1';
+    raise exception 'oversized default reminder unexpectedly succeeded';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pass('default reminders reject values beyond seven days');
+
+do $$
+begin
+  begin
+    update public.user_preferences
+    set default_reminder_minutes = array[null, 10]::integer[]
+    where user_id = '00000000-0000-4000-8000-0000000000a1';
+    raise exception 'null reminder unexpectedly succeeded';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pass('default reminders reject null entries');
+
+do $$
+begin
+  begin
+    insert into public.events (
+      owner_id,
+      calendar_id,
+      title,
+      is_all_day,
+      starts_at,
+      ends_at,
+      timezone
+    ) values (
+      '00000000-0000-4000-8000-0000000000a1',
+      '10000000-0000-4000-8000-0000000000a1',
+      'backwards timed event',
+      false,
+      timestamptz '2026-08-02 10:00:00+00',
+      timestamptz '2026-08-02 09:00:00+00',
+      'UTC'
+    );
+    raise exception 'backwards timed event unexpectedly succeeded';
+  exception
+    when check_violation then null;
+  end;
+end;
+$$;
+select pass('timed events reject an end at or before the start');
 
 insert into public.todos (owner_id, calendar_id, title, due_date)
 values (

@@ -8,6 +8,9 @@ import type {
   UserPreferences,
 } from './types';
 
+export const MAX_REMINDER_COUNT = 10;
+export const MAX_REMINDER_MINUTES = 7 * 24 * 60;
+
 export type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; issues: string[] };
@@ -404,11 +407,27 @@ function validateNonnegativeInteger(value: unknown, path: string, issues: string
 }
 
 function validateReminderMinutes(value: unknown, path: string, issues: string[]): boolean {
-  if (Array.isArray(value) && value.every((item) => Number.isInteger(item) && item >= 0)) {
-    return true;
+  if (!Array.isArray(value)) {
+    issues.push(`${path} must be an array`);
+    return false;
   }
-  issues.push(`${path} must contain only nonnegative integer minutes`);
-  return false;
+  let valid = true;
+  if (value.length > MAX_REMINDER_COUNT) {
+    issues.push(`${path} must contain at most ${MAX_REMINDER_COUNT} reminders`);
+    valid = false;
+  }
+  if (
+    !value.every(
+      (item) =>
+        Number.isInteger(item) &&
+        Number(item) >= 0 &&
+        Number(item) <= MAX_REMINDER_MINUTES,
+    )
+  ) {
+    issues.push(`${path} minutes must be integers between 0 and ${MAX_REMINDER_MINUTES}`);
+    valid = false;
+  }
+  return valid;
 }
 
 function validateEnum<T extends string | number>(

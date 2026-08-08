@@ -24,6 +24,15 @@
 - `supabase test db --linked` 仍會要求本機 Docker，不能再宣稱 linked pgTAP 不需 Docker。DP-018 改由 MCP 執行 repo 同一份 7 項 rollback pgTAP；transaction 內暫時建立 pgTAP extension、使用固定假 UUID，結束後 extension 與測試帳號均確認不存在。這不是正式 schema DDL，pgTAP CLI 本身未重跑。
 - 下一項是 DP-036；已放進 `Next`，但必須等專案擁有者親自合併 DP-018 PR 後才開始。
 
+## 0.1 DP-036 完成後更新（2026-08-08）
+
+- 專案擁有者已親自合併 DP-018；DP-036 從最新 `main` 建立獨立分支。開工前 read-only MCP 確認遠端／repo 同為 5 檔、DP-018 欄位正確、9 張公開表 RLS 全開且 advisor 0，沒有 drift。
+- 第六檔 migration `20260808093254_enforce_crud_invariants.sql` 已由專案擁有者在 PowerShell 完成 CLI dry-run／push；MCP 沒有套正式 DDL，也沒有 Dashboard 手改或 remote reset。
+- `events.reminder_minutes` 與 `user_preferences.default_reminder_minutes` 現在最多 10 項、每項 0–10080 分鐘且不可含 `null`。九張公開表都有 INSERT timestamp trigger；既有 UPDATE triggers 現在會保留 `created_at`，public client 即使繞過 repository 也不能偽造建立時間。
+- 套用後確認遠端／repo 正好 6 檔，constraints、9 triggers、function、RLS 與 schema 均符合 migration；security advisor 仍 0。遠端重新產生的 TypeScript types 與 repo 完全相同，constraint／trigger 不產生型別 diff。
+- Repo pgTAP 已擴成 15 項；另以 12 項會在失敗時直接 raise 的 transaction 驗證 reminder 邊界、時間先後、server timestamps、owner RLS、跨帳號 child ownership 與 cascade，最後完整 rollback。固定假帳號／事件另行確認不存在。
+- 下一項是 DP-027；已放進 `Next`，但必須等專案擁有者親自合併 DP-036 PR 後才開始。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -97,10 +106,10 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 5. 下一位 MCP agent 的第一步
 
-1. 不得在 DP-018 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-036 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-036 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述與 `architecture-decisions.md` §6。
-3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 5 個檔案一致、`user_preferences` 應已有 DP-018 欄位、advisor 應仍為 0 警告；有 drift 就停止。
-4. DP-036 仍是一個任務一個中文 PR，明寫 `--base main`；schema 只走 repo migration＋正式 CLI workflow，不用 MCP 或 Dashboard 手改。
+1. 不得在 DP-036 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-027 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-027 從 `Next` 移到 `In Progress`，完整閱讀 tasks 描述、`architecture-decisions.md` §6 與 DP-063／036 的實作結果。
+3. 先用 MCP 做 **read-only** 核對：migration history 應與 repo 的 6 個檔案一致、DP-036 constraints／triggers 應存在、advisor 應仍為 0 警告；有 drift 就停止。
+4. DP-027 仍是一個任務一個中文 PR，明寫 `--base main`；schema 只走 repo migration＋正式 CLI workflow，不用 MCP 或 Dashboard 手改。
 
 ## 6. 不需要 MCP 也能做的事
 
