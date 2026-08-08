@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { DataContext, type DataActions, type DataContextValue, type DataState } from './dataContext';
@@ -28,6 +28,7 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
   const [state, setState] = useState<DataState>(() => bootstrap(activeRepository));
   // Bumping this re-runs the async load; the recovery screen uses it after a reset.
   const [generation, setGeneration] = useState(0);
+  const pendingWrite = useRef<Promise<void>>(Promise.resolve());
 
   const refresh = useCallback(() => {
     setState(bootstrap(activeRepository));
@@ -54,15 +55,22 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
 
   const actions = useMemo<DataActions>(() => {
     /**
-     * Writes are fire-and-forget from the UI's point of view: the repository
-     * has already refused a blocked write by the time this resolves, so all
-     * that is left is to bring the screen in line with what was stored.
+     * Writes stay fire-and-forget from the UI's point of view, but reach the
+     * repository in call order. Remote methods read and replace their shared
+     * snapshot, so merely ignoring a stale response would still allow an
+     * earlier request to overwrite durable data after a later request.
+     *
+     * Both branches handle the result and therefore leave the queue tail
+     * resolved. A rejected write reports its failure without poisoning the
+     * queue or preventing a write the user already issued from running next.
      */
     function run(operation: () => Promise<DayPopUserData>) {
-      void operation().then(
-        (data) => setState({ status: 'ready', data }),
-        (error: unknown) => setState(toFailureState(error)),
-      );
+      pendingWrite.current = pendingWrite.current
+        .then(operation)
+        .then(
+          (data) => setState({ status: 'ready', data }),
+          (error: unknown) => setState(toFailureState(error)),
+        );
     }
 
     return {

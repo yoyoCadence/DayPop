@@ -9,10 +9,10 @@ import { useDayPopDataState, type DataContextValue } from './dataContext';
 import type { DayPopRepository } from './repository';
 
 /**
- * Writes are fire-and-forget, so two in flight at once resolve in whatever
- * order the adapter finishes them. This pins down what the screen shows when
- * that order is not the call order — the case DP-026's remote adapter will
- * actually hit.
+ * Writes are fire-and-forget to screens, but DataProvider must serialize the
+ * repository calls. Remote mutations derive their next document from a shared
+ * snapshot, so response-only stale-result filtering would not protect the
+ * durable store from an older request finishing last.
  */
 
 const seen: DataContextValue[] = [];
@@ -43,7 +43,7 @@ function latest() {
 }
 
 describe('DataProvider concurrent writes', () => {
-  it('shows the later-resolving write, even when it started first', async () => {
+  it('starts and applies writes in UI call order', async () => {
     const base = await new LocalDayPopRepository(new MemoryStorage()).load();
     const withTitle = (title: string): DayPopUserData => ({
       ...base,
@@ -65,9 +65,82 @@ describe('DataProvider concurrent writes', () => {
     });
 
     const resolvers: ((data: DayPopUserData) => void)[] = [];
+    const startedTitles: string[] = [];
     const pending = () =>
       new Promise<DayPopUserData>((resolve) => {
         resolvers.push(resolve);
+      });
+    const repository: DayPopRepository = {
+      load: async () => base,
+      addEvent: pending,
+      updateEvent: pending,
+      deleteEvent: pending,
+      addTodo(input) {
+        startedTitles.push(input.title);
+        return pending();
+      },
+      toggleTodo: pending,
+      deleteTodo: pending,
+      addSticker: pending,
+      deleteSticker: pending,
+      addCalendar: pending,
+      updateCalendar: pending,
+      deleteCalendar: pending,
+      updatePreferences: pending,
+    };
+
+    seen.length = 0;
+    await act(async () => {
+      root.render(
+        <DataProvider repository={repository}>
+          <Probe />
+        </DataProvider>,
+      );
+    });
+
+    // Two writes in flight.
+    await act(async () => {
+      latest().actions.addTodo({ title: '第一筆', date: '2026-08-06' });
+      latest().actions.addTodo({ title: '第二筆', date: '2026-08-06' });
+    });
+    expect(startedTitles).toEqual(['第一筆']);
+    expect(resolvers).toHaveLength(1);
+
+    // The second repository call cannot start until the first has settled.
+    await act(async () => {
+      resolvers[0]!(withTitle('第一筆'));
+    });
+    expect(startedTitles).toEqual(['第一筆', '第二筆']);
+    expect(resolvers).toHaveLength(2);
+
+    let state = latest().state;
+    let shown = state.status === 'ready' ? state.data.todos[0]?.title : null;
+    expect(shown).toBe('第一筆');
+
+    await act(async () => {
+      resolvers[1]!(withTitle('第二筆'));
+    });
+
+    state = latest().state;
+    shown = state.status === 'ready' ? state.data.todos[0]?.title : null;
+    expect(shown).toBe('第二筆');
+  });
+
+  it('continues with an already queued write after a rejection', async () => {
+    const base = await new LocalDayPopRepository(new MemoryStorage()).load();
+    const completed: DayPopUserData = {
+      ...base,
+      preferences: {
+        ...base.preferences,
+        weekStartsOn: 1,
+      },
+    };
+    const resolvers: ((data: DayPopUserData) => void)[] = [];
+    const rejectors: ((error: Error) => void)[] = [];
+    const pending = () =>
+      new Promise<DayPopUserData>((resolve, reject) => {
+        resolvers.push(resolve);
+        rejectors.push(reject);
       });
     const repository: DayPopRepository = {
       load: async () => base,
@@ -94,26 +167,22 @@ describe('DataProvider concurrent writes', () => {
       );
     });
 
-    // Two writes in flight.
     await act(async () => {
-      latest().actions.addTodo({ title: '第一筆', date: '2026-08-06' });
-      latest().actions.addTodo({ title: '第二筆', date: '2026-08-06' });
+      latest().actions.updatePreferences({ weekStartsOn: 0 });
+      latest().actions.updatePreferences({ weekStartsOn: 1 });
+    });
+    expect(resolvers).toHaveLength(1);
+
+    await act(async () => {
+      rejectors[0]!(new Error('第一筆失敗'));
     });
     expect(resolvers).toHaveLength(2);
+    expect(latest().state).toEqual({ status: 'failed', message: '第一筆失敗' });
 
-    // The second one comes back first, then the first — the out-of-order case.
     await act(async () => {
-      resolvers[1]!(withTitle('第二筆'));
+      resolvers[1]!(completed);
     });
-    await act(async () => {
-      resolvers[0]!(withTitle('第一筆'));
-    });
-
     const state = latest().state;
-    const shown = state.status === 'ready' ? state.data.todos[0]?.title : null;
-    // Documents current behaviour: last-resolved wins, so a slow earlier write
-    // can overwrite a newer one. Harmless for the local adapter, which resolves
-    // in call order; DP-026 must not ship the remote adapter without ordering.
-    expect(shown).toBe('第一筆');
+    expect(state.status === 'ready' ? state.data.preferences.weekStartsOn : null).toBe(1);
   });
 });

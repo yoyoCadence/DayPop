@@ -52,6 +52,13 @@
 - 套用後確認遠端／repo 正好 8 檔、bootstrap trigger 正好 1 個、9 張 public tables RLS 全開、generated TypeScript types 忽略 CRLF／末尾換行後逐字一致，security advisor 仍 0。Repo rollback pgTAP 擴為 36 項並 36／36 通過；暫時 pgTAP extension、固定假帳號、profiles 與 calendars 均確認不存在。
 - DP-024 沒有接線 authenticated adapter。下一項是**不使用 MCP**的 DP-062 寫入順序保護；必須等本 PR 由專案擁有者親自合併後，從最新 `main` 開始。DP-062 合併後才進 DP-026 遠端 CRUD。
 
+## 0.4 DP-062 完成後更新（2026-08-08）
+
+- 專案擁有者已親自合併 DP-024；DP-062 從最新 `main` 建立獨立分支，全程沒有使用 Supabase MCP、查詢遠端或變更 schema。
+- `DataProvider` 的 screen actions 維持 fire-and-forget，但 repository mutation 現在共用 promise queue，依 UI 呼叫順序逐筆執行。選擇序列化而不是只丟棄 stale response，因為遠端 adapter 使用共享 snapshot；並行 request 仍可能讓 durable store 被較早操作最後覆寫。
+- Rejection 會進既有 failure state，但 queue tail 會被消化，使用者已送出的下一筆操作仍會依序執行。Race tests 涵蓋等待前一筆 settled 與 rejection 後續跑；本機 32 files／286 tests、lint、typecheck、build、check:build 全數通過。
+- 下一項是需要 MCP 的 DP-026。必須等 DP-062 PR 由專案擁有者親自合併後，從最新 `main` 開始，並先依下方規則做 read-only preflight。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -96,9 +103,9 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 它刻意會丟兩種錯：`AccountNotBootstrappedError`（DP-024 後代表遠端 drift、帳號初始化失敗或資料被異常刪除；adapter 仍不做第二條 bootstrap 路徑）與 `RemoteDataError`（伺服器拒絕／失敗，與 domain validation 失敗分開）。不要為了讓畫面跑起來而在 adapter 裡補建預設日曆。
 
-### 3.2 **DP-062 必須在 DP-026 之前決定**
+### 3.2 DP-062 已在 DP-026 前完成
 
-`DataProvider` 的寫入是 fire-and-forget，兩筆同時在途時**最後 resolve 的會覆蓋畫面**，即使它比較早發出。本機 adapter 依呼叫順序 resolve 所以現在不會發生，**遠端 adapter 一定會遇到**。`src/data/DataProviderRace.test.tsx` 已用 characterization test 釘住現況。要在接遠端前決定策略（序號丟棄過期結果，或改為序列化寫入），不要讓它預設帶著這個行為上線。
+`DataProvider` 已採單一 promise queue 序列化所有 repository mutation。這同時保護 React snapshot 與 durable store，不是只在畫面丟棄 stale response；rejection 也不會毒化 queue。`src/data/DataProviderRace.test.tsx` 已釘住呼叫順序與失敗後續跑。DP-026 不得移除此保護或另開並行寫入路徑。
 
 ### 3.3 `month_weeks` 暫時相容編碼已由 DP-018 收掉
 
@@ -125,16 +132,15 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 5. 下一段的第一步
 
-1. 不得在 DP-024 PR 合併前開始下一段；專案擁有者親自合併後，從最新 `main` 建立 DP-062 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-062 從 `Next` 移到 `In Progress`。此任務只處理 `DataProvider` 的 stale-result／寫入排序策略與回歸測試，**不使用 Supabase MCP**、不碰遠端 schema，也不順手接線 DP-026。
-3. DP-062 合併後才建立 DP-026 分支。DP-026 開工前再用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、bootstrap trigger 與 private function 權限仍正確、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
-4. DP-062／026 各自一個中文 PR，並明寫 `--base main`；DP-026 才驗證 authenticated adapter、RLS、重載、裝置快取與跨帳號隔離，不得把 legacy import 或 Storage 附件混入。
+1. 不得在 DP-062 PR 合併前開始 DP-026；專案擁有者親自合併後，從最新 `main` 建立 DP-026 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-026 從 `Next` 移到 `In Progress`。
+3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、bootstrap trigger 與 private function 權限仍正確、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
+4. DP-026 使用獨立中文 PR，並明寫 `--base main`；只驗證 authenticated adapter、RLS、重載、裝置快取與跨帳號隔離，不得把 legacy import 或 Storage 附件混入。
 
 ## 6. 不需要 MCP 也能做的事
 
 若要先暖身或 MCP 額度需要保留，這幾項不碰遠端：
 
-- **DP-062** — 下一項；完成 `DataProvider` 寫入順序保護，作為 DP-026 前置。
 - **DP-064** — 跨午夜行程在月格衝突偵測與週檢視色塊的呈現（需要產品決策，不是還原原稿）。
 - **DP-030** — Playwright e2e。
 - **DP-019** — PWA 安裝圖示（PNG／Apple touch icon）。

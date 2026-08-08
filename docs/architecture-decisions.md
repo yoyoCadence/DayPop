@@ -53,6 +53,13 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - `daypop_private` 不在 exposed schema；public／anon／authenticated 都沒有 schema usage 或 function execute。Helper 維持 security invoker，只有不可由 client 呼叫的 auth trigger handler 使用 SECURITY DEFINER，且固定空 `search_path`；handler 只接受受信任 trigger row 的 `new.id`，不是接收 client account id 的 RPC。
 - DP-024 只保證帳號資料已可安全初始化。Authenticated adapter 切換、遠端 CRUD、裝置快取與重載仍屬 DP-026；在此之前必須先完成 DP-062 的寫入順序保護。
 
+### 實作結果（DP-062）— Repository mutation 依 UI 呼叫順序序列化
+
+- `DataProvider` 對 screen 維持 fire-and-forget actions，但所有 mutation 共用一條 promise queue；只有上一筆 settled，下一筆才會真正呼叫 active repository。
+- 不採「讓 requests 並行、只丟棄 stale response」。`SupabaseDayPopRepository` 以共享 snapshot 產生下一份完整文件；較早 request 若最後才寫入，durable store 本身仍可能倒退，即使 React 畫面忽略它，重新載入仍會看到錯誤順序。序列化同時保護畫面 snapshot 與遠端落地順序。
+- 每筆成功或失敗都會消化 queue tail。失敗沿用既有 `failed`／`blocked` 狀態，但不會讓 queue 永久 rejected，也不會阻止使用者在錯誤回來前已送出的下一筆操作。
+- DP-062 不提供離線寫入佇列、retry、Realtime 或多裝置 conflict merge；短暫失敗復原與 adapter／cache lifecycle 仍由 DP-026 處理。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。
