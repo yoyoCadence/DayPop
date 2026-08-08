@@ -63,6 +63,79 @@ describe('createEventFromInput', () => {
   });
 });
 
+describe('optional text fields', () => {
+  it('stores a blank location and notes as null, not as an empty string', () => {
+    const data = baseData();
+    const event = createEventFromInput(
+      data,
+      {
+        title: '會議',
+        date: '2026-08-06',
+        allDay: true,
+        start: '',
+        end: '',
+        location: '   ',
+        notes: '',
+      },
+      { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+    );
+
+    expect(event.location).toBeNull();
+    expect(event.notes).toBeNull();
+  });
+
+  it('trims location and notes when they have content', () => {
+    const data = baseData();
+    const event = createEventFromInput(
+      data,
+      {
+        title: '會議',
+        date: '2026-08-06',
+        allDay: true,
+        start: '',
+        end: '',
+        location: '  會議室A  ',
+        notes: '  帶筆電  ',
+      },
+      { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+    );
+
+    expect(event.location).toBe('會議室A');
+    expect(event.notes).toBe('帶筆電');
+  });
+
+  it('leaves untouched fields alone but lets an empty patch clear them', () => {
+    const data = baseData();
+    const event = createEventFromInput(
+      data,
+      {
+        title: '會議',
+        date: '2026-08-06',
+        allDay: true,
+        start: '',
+        end: '',
+        location: '會議室A',
+        notes: '帶筆電',
+      },
+      { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+    );
+
+    // Absent key = unchanged.
+    expect(applyEventPatch(event, { title: '改名' }, 'Asia/Taipei', NOW).location).toBe('會議室A');
+    // Present but empty = cleared.
+    expect(applyEventPatch(event, { location: '' }, 'Asia/Taipei', NOW).location).toBeNull();
+  });
+
+  it('moves an event to another calendar', () => {
+    const data = baseData();
+    const event = timedEvent(data);
+
+    expect(applyEventPatch(event, { calendarId: OTHER_CALENDAR }, 'Asia/Taipei', NOW).calendarId).toBe(
+      OTHER_CALENDAR,
+    );
+  });
+});
+
 describe('applyEventPatch', () => {
   it('keeps createdAt and only moves updatedAt', () => {
     const data = baseData();

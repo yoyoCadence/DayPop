@@ -5,7 +5,7 @@ import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { useDayPopData } from '../../data/dataContext';
 import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
-import { EventSheet } from './EventSheet';
+import { EventSheet, type EventDraft } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
 import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
@@ -78,6 +78,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const [dayDetailKey, setDayDetailKey] = useState<string | null>(
     focus?.kind === 'day' ? focus.dateKey : null,
   );
+  /** Parsed quick-add line waiting in the sheet for confirmation. */
+  const [quickDraft, setQuickDraft] = useState<EventDraft | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
 
   const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
@@ -96,6 +98,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   function closeSheet() {
     setSheetOpen(false);
     setEditingId(null);
+    // Abandoning the sheet discards the quick-add draft; nothing was saved.
+    setQuickDraft(null);
   }
 
   // One Escape handler for both sheets, so a keypress closes only the topmost.
@@ -108,6 +112,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       if (sheetOpen) {
         setSheetOpen(false);
         setEditingId(null);
+        setQuickDraft(null);
       } else {
         setDayDetailKey(null);
       }
@@ -162,25 +167,31 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
   function submitQuick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const draft = parseQuickAdd(quick);
-    if (!draft || !draft.title) return;
+    const parsed = parseQuickAdd(quick);
+    if (!parsed || !parsed.title) return;
 
-    addEvent({
-      title: draft.title,
-      date: draft.date,
-      allDay: draft.allDay,
-      start: draft.start,
-      end: draft.end,
+    // The原檔 hands the parsed line to the event sheet for confirmation rather
+    // than creating straight away, so nothing is saved until the user agrees.
+    setSelected(parsed.date);
+    setCursor(parsed.date);
+    setQuickDraft({
+      title: parsed.title,
+      date: parsed.date,
+      allDay: parsed.allDay,
+      start: parsed.start,
+      end: parsed.end,
+      location: parsed.location,
     });
-    setSelected(draft.date);
+    setEditingId(null);
+    setSheetOpen(true);
     setQuick('');
 
-    // The canonical model can store these fields, but quick add must still hand
-    // the draft to the full event sheet before they can be confirmed (DP-014).
-    const dropped = unsupportedQuickAddParts(draft);
+    // 重複 and 提醒 are recognised but still have nowhere honest to go — the
+    // sheet deliberately does not offer them yet (DP-027／DP-042).
+    const dropped = unsupportedQuickAddParts(parsed).filter((part) => part !== '地點');
     setQuickNote(
       dropped.length > 0
-        ? `已新增「${draft.title}」。${dropped.join('、')}也讀到了，等 DP-014 改由事件表單確認後才會保存。`
+        ? `已讀到${dropped.join('、')}，但這些欄位還不能保存，請先確認其餘內容。`
         : null,
     );
   }
@@ -334,6 +345,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         open={sheetOpen}
         defaultDate={selected}
         editing={editingEvent}
+        draft={quickDraft}
+        calendars={data.calendars}
         onClose={closeSheet}
         onAddEvent={addEvent}
         onUpdateEvent={updateEvent}
