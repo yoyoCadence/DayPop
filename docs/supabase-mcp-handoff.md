@@ -67,6 +67,16 @@
 - 本任務沒有新增 migration、DDL 或 generated types diff。MCP rollback transaction 以固定假 UUID 驗證 calendars、events、todos／subtasks、stickers、preferences 的 owner CRUD／reload／delete 與跨帳號 read／update／delete／insert RLS；rollback 後固定假 auth users 與 public rows 都是 0。Postflight 仍為 8 檔 migration、9 張 RLS 表、security advisor 0。
 - 本機 lint、typecheck、36 files／306 tests、build、check:build 全數通過。下一項是需要 MCP 的 DP-025 legacy import；必須等 DP-026 PR 由專案擁有者親自合併後，從最新 `main` 開始。
 
+## 0.6 DP-025 完成後更新（2026-08-09）
+
+- 專案擁有者已親自合併 DP-026；DP-025 從最新 `main` 建立獨立分支。恢復遭暫停的同一工作階段時，read-only MCP 發現第九檔 `20260809021456_import_legacy_daypop.sql` 已由先前的正式 CLI workflow 套用，repo／remote history 一致，但 exposed SECURITY DEFINER RPC 觸發 1 項新 advisor 警告；沒有把這個狀態誤當成 8 檔基準，也沒有回改已套用 migration。
+- `src/legacy` 現在偵測與嚴格驗證 `calpet.v2`，顯示 calendar／event／exception／todo／sticker 筆數與重複 ID remap；只在登入後送出 canonical payload。AI key 從 payload 與 retry fingerprint 排除，invitees／attachments 明示延後。成功、失敗與 retry 都保留原始 `calpet.v2`；`CALPET_FIRED` 不動。
+- 第九檔提供一次性 fingerprint／timestamp 與原子 import RPC；第十檔 `20260809051935_secure_legacy_import_rpc.sql` 改為 `SECURITY INVOKER`，用 private trigger＋transaction-local `pg_temp` context 保護 marker 且維持 owner RLS，advisor 回到 0。第一次 push 嘗試使用 function-level custom GUC，被遠端拒絕並完整回滾；修正版確認 authenticated TEMP privilege 後才重新 push。
+- Repo rollback pgTAP 首次執行發現已套用 RPC 的 PL/pgSQL 變數 `completed_at` 與 todo recordset 欄位同名；沒有回寫第九／十檔，而以第十一檔 `20260809053853_fix_legacy_import_completed_at.sql` 追加修正。最終 repo 同一份 24 項 pgTAP 24／24 通過，驗證 direct marker forgery 拒絕、原子成功／失敗、same-fingerprint retry、different-document 拒絕與跨帳號隔離。
+- Postflight 為遠端／repo 正好 11 檔、9 張 public tables RLS 全開、security advisor 0、generated TypeScript types 16,881 字元逐字一致。Rollback 後固定假 auth users／profiles／calendars 為 0，pgTAP extension 與 temp guard 均不存在。正式 DDL 全部由專案擁有者以 CLI dry-run／push 套用；MCP 沒有直接下正式 DDL、沒有 remote reset，也沒有查改正式使用者資料。
+- Codex sandbox 內 linked CLI 仍可能在 login role 遇到 Bun `TransportError`；專案擁有者 PowerShell 的 push 最後出現 Docker pg-delta catalog cache warning，不影響已顯示 `Finished supabase db push.` 的遠端成功。`supabase test db --linked` 仍不宣稱通過，因為該命令要求本機 Docker；repo SQL 改由 MCP rollback transaction 執行。
+- 下一項是需要 MCP 的 DP-028 Storage；必須等 DP-025 PR 由專案擁有者親自合併後，從最新 `main` 建立獨立分支並先做 read-only preflight。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -140,10 +150,10 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ## 5. 下一段的第一步
 
-1. 不得在 DP-026 PR 合併前開始 DP-025；專案擁有者親自合併後，從最新 `main` 建立 DP-025 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-025 從 `Next` 移到 `In Progress`。
-3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 8 檔、9 張 public tables RLS 全開、advisor 仍為 0；有 drift 就停止。
-4. DP-025 使用獨立中文 PR，並明寫 `--base main`；只處理 `calpet.v2` 的 validate／preview／一次性匯入／重複與失敗回復，成功前不得修改或刪除原 key，也不得匯入舊 AI key。不得混入 Storage 附件。
+1. 不得在 DP-025 PR 合併前開始 DP-028；專案擁有者親自合併後，從最新 `main` 建立 DP-028 的獨立分支。
+2. 依 AGENTS.md §8 把 DP-028 從 `Next` 移到 `In Progress`。
+3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 11 檔、9 張 public tables RLS 全開、legacy RPC 為 SECURITY INVOKER、advisor 仍為 0；有 drift 就停止。
+4. DP-028 使用獨立中文 PR，並明寫 `--base main`；bucket、Storage policies、upload／delete、大小與 MIME 限制、signed URL、event attachment metadata 與失敗清理必須一起驗證。不得改用 public bucket，不得把 service role 放到前端，也不得回改 DP-025 migrations。
 
 ## 6. 不需要 MCP 也能做的事
 

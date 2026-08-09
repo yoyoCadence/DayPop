@@ -68,6 +68,15 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - 遠端 mutation 失敗時保留最後確認 snapshot 並標示「尚未同步」。不自動 replay：request 的 response 可能在 server commit 後才遺失，自動重送可能產生重複 event／todo／sticker。使用者重新載入後以 Supabase 狀態 reconcile；MVP 不加入離線 write queue、Realtime 或多裝置 conflict merge。
 - 設定頁的「已同步／同步中／尚未同步」直接來自 repository pending count 與 persistent warning，不再顯示原稿的固定假字串。遊客模式仍明講只保存於本機，登入不會自動上傳既有 guest document；一次性匯入屬 DP-025。
 
+### 實作結果（DP-025）— Legacy 只在邊界轉成 canonical document，一次性寫入保持原子
+
+- `src/legacy/legacyImport.ts` 是 `calpet.v2` 唯一解析邊界。它嚴格驗證舊 calendars／events／todos／stickers／settings，將日期、timezone、recurrence、exception、reminder 與 preferences 轉成 canonical contract，再由 `parseDayPopUserData()` 對「目前帳號資料＋預計匯入資料」做第二次整體驗證；UI 與 repository 不理解 legacy shape。
+- 舊 event／todo／sticker ID 不帶入 DB，全部改配 UUID，所以同 collection 的重複 ID 可安全拆開；calendar ID 仍負責 event 關聯，重複或 dangling reference 無法判定時 fail closed。預覽明列各類筆數、重配 ID 數與延後的 invitees／attachments；舊 `aiKey` 不進 payload，也先從 SHA-256 fingerprint source 排除。
+- 登入後只透過 `public.import_legacy_daypop(fingerprint, payload)` 做一次性匯入。RPC 先鎖自己的 profile，所有 row insert／preference update 都以 `SECURITY INVOKER` 受既有 owner RLS 與 DB constraints 約束，最後才寫 completion marker；同 fingerprint retry 回傳 `already_imported`，不同 fingerprint 拒絕，任何中途失敗由同一 transaction 完整回滾。
+- Authenticated 只取得兩個 marker 欄位的最小 update privilege；profile trigger 另要求 RPC transaction 內、`ON COMMIT DROP` 的 `pg_temp` context 同時匹配 account id 與 fingerprint，直接 REST update 無法偽造 marker。Private guard 不在 exposed schema且不可直接 execute；公開 RPC 固定空 `search_path`，anon 無 execute。
+- 原始 `calpet.v2` 在成功、失敗與 retry 後都不修改或刪除，`CALPET_FIRED` 也不碰。這是刻意的可回復策略；日後若要清理，只能另立有明確備份／確認 UX 的任務。附件 upload／metadata／signed URL 仍屬 DP-028，不能由 legacy import 偷帶。
+- 第 9 檔先建立 marker／RPC；套用後 advisor 新增對 exposed SECURITY DEFINER 的警告，因此第 10 檔以追加 migration 改成 invoker＋guard，沒有回寫已套用歷史；第 11 檔同樣以追加 migration 修正 pgTAP 發現的 PL/pgSQL `completed_at` 名稱衝突。最終遠端／repo 11 檔一致，24／24 rollback pgTAP、generated types 與 security advisor 0 均通過。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。

@@ -4,6 +4,7 @@ import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
 import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
+import { LegacyImportCard } from '../legacy/LegacyImportCard';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
@@ -241,6 +242,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               <button className="button primary" type="button" onClick={onOpenAuth} disabled={Boolean(auth.configurationError)}>登入／註冊</button>
             )}
           </section>
+          <LegacyImportCard />
         </div>
 
         <div className="dp-section-label">版本與更新</div>

@@ -260,6 +260,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          legacy_import_fingerprint: string | null
+          legacy_imported_at: string | null
           updated_at: string
         }
         Insert: {
@@ -267,6 +269,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          legacy_import_fingerprint?: string | null
+          legacy_imported_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -274,6 +278,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          legacy_import_fingerprint?: string | null
+          legacy_imported_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -429,7 +435,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      import_legacy_daypop: {
+        Args: { p_fingerprint: string; p_payload: Json }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

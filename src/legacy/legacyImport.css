@@ -1,0 +1,50 @@
+.legacy-import-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px;
+  color: var(--fg);
+}
+
+.legacy-import-card h2,
+.legacy-import-card p {
+  margin: 0;
+}
+
+.legacy-import-card h2 {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.legacy-import-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.legacy-import-card p + p {
+  margin-top: 5px;
+}
+
+.legacy-import-card .legacy-import-notice {
+  color: var(--faint);
+}
+
+.legacy-import-card .legacy-import-error {
+  color: var(--danger, #b42318);
+}
+
+.legacy-import-card .button {
+  flex: none;
+}
+
+@media (max-width: 420px) {
+  .legacy-import-card {
+    flex-direction: column;
+  }
+}
