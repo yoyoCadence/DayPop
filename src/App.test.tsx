@@ -18,6 +18,9 @@ import { ThemeProvider } from './theme/ThemeProvider';
 vi.mock('./auth/AuthProvider', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+vi.mock('./auth/authContext', () => ({
+  useAuth: () => ({ user: null }),
+}));
 vi.mock('./auth/AuthDialog', () => ({ AuthDialog: () => null }));
 vi.mock('./pwa/useAppUpdate', () => ({
   useAppUpdate: () => ({

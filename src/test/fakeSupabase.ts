@@ -19,6 +19,8 @@ export class FakeSupabase {
   readonly tables = new Map<string, FakeRow[]>();
   /** Table name → message, to make one table fail like a rejected request. */
   readonly failures = new Map<string, string>();
+  /** Table name → message, to imitate a transport-level promise rejection. */
+  readonly rejections = new Map<string, string>();
   /** Every write the adapter attempted, for asserting what reached the wire. */
   readonly writes: { table: string; row: FakeRow }[] = [];
   /** Server-controlled timestamp handed to inserted rows. */
@@ -96,7 +98,11 @@ class FakeQuery implements PromiseLike<QueryResult> {
     onfulfilled?: ((value: QueryResult) => Fulfilled | PromiseLike<Fulfilled>) | null,
     onrejected?: ((reason: unknown) => Rejected | PromiseLike<Rejected>) | null,
   ): PromiseLike<Fulfilled | Rejected> {
-    return Promise.resolve(this.#run()).then(onfulfilled, onrejected);
+    const rejection = this.db.rejections.get(this.table);
+    const result = rejection
+      ? Promise.reject(new Error(rejection))
+      : Promise.resolve(this.#run());
+    return result.then(onfulfilled, onrejected);
   }
 
   #run(): QueryResult {

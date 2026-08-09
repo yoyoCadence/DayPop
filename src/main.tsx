@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
-import { DataProvider } from './data/DataProvider';
+import { SessionDataProvider } from './data/SessionDataProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 import './theme/fonts.css';
 import './styles.css';
@@ -10,12 +10,11 @@ import './styles.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      {/* Below AuthProvider: DP-026 picks the adapter from the session. */}
-      <DataProvider>
+      <SessionDataProvider>
         <ThemeProvider>
           <App />
         </ThemeProvider>
-      </DataProvider>
+      </SessionDataProvider>
     </AuthProvider>
   </StrictMode>,
 );

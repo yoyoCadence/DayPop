@@ -37,6 +37,21 @@ async function supabaseAdapter(): Promise<DayPopRepository> {
     updated_at: '2026-08-01T00:00:00.000Z',
   };
   db.seed('calendars', [calendar]);
+  db.seed('user_preferences', [
+    {
+      user_id: OWNER,
+      timezone: 'Asia/Taipei',
+      week_starts_on: 0,
+      theme: 'light',
+      theme_id: 'manga',
+      fixed_six_week_grid: false,
+      default_reminder_minutes: [],
+      pet_name: '摩卡',
+      pet_enabled: true,
+      created_at: '2026-08-01T00:00:00.000Z',
+      updated_at: '2026-08-01T00:00:00.000Z',
+    },
+  ]);
   const repository = new SupabaseDayPopRepository(db.asClient(), OWNER);
   await repository.load();
   return repository;

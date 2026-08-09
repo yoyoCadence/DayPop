@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/authContext';
-import { useDayPopData } from '../data/dataContext';
+import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
 import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
@@ -37,6 +37,7 @@ const GRID_OPTIONS: { mode: CalendarGridMode; label: string }[] = [
 export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffoldScreenProps) {
   const { themeId, mode, selectTheme, selectMode } = useTheme();
   const auth = useAuth();
+  const { state: dataState } = useDayPopDataState();
   const { data, addCalendar, updateCalendar, deleteCalendar, updatePreferences } = useDayPopData();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
@@ -49,6 +50,14 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
       : null;
   // The原檔 keeps the delete option away from the last remaining calendar.
   const canDelete = editing !== 'new' && editingCalendar !== null && calendars.length > 1;
+  const syncLabel =
+    dataState.status !== 'ready'
+      ? '檢查中'
+      : dataState.warning
+        ? '尚未同步'
+        : dataState.saving
+          ? '同步中…'
+          : '已同步';
 
   function itemsOn(calendar: Calendar | null): number {
     if (!calendar) return 0;
@@ -210,9 +219,20 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
                 {auth.configurationError
                   ? `Supabase 尚未就緒：${auth.configurationError} 日曆仍安全保存在這台裝置。`
                   : auth.user
-                    ? `${auth.user.email ?? '這個帳號'} 已完成登入；目前日曆仍保存在這台裝置，帳號資料保存會在下一階段接上。`
+                    ? `${auth.user.email ?? '這個帳號'} 已完成登入；行程、待辦與設定會保存至此帳號。這台裝置只保留版本化快取，遊客資料不會自動上傳。`
                     : '行程、待辦與設定只保存在這台裝置。登入不會刪除或自動上傳這些資料。'}
               </p>
+              {auth.user ? (
+                <span
+                  className={`account-sync-status${
+                    dataState.status === 'ready' && !dataState.warning && !dataState.saving
+                      ? ' synced'
+                      : ''
+                  }`}
+                >
+                  ● {syncLabel}
+                </span>
+              ) : null}
               {authActionError && <p className="auth-action-error">{authActionError}</p>}
             </div>
             {auth.user ? (
