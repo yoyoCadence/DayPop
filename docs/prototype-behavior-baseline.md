@@ -36,6 +36,13 @@
 | AI 助理 | 模擬／不安全原型 | 延後；若恢復必須走 server-side／Edge Function，禁止把 API key 放前端。 |
 | 雲端同步狀態 | 原稿是假功能 | 已接上（DP-026）：登入帳號依真實 repository pending／warning 顯示「已同步／同步中／尚未同步」；短暫讀取失敗顯示同帳號最後確認快取與持續警告，寫入失敗不冒充成功。遊客模式仍只顯示本機保存。 |
 
+## DP-030 自動化 browser baseline
+
+- `e2e/guest-crud.spec.ts` 走 production 真實入口，於 390×844 與 1280×900 驗證 guest event／todo 的建立、修改、reload 保存與刪除。
+- `e2e/auth-attachment.spec.ts` 走 dev-only auth harness，掛載真實 App、SessionDataProvider 與 authenticated repository，使用既有 FakeSupabase 驗證登入、帳號同步、事件、附件 upload／signed URL／delete 與登出隔離；它不驗證真實 Supabase provider、RLS 或正式資料。
+- `e2e/responsive-shell.spec.ts` 驗證手機不出現展示框、桌面維持 canonical 404×824 frame，並檢查設定頁與 sheet 不水平溢出。三個 specs 都要求 console error／warning 與 page error 為 0。
+- 這 6 個 browser cases 已由 `npm run test:e2e` 與 GitHub Actions 重複執行；以下清單仍保留為逐段 canonical 視覺搬移與 DP-032 真實裝置 QA 的人工驗收依據。
+
 ## 每段搬移的 smoke checklist
 
 - [ ] 390px 手機寬度沒有水平溢出，觸控目標可操作。

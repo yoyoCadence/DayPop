@@ -154,8 +154,10 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 
 ## 7. 工程治理
 
-- 最小 CI 優先建立：`npm ci` → lint → typecheck → unit test → build；之後再加入 Supabase local reset、pgTAP 與 Playwright。
+- 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 仍留待有 Docker 的受控環境。
 - CI 同時固定 Node major version；`package.json#engines` 與版本檔應保持一致。
+- Browser e2e 採雙邊界：guest CRUD／reload 必須走 production 真實入口；authenticated repository／附件流程可走 dev-only harness，以既有 `FakeSupabase` 提供決定性 Auth、DB 與 Storage 回應。harness 不進 production build，不得連真實專案、帶正式帳號或宣稱取代 RLS／pgTAP 驗證。
+- mobile Chromium 以 390×844 驗證 App-only shell，desktop Chromium 以 1280×900 驗證 canonical 404×824 展示框；兩者都把 console error／warning 與 page error 視為失敗。iOS Safari、Android Chrome、真實 OAuth／redirect 與 staging data persistence 仍是 DP-032／033 的 release acceptance。
 - LICENSE 暫不替專案擁有者做決定。Public repository 在沒有 LICENSE 時仍是保留所有權利；若要接受外部貢獻，再由擁有者選擇授權條款。
 
 ## 8. 2026-08-01 review handoff 採納結果
