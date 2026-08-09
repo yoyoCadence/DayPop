@@ -1,6 +1,7 @@
 import type { DayPopUserData } from '../domain/types';
 import { isIsoInstant, parseDayPopUserData } from '../domain/validation';
 import { getAppStorage, type StorageLike } from './browserStorage';
+import { migrateV3UserData } from './localDataMigration';
 
 export const ACCOUNT_CACHE_PREFIX = 'daypop.account-cache.';
 
@@ -50,15 +51,25 @@ export function readAccountCache(
   if (schemaVersion > __DATA_SCHEMA_VERSION__) {
     return { status: 'future', raw, schemaVersion };
   }
-  if (
-    schemaVersion !== __DATA_SCHEMA_VERSION__ ||
-    parsed.accountId !== accountId ||
-    !isIsoInstant(parsed.updatedAt)
-  ) {
+  if (parsed.accountId !== accountId || !isIsoInstant(parsed.updatedAt)) {
     return { status: 'corrupt', raw, reason: '帳號快取 metadata 不符合目前版本' };
   }
 
   try {
+    if (schemaVersion === 3) {
+      return {
+        status: 'ready',
+        envelope: {
+          schemaVersion: __DATA_SCHEMA_VERSION__,
+          accountId,
+          updatedAt: parsed.updatedAt,
+          data: migrateV3UserData(parsed.data),
+        },
+      };
+    }
+    if (schemaVersion !== __DATA_SCHEMA_VERSION__) {
+      return { status: 'corrupt', raw, reason: '帳號快取 metadata 不符合目前版本' };
+    }
     return {
       status: 'ready',
       envelope: {

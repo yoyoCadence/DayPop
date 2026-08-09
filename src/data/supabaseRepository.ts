@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   calendarFromRow,
   calendarToInsert,
+  eventAttachmentFromRow,
+  eventAttachmentToInsert,
   eventExceptionFromRow,
   eventFromRow,
   eventToInsert,
@@ -12,6 +14,12 @@ import {
   todoFromRow,
   todoToInsert,
 } from '../domain/databaseMapping';
+import {
+  EVENT_ATTACHMENT_BUCKET,
+  eventAttachmentFileIssue,
+  eventAttachmentObjectPath,
+  isEventAttachmentMimeType,
+} from '../domain/attachments';
 import {
   applyCalendarPatch,
   applyEventPatch,
@@ -45,11 +53,12 @@ import {
   createDomainId,
   type CalendarEvent,
   type DayPopUserData,
+  type EventAttachment,
   type TodoItem,
 } from '../domain/types';
 import { parseDayPopUserData } from '../domain/validation';
 import type { Database } from '../lib/database.types';
-import type { DayPopRepository } from './repository';
+import type { DayPopRepository, EventAttachmentRepository } from './repository';
 
 /**
  * Thrown when Supabase itself refused or failed the request.
@@ -95,7 +104,7 @@ export class AccountNotBootstrappedError extends Error {
  * the explicit `owner_id` filter is there so a mis-scoped query fails as an
  * empty result instead of quietly reading another account's rows.
  */
-export class SupabaseDayPopRepository implements DayPopRepository {
+export class SupabaseDayPopRepository implements DayPopRepository, EventAttachmentRepository {
   #snapshot: DayPopUserData | null = null;
 
   constructor(
@@ -108,11 +117,13 @@ export class SupabaseDayPopRepository implements DayPopRepository {
 
   async load(): Promise<DayPopUserData> {
     const owner = this.userId;
+    await this.#flushAttachmentCleanup();
     // Table names stay literal so the generated row types survive; a generic
     // helper over table names collapses them into an unusable union.
-    const [calendars, events, exceptions, todos, stickers, preferences] = await Promise.all([
+    const [calendars, events, attachments, exceptions, todos, stickers, preferences] = await Promise.all([
         this.client.from('calendars').select('*').eq('owner_id', owner),
         this.client.from('events').select('*').eq('owner_id', owner),
+        this.client.from('event_attachments').select('*').eq('owner_id', owner),
         this.client.from('event_exceptions').select('*').eq('owner_id', owner),
         this.client.from('todos').select('*').eq('owner_id', owner),
         this.client.from('stickers').select('*').eq('owner_id', owner),
@@ -133,6 +144,7 @@ export class SupabaseDayPopRepository implements DayPopRepository {
     return this.#commit({
       calendars: calendarRows.map(calendarFromRow),
       events: unwrap('讀取行程', events).map(eventFromRow),
+      eventAttachments: unwrap('讀取附件', attachments).map(eventAttachmentFromRow),
       eventExceptions: unwrap('讀取例外', exceptions).map(eventExceptionFromRow),
       todos: unwrap('讀取待辦', todos).map(todoFromRow),
       stickers: unwrap('讀取貼圖', stickers).map(stickerFromRow),
@@ -164,8 +176,113 @@ export class SupabaseDayPopRepository implements DayPopRepository {
 
   async deleteEvent(id: string): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
-    await this.#delete('events', id);
-    return this.#commit(withoutEvent(data, id));
+    const { data: deleted, error } = await requestRemote(
+      '刪除行程與登記附件清理',
+      this.client.rpc('delete_event_with_attachment_cleanup', { p_event_id: id }),
+    );
+    if (error) throw new RemoteDataError('刪除行程與登記附件清理', error);
+    if (!deleted) return data;
+    const next = this.#commit(withoutEvent(data, id));
+    await this.#flushAttachmentCleanup();
+    return next;
+  }
+
+  async uploadEventAttachment(eventId: string, file: File): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    if (!findEvent(data, eventId)) return data;
+    const issue = eventAttachmentFileIssue(file);
+    if (issue || !isEventAttachmentMimeType(file.type)) {
+      throw new RemoteDataError('驗證附件', issue ?? '不支援這個附件格式。');
+    }
+
+    const id = createDomainId();
+    const objectPath = eventAttachmentObjectPath(this.userId, eventId, id);
+    const cleanup = {
+      owner_id: this.userId,
+      bucket_id: EVENT_ATTACHMENT_BUCKET,
+      object_path: objectPath,
+    };
+    const { error: queueError } = await requestRemote(
+      '登記附件失敗清理',
+      this.client.from('attachment_cleanup_jobs').insert(cleanup),
+    );
+    if (queueError) throw new RemoteDataError('登記附件失敗清理', queueError);
+
+    const upload = await requestRemote(
+      '上傳附件',
+      this.client.storage.from(EVENT_ATTACHMENT_BUCKET).upload(objectPath, file, {
+        contentType: file.type,
+        upsert: false,
+      }),
+    );
+    if (upload.error) {
+      await this.#flushAttachmentCleanup();
+      throw new RemoteDataError('上傳附件', upload.error);
+    }
+
+    const now = new Date().toISOString();
+    const draft: EventAttachment = {
+      id,
+      eventId,
+      objectPath,
+      fileName: file.name,
+      mimeType: file.type as EventAttachment['mimeType'],
+      sizeBytes: file.size,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const insert = eventAttachmentToInsert(draft, this.userId);
+    const { data: row, error } = await requestRemote(
+      '寫入附件 metadata',
+      this.client.rpc('finalize_event_attachment_upload', {
+        p_id: draft.id,
+        p_event_id: insert.event_id,
+        p_object_path: insert.object_path,
+        p_file_name: insert.file_name,
+        p_mime_type: insert.mime_type,
+        p_size_bytes: insert.size_bytes,
+      }),
+    );
+    if (error || !row) {
+      await this.#flushAttachmentCleanup();
+      throw new RemoteDataError('寫入附件 metadata', error);
+    }
+
+    const attachment = eventAttachmentFromRow(row);
+    return this.#commit({
+      ...data,
+      eventAttachments: [...data.eventAttachments, attachment],
+    });
+  }
+
+  async deleteEventAttachment(id: string): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    if (!data.eventAttachments.some((attachment) => attachment.id === id)) return data;
+    const { data: deleted, error } = await requestRemote(
+      '刪除附件與登記清理',
+      this.client.rpc('delete_event_attachment_with_cleanup', { p_attachment_id: id }),
+    );
+    if (error) throw new RemoteDataError('刪除附件與登記清理', error);
+    if (!deleted) return data;
+    const next = this.#commit({
+      ...data,
+      eventAttachments: data.eventAttachments.filter((attachment) => attachment.id !== id),
+    });
+    await this.#flushAttachmentCleanup();
+    return next;
+  }
+
+  async createEventAttachmentUrl(id: string): Promise<string> {
+    const attachment = this.#requireSnapshot().eventAttachments.find((item) => item.id === id);
+    if (!attachment) throw new RemoteDataError('建立附件連結', '找不到附件 metadata');
+    const { data, error } = await requestRemote(
+      '建立附件連結',
+      this.client.storage
+        .from(EVENT_ATTACHMENT_BUCKET)
+        .createSignedUrl(attachment.objectPath, 60, { download: attachment.fileName }),
+    );
+    if (error || !data?.signedUrl) throw new RemoteDataError('建立附件連結', error);
+    return data.signedUrl;
   }
 
   async addTodo(input: NewTodoInput): Promise<DayPopUserData> {
@@ -338,6 +455,27 @@ export class SupabaseDayPopRepository implements DayPopRepository {
         .eq('owner_id', this.userId),
     );
     if (error) throw new RemoteDataError(`刪除 ${table}`, error);
+  }
+
+  /** Best-effort durable cleanup; failed paths remain queued for the next load. */
+  async #flushAttachmentCleanup(): Promise<boolean> {
+    const jobs = await this.client
+      .from('attachment_cleanup_jobs')
+      .select('id, object_path')
+      .eq('owner_id', this.userId);
+    if (jobs.error || !jobs.data || jobs.data.length === 0) return !jobs.error;
+
+    const removed = await this.client.storage
+      .from(EVENT_ATTACHMENT_BUCKET)
+      .remove(jobs.data.map((job) => job.object_path));
+    if (removed.error) return false;
+
+    const deleted = await this.client
+      .from('attachment_cleanup_jobs')
+      .delete()
+      .eq('owner_id', this.userId)
+      .in('id', jobs.data.map((job) => job.id));
+    return !deleted.error;
   }
 
   /** Validates the whole document before it becomes the snapshot the UI sees. */

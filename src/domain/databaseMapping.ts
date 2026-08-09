@@ -2,6 +2,7 @@ import type { Tables, TablesInsert } from '../lib/database.types';
 import type {
   Calendar,
   CalendarEvent,
+  EventAttachment,
   EventException,
   Sticker,
   TodoItem,
@@ -11,11 +12,42 @@ import {
   parseCalendar,
   parseCalendarEvent,
   parseDomainId,
+  parseEventAttachment,
   parseEventException,
   parseSticker,
   parseTodo,
   parseUserPreferences,
 } from './validation';
+
+export function eventAttachmentFromRow(row: Tables<'event_attachments'>): EventAttachment {
+  return parseEventAttachment({
+    id: row.id,
+    eventId: row.event_id,
+    objectPath: row.object_path,
+    fileName: row.file_name,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+}
+
+export function eventAttachmentToInsert(
+  attachment: EventAttachment,
+  ownerId: string,
+): TablesInsert<'event_attachments'> {
+  const valid = parseEventAttachment(attachment);
+  const validOwnerId = parseDomainId(ownerId, 'ownerId');
+  return {
+    id: valid.id,
+    owner_id: validOwnerId,
+    event_id: valid.eventId,
+    object_path: valid.objectPath,
+    file_name: valid.fileName,
+    mime_type: valid.mimeType,
+    size_bytes: valid.sizeBytes,
+  };
+}
 
 export function calendarFromRow(row: Tables<'calendars'>): Calendar {
   return parseCalendar({

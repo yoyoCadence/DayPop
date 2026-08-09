@@ -57,7 +57,13 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~10~~ | ~~DP-062 寫入順序保護~~ | 不使用 | 已完成；`DataProvider` 的 mutation 依 UI 呼叫順序序列化。 |
 | ~~11~~ | ~~DP-026 核心 CRUD 遠端持久化~~ | 需要 | 已完成；session-aware adapter、同帳號版本化快取、失敗保護與 rollback CRUD／RLS 均已驗證。 |
 | ~~12~~ | ~~DP-025 legacy 匯入~~ | 需要 | 已完成；`calpet.v2` validate／preview、原子 RPC、idempotent retry、失敗回復與 AI key 排除均已驗證。 |
-| **13** | **DP-028 附件 Storage** | **需要** | **下一項。**bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
+| ~~13~~ | ~~DP-028 附件 Storage~~ | 需要 | 已完成；private bucket、policy、簽名 URL、metadata 與 durable cleanup 均已驗證。 |
+| **14** | **DP-030 Playwright e2e** | **不使用** | **下一項。**先把登入、核心 CRUD、附件與手機／桌面流程變成可重複驗收。 |
+| 15 | DP-019 PWA 安裝圖示 | 不使用 | 補齊 Apple touch／PNG／maskable icon。 |
+| 16 | DP-065 release version／notes | 不使用 | 需要專案擁有者決定首個部署版本與公告。 |
+| 17 | DP-033 GitHub Pages staging | 不使用 | 驗證 base path、SPA／OAuth redirect、PWA scope、環境變數與 rollback。 |
+| 18 | DP-032 行動裝置 QA | 不使用 | 在 staging 驗證 iOS Safari、Android Chrome、桌面 Chromium 與無障礙。 |
+| 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。 |
 
 > DP-023 剩餘的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作。負責 DP-023 的 agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
 
@@ -67,7 +73,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
+- [ ] **DP-030 — 建立自動化測試金字塔：** unit 覆蓋日期／recurrence／migration／repository，component 覆蓋表單與 auth states，Playwright 覆蓋手機與桌面主要流程；這是 GitHub Pages staging 與「可開始日常使用」之前的下一個品質閘門。
 
 ## In Progress
 
@@ -82,9 +88,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。要決定的是：跨午夜行程要不要在隔天的格子也出現、週檢視要不要畫到 24:00 再於隔天欄續畫、衝突判定是否改用 instant 直接比較（順帶解決兩個不同時區的事件互比 wall clock 的問題）。決定前不要各檢視各改各的。
 ### Quality / release
 
-- [ ] **DP-030 — 建立自動化測試金字塔：** unit 覆蓋日期／recurrence／migration／repository，component 覆蓋表單與 auth states，Playwright 覆蓋手機與桌面主要流程。
 - [ ] **DP-032 — 行動裝置 QA 與無障礙：** 驗證 iOS Safari、Android Chrome、桌面 Chromium 的 safe area、觸控拖曳、鍵盤、focus、對比與 reduced motion。
-- [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。
+- [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。若選 GitHub Pages，另須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope。通過 DP-030／032 與登入、資料保存 smoke test、達到可供日常使用的明確驗收點時，agent 必須主動提醒專案擁有者，再由擁有者決定是否開始使用，不得只因靜態頁成功發布就宣稱 ready。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
 - [ ] **DP-019 — 補齊 PWA 安裝圖示：** 由現有識別產出並實機驗證 180×180 Apple touch icon、192×192／512×512 PNG 與適當 maskable icon；manifest／HTML 保留 SVG 作補充但不再把 SVG 當 Apple icon。
 - [ ] **DP-065 — release note 已落後整個日曆搬移：** `release-notes.json` 最後一次更新是 PR #2（`4634cf4`，v0.2.0「帳號與資料安全基礎」），`package.json` 也仍是 `0.2.0`。但 DP-050 之後的 DP-051／052／053／055／057／058／059／060／015／061／063 已經把整個日曆搬進 App。結果是設定分頁的「查看這個版本更新了什麼」只列得出五條登入相關項目，`version.json` 與 `sw.js` 的版本化 cache 名稱也停在 0.2.0 — 對使用者而言，更新公告描述的不是他手上的 App。**沒有一併處理是刻意的**：升版號是專案擁有者的發布決策（要一次發 0.3.0 還是拆成幾版、標題怎麼寫），而且會連帶重新產生 `version.json` 與 `sw.js`，屬於 DP-033／034 的發布流程而不是功能任務。需要決定：這幾段搬移合併成哪一個版本號、release note 怎麼寫、以及是否在選定 hosting（DP-033）之前就先升。注意 AGENTS.md 的規則 — 已正式部署版本的 release note 不可回寫修改；目前尚未選定 hosting，所以 0.2.0 還沒進入不可變狀態。
@@ -99,7 +104,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | 天氣 | DP-053 起在列表檢視保留版面位置但不顯示 | DP-054 |
 | ~~貼圖~~ | 已完成：DP-012 模型＋DP-055 UI | — |
 | 資料匯入匯出（JSON／ICS） | 尚未搬移 | DP-056 |
-| 附件 | 原稿的按鈕行為是假的 | DP-028 |
+| ~~附件~~ | 已完成：登入帳號使用 private Storage、metadata、短效 signed URL 與 durable cleanup；guest 明示不支援 | — |
 | 雲端「已同步」狀態 | 尚未搬移，接通前不得顯示 | DP-026 |
 | 瀏覽器通知 timer | 不視為可靠提醒 | DP-042 |
 | AI 助理 | 模擬且會把 key 存在前端 | DP-043 |
@@ -131,6 +136,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-028 — 實作附件 Storage：** `EventAttachment` 已納入 canonical domain／runtime validation／generated DB mapping，guest 與 account cache envelope 升至 schema v4，v3→v4 只補空附件陣列並保留既有資料。登入帳號的事件 sheet 現在可上傳、下載與刪除附件；只接受 9 種圖片／PDF／純文字／iCalendar MIME、單檔 1 byte–10 MiB，private object path 固定為 owner／event／attachment UUID 且不含檔名，下載只建立 60 秒 signed URL。第 12 檔 migration 建立 private bucket、Storage owner RLS、metadata constraints 與 `attachment_cleanup_jobs`；upload 先登記 queue、傳 binary，再由 SECURITY INVOKER RPC 原子 finalize metadata，附件／事件刪除則先原子 enqueue，再由 Storage API remove，失敗保留 durable retry。第一輪 rollback pgTAP 發現 `ON CONFLICT` 與 queue 可見性衝突，沒有回寫已套用歷史，而以第 13 檔追加修正。專案擁有者兩次以 CLI dry-run／push 套用；MCP 未下正式 DDL、未 remote reset、未查改正式使用者資料。正式 postflight 為 repo／remote 13 檔、10 張 public tables RLS 全開、36／36 rollback pgTAP、generated types 18,354 字元一致、security advisor 0，固定假帳號／metadata／Storage object 殘留皆為 0。本機 lint、typecheck、39 files／330 tests、build、check:build 全通過。下一項 DP-030 已移入 Next；DP-028 PR 必須由專案擁有者親自合併後才開始。
 
 - [x] **DP-025 — 建立 legacy localStorage migration：** `src/legacy` 只在偵測到原始 `calpet.v2` 時建立嚴格 import plan，先顯示日曆／行程／待辦／貼圖與 exception 筆數；event／todo／sticker 的舊 ID 全部改配 UUID，因此重複 ID 可安全拆開，會影響關聯判定的重複 calendar ID 則 fail closed。舊 `aiKey`、邀請人與附件都不進 payload，AI key 也不影響 SHA-256 retry fingerprint；設定頁明示延後欄位，登入前只預覽。Authenticated 匯入經單一 `import_legacy_daypop` RPC：鎖住自己的 profile、以既有 owner RLS 寫入 canonical rows、最後才寫 fingerprint／timestamp；同 fingerprint retry 回傳 `already_imported`，不同文件或任何中途 constraint 失敗都不留下半套資料。成功、失敗與重試都不修改或刪除原 `calpet.v2`，`CALPET_FIRED` 也保持原樣。第 9 檔建立一次性 marker／RPC；第 10 檔依 advisor 改為 `SECURITY INVOKER`，以 transaction-local `pg_temp` guard 阻擋直接偽造 marker；第 11 檔以追加 migration 修正已套用函式的 `completed_at` 名稱衝突，沒有回寫歷史。正式 CLI dry-run／push 後，遠端／repo 同為 11 檔、9 張 public table RLS 全開、generated types 16,881 字元逐字一致、security advisor 0；repo 同一份 24 項 rollback pgTAP 全通過，固定假帳號／public rows、pgTAP extension 與 temp guard 均確認不存在。本機 lint、typecheck、38 files／313 tests、build、check:build 全部通過。下一項 DP-028 已移入 Next，但必須等本 PR 由專案擁有者親自合併後才開始。
 

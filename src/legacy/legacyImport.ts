@@ -297,6 +297,7 @@ export function buildLegacyImportPlan(
     calendars: [...current.calendars, ...calendars],
     events: [...current.events, ...events],
     eventExceptions: [...current.eventExceptions, ...eventExceptions],
+    eventAttachments: current.eventAttachments,
     todos: [...current.todos, ...todos],
     stickers: [...current.stickers, ...stickers],
     preferences,

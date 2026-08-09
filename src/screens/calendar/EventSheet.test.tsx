@@ -73,7 +73,12 @@ function render(overrides: Partial<EventSheetProps> = {}) {
     onUpdateEvent: vi.fn(),
     onDeleteEvent: vi.fn(),
     onAddTodo: vi.fn(),
+    onUploadAttachment: vi.fn(),
+    onDeleteAttachment: vi.fn(),
+    onOpenAttachment: vi.fn(),
     ...overrides,
+    attachments: overrides.attachments ?? [],
+    attachmentsAvailable: overrides.attachmentsAvailable ?? false,
   };
   act(() => root.render(<EventSheet {...props} />));
   return props;
@@ -187,6 +192,91 @@ describe('EventSheet fields', () => {
     });
 
     expect((container.querySelector('.cal-title-input') as HTMLInputElement).value).toBe('既有會議');
+  });
+
+  it('shows the private attachment controls only for an existing signed-in event', () => {
+    render({
+      editing: timedEvent(),
+      attachmentsAvailable: true,
+      attachments: [
+        {
+          id: '44444444-4444-4444-8444-444444444445',
+          eventId: timedEvent().id,
+          objectPath: `owner/${timedEvent().id}/44444444-4444-4444-8444-444444444445`,
+          fileName: 'agenda.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1536,
+          createdAt: '2026-08-01T00:00:00.000Z',
+          updatedAt: '2026-08-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(container.querySelector('input[type="file"]')).not.toBeNull();
+    expect(container.textContent).toContain('agenda.pdf');
+    expect(container.textContent).toContain('2 KB');
+    expect(container.textContent).not.toContain('附件等 DP-028');
+  });
+
+  it('validates and uploads the file selected for an existing event', async () => {
+    const onUploadAttachment = vi.fn().mockResolvedValue(undefined);
+    render({
+      editing: timedEvent(),
+      attachmentsAvailable: true,
+      onUploadAttachment,
+    });
+    const input = container.querySelector('input[type=file]') as HTMLInputElement;
+    const file = new File(['agenda'], 'agenda.pdf', { type: 'application/pdf' });
+    Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    expect(onUploadAttachment).toHaveBeenCalledWith(timedEvent().id, file);
+  });
+
+  it('opens and deletes only the selected private attachment', async () => {
+    const attachment = {
+      id: '44444444-4444-4444-8444-444444444445',
+      eventId: timedEvent().id,
+      objectPath: `owner/${timedEvent().id}/44444444-4444-4444-8444-444444444445`,
+      fileName: 'agenda.pdf',
+      mimeType: 'application/pdf' as const,
+      sizeBytes: 1536,
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    };
+    const onOpenAttachment = vi.fn().mockResolvedValue('https://signed.example/agenda.pdf');
+    const onDeleteAttachment = vi.fn().mockResolvedValue(undefined);
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render({
+      editing: timedEvent(),
+      attachmentsAvailable: true,
+      attachments: [attachment],
+      onOpenAttachment,
+      onDeleteAttachment,
+    });
+    const buttons = [...container.querySelectorAll('.cal-attachment-list button')];
+
+    await act(async () => {
+      (buttons[0] as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      (buttons[1] as HTMLButtonElement).click();
+    });
+
+    expect(onOpenAttachment).toHaveBeenCalledWith(attachment.id);
+    expect(anchorClick).toHaveBeenCalledOnce();
+    expect(onDeleteAttachment).toHaveBeenCalledWith(attachment.id);
+    anchorClick.mockRestore();
+  });
+
+  it('explains that guest attachments require an account instead of faking success', () => {
+    render({ editing: timedEvent(), attachmentsAvailable: false });
+
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    expect(container.textContent).toContain('登入帳號後');
   });
 
   it('sends the chosen calendar when adding a todo', () => {

@@ -1,3 +1,5 @@
+import type { EventAttachmentMimeType } from './attachments';
+
 export type DateKey = string;
 export type IsoInstant = string;
 export type SharingScope = 'inherit' | 'private';
@@ -51,6 +53,17 @@ export interface TimedCalendarEvent extends CalendarEventBase {
 }
 
 export type CalendarEvent = AllDayCalendarEvent | TimedCalendarEvent;
+
+export interface EventAttachment {
+  id: string;
+  eventId: string;
+  objectPath: string;
+  fileName: string;
+  mimeType: EventAttachmentMimeType;
+  sizeBytes: number;
+  createdAt: IsoInstant;
+  updatedAt: IsoInstant;
+}
 
 export type EventOccurrence =
   | { kind: 'all-day'; date: DateKey }
@@ -116,6 +129,7 @@ export interface UserPreferences {
 export interface DayPopUserData {
   calendars: Calendar[];
   events: CalendarEvent[];
+  eventAttachments: EventAttachment[];
   eventExceptions: EventException[];
   todos: TodoItem[];
   stickers: Sticker[];
@@ -147,6 +161,7 @@ export function createEmptyUserData(options: EmptyUserDataOptions = {}): DayPopU
       },
     ],
     events: [],
+    eventAttachments: [],
     eventExceptions: [],
     todos: [],
     stickers: [],
@@ -154,7 +169,7 @@ export function createEmptyUserData(options: EmptyUserDataOptions = {}): DayPopU
       timezone: 'Asia/Taipei',
       weekStartsOn: 0,
       // New users start in the canonical 漫畫 light theme. Existing saved
-      // values are preserved by the v2 -> v3 local migration and DB migration.
+      // values are preserved by the additive local migration chain and DB migration.
       theme: 'light',
       themeId: 'manga',
       calendarGridMode: 'adaptive',

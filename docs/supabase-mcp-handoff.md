@@ -77,6 +77,15 @@
 - Codex sandbox 內 linked CLI 仍可能在 login role 遇到 Bun `TransportError`；專案擁有者 PowerShell 的 push 最後出現 Docker pg-delta catalog cache warning，不影響已顯示 `Finished supabase db push.` 的遠端成功。`supabase test db --linked` 仍不宣稱通過，因為該命令要求本機 Docker；repo SQL 改由 MCP rollback transaction 執行。
 - 下一項是需要 MCP 的 DP-028 Storage；必須等 DP-025 PR 由專案擁有者親自合併後，從最新 `main` 建立獨立分支並先做 read-only preflight。
 
+## 0.7 DP-028 完成後更新（2026-08-09）
+
+- 專案擁有者已親自合併 DP-025；DP-028 從最新 `main` 建立 `feat/dp-028-attachment-storage`。開工前 read-only MCP 確認遠端／repo 同為 11 檔、9 張 public tables RLS 全開、legacy RPC 權限與 advisor 0 均無 drift。
+- 第 12 檔 `20260809060200_add_attachment_storage.sql` 由專案擁有者以 CLI dry-run／push 套用，建立 private `event-attachments` bucket（10 MiB、9 種 MIME）、Storage owner policies、metadata constraints、`attachment_cleanup_jobs` 與三個 SECURITY INVOKER RPC。MCP 沒有直接下正式 DDL、沒有 remote reset，也沒有查改正式使用者資料。
+- Storage 與 Postgres 無法共享 transaction，因此 upload 先建立 cleanup job、傳 binary，再原子 finalize metadata；附件／事件刪除先原子 enqueue 並移除 metadata，再由 Storage API remove，失敗保留 queue 給下次 load retry。Object path 不含檔名，private 下載 URL 只存活 60 秒；guest 不提供附件 capability。
+- 第一輪 repo rollback pgTAP 發現 delete RPC 的 `ON CONFLICT DO NOTHING` 會觸發 queue row 的 RLS visibility，導致 owner delete 被拒絕。因第 12 檔已套用，沒有回寫歷史；第 13 檔 `20260809085514_fix_attachment_cleanup_enqueue.sql` 由專案擁有者再次 dry-run／push，以追加函式修正 enqueue。
+- 正式 postflight 為 repo／remote 正好 13 檔、10 張 public tables RLS 全開、security advisor 0、generated TypeScript types 18,354 字元一致；repo `attachment_storage.test.sql` 36／36 rollback pgTAP 通過，固定假 auth users、metadata 與 Storage objects 殘留均為 0。本機 39 files／330 tests 與五項品質命令全通過。
+- DP-028 後沒有立即需要 Supabase MCP 的任務。下一項是**不使用 MCP**的 DP-030 Playwright e2e；接著依 `tasks.md` 完成 DP-019、DP-065、DP-033、DP-032、DP-034 的 GitHub Pages／日常使用 release runway。DP-023 剩餘 Google provider 與 redirect allowlist 是專案擁有者人工設定，不是 MCP schema 工作。未來若進入 Edge Function（DP-043）或家庭群組 schema／RLS（DP-047／048），agent 才應再次提醒專案擁有者切回可使用 MCP 的階段。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
@@ -148,12 +157,12 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 
 ---
 
-## 5. 下一段的第一步
+## 5. DP-028 後的下一段
 
-1. 不得在 DP-025 PR 合併前開始 DP-028；專案擁有者親自合併後，從最新 `main` 建立 DP-028 的獨立分支。
-2. 依 AGENTS.md §8 把 DP-028 從 `Next` 移到 `In Progress`。
-3. 開工前先用 MCP 做 read-only preflight：repo／remote 應同為 11 檔、9 張 public tables RLS 全開、legacy RPC 為 SECURITY INVOKER、advisor 仍為 0；有 drift 就停止。
-4. DP-028 使用獨立中文 PR，並明寫 `--base main`；bucket、Storage policies、upload／delete、大小與 MIME 限制、signed URL、event attachment metadata 與失敗清理必須一起驗證。不得改用 public bucket，不得把 service role 放到前端，也不得回改 DP-025 migrations。
+1. DP-028 PR 必須由專案擁有者親自合併；合併前不得開始 DP-030。
+2. 合併後從最新 `main` 建立 DP-030 獨立分支，全程不使用 Supabase MCP；先建立可重複的 mobile／desktop Playwright e2e，涵蓋登入狀態、核心 CRUD、附件 UI 與資料保存。
+3. 依 `tasks.md` 的 release runway 接續 DP-019、DP-065、DP-033、DP-032、DP-034。選 GitHub Pages 時必須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope；達到可日常使用驗收點時主動提醒專案擁有者。
+4. 需要設定 Google provider 或 production redirect allowlist 時提醒專案擁有者人工處理，不要求或輸出 secret。只有未來進入 Edge Function 或家庭群組 schema／RLS 時，才再次切回 MCP 階段。
 
 ## 6. 不需要 MCP 也能做的事
 

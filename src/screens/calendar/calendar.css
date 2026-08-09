@@ -1230,6 +1230,92 @@
   min-width: 0;
 }
 
+.cal-attachments {
+  display: grid;
+  gap: 7px;
+  margin-top: 11px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 11px;
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+}
+
+.cal-attachments p,
+.cal-attachments small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.cal-attachment-picker {
+  width: fit-content;
+  border: var(--bd) solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 7px 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cal-attachment-picker[aria-disabled='true'] {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.cal-attachment-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cal-attachment-list {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cal-attachment-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-attachment-list span {
+  min-width: 0;
+}
+
+.cal-attachment-list strong,
+.cal-attachment-list span small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-attachment-list strong {
+  color: var(--fg);
+  font-size: 12px;
+}
+
+.cal-attachment-list button {
+  border: 0;
+  background: none;
+  padding: 4px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .cal-title-input {
   width: 100%;
   border: var(--bd) solid var(--border);

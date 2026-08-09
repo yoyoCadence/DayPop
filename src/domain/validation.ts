@@ -2,11 +2,17 @@ import type {
   Calendar,
   CalendarEvent,
   DayPopUserData,
+  EventAttachment,
   EventException,
   Sticker,
   TodoItem,
   UserPreferences,
 } from './types';
+import {
+  MAX_EVENT_ATTACHMENT_BYTES,
+  eventAttachmentObjectPath,
+  isEventAttachmentMimeType,
+} from './attachments';
 import { isRecurrenceRule } from './recurrence';
 
 export const MAX_REMINDER_COUNT = 10;
@@ -59,6 +65,12 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
 
   const calendars = validateArray(value.calendars, 'calendars', validateCalendar, issues);
   const events = validateArray(value.events, 'events', validateEvent, issues);
+  const attachments = validateArray(
+    value.eventAttachments,
+    'eventAttachments',
+    validateEventAttachment,
+    issues,
+  );
   const exceptions = validateArray(
     value.eventExceptions,
     'eventExceptions',
@@ -69,12 +81,21 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
   const stickers = validateArray(value.stickers, 'stickers', validateSticker, issues);
   const preferences = validatePreferences(value.preferences, 'preferences', issues);
 
-  if (!calendars || !events || !exceptions || !todos || !stickers || !preferences) {
+  if (
+    !calendars ||
+    !events ||
+    !attachments ||
+    !exceptions ||
+    !todos ||
+    !stickers ||
+    !preferences
+  ) {
     return { success: false, issues };
   }
 
   validateUniqueIds(calendars, 'calendars', issues);
   validateUniqueIds(events, 'events', issues);
+  validateUniqueIds(attachments, 'eventAttachments', issues);
   validateUniqueIds(exceptions, 'eventExceptions', issues);
   validateUniqueIds(todos, 'todos', issues);
   validateUniqueIds(stickers, 'stickers', issues);
@@ -91,6 +112,16 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
   }
 
   const eventsById = new Map(events.map((event) => [event.id, event]));
+  const attachmentPaths = new Set<string>();
+  for (const [index, attachment] of attachments.entries()) {
+    if (!eventsById.has(attachment.eventId)) {
+      issues.push(`eventAttachments[${index}].eventId references a missing event`);
+    }
+    if (attachmentPaths.has(attachment.objectPath)) {
+      issues.push(`eventAttachments[${index}].objectPath must be unique`);
+    }
+    attachmentPaths.add(attachment.objectPath);
+  }
   for (const [index, exception] of exceptions.entries()) {
     const source = eventsById.get(exception.eventId);
     if (!source) {
@@ -130,7 +161,15 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
   if (issues.length > 0) return { success: false, issues };
   return {
     success: true,
-    data: { calendars, events, eventExceptions: exceptions, todos, stickers, preferences },
+    data: {
+      calendars,
+      events,
+      eventAttachments: attachments,
+      eventExceptions: exceptions,
+      todos,
+      stickers,
+      preferences,
+    },
   };
 }
 
@@ -146,6 +185,10 @@ export function parseCalendar(value: unknown): Calendar {
 
 export function parseCalendarEvent(value: unknown): CalendarEvent {
   return parseEntity(value, 'event', validateEvent);
+}
+
+export function parseEventAttachment(value: unknown): EventAttachment {
+  return parseEntity(value, 'eventAttachment', validateEventAttachment);
 }
 
 export function parseEventException(value: unknown): EventException {
@@ -231,6 +274,52 @@ function validateEvent(value: unknown, path: string, issues: string[]): Calendar
     valid = false;
   }
   return valid ? (value as unknown as CalendarEvent) : null;
+}
+
+function validateEventAttachment(
+  value: unknown,
+  path: string,
+  issues: string[],
+): EventAttachment | null {
+  if (!isRecord(value)) return invalidObject(path, issues);
+  let valid =
+    validateId(value.id, `${path}.id`, issues) &&
+    validateId(value.eventId, `${path}.eventId`, issues) &&
+    validateTrimmedString(value.objectPath, `${path}.objectPath`, issues) &&
+    validateTrimmedString(value.fileName, `${path}.fileName`, issues) &&
+    validateInstant(value.createdAt, `${path}.createdAt`, issues) &&
+    validateInstant(value.updatedAt, `${path}.updatedAt`, issues);
+
+  if (typeof value.fileName === 'string' && value.fileName.length > 255) {
+    issues.push(`${path}.fileName must contain at most 255 characters`);
+    valid = false;
+  }
+  if (!isEventAttachmentMimeType(value.mimeType)) {
+    issues.push(`${path}.mimeType is not supported`);
+    valid = false;
+  }
+  if (
+    !Number.isInteger(value.sizeBytes) ||
+    Number(value.sizeBytes) < 1 ||
+    Number(value.sizeBytes) > MAX_EVENT_ATTACHMENT_BYTES
+  ) {
+    issues.push(`${path}.sizeBytes must be between 1 and ${MAX_EVENT_ATTACHMENT_BYTES}`);
+    valid = false;
+  }
+  if (
+    typeof value.objectPath === 'string' &&
+    typeof value.eventId === 'string' &&
+    typeof value.id === 'string' &&
+    (() => {
+      const [ownerId] = value.objectPath.split('/');
+      return !isUuid(ownerId) ||
+        value.objectPath !== eventAttachmentObjectPath(ownerId, value.eventId, value.id);
+    })()
+  ) {
+    issues.push(`${path}.objectPath must end with the event and attachment ids`);
+    valid = false;
+  }
+  return valid ? (value as unknown as EventAttachment) : null;
 }
 
 function validateEventException(
@@ -384,14 +473,18 @@ function validateUniqueIds(items: Array<{ id: string }>, path: string, issues: s
 }
 
 function validateId(value: unknown, path: string, issues: string[]): value is string {
-  if (
-    typeof value === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
-  ) {
+  if (isUuid(value)) {
     return true;
   }
   issues.push(`${path} must be a UUID`);
   return false;
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
 }
 
 function validateNullableId(value: unknown, path: string, issues: string[]): boolean {

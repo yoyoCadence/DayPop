@@ -77,6 +77,15 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - 原始 `calpet.v2` 在成功、失敗與 retry 後都不修改或刪除，`CALPET_FIRED` 也不碰。這是刻意的可回復策略；日後若要清理，只能另立有明確備份／確認 UX 的任務。附件 upload／metadata／signed URL 仍屬 DP-028，不能由 legacy import 偷帶。
 - 第 9 檔先建立 marker／RPC；套用後 advisor 新增對 exposed SECURITY DEFINER 的警告，因此第 10 檔以追加 migration 改成 invoker＋guard，沒有回寫已套用歷史；第 11 檔同樣以追加 migration 修正 pgTAP 發現的 PL/pgSQL `completed_at` 名稱衝突。最終遠端／repo 11 檔一致，24／24 rollback pgTAP、generated types 與 security advisor 0 均通過。
 
+### 實作決策（DP-028）：附件 binary 與 metadata 分離，刪除採 durable compensation
+
+- Canonical domain 只保存 `event_attachments` metadata；binary 固定放在 private `event-attachments` bucket。object path 為 `<owner uuid>/<event uuid>/<attachment uuid>`，不含原始檔名，避免路徑注入、名稱碰撞與檔名外洩。檔名只留在 owner-only metadata 與短效下載回應。
+- 上傳只接受明列的圖片、PDF、純文字與 iCalendar MIME，單檔 1 byte–10 MiB；browser 先驗證，bucket 與資料表 constraints 再各自強制一次。SVG、HTML、script 與未辨識 MIME 不接受。
+- Storage 與 Postgres 無法共享同一交易，因此每次上傳先建立 `attachment_cleanup_jobs`，再傳 binary，最後由 `SECURITY INVOKER` RPC 在單一 DB transaction 內「消耗 cleanup job＋寫入 metadata」。metadata 驗證或 RLS 失敗時 queue deletion 會回滾，binary 仍可在下次連線清理。
+- 刪除附件或事件也先由 `SECURITY INVOKER` RPC 在同一 DB transaction 登記 object path 並刪除 metadata／event，client 成功刪除 Storage object 後才刪 queue row。Storage DELETE policy 必須看得到 orphan cleanup job；metadata 尚存時不可直接刪 object，避免留下指向不存在 binary 的 live row。
+- private object 的 SELECT policy 同時要求 owner path，以及同 owner metadata 或 orphan cleanup job：前者供 signed URL 下載，後者讓 Storage API 的 upload response／remove 在補償階段通過。INSERT 另要求 matching cleanup job，DELETE 則只接受 matching cleanup job；前端只建立 60 秒 signed URL，domain／cache 不保存 URL。guest adapter 不提供附件 capability，也不把 binary 塞進 localStorage。
+- 第一檔套用後，rollback pgTAP 發現 delete RPC 的 `INSERT ... ON CONFLICT DO NOTHING` 會在 RLS 下要求看見仍被 live metadata 隱藏的 queue row，導致 owner delete 被拒絕。已套用 migration 不回寫；第 13 檔 `20260809085514_fix_attachment_cleanup_enqueue.sql` 以追加 `CREATE OR REPLACE FUNCTION` 移除不必要的 conflict 分支。成功 finalize 會原子消耗 staging job，delete retry 又已無 metadata 可 enqueue，因此不需要 conflict handling。
+
 ## 3. 偏好設定語意
 
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。

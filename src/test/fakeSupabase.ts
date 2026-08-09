@@ -23,6 +23,7 @@ export class FakeSupabase {
   readonly rejections = new Map<string, string>();
   /** Every write the adapter attempted, for asserting what reached the wire. */
   readonly writes: { table: string; row: FakeRow }[] = [];
+  readonly objects = new Map<string, Blob>();
   /** Server-controlled timestamp handed to inserted rows. */
   serverTime = '2026-08-04T00:00:00.000Z';
 
@@ -38,6 +39,90 @@ export class FakeSupabase {
     return new FakeQuery(this, table);
   }
 
+  readonly storage = {
+    from: (bucket: string) => new FakeStorageBucket(this, bucket),
+  };
+
+  async rpc(name: string, args: Record<string, unknown>): Promise<QueryResult> {
+    const failure = this.failures.get(`rpc:${name}`);
+    if (failure) return { data: null, error: { message: failure } };
+    if (name === 'finalize_event_attachment_upload') {
+      const metadataFailure = this.failures.get('event_attachments');
+      if (metadataFailure) return { data: null, error: { message: metadataFailure } };
+      const jobs = this.rows('attachment_cleanup_jobs');
+      const ownerId = typeof args.p_object_path === 'string'
+        ? args.p_object_path.split('/')[0]
+        : undefined;
+      const job = jobs.find(
+        (row) => row.owner_id === ownerId && row.object_path === args.p_object_path,
+      );
+      if (!job) return { data: null, error: { message: 'attachment cleanup job is missing' } };
+      const row: FakeRow = {
+        id: args.p_id,
+        owner_id: job.owner_id,
+        event_id: args.p_event_id,
+        object_path: args.p_object_path,
+        file_name: args.p_file_name,
+        mime_type: args.p_mime_type,
+        size_bytes: args.p_size_bytes,
+        created_at: this.serverTime,
+        updated_at: this.serverTime,
+      };
+      this.tables.set(
+        'attachment_cleanup_jobs',
+        jobs.filter((item) => item !== job),
+      );
+      this.tables.set('event_attachments', [...this.rows('event_attachments'), row]);
+      this.writes.push({ table: 'event_attachments', row });
+      return { data: row, error: null };
+    }
+    if (name === 'delete_event_attachment_with_cleanup') {
+      const attachments = this.rows('event_attachments');
+      const target = attachments.find((row) => row.id === args.p_attachment_id);
+      if (!target) return { data: false, error: null };
+      this.#queueObject(target);
+      this.tables.set(
+        'event_attachments',
+        attachments.filter((row) => row.id !== args.p_attachment_id),
+      );
+      return { data: true, error: null };
+    }
+    if (name === 'delete_event_with_attachment_cleanup') {
+      const events = this.rows('events');
+      const target = events.find((row) => row.id === args.p_event_id);
+      if (!target) return { data: false, error: null };
+      const attachments = this.rows('event_attachments');
+      attachments
+        .filter((row) => row.event_id === args.p_event_id)
+        .forEach((row) => this.#queueObject(row));
+      this.tables.set(
+        'event_attachments',
+        attachments.filter((row) => row.event_id !== args.p_event_id),
+      );
+      this.tables.set(
+        'events',
+        events.filter((row) => row.id !== args.p_event_id),
+      );
+      return { data: true, error: null };
+    }
+    return { data: null, error: { message: `unsupported rpc ${name}` } };
+  }
+
+  #queueObject(row: FakeRow) {
+    const jobs = this.rows('attachment_cleanup_jobs');
+    if (jobs.some((job) => job.object_path === row.object_path)) return;
+    this.tables.set('attachment_cleanup_jobs', [
+      ...jobs,
+      {
+        id: crypto.randomUUID(),
+        owner_id: row.owner_id,
+        bucket_id: 'event-attachments',
+        object_path: row.object_path,
+        created_at: this.serverTime,
+      },
+    ]);
+  }
+
   /** The adapter only ever sees the `SupabaseClient` surface it is typed for. */
   asClient(): SupabaseClient<Database> {
     return this as unknown as SupabaseClient<Database>;
@@ -48,7 +133,8 @@ type QueryResult = { data: unknown; error: { message: string } | null };
 
 class FakeQuery implements PromiseLike<QueryResult> {
   #filters: [string, unknown][] = [];
-  #mode: 'select' | 'upsert' | 'delete' | 'update' = 'select';
+  #inFilters: [string, unknown[]][] = [];
+  #mode: 'select' | 'insert' | 'upsert' | 'delete' | 'update' = 'select';
   #payload: FakeRow | null = null;
   #single = false;
 
@@ -63,6 +149,17 @@ class FakeQuery implements PromiseLike<QueryResult> {
 
   eq(column: string, value: unknown) {
     this.#filters.push([column, value]);
+    return this;
+  }
+
+  in(column: string, values: unknown[]) {
+    this.#inFilters.push([column, values]);
+    return this;
+  }
+
+  insert(row: FakeRow) {
+    this.#mode = 'insert';
+    this.#payload = row;
     return this;
   }
 
@@ -110,7 +207,7 @@ class FakeQuery implements PromiseLike<QueryResult> {
     if (failure) return { data: null, error: { message: failure } };
 
     const rows = this.db.rows(this.table);
-    if (this.#mode === 'upsert') {
+    if (this.#mode === 'insert' || this.#mode === 'upsert') {
       const row = this.#store(rows);
       return { data: row, error: null };
     }
@@ -161,6 +258,40 @@ class FakeQuery implements PromiseLike<QueryResult> {
   }
 
   #matches(row: FakeRow): boolean {
-    return this.#filters.every(([column, value]) => row[column] === value);
+    return (
+      this.#filters.every(([column, value]) => row[column] === value) &&
+      this.#inFilters.every(([column, values]) => values.includes(row[column]))
+    );
+  }
+}
+
+class FakeStorageBucket {
+  constructor(
+    private readonly db: FakeSupabase,
+    private readonly bucket: string,
+  ) {}
+
+  async upload(path: string, file: Blob) {
+    const failure = this.db.failures.get('storage:upload');
+    if (failure) return { data: null, error: { message: failure } };
+    const key = `${this.bucket}/${path}`;
+    if (this.db.objects.has(key)) {
+      return { data: null, error: { message: 'object already exists' } };
+    }
+    this.db.objects.set(key, file);
+    return { data: { path }, error: null };
+  }
+
+  async remove(paths: string[]) {
+    const failure = this.db.failures.get('storage:remove');
+    if (failure) return { data: null, error: { message: failure } };
+    paths.forEach((path) => this.db.objects.delete(`${this.bucket}/${path}`));
+    return { data: paths.map((name) => ({ name })), error: null };
+  }
+
+  async createSignedUrl(path: string) {
+    const failure = this.db.failures.get('storage:signed-url');
+    if (failure) return { data: null, error: { message: failure } };
+    return { data: { signedUrl: `https://storage.test/${this.bucket}/${path}?signed=1` }, error: null };
   }
 }
