@@ -58,8 +58,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~11~~ | ~~DP-026 核心 CRUD 遠端持久化~~ | 需要 | 已完成；session-aware adapter、同帳號版本化快取、失敗保護與 rollback CRUD／RLS 均已驗證。 |
 | ~~12~~ | ~~DP-025 legacy 匯入~~ | 需要 | 已完成；`calpet.v2` validate／preview、原子 RPC、idempotent retry、失敗回復與 AI key 排除均已驗證。 |
 | ~~13~~ | ~~DP-028 附件 Storage~~ | 需要 | 已完成；private bucket、policy、簽名 URL、metadata 與 durable cleanup 均已驗證。 |
-| **14** | **DP-030 Playwright e2e** | **不使用** | **下一項。**先把登入、核心 CRUD、附件與手機／桌面流程變成可重複驗收。 |
-| 15 | DP-019 PWA 安裝圖示 | 不使用 | 補齊 Apple touch／PNG／maskable icon。 |
+| ~~14~~ | ~~DP-030 Playwright e2e~~ | 不使用 | 已完成。真實 guest 入口與 dev-only authenticated harness 已覆蓋手機／桌面核心流程，CI 不使用 secret。 |
+| **15** | **DP-019 PWA 安裝圖示** | **不使用** | **下一項。**補齊 Apple touch／PNG／maskable icon。 |
 | 16 | DP-065 release version／notes | 不使用 | 需要專案擁有者決定首個部署版本與公告。 |
 | 17 | DP-033 GitHub Pages staging | 不使用 | 驗證 base path、SPA／OAuth redirect、PWA scope、環境變數與 rollback。 |
 | 18 | DP-032 行動裝置 QA | 不使用 | 在 staging 驗證 iOS Safari、Android Chrome、桌面 Chromium 與無障礙。 |
@@ -71,9 +71,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-030 — 建立自動化測試金字塔：** unit 覆蓋日期／recurrence／migration／repository，component 覆蓋表單與 auth states，Playwright 覆蓋手機與桌面主要流程；這是 GitHub Pages staging 與「可開始日常使用」之前的下一個品質閘門。
+- [ ] **DP-019 — 補齊 PWA 安裝圖示：** 由現有識別產出並實機驗證 180×180 Apple touch icon、192×192／512×512 PNG 與適當 maskable icon；manifest／HTML 保留 SVG 作補充但不再把 SVG 當 Apple icon。
 
 ## In Progress
 
@@ -91,7 +91,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-032 — 行動裝置 QA 與無障礙：** 驗證 iOS Safari、Android Chrome、桌面 Chromium 的 safe area、觸控拖曳、鍵盤、focus、對比與 reduced motion。
 - [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。若選 GitHub Pages，另須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope。通過 DP-030／032 與登入、資料保存 smoke test、達到可供日常使用的明確驗收點時，agent 必須主動提醒專案擁有者，再由擁有者決定是否開始使用，不得只因靜態頁成功發布就宣稱 ready。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
-- [ ] **DP-019 — 補齊 PWA 安裝圖示：** 由現有識別產出並實機驗證 180×180 Apple touch icon、192×192／512×512 PNG 與適當 maskable icon；manifest／HTML 保留 SVG 作補充但不再把 SVG 當 Apple icon。
 - [ ] **DP-065 — release note 已落後整個日曆搬移：** `release-notes.json` 最後一次更新是 PR #2（`4634cf4`，v0.2.0「帳號與資料安全基礎」），`package.json` 也仍是 `0.2.0`。但 DP-050 之後的 DP-051／052／053／055／057／058／059／060／015／061／063 已經把整個日曆搬進 App。結果是設定分頁的「查看這個版本更新了什麼」只列得出五條登入相關項目，`version.json` 與 `sw.js` 的版本化 cache 名稱也停在 0.2.0 — 對使用者而言，更新公告描述的不是他手上的 App。**沒有一併處理是刻意的**：升版號是專案擁有者的發布決策（要一次發 0.3.0 還是拆成幾版、標題怎麼寫），而且會連帶重新產生 `version.json` 與 `sw.js`，屬於 DP-033／034 的發布流程而不是功能任務。需要決定：這幾段搬移合併成哪一個版本號、release note 怎麼寫、以及是否在選定 hosting（DP-033）之前就先升。注意 AGENTS.md 的規則 — 已正式部署版本的 release note 不可回寫修改；目前尚未選定 hosting，所以 0.2.0 還沒進入不可變狀態。
 - [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
@@ -129,13 +128,15 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
-- CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci` 與四項驗證。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
-- `package.json` 已提供 lint、typecheck、unit、build、preview 與 release asset scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；production dependency audit 為 0 個已知漏洞。Playwright e2e 套件仍等對應任務選定，避免先加入未使用依賴。
+- CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
+- `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-030 — 建立可重複的 Playwright e2e 品質閘門：** 新增 mobile Chromium（390×844）與 desktop Chromium（1280×900）兩個專案，共用 Vite dev server 並固定 `zh-TW`／`Asia/Taipei`。真實 `/` 入口覆蓋 guest event／todo 建立、修改、重新載入保存與刪除；dev-only `e2e/auth.html` 掛載真實 App、`SessionDataProvider`、authenticated repository 與既有 `FakeSupabase`，覆蓋登入、帳號同步、event、附件 upload／60 秒 signed URL／delete、登出隔離，沒有真實帳號、secret、production data 或 Supabase MCP。responsive spec 驗證手機不渲染假外框、桌面維持 404×824 canonical frame、設定頁與 sheet 不水平溢出；所有案例同時攔截 console error／warning 與 page error。`.github/workflows/ci.yml` 新增無 secret 的獨立 e2e job，失敗才保存 HTML report／trace／screenshot／video；production build 不包含 dev-only harness。Playwright 3 specs × 2 projects 全通過，lint、typecheck、330 unit tests、build、check:build 與 dependency audit 全通過。真實 Supabase provider／OAuth、iOS Safari／Android Chrome 與 staging smoke 仍分別由 DP-023／033／032 驗收；下一項 DP-019 已移入 Next。
 
 - [x] **DP-028 — 實作附件 Storage：** `EventAttachment` 已納入 canonical domain／runtime validation／generated DB mapping，guest 與 account cache envelope 升至 schema v4，v3→v4 只補空附件陣列並保留既有資料。登入帳號的事件 sheet 現在可上傳、下載與刪除附件；只接受 9 種圖片／PDF／純文字／iCalendar MIME、單檔 1 byte–10 MiB，private object path 固定為 owner／event／attachment UUID 且不含檔名，下載只建立 60 秒 signed URL。第 12 檔 migration 建立 private bucket、Storage owner RLS、metadata constraints 與 `attachment_cleanup_jobs`；upload 先登記 queue、傳 binary，再由 SECURITY INVOKER RPC 原子 finalize metadata，附件／事件刪除則先原子 enqueue，再由 Storage API remove，失敗保留 durable retry。第一輪 rollback pgTAP 發現 `ON CONFLICT` 與 queue 可見性衝突，沒有回寫已套用歷史，而以第 13 檔追加修正。專案擁有者兩次以 CLI dry-run／push 套用；MCP 未下正式 DDL、未 remote reset、未查改正式使用者資料。正式 postflight 為 repo／remote 13 檔、10 張 public tables RLS 全開、36／36 rollback pgTAP、generated types 18,354 字元一致、security advisor 0，固定假帳號／metadata／Storage object 殘留皆為 0。本機 lint、typecheck、39 files／330 tests、build、check:build 全通過。下一項 DP-030 已移入 Next；DP-028 PR 必須由專案擁有者親自合併後才開始。
 
