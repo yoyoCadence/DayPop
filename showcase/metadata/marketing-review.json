@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "strongest_selling_points": [
+    {"feature_id": "feature-core-calendar", "user_value": "用月、週、日與綜覽切換生活尺度", "visual_proof": "月格、週時間格、日詳情與綜覽都有成熟且互補的真實畫面"},
+    {"feature_id": "feature-quick-add", "user_value": "降低建立行程時反覆切換欄位的負擔", "visual_proof": "自然語句解析後的事件確認表單"},
+    {"feature_id": "feature-themes", "user_value": "讓高頻日曆工具符合個人視覺偏好", "visual_proof": "設定頁同時呈現六套主題與三種模式"}
+  ],
+  "strongest_visual_proof": ["有真實行程密度的月格", "七欄週檢視的彩色事件區塊", "六套主題卡片"],
+  "weakest_visual_areas": ["設定頁下半部仍包含工程骨架文案", "帳號保存與資料安全是重要能力，但難在一張商店圖中誠實視覺化"],
+  "strategically_important_features_needing_non_screen_proof": ["版本化本機資料 fail-closed", "owner-only RLS", "附件 cleanup queue"],
+  "confusing_or_buried_differentiators": ["快速新增是 deterministic parser 且一定先確認，容易被誤讀為 AI 自動建立", "遊客資料與帳號資料是刻意隔離的兩條保存路徑"],
+  "missing_or_weak_demo_states": ["repository 沒有可長期重現的 showcase fixture；本次以 task-scoped synthetic fixture 擷取後清理"],
+  "low_value_screens_that_should_not_lead": ["尚未完成的設定骨架", "登入 provider 未完成的狀態"],
+  "recommended_story": "先以具有品牌辨識度的月格承諾『把每天排得剛剛好』，再用快速新增與週拖曳證明效率，以日詳情和綜覽擴大價值，最後用六套主題收束個人化。",
+  "recommended_assets": [
+    {"role": "hero", "reason": "月格最能在三秒內同時說明產品類別、品牌與資料密度"},
+    {"role": "feature", "reason": "快速新增是最短、最具差異化的輸入流程"},
+    {"role": "feature", "reason": "週檢視以時間格直接證明可調整的生活節奏"},
+    {"role": "feature", "reason": "日詳情把三種資料收在單一視覺證據中"},
+    {"role": "feature", "reason": "綜覽補足長時間尺度的回顧"},
+    {"role": "feature", "reason": "主題畫面適合作為有記憶點的 campaign 結尾"}
+  ],
+  "claims_requiring_cautious_wording": ["PWA 尚未完成正式 hosting 與安裝圖示驗收", "帳號保存不等於即時跨裝置同步", "快速新增不是 AI"],
+  "product_improvement_opportunities": ["把未完成設定區塊的 DP 編號改為一般使用者可理解的中性狀態", "建立穩定且無敏感資料的 showcase seed", "完成 DP-019 與 release runway 後再製作正式下載／使用 CTA"]
+}

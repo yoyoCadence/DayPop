@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "project_name": "日蹦 DayPop",
+  "project_version": "0.2.0",
+  "generated_at": "2026-08-09T22:48:32+08:00",
+  "language": "zh-TW",
+  "platform": ["app-store-style", "portfolio", "github"],
+  "asset_count": 6,
+  "art_direction": {
+    "id": "manga-day-grid-v1",
+    "name": "日常漫畫分鏡",
+    "summary": "把日曆格線、漫畫網點與 DayPop 的朱紅／亮黃視覺組成一套活潑但可讀的產品展示系統。",
+    "path": "metadata/art-direction.json"
+  },
+  "visual_signature": {
+    "dominant_mood": "活潑、俐落且帶有日常手感",
+    "composition_language": "漫畫分鏡式編排，讓每張畫面只說一件事",
+    "color_character": "暖白紙張、黑色墨線、朱紅與亮黃主色，少量鈷藍平衡",
+    "graphic_motif": "網點、放射線、膠帶與日曆格線",
+    "typography_character": "粗黑繁體中文標題搭配精簡產品說明",
+    "device_usage": "以真實手機 UI 截圖置入可控的平面框架，不捏造裝置或介面",
+    "generation_style": "真實 UI、可重現排版與單一生成式漫畫背景的混合製作"
+  },
+  "brand_basis": {
+    "repository_evidence": [
+      "src/theme/themes.ts",
+      "src/screens/calendar/calendar.css",
+      "public/icon.svg",
+      "docs/claude-design-source-of-truth.md"
+    ],
+    "product_traits": ["日常陪伴", "快速輸入", "可視化節奏", "個人化主題"],
+    "user_constraints": ["繁體中文", "mobile-first", "不可暗示已上架 App Store"],
+    "portfolio_contrast": ["避免玻璃擬態", "避免通用漸層科技背景", "避免生成式假 UI"]
+  },
+  "render_modes": ["HYBRID", "SCREENSHOT-LED", "DETERMINISTIC"],
+  "capture_mode": "live",
+  "capture_provenance": {
+    "source_revision": "773f01b64510ead2d4248f4c9b42bcede5173460",
+    "demo_state": {
+      "source": "task-scoped synthetic schema-v4 browser fixture",
+      "environment": "isolated_local",
+      "production_data_used": false,
+      "cleanup_status": "complete"
+    },
+    "sources": [
+      {"id": "capture-month", "kind": "live", "screen": "月檢視", "retention": "temporary_not_packaged", "privacy_status": "passed"},
+      {"id": "capture-quick-add", "kind": "live", "screen": "快速新增確認表單", "retention": "temporary_not_packaged", "privacy_status": "passed"},
+      {"id": "capture-week", "kind": "live", "screen": "週檢視", "retention": "temporary_not_packaged", "privacy_status": "passed"},
+      {"id": "capture-day-detail", "kind": "live", "screen": "日詳情", "retention": "temporary_not_packaged", "privacy_status": "passed"},
+      {"id": "capture-overview", "kind": "live", "screen": "月綜覽", "retention": "temporary_not_packaged", "privacy_status": "passed"},
+      {"id": "capture-themes", "kind": "live", "screen": "外觀主題設定", "retention": "temporary_not_packaged", "privacy_status": "passed"}
+    ],
+    "limitations": [
+      "畫面使用隔離的合成行程、待辦與貼圖資料，不代表任何正式帳號。",
+      "App Store 風格只描述展示尺寸與構圖，不表示產品已提交或上架。",
+      "Google OAuth、正式 hosting、多裝置即時同步、完整離線編輯、AI、通知與家庭分享未列為現有能力。"
+    ]
+  },
+  "target_audience": ["以手機安排個人行程與待辦、喜歡清楚節奏與個人化外觀的繁體中文使用者"],
+  "story_summary": "從月檢視的核心承諾出發，依序展示快速新增、週節奏、單日整理、整月回顧與外觀個人化。",
+  "source_commit": "773f01b64510ead2d4248f4c9b42bcede5173460",
+  "style_version": 1,
+  "variant": {"id": "primary", "status": "selected", "parent": null},
+  "assets": [
+    {"id": "hero", "order": 1, "role": "hero", "file": "01-hero.png", "communication_goal": "說清楚核心價值", "headline": "把每一天，排得剛剛好", "feature": "行程、待辦與貼圖整合", "claim_ids": ["claim-core-calendar"], "render_mode": "HYBRID", "capture_source_ids": ["capture-month"], "platform_variants": []},
+    {"id": "quick-add", "order": 2, "role": "feature", "file": "02-quick-add.png", "communication_goal": "展示低摩擦輸入", "headline": "一句話，變成一筆行程", "feature": "自然語言解析後確認", "claim_ids": ["claim-quick-add"], "render_mode": "SCREENSHOT-LED", "capture_source_ids": ["capture-quick-add"], "platform_variants": []},
+    {"id": "week-rhythm", "order": 3, "role": "feature", "file": "03-week-rhythm.png", "communication_goal": "展示一週時間配置", "headline": "從月到週，一眼換節奏", "feature": "七欄週檢視與拖曳", "claim_ids": ["claim-week-view"], "render_mode": "SCREENSHOT-LED", "capture_source_ids": ["capture-week"], "platform_variants": []},
+    {"id": "day-detail", "order": 4, "role": "feature", "file": "04-day-detail.png", "communication_goal": "展示單日整合", "headline": "一天的大小事，都在同一格", "feature": "行程、待辦與貼圖", "claim_ids": ["claim-day-detail"], "render_mode": "HYBRID", "capture_source_ids": ["capture-day-detail"], "platform_variants": []},
+    {"id": "overview", "order": 5, "role": "feature", "file": "05-overview.png", "communication_goal": "展示回顧能力", "headline": "拉遠一點，看見整個月", "feature": "年、月、週綜覽", "claim_ids": ["claim-overview"], "render_mode": "SCREENSHOT-LED", "capture_source_ids": ["capture-overview"], "platform_variants": []},
+    {"id": "themes", "order": 6, "role": "feature", "file": "06-themes.png", "communication_goal": "以個人化收束", "headline": "日曆，也可以像你", "feature": "六套主題與三種顯示模式", "claim_ids": ["claim-themes"], "render_mode": "SCREENSHOT-LED", "capture_source_ids": ["capture-themes"], "platform_variants": []}
+  ],
+  "qa_summary": {
+    "status": "passed",
+    "reviewed_at": "2026-08-09T22:48:32+08:00",
+    "gates": {
+      "visual": "pass",
+      "product_accuracy": "pass",
+      "privacy": "pass",
+      "technical": "pass",
+      "campaign_consistency": "pass",
+      "portfolio_diversity": "not_applicable"
+    },
+    "platform_specifications": [
+      {
+        "platform": "Apple App Store iPhone 6.9-inch screenshot dimensions",
+        "status": "verified",
+        "official_source": "https://developer.apple.com/tw/help/app-store-connect/reference/app-information/screenshot-specifications/",
+        "verified_at": "2026-08-09T22:48:32+08:00",
+        "measured_output": "1290x2796 portrait"
+      }
+    ],
+    "open_findings": [],
+    "accepted_minor_findings": []
+  }
+}

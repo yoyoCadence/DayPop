@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "project": "日蹦 DayPop",
+  "project_slug": "daypop",
+  "language": "zh-TW",
+  "hero": "hero.png",
+  "thumbnail": "thumbnail.png",
+  "contact_sheet": "contact-sheet.png",
+  "campaign": "campaign.json",
+  "metadata": {
+    "product_model": "metadata/product-model.json",
+    "storyboard": "metadata/storyboard.json",
+    "claims": "metadata/claims.json",
+    "art_direction": "metadata/art-direction.json",
+    "marketing_review": "metadata/marketing-review.json",
+    "marketing_opportunities": "metadata/marketing-opportunities.json"
+  },
+  "assets": [
+    {
+      "id": "hero",
+      "order": 1,
+      "file": "01-hero.png",
+      "role": "hero",
+      "headline": "把每一天，排得剛剛好",
+      "feature": "行程、待辦與貼圖整合的個人日曆",
+      "communication_goal": "在第一眼說清楚 DayPop 的核心價值與產品類別",
+      "render_mode": "HYBRID",
+      "capture_source_ids": ["capture-month"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    },
+    {
+      "id": "quick-add",
+      "order": 2,
+      "file": "02-quick-add.png",
+      "role": "feature",
+      "headline": "一句話，變成一筆行程",
+      "feature": "快速新增自然語言解析與確認流程",
+      "communication_goal": "呈現從自然語句到可確認事件表單的短流程",
+      "render_mode": "SCREENSHOT-LED",
+      "capture_source_ids": ["capture-quick-add"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    },
+    {
+      "id": "week-rhythm",
+      "order": 3,
+      "file": "03-week-rhythm.png",
+      "role": "feature",
+      "headline": "從月到週，一眼換節奏",
+      "feature": "七欄週檢視與 15 分鐘拖曳調整",
+      "communication_goal": "用時間格視覺證明 DayPop 能承接一週節奏",
+      "render_mode": "SCREENSHOT-LED",
+      "capture_source_ids": ["capture-week"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    },
+    {
+      "id": "day-detail",
+      "order": 4,
+      "file": "04-day-detail.png",
+      "role": "feature",
+      "headline": "一天的大小事，都在同一格",
+      "feature": "同日行程、待辦與貼圖",
+      "communication_goal": "呈現單日資訊在同一個詳情面板內完成整理",
+      "render_mode": "HYBRID",
+      "capture_source_ids": ["capture-day-detail"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    },
+    {
+      "id": "overview",
+      "order": 5,
+      "file": "05-overview.png",
+      "role": "feature",
+      "headline": "拉遠一點，看見整個月",
+      "feature": "年、月、週綜覽與分組紀錄",
+      "communication_goal": "補足月格以外的回顧與整理價值",
+      "render_mode": "SCREENSHOT-LED",
+      "capture_source_ids": ["capture-overview"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    },
+    {
+      "id": "themes",
+      "order": 6,
+      "file": "06-themes.png",
+      "role": "feature",
+      "headline": "日曆，也可以像你",
+      "feature": "六套外觀主題與三種顯示模式",
+      "communication_goal": "以可見選項收束 DayPop 的個人化故事",
+      "render_mode": "SCREENSHOT-LED",
+      "capture_source_ids": ["capture-themes"],
+      "platform_targets": ["app-store-style", "portfolio", "github"],
+      "width": 1290,
+      "height": 2796,
+      "variants": []
+    }
+  ],
+  "visual_signature": {
+    "dominant_mood": "活潑、俐落且帶有日常手感",
+    "composition_language": "漫畫分鏡式編排，讓每張畫面只說一件事",
+    "color_character": "暖白紙張、黑色墨線、朱紅與亮黃主色，少量鈷藍平衡",
+    "graphic_motif": "網點、放射線、膠帶與日曆格線",
+    "typography_character": "粗黑繁體中文標題搭配精簡產品說明",
+    "device_usage": "以真實手機 UI 截圖置入可控的平面框架，不捏造裝置或介面",
+    "generation_style": "真實 UI、可重現排版與單一生成式漫畫背景的混合製作"
+  },
+  "extensions": {
+    "app_store_style": {
+      "portrait_canvas": "1290x2796",
+      "availability_claim": false
+    }
+  }
+}
