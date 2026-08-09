@@ -4,6 +4,7 @@ import { useAuth } from '../auth/authContext';
 import type { DayPopUserData } from '../domain/types';
 import type { Database } from '../lib/database.types';
 import { getSupabaseClient } from '../lib/supabase';
+import { LegacyImportProvider } from '../legacy/LegacyImportProvider';
 import { LocalDayPopRepository } from '../storage/localRepository';
 import type { StorageLike } from '../storage/browserStorage';
 import { CachedSupabaseDayPopRepository } from './cachedSupabaseRepository';
@@ -45,7 +46,13 @@ export function SessionDataProvider({
 
   return (
     <DataProvider key={identity} repository={repository}>
-      {children}
+      <LegacyImportProvider
+        accountId={accountId}
+        client={accountId ? (client ?? getSupabaseClient()) : undefined}
+        storage={storage}
+      >
+        {children}
+      </LegacyImportProvider>
     </DataProvider>
   );
 }

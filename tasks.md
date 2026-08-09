@@ -56,8 +56,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~9~~ | ~~DP-024 帳號資料 bootstrap~~ | 需要 | 已完成；第八檔 migration 由正式 CLI workflow 套用，MCP 只做前後 drift／advisor、generated types 與 rollback 安全測試。 |
 | ~~10~~ | ~~DP-062 寫入順序保護~~ | 不使用 | 已完成；`DataProvider` 的 mutation 依 UI 呼叫順序序列化。 |
 | ~~11~~ | ~~DP-026 核心 CRUD 遠端持久化~~ | 需要 | 已完成；session-aware adapter、同帳號版本化快取、失敗保護與 rollback CRUD／RLS 均已驗證。 |
-| **12** | **DP-025 legacy 匯入** | **需要** | **下一項。**在 durable CRUD 穩定後驗證一次性匯入與可回復流程。 |
-| 13 | DP-028 附件 Storage | 需要 | bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
+| ~~12~~ | ~~DP-025 legacy 匯入~~ | 需要 | 已完成；`calpet.v2` validate／preview、原子 RPC、idempotent retry、失敗回復與 AI key 排除均已驗證。 |
+| **13** | **DP-028 附件 Storage** | **需要** | **下一項。**bucket、policy、簽名 URL 與 metadata 必須一起驗證。 |
 
 > DP-023 剩餘的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作。負責 DP-023 的 agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
 
@@ -67,7 +67,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-030（Playwright e2e）、DP-019（安裝圖示）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-025 — 建立 legacy localStorage migration：** 偵測 `calpet.v2`、schema validate、顯示預覽與筆數、一次性匯入 Supabase、處理重複 ID／失敗回復；成功前不刪除原資料，並禁止匯入舊 AI key。
+- [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
 
 ## In Progress
 
@@ -80,10 +80,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（DP-027 已完成重複／時區底層，這裡接回事件 sheet 控制項、畫面 occurrence 與單次／全部範圍選擇；匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 - [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。要決定的是：跨午夜行程要不要在隔天的格子也出現、週檢視要不要畫到 24:00 再於隔天欄續畫、衝突判定是否改用 instant 直接比較（順帶解決兩個不同時區的事件互比 wall clock 的問題）。決定前不要各檢視各改各的。
-### Supabase / auth / data
-
-- [ ] **DP-028 — 實作附件 Storage：** 在核心 CRUD 穩定後才加入真實 upload、metadata、大小／MIME 限制、signed URL、刪除清理與 RLS；移除目前的假附件按鈕行為。
-
 ### Quality / release
 
 - [ ] **DP-030 — 建立自動化測試金字塔：** unit 覆蓋日期／recurrence／migration／repository，component 覆蓋表單與 auth states，Playwright 覆蓋手機與桌面主要流程。
@@ -135,6 +131,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-025 — 建立 legacy localStorage migration：** `src/legacy` 只在偵測到原始 `calpet.v2` 時建立嚴格 import plan，先顯示日曆／行程／待辦／貼圖與 exception 筆數；event／todo／sticker 的舊 ID 全部改配 UUID，因此重複 ID 可安全拆開，會影響關聯判定的重複 calendar ID 則 fail closed。舊 `aiKey`、邀請人與附件都不進 payload，AI key 也不影響 SHA-256 retry fingerprint；設定頁明示延後欄位，登入前只預覽。Authenticated 匯入經單一 `import_legacy_daypop` RPC：鎖住自己的 profile、以既有 owner RLS 寫入 canonical rows、最後才寫 fingerprint／timestamp；同 fingerprint retry 回傳 `already_imported`，不同文件或任何中途 constraint 失敗都不留下半套資料。成功、失敗與重試都不修改或刪除原 `calpet.v2`，`CALPET_FIRED` 也保持原樣。第 9 檔建立一次性 marker／RPC；第 10 檔依 advisor 改為 `SECURITY INVOKER`，以 transaction-local `pg_temp` guard 阻擋直接偽造 marker；第 11 檔以追加 migration 修正已套用函式的 `completed_at` 名稱衝突，沒有回寫歷史。正式 CLI dry-run／push 後，遠端／repo 同為 11 檔、9 張 public table RLS 全開、generated types 16,881 字元逐字一致、security advisor 0；repo 同一份 24 項 rollback pgTAP 全通過，固定假帳號／public rows、pgTAP extension 與 temp guard 均確認不存在。本機 lint、typecheck、38 files／313 tests、build、check:build 全部通過。下一項 DP-028 已移入 Next，但必須等本 PR 由專案擁有者親自合併後才開始。
 
 - [x] **DP-026 — 接上核心 CRUD 與帳號資料保存：** `SessionDataProvider` 等 Auth initial session 完成後，依 user id 選擇 guest `LocalDayPopRepository` 或 authenticated `CachedSupabaseDayPopRepository`；identity remount 隔離 guest、帳號 A／B 的 snapshot 與 DP-062 mutation queue，同帳號 token refresh 不重建。Supabase 是登入資料的 durable store；`daypop.account-cache.<encoded user id>` 只保存同帳號、schema v3、runtime validated 的最後確認文件，與 `daypop.user-data` 分離且不整份回傳遠端。短暫 load error 可顯示同帳號快取但保持警告；write error 保留最後確認 snapshot、標示尚未同步且不自動重送；missing bootstrap、corrupt／future／mismatched cache 均 fail closed。設定頁依真實 pending／warning 顯示已同步／同步中／尚未同步，不再宣稱登入資料仍只在本機。開工前 read-only MCP 確認 8 檔 migration、bootstrap 權限、9 張 RLS 表與 advisor 0 無漂移；完成後 rollback transaction 驗證 calendar／event／todo＋subtask／sticker／preferences CRUD、reload／delete 與跨帳號 RLS，固定假帳號／public rows 回滾後為 0，postflight 仍是 8 檔／9 RLS／advisor 0。本任務沒有 migration、DDL 或 generated types diff；lint、typecheck、36 files／306 tests、build、check:build 全部通過。下一項 DP-025 已移入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 

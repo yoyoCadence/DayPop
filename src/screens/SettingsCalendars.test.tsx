@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataProvider } from '../data/DataProvider';
+import { LegacyImportProvider } from '../legacy/LegacyImportProvider';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { readUserData } from '../storage/versionedStorage';
 import { SettingsScaffoldScreen } from './SettingsScaffoldScreen';
@@ -45,9 +46,11 @@ async function render() {
   await act(async () => {
     root.render(
       <DataProvider>
-        <ThemeProvider>
-          <SettingsScaffoldScreen updater={updater} onOpenAuth={vi.fn()} />
-        </ThemeProvider>
+        <LegacyImportProvider accountId={null}>
+          <ThemeProvider>
+            <SettingsScaffoldScreen updater={updater} onOpenAuth={vi.fn()} />
+          </ThemeProvider>
+        </LegacyImportProvider>
       </DataProvider>,
     );
   });
