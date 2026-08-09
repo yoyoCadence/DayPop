@@ -5,6 +5,7 @@ import {
   isV1UserData,
   migrateV1UserData,
   migrateV2UserData,
+  migrateV3UserData,
   type V1UserData,
 } from './localDataMigration';
 
@@ -90,6 +91,20 @@ export function readUserData(storage: StorageLike = getAppStorage()): StorageRea
         status: 'corrupt',
         raw,
         reason: cause instanceof Error ? cause.message : 'schema v2 migration failed',
+      };
+    }
+  }
+
+  if (schemaVersion === 3) {
+    try {
+      const envelope = migrateV3Envelope(parsed);
+      storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
+      return { status: 'ready', envelope };
+    } catch (cause) {
+      return {
+        status: 'corrupt',
+        raw,
+        reason: cause instanceof Error ? cause.message : 'schema v3 migration failed',
       };
     }
   }
@@ -210,5 +225,14 @@ function migrateV2Envelope(envelope: RawEnvelope): StoredEnvelope {
     revision: envelope.revision,
     updatedAt: envelope.updatedAt,
     data: migrateV2UserData(envelope.data),
+  };
+}
+
+function migrateV3Envelope(envelope: RawEnvelope): StoredEnvelope {
+  return {
+    schemaVersion: __DATA_SCHEMA_VERSION__,
+    revision: envelope.revision,
+    updatedAt: envelope.updatedAt,
+    data: migrateV3UserData(envelope.data),
   };
 }

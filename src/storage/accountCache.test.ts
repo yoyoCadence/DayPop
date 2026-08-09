@@ -42,6 +42,34 @@ describe('signed-in account cache', () => {
     expect(storage.length).toBe(1);
   });
 
+  it('reads a same-account schema v3 cache as v4 with no invented attachments', async () => {
+    const storage = new MemoryStorage();
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    const { eventAttachments, ...v3Data } = data;
+    expect(eventAttachments).toEqual([]);
+    storage.setItem(
+      accountCacheKey(OWNER),
+      JSON.stringify({
+        schemaVersion: 3,
+        accountId: OWNER,
+        updatedAt: '2026-08-08T14:00:00.000Z',
+        data: v3Data,
+      }),
+    );
+
+    const result = readAccountCache(OWNER, storage);
+
+    expect(result).toMatchObject({
+      status: 'ready',
+      envelope: {
+        schemaVersion: 4,
+        accountId: OWNER,
+        updatedAt: '2026-08-08T14:00:00.000Z',
+        data: { eventAttachments: [] },
+      },
+    });
+  });
+
   it('preserves corrupt bytes instead of treating them as empty data', () => {
     const storage = new MemoryStorage();
     const key = accountCacheKey(OWNER);

@@ -1,7 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import {
+  EVENT_ATTACHMENT_MIME_TYPES,
+  eventAttachmentFileIssue,
+  formatAttachmentBytes,
+} from '../../domain/attachments';
 import { sortedCalendars } from '../../domain/calendars';
 import { eventWallTime } from '../../domain/eventTime';
-import type { Calendar, CalendarEvent } from '../../domain/types';
+import type { Calendar, CalendarEvent, EventAttachment } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
 
@@ -24,11 +29,16 @@ export interface EventSheetProps {
   /** Pre-filled values from quick add; ignored while editing. */
   draft?: EventDraft | null;
   calendars: Calendar[];
+  attachments: EventAttachment[];
+  attachmentsAvailable: boolean;
   onClose(): void;
   onAddEvent(input: NewEventInput): void;
   onUpdateEvent(id: string, patch: EventPatch): void;
   onDeleteEvent(id: string): void;
   onAddTodo(input: NewTodoInput): void;
+  onUploadAttachment(eventId: string, file: File): Promise<void>;
+  onDeleteAttachment(id: string): Promise<void>;
+  onOpenAttachment(id: string): Promise<string>;
 }
 
 type SheetMode = 'event' | 'todo';
@@ -42,8 +52,9 @@ type SheetMode = 'event' | 'todo';
  * The rest stay listed but unbuilt on purpose. DP-027 completed recurrence,
  * exception, timezone and DST domain behaviour; their controls and the
  * single/all scope dialog remain canonical UI work in DP-014. 提醒 needs a
- * delivery mechanism (DP-042) or it is a reminder that never fires, 附件 needs
- * Storage (DP-028), and 邀請對象 has no domain type at all yet.
+ * delivery mechanism (DP-042) or it is a reminder that never fires, and
+ * 邀請對象 has no domain type at all yet. DP-028 supplies real private
+ * attachment upload/download/delete only after the event exists.
  *
  * 待辦 is a mode here rather than its own screen because the原檔 adds todos
  * through the pet bubble, which is DP-040. Keeping it reachable avoids losing a
@@ -61,11 +72,16 @@ function EventSheetForm({
   editing,
   draft,
   calendars,
+  attachments,
+  attachmentsAvailable,
   onClose,
   onAddEvent,
   onUpdateEvent,
   onDeleteEvent,
   onAddTodo,
+  onUploadAttachment,
+  onDeleteAttachment,
+  onOpenAttachment,
 }: Omit<EventSheetProps, 'open'>) {
   const editingWallTime = editing ? eventWallTime(editing) : null;
   // Editing always wins over a quick-add draft; they never apply together.
@@ -85,6 +101,58 @@ function EventSheetForm({
       options[0]?.id ??
       '',
   );
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
+
+  async function uploadAttachment(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !editing) return;
+    const issue = eventAttachmentFileIssue(file);
+    if (issue) {
+      setAttachmentMessage(issue);
+      return;
+    }
+    setAttachmentBusy(true);
+    setAttachmentMessage(null);
+    try {
+      await onUploadAttachment(editing.id, file);
+      setAttachmentMessage('附件已安全保存。');
+    } catch (cause) {
+      setAttachmentMessage(cause instanceof Error ? cause.message : '附件上傳失敗。');
+    } finally {
+      setAttachmentBusy(false);
+    }
+  }
+
+  async function openAttachment(id: string) {
+    setAttachmentBusy(true);
+    setAttachmentMessage(null);
+    try {
+      const url = await onOpenAttachment(id);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.rel = 'noopener noreferrer';
+      anchor.click();
+    } catch (cause) {
+      setAttachmentMessage(cause instanceof Error ? cause.message : '附件連結建立失敗。');
+    } finally {
+      setAttachmentBusy(false);
+    }
+  }
+
+  async function deleteAttachment(id: string) {
+    setAttachmentBusy(true);
+    setAttachmentMessage(null);
+    try {
+      await onDeleteAttachment(id);
+      setAttachmentMessage('附件已刪除；雲端檔案清理若暫時失敗會在下次連線重試。');
+    } catch (cause) {
+      setAttachmentMessage(cause instanceof Error ? cause.message : '附件刪除失敗。');
+    } finally {
+      setAttachmentBusy(false);
+    }
+  }
 
   // Escape is handled by `CalendarScreen` so that, when this sheet is stacked on
   // top of 日詳情, one keypress closes only the topmost sheet.
@@ -264,6 +332,56 @@ function EventSheetForm({
                   />
                 </div>
 
+                <section className="cal-attachments" aria-label="附件">
+                  <div className="cal-field-label">附件</div>
+                  {!editing ? (
+                    <p>先儲存行程，再回來加入附件。</p>
+                  ) : !attachmentsAvailable ? (
+                    <p>登入帳號後，附件才會保存到私人雲端空間。</p>
+                  ) : (
+                    <>
+                      <label className="cal-attachment-picker" aria-disabled={attachmentBusy}>
+                        {attachmentBusy ? '處理中…' : '選擇附件'}
+                        <input
+                          type="file"
+                          accept={EVENT_ATTACHMENT_MIME_TYPES.join(',')}
+                          disabled={attachmentBusy}
+                          onChange={uploadAttachment}
+                        />
+                      </label>
+                      <small>單檔上限 10 MiB；支援圖片、PDF、純文字與 iCalendar。</small>
+                    </>
+                  )}
+
+                  {attachments.length > 0 && (
+                    <ul className="cal-attachment-list">
+                      {attachments.map((attachment) => (
+                        <li key={attachment.id}>
+                          <span>
+                            <strong>{attachment.fileName}</strong>
+                            <small>{formatAttachmentBytes(attachment.sizeBytes)}</small>
+                          </span>
+                          <button
+                            type="button"
+                            disabled={attachmentBusy || !attachmentsAvailable}
+                            onClick={() => void openAttachment(attachment.id)}
+                          >
+                            下載
+                          </button>
+                          <button
+                            type="button"
+                            disabled={attachmentBusy || !attachmentsAvailable}
+                            onClick={() => void deleteAttachment(attachment.id)}
+                          >
+                            刪除
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {attachmentMessage && <p role="status">{attachmentMessage}</p>}
+                </section>
+
                 {editing && (
                   <button
                     className="cal-delete-button"
@@ -281,7 +399,7 @@ function EventSheetForm({
                   <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
                   重複、單次／全部範圍與時區的底層行為已由 DP-027 完成，控制項仍待
                   DP-014 依原稿接回；提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
-                  附件等 DP-028 的 Storage；邀請對象目前連 domain 型別都還沒有。
+                  邀請對象目前連 domain 型別都還沒有。
                 </div>
               </>
             )}

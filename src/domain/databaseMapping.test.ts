@@ -5,6 +5,8 @@ import {
   calendarToInsert,
   eventExceptionFromRow,
   eventExceptionToInsert,
+  eventAttachmentFromRow,
+  eventAttachmentToInsert,
   eventFromRow,
   eventToInsert,
   preferencesFromRow,
@@ -121,6 +123,31 @@ describe('domain ↔ DB mapping', () => {
       occurrence_starts_at: '2026-08-11T01:00:00.000Z',
       is_cancelled: false,
       replacement_event_id: EVENT_2_ID,
+    });
+  });
+
+  it('maps attachment metadata without allowing client timestamps', () => {
+    const id = '00000000-0000-4000-8000-0000000000a2';
+    const row: Tables<'event_attachments'> = {
+      id,
+      owner_id: OWNER_ID,
+      event_id: EVENT_ID,
+      object_path: `${OWNER_ID}/${EVENT_ID}/${id}`,
+      file_name: 'agenda.pdf',
+      mime_type: 'application/pdf',
+      size_bytes: 1024,
+      created_at: NOW,
+      updated_at: NOW,
+    };
+    const domain = eventAttachmentFromRow(row);
+    expect(eventAttachmentToInsert(domain, OWNER_ID)).toEqual({
+      id,
+      owner_id: OWNER_ID,
+      event_id: EVENT_ID,
+      object_path: `${OWNER_ID}/${EVENT_ID}/${id}`,
+      file_name: 'agenda.pdf',
+      mime_type: 'application/pdf',
+      size_bytes: 1024,
     });
   });
 

@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), contentSecurityPolicy(loadEnv(mode, '.', 'VITE_').VITE_SUPABASE_URL)],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    __DATA_SCHEMA_VERSION__: '3',
+    __DATA_SCHEMA_VERSION__: '4',
   },
   test: {
     environment: 'jsdom',

@@ -48,6 +48,24 @@ export interface DayPopRepository {
   updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData>;
 }
 
+/** Optional binary boundary implemented only by the authenticated adapter. */
+export interface EventAttachmentRepository {
+  uploadEventAttachment(eventId: string, file: File): Promise<DayPopUserData>;
+  deleteEventAttachment(id: string): Promise<DayPopUserData>;
+  createEventAttachmentUrl(id: string): Promise<string>;
+}
+
+export function canManageEventAttachments(
+  repository: DayPopRepository,
+): repository is DayPopRepository & EventAttachmentRepository {
+  const candidate = repository as Partial<EventAttachmentRepository>;
+  return (
+    typeof candidate.uploadEventAttachment === 'function' &&
+    typeof candidate.deleteEventAttachment === 'function' &&
+    typeof candidate.createEventAttachmentUrl === 'function'
+  );
+}
+
 /**
  * An adapter whose backing store can answer without awaiting.
  *

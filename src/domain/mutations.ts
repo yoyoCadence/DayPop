@@ -487,6 +487,9 @@ export function withoutEvent(data: DayPopUserData, id: string): DayPopUserData {
   return {
     ...data,
     events: data.events.filter((event) => !replacementIds.has(event.id)),
+    eventAttachments: data.eventAttachments.filter(
+      (attachment) => !replacementIds.has(attachment.eventId),
+    ),
     eventExceptions: data.eventExceptions.filter(
       (exception) =>
         exception.eventId !== id &&

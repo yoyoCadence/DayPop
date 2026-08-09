@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachment_cleanup_jobs: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          id: string
+          object_path: string
+          owner_id: string
+        }
+        Insert: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          object_path: string
+          owner_id: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          object_path?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       calendars: {
         Row: {
           color: string
@@ -435,6 +459,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_event_attachment_with_cleanup: {
+        Args: { p_attachment_id: string }
+        Returns: boolean
+      }
+      delete_event_with_attachment_cleanup: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      finalize_event_attachment_upload: {
+        Args: {
+          p_event_id: string
+          p_file_name: string
+          p_id: string
+          p_mime_type: string
+          p_object_path: string
+          p_size_bytes: number
+        }
+        Returns: {
+          created_at: string
+          event_id: string
+          file_name: string
+          id: string
+          mime_type: string
+          object_path: string
+          owner_id: string
+          size_bytes: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_attachments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       import_legacy_daypop: {
         Args: { p_fingerprint: string; p_payload: Json }
         Returns: Json

@@ -50,11 +50,15 @@ export interface DataActions {
   updateCalendar(id: string, patch: CalendarPatch): void;
   deleteCalendar(id: string): void;
   updatePreferences(patch: PreferencesPatch): void;
+  uploadEventAttachment(eventId: string, file: File): Promise<void>;
+  deleteEventAttachment(id: string): Promise<void>;
+  createEventAttachmentUrl(id: string): Promise<string>;
 }
 
 export interface DataContextValue {
   state: DataState;
   actions: DataActions;
+  capabilities: { eventAttachments: boolean };
   /** Re-runs the load — used after the recovery screen resets the data. */
   refresh(): void;
 }
@@ -74,10 +78,13 @@ export function useDayPopDataState(): DataContextValue {
  * Screens only mount once `App` has seen `ready`, so `data` is non-null here
  * and no screen has to render a loading branch of its own.
  */
-export function useDayPopData(): DataActions & { data: DayPopUserData } {
+export function useDayPopData(): DataActions & {
+  data: DayPopUserData;
+  capabilities: DataContextValue['capabilities'];
+} {
   const value = useDayPopDataState();
   if (value.state.status !== 'ready') {
     throw new Error('DayPop 資料尚未就緒，畫面不應該在此時掛載。');
   }
-  return { data: value.state.data, ...value.actions };
+  return { data: value.state.data, capabilities: value.capabilities, ...value.actions };
 }

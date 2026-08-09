@@ -3,7 +3,11 @@ import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { CachedRemoteLoadError } from './cachedSupabaseRepository';
 import { DataContext, type DataActions, type DataContextValue, type DataState } from './dataContext';
-import { canLoadSync, type DayPopRepository } from './repository';
+import {
+  canLoadSync,
+  canManageEventAttachments,
+  type DayPopRepository,
+} from './repository';
 import { RemoteDataError } from './supabaseRepository';
 
 interface DataProviderProps {
@@ -67,7 +71,7 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
      * resolved. A rejected write reports its failure without poisoning the
      * queue or preventing a write the user already issued from running next.
      */
-    function run(operation: () => Promise<DayPopUserData>) {
+    function enqueue(operation: () => Promise<DayPopUserData>): Promise<DayPopUserData> {
       pendingWriteCount.current += 1;
       setState((current) =>
         current.status === 'ready' ? { ...current, saving: true } : current,
@@ -78,9 +82,8 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         return pendingWriteCount.current > 0;
       };
 
-      pendingWrite.current = pendingWrite.current
-        .then(operation)
-        .then(
+      const scheduled = pendingWrite.current.then(operation);
+      pendingWrite.current = scheduled.then(
           (data) => {
             const saving = finishWrite();
             setState({ status: 'ready', data, ...(saving ? { saving: true } : {}) });
@@ -95,6 +98,11 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
             });
           },
         );
+      return scheduled;
+    }
+
+    function run(operation: () => Promise<DayPopUserData>) {
+      void enqueue(operation);
     }
 
     return {
@@ -137,12 +145,35 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       updatePreferences(patch) {
         run(() => activeRepository.updatePreferences(patch));
       },
+      async uploadEventAttachment(eventId, file) {
+        if (!canManageEventAttachments(activeRepository)) {
+          throw new Error('附件只會保存到登入帳號的私人雲端空間。');
+        }
+        await enqueue(() => activeRepository.uploadEventAttachment(eventId, file));
+      },
+      async deleteEventAttachment(id) {
+        if (!canManageEventAttachments(activeRepository)) {
+          throw new Error('附件只會保存到登入帳號的私人雲端空間。');
+        }
+        await enqueue(() => activeRepository.deleteEventAttachment(id));
+      },
+      createEventAttachmentUrl(id) {
+        if (!canManageEventAttachments(activeRepository)) {
+          return Promise.reject(new Error('附件只會保存到登入帳號的私人雲端空間。'));
+        }
+        return activeRepository.createEventAttachmentUrl(id);
+      },
     };
   }, [activeRepository]);
 
   const value = useMemo<DataContextValue>(
-    () => ({ state, actions, refresh }),
-    [actions, refresh, state],
+    () => ({
+      state,
+      actions,
+      capabilities: { eventAttachments: canManageEventAttachments(activeRepository) },
+      refresh,
+    }),
+    [actions, activeRepository, refresh, state],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

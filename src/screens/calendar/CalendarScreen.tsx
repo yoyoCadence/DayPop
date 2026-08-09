@@ -54,6 +54,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     deleteTodo,
     addSticker,
     deleteSticker,
+    uploadEventAttachment,
+    deleteEventAttachment,
+    createEventAttachmentUrl,
+    capabilities,
   } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
@@ -87,6 +91,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const flashTimer = useRef<number | undefined>(undefined);
 
   const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
+  const editingAttachments = editingEvent
+    ? data.eventAttachments.filter((attachment) => attachment.eventId === editingEvent.id)
+    : [];
 
   const openEvent = useCallback((id: string) => {
     setEditingId(id);
@@ -358,11 +365,16 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         editing={editingEvent}
         draft={quickDraft}
         calendars={data.calendars}
+        attachments={editingAttachments}
+        attachmentsAvailable={capabilities.eventAttachments}
         onClose={closeSheet}
         onAddEvent={addEvent}
         onUpdateEvent={updateEvent}
         onDeleteEvent={deleteEvent}
         onAddTodo={addTodo}
+        onUploadAttachment={uploadEventAttachment}
+        onDeleteAttachment={deleteEventAttachment}
+        onOpenAttachment={createEventAttachmentUrl}
       />
     </div>
   );

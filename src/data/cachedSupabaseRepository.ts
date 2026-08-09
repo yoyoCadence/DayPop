@@ -15,7 +15,7 @@ import {
   type StorageLike,
 } from '../storage/browserStorage';
 import { readAccountCache, writeAccountCache } from '../storage/accountCache';
-import type { DayPopRepository } from './repository';
+import type { DayPopRepository, EventAttachmentRepository } from './repository';
 import { RemoteDataError, SupabaseDayPopRepository } from './supabaseRepository';
 
 /**
@@ -41,7 +41,9 @@ export class CachedRemoteLoadError extends Error {
  * never uploaded as a document and never shared with guest storage, so a
  * cached fallback cannot overwrite Supabase or leak across accounts.
  */
-export class CachedSupabaseDayPopRepository implements DayPopRepository {
+export class CachedSupabaseDayPopRepository
+  implements DayPopRepository, EventAttachmentRepository
+{
   readonly #remote: SupabaseDayPopRepository;
   #cachedData: DayPopUserData | null;
 
@@ -79,6 +81,18 @@ export class CachedSupabaseDayPopRepository implements DayPopRepository {
 
   async deleteEvent(id: string): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.deleteEvent(id));
+  }
+
+  async uploadEventAttachment(eventId: string, file: File): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.uploadEventAttachment(eventId, file));
+  }
+
+  async deleteEventAttachment(id: string): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.deleteEventAttachment(id));
+  }
+
+  createEventAttachmentUrl(id: string): Promise<string> {
+    return this.#remote.createEventAttachmentUrl(id);
   }
 
   async addTodo(input: NewTodoInput): Promise<DayPopUserData> {
