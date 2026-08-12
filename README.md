@@ -105,6 +105,16 @@ Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase D
 
 Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴的舊 App cache。它不操作 `localStorage` 或 IndexedDB。
 
+## 安裝圖示
+
+`public/icons/daypop.svg` 是圖案本身的唯一來源，`public/icons/*.png` 是 `npm run icons` 由它產生並提交的結果：
+
+```bash
+npm run icons   # 改過 daypop.svg 後重新產生 PNG，並把結果一起提交
+```
+
+一共三種取景：manifest 的 `any`（192／512，保留圓角與透明角落）、`maskable`（192／512，滿版底色＋縮到 80% 安全區，讓 Android 可裁成圓形或方圓形）、以及 `apple-touch-icon-180.png`（滿版且完全不透明，因為 iOS 會忽略 SVG、把透明處填成黑色並自行套用圓角）。`npm run check:build` 會核對建置輸出的尺寸、宣告與不透明度。
+
 ## 資料安全邊界
 
 - 新 React App 暫時以 `daypop.user-data` 保存帶 `schemaVersion` 的遊客資料。

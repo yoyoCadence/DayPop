@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 /**
  * Fails the build if the production output would reach the network at runtime,
- * or if the CSP meta tag went missing — DP-015.
+ * if the CSP meta tag went missing (DP-015), or if the install icons are not
+ * shipped exactly as the manifest and `index.html` promise (DP-019).
  *
  * The prototype (`日曆桌寵 Calendar Pet.dc.html`, generated `support.js`) loads
  * React and fonts from CDNs. Those files are kept as the design source but must
@@ -80,10 +81,74 @@ if (!/default-src 'self'/.test(indexHtml)) {
   problems.push("dist/index.html CSP does not start from default-src 'self'");
 }
 
+/**
+ * Install icons are committed output of `npm run icons`, so nothing else in the
+ * build would notice a missing file, a wrong pixel size, or an alpha channel
+ * creeping back into an icon that must stay opaque — DP-019.
+ *
+ * PNG header layout: 8-byte signature, IHDR length and type, then width,
+ * height, bit depth and colour type. Colour types 4 and 6 carry alpha.
+ */
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+async function readPngHeader(relativePath) {
+  const bytes = await readFile(resolve(dist, relativePath));
+  if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.subarray(12, 16).toString('ascii') !== 'IHDR') {
+    return null;
+  }
+  return {
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20),
+    hasAlpha: (bytes[25] & 0b100) !== 0,
+  };
+}
+
+const manifest = JSON.parse(await readFile(resolve(dist, 'manifest.webmanifest'), 'utf8'));
+const pngIcons = manifest.icons.filter((icon) => icon.type === 'image/png');
+const declared = pngIcons.map((icon) => `${icon.purpose} ${icon.sizes}`).sort();
+
+// Chrome installs from `any`; Android's adaptive shapes need `maskable`.
+for (const required of ['any 192x192', 'any 512x512', 'maskable 192x192', 'maskable 512x512']) {
+  if (!declared.includes(required)) problems.push(`manifest.webmanifest is missing a ${required} PNG icon`);
+}
+
+for (const icon of pngIcons) {
+  const relativePath = icon.src.replace(/^\.\//, '');
+  const header = await readPngHeader(relativePath).catch(() => null);
+  if (!header) {
+    problems.push(`manifest icon ${icon.src} is missing from dist/ or is not a PNG`);
+    continue;
+  }
+  if (`${header.width}x${header.height}` !== icon.sizes) {
+    problems.push(`manifest icon ${icon.src} is ${header.width}x${header.height}, declared ${icon.sizes}`);
+  }
+  // A mask crops to a circle or squircle; transparency there shows the launcher backdrop.
+  if (icon.purpose === 'maskable' && header.hasAlpha) {
+    problems.push(`maskable icon ${icon.src} still has an alpha channel`);
+  }
+}
+
+// iOS ignores SVG in `apple-touch-icon` and composites transparency onto black.
+const appleIcon = /<link rel="apple-touch-icon"[^>]*href="([^"]+)"/.exec(indexHtml)?.[1];
+if (!appleIcon || !appleIcon.endsWith('.png')) {
+  problems.push('index.html apple-touch-icon does not point at a PNG');
+} else {
+  const header = await readPngHeader(appleIcon.replace(/^\.\//, '')).catch(() => null);
+  if (!header) problems.push(`apple-touch-icon ${appleIcon} is missing from dist/ or is not a PNG`);
+  else if (header.width !== 180 || header.height !== 180) {
+    problems.push(`apple-touch-icon ${appleIcon} is ${header.width}x${header.height}, expected 180x180`);
+  } else if (header.hasAlpha) {
+    problems.push(`apple-touch-icon ${appleIcon} has an alpha channel; iOS would fill it with black`);
+  }
+}
+
 if (problems.length > 0) {
   console.error('Build asset check failed:');
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
 
-console.log(`Build asset check passed: ${scanned} text assets, no runtime remote dependency, CSP present.`);
+console.log(
+  `Build asset check passed: ${scanned} text assets, no runtime remote dependency, CSP present, ` +
+    `${pngIcons.length} manifest PNG icons and the Apple touch icon shipped as declared.`,
+);
