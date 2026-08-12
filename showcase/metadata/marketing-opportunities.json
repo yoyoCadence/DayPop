@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-09T22:48:32+08:00",
+  "opportunities": [
+    {
+      "id": "opportunity-remove-internal-settings-copy",
+      "category": "information-hierarchy",
+      "observed_problem": "設定頁部分未完成區塊仍顯示 DP 編號與工程語氣。",
+      "affected_feature": "設定",
+      "marketing_impact": "完整頁截圖容易讓一般使用者看到內部工作項目，降低產品完成度感。",
+      "evidence": ["src/screens/SettingsScaffoldScreen.tsx"],
+      "smallest_plausible_improvement": "在 production UI 改成中性的『即將推出』說明，內部 DP 編號只留在 tasks.md。",
+      "expected_asset_benefit": "未來可使用完整設定頁而不需要裁切工程註記。",
+      "implementation_scope": "small_product_copy_change",
+      "effort": "small",
+      "priority": "medium",
+      "blocks_current_campaign": false
+    },
+    {
+      "id": "opportunity-stable-showcase-fixture",
+      "category": "visual-proof",
+      "observed_problem": "目前沒有長期、可重現且明確標示 synthetic 的產品展示資料入口。",
+      "affected_feature": "campaign capture",
+      "marketing_impact": "每次更新素材都需重建 demo state，較難進行像素級回歸與一致性比較。",
+      "evidence": ["e2e/guest-crud.spec.ts", "src/storage/versionedStorage.ts"],
+      "smallest_plausible_improvement": "另案建立 dev-only showcase fixture，並在 production build 明確排除。",
+      "expected_asset_benefit": "後續可穩定重拍相同故事節點且避免正式資料。",
+      "implementation_scope": "small_dev_only_fixture",
+      "effort": "medium",
+      "priority": "medium",
+      "blocks_current_campaign": false
+    },
+    {
+      "id": "opportunity-install-assets",
+      "category": "feature-visibility",
+      "observed_problem": "PWA 尚缺 Apple touch 與 PNG／maskable 安裝圖示。",
+      "affected_feature": "PWA installation",
+      "marketing_impact": "在正式 hosting 前不能誠實使用『安裝到主畫面』作為 campaign CTA。",
+      "evidence": ["tasks.md", "public/manifest.webmanifest", "AGENTS.md"],
+      "smallest_plausible_improvement": "依既定 DP-019 完成 icon assets 與實機驗證。",
+      "expected_asset_benefit": "release campaign 可加入實際安裝與 home-screen proof。",
+      "implementation_scope": "existing_dp_019",
+      "effort": "medium",
+      "priority": "high",
+      "blocks_current_campaign": false
+    },
+    {
+      "id": "opportunity-release-copy",
+      "category": "feature-visibility",
+      "observed_problem": "package version 與 release notes 尚未涵蓋目前已完成的日曆與資料能力。",
+      "affected_feature": "release communication",
+      "marketing_impact": "不適合在目前 campaign 放入版本號或正式發布承諾。",
+      "evidence": ["release-notes.json", "package.json", "tasks.md"],
+      "smallest_plausible_improvement": "由專案擁有者在 DP-065 決定首個部署版本與不可變 release note。",
+      "expected_asset_benefit": "可產生具版本與發布 CTA 的正式 launch variant。",
+      "implementation_scope": "existing_dp_065",
+      "effort": "owner_decision",
+      "priority": "high",
+      "blocks_current_campaign": false
+    }
+  ]
+}

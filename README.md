@@ -1,6 +1,23 @@
 # 日蹦 DayPop
 
-DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；Supabase Auth 與資料庫安全基礎已接入，帳號日曆 CRUD／匯入仍是下一階段。
+DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；行程、待辦、貼圖、主題、Supabase Auth、帳號資料保存、舊資料匯入與私人附件均已接入，正式 hosting、Google OAuth provider 與行動裝置驗收仍在發布路徑上。
+
+![日蹦 DayPop — 把每一天排得剛剛好](showcase/hero.png)
+
+## 產品亮點
+
+以下是以目前 App 真實介面與隔離合成資料製作的 App Store 風格展示；`1290×2796` 直式構圖符合 Apple 目前列出的 6.9 吋 iPhone screenshot 尺寸之一，但不表示 DayPop 已提交或上架 App Store。完整 campaign、主張依據與 QA 紀錄位於 [`showcase/`](showcase/manifest.json)。
+
+<p align="center">
+  <img src="showcase/01-hero.png" width="31%" alt="把每一天排得剛剛好：DayPop 月檢視" />
+  <img src="showcase/02-quick-add.png" width="31%" alt="一句話變成一筆行程：快速新增確認表單" />
+  <img src="showcase/03-week-rhythm.png" width="31%" alt="從月到週一眼換節奏：七欄週檢視" />
+</p>
+<p align="center">
+  <img src="showcase/04-day-detail.png" width="31%" alt="一天的大小事都在同一格：日詳情" />
+  <img src="showcase/05-overview.png" width="31%" alt="拉遠一點看見整個月：月綜覽" />
+  <img src="showcase/06-themes.png" width="31%" alt="日曆也可以像你：六套外觀主題" />
+</p>
 
 ## 畫面
 
@@ -39,9 +56,11 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - 瀏覽器無法保存資料時降級為本分頁記憶體模式，並持續顯示不可關閉的警告
 - mobile-first PWA manifest、service worker 與基本 App shell 啟動快取
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
-- Supabase migrations、9 張核心表、owner-only RLS 與產生的 TypeScript database types
+- 登入後以 Supabase 保存行程、待辦、貼圖、偏好與私人附件；遊客資料與帳號資料保持隔離
+- 舊 `calpet.v2` 資料可先預覽、確認後原子匯入，成功、失敗與重試都不刪除原始資料
+- Supabase migrations、10 張公開資料表、owner-only RLS、private Storage bucket 與產生的 TypeScript database types
 
-日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁的外觀主題與日曆管理已搬移，其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、附件、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數；貼圖已於 DP-055 接上真實資料。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
+日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁的外觀主題與日曆管理已搬移，其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數；貼圖與登入帳號的私人附件已分別接上真實資料。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
 
 ## 本機開發
 
@@ -64,7 +83,7 @@ npm run check:build   # 需先 build：檢查建置輸出沒有遠端依賴且�
 
 ## 持續整合
 
-PR 與 `main` 的 push 會由 GitHub Actions（`.github/workflows/ci.yml`）執行 `npm ci`，再依序跑上面四項檢查；Node 版本直接讀 `.nvmrc`，與本機一致。CI 目前不需要任何環境變數或密鑰，Supabase 未設定時 build 仍可通過。日後若某個步驟需要密鑰，只能使用 GitHub Secrets 注入，不得寫進 workflow 或 repository。Supabase `db reset`／pgTAP 與 Playwright e2e 會隨 DP-033／DP-030 再加入。
+PR 與 `main` 的 push 會由 GitHub Actions（`.github/workflows/ci.yml`）執行 `npm ci`，再依序跑上面四項檢查，並以 mobile／desktop Chromium 執行 Playwright e2e；Node 版本直接讀 `.nvmrc`，與本機一致。CI 目前不需要任何環境變數或密鑰，Supabase 未設定時 build 仍可通過。日後若某個步驟需要密鑰，只能使用 GitHub Secrets 注入，不得寫進 workflow 或 repository。Supabase `db reset`／pgTAP CI 仍待 DP-033。
 
 Production preview：
 
@@ -115,9 +134,9 @@ Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴
 - 不呼叫 `localStorage.clear()`，也不因 App 版本更新重設行程或偏好。
 - Supabase 前端只允許 project URL 與 publishable key；不得放入 `service_role` 或其他伺服器密鑰。這兩個值依設計是公開的，會被打包進 bundle。
 - production build 不含任何執行期第三方依賴：`default-src 'self'` 的 CSP 在建置期產生並注入 `index.html`，`connect-src` 只額外允許該次建置的 Supabase origin。`npm run check:build` 會擋下新的遠端依賴或遺失的 CSP，CI 每次都跑。meta 形式的 CSP 無法涵蓋 `frame-ancestors`，選定 hosting 後應再以 response header 補上。
-- 登入／登出不會自動上傳、清除或改綁目前的遊客資料；帳號匯入會另做可預覽、可確認、失敗可回復的流程。
+- 登入／登出不會自動上傳、清除或改綁目前的遊客資料；舊資料匯入必須先預覽與確認，失敗可回復且不刪除原始 `calpet.v2`。
 
-目前登入只建立安全 session；介面會明確提示帳號資料 CRUD 尚未接線，避免把「已登入」誤解成「已同步」。所有畫面都經 `src/data` 的 repository 合約存取資料，不直接呼叫 browser storage 或 Supabase；authenticated adapter 已存在並通過單元測試，但要等 DP-026 才會依 session 接上，屆時才會有資料真的寫進帳號。
+登入完成後，`SessionDataProvider` 會依 user id 選擇 authenticated adapter，Supabase 是 durable store；同帳號版本化快取只在短暫遠端讀取失敗時顯示並持續警告。所有畫面都經 `src/data` 的 repository 合約存取資料，不直接呼叫 browser storage 或 Supabase。這不代表即時跨裝置同步：遠端寫入失敗不會自動重送，多裝置衝突合併與完整離線寫入佇列仍不在 MVP 範圍。
 
 ## 專案結構
 

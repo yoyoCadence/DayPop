@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "source_revision": "773f01b64510ead2d4248f4c9b42bcede5173460",
+  "claims": [
+    {
+      "claim_id": "claim-core-calendar",
+      "claim": "DayPop 把行程、待辦與貼圖放在同一套個人日曆體驗中。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_and_live_capture",
+      "evidence": [
+        {"path": "src/screens/calendar/CalendarScreen.tsx", "kind": "implementation", "note": "月、週、列表與日詳情入口"},
+        {"path": "src/data/repository.ts", "kind": "implementation", "note": "共用事件、待辦與貼圖資料合約"}
+      ],
+      "qualifiers": ["個人 MVP，不含家庭分享或即時協作"],
+      "allowed_wording": ["行程、待辦與貼圖，收進你的生活節奏。"],
+      "prohibited_stronger_wording": ["團隊共用日曆", "即時跨裝置同步"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["hero"]
+    },
+    {
+      "claim_id": "claim-quick-add",
+      "claim": "快速新增會解析日期、時間與地點，並在建立前交由使用者確認。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_tests_and_live_capture",
+      "evidence": [
+        {"path": "src/domain/quickAdd.ts", "kind": "implementation", "note": "自然語句解析器"},
+        {"path": "src/domain/quickAdd.test.ts", "kind": "test", "note": "日期、時間與地點解析案例"},
+        {"path": "src/screens/calendar/EventSheet.tsx", "kind": "implementation", "note": "使用者確認表單"}
+      ],
+      "qualifiers": ["不是 AI，也不會跳過確認自動建立"],
+      "allowed_wording": ["日期、時間與地點先解析，再由你確認。"],
+      "prohibited_stronger_wording": ["AI 自動安排行程", "一句話直接完成所有設定"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["quick-add"]
+    },
+    {
+      "claim_id": "claim-week-view",
+      "claim": "七欄週檢視支援拖曳調整事件時間、長度與日期，吸附 15 分鐘。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_and_tests",
+      "evidence": [
+        {"path": "src/screens/calendar/WeekView.tsx", "kind": "implementation", "note": "週檢視與拖曳互動"},
+        {"path": "src/domain/timeGrid.test.ts", "kind": "test", "note": "時間格定位與拖曳計算"}
+      ],
+      "qualifiers": [],
+      "allowed_wording": ["7 欄時間格，拖曳調整時間與日期。"],
+      "prohibited_stronger_wording": ["自動最佳化行程"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["week-rhythm"]
+    },
+    {
+      "claim_id": "claim-day-detail",
+      "claim": "日詳情面板可呈現同日的行程、待辦與貼圖。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_and_live_capture",
+      "evidence": [
+        {"path": "src/screens/calendar/DayDetailSheet.tsx", "kind": "implementation", "note": "日詳情三種資料的渲染與操作"}
+      ],
+      "qualifiers": [],
+      "allowed_wording": ["行程、待辦與貼圖，一起整理。"],
+      "prohibited_stronger_wording": ["自動完成所有待辦"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["day-detail"]
+    },
+    {
+      "claim_id": "claim-overview",
+      "claim": "綜覽提供年、月、週期間切換與資料分組。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_and_live_capture",
+      "evidence": [
+        {"path": "src/screens/OverviewScreen.tsx", "kind": "implementation", "note": "期間切換、分組與筆數"},
+        {"path": "src/domain/overview.ts", "kind": "implementation", "note": "綜覽期間與分組邏輯"}
+      ],
+      "qualifiers": [],
+      "allowed_wording": ["依年、月、週綜覽你的生活紀錄。"],
+      "prohibited_stronger_wording": ["自動產生生活洞察"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["overview"]
+    },
+    {
+      "claim_id": "claim-themes",
+      "claim": "DayPop 提供六套外觀主題，以及跟隨系統、淺色與深色模式。",
+      "claim_type": "capability",
+      "status": "verified",
+      "evidence_strength": "implementation_tests_and_live_capture",
+      "evidence": [
+        {"path": "src/theme/themes.ts", "kind": "implementation", "note": "六套 canonical theme tokens"},
+        {"path": "src/theme/ThemeProvider.test.tsx", "kind": "test", "note": "主題與模式解析、保存"}
+      ],
+      "qualifiers": [],
+      "allowed_wording": ["六套主題，搭配系統、淺色與深色。"],
+      "prohibited_stronger_wording": ["無限自訂主題"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": ["themes"]
+    },
+    {
+      "claim_id": "claim-pwa",
+      "claim": "DayPop 具備 mobile-first PWA manifest、service worker 與 app shell 快取。",
+      "claim_type": "platform",
+      "status": "qualified",
+      "evidence_strength": "implementation_and_build_checks",
+      "evidence": [
+        {"path": "public/manifest.webmanifest", "kind": "implementation", "note": "PWA manifest"},
+        {"path": "pwa/sw-template.js", "kind": "implementation", "note": "版本化 app shell service worker"},
+        {"path": "scripts/check-build-assets.mjs", "kind": "test", "note": "production build 邊界檢查"}
+      ],
+      "qualifiers": ["尚未完成 DP-019 安裝圖示與正式 hosting 驗收"],
+      "allowed_wording": ["mobile-first PWA"],
+      "prohibited_stronger_wording": ["已在 App Store 上架", "完整離線編輯"],
+      "runtime_verification_status": "passed",
+      "used_by_assets": []
+    }
+  ],
+  "rejected_claims": [
+    {"claim": "已在 Apple App Store 上架", "reason": "本 campaign 僅採用官方支援的 screenshot 尺寸與商店風格構圖，沒有上架證據。"},
+    {"claim": "完整離線編輯與自動同步", "reason": "MVP 明確延後完整離線寫入佇列與多裝置衝突合併。"},
+    {"claim": "Google 登入已可用", "reason": "Google provider 與 production redirect allowlist 尚未設定。"},
+    {"claim": "AI 行程助理", "reason": "現有快速新增是 deterministic parser；AI server-side 代理尚未實作。"},
+    {"claim": "即時通知", "reason": "目前沒有完成通知可靠性與正式能力驗收。"},
+    {"claim": "家庭共享日曆", "reason": "家庭 group／membership／calendar-share 模型屬後續階段。"}
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "product_name": "日蹦 DayPop",
+  "product_category": "mobile-first 個人日曆 PWA",
+  "target_users": {
+    "primary": ["以手機安排個人行程與待辦的繁體中文使用者"],
+    "secondary": ["重視日曆視覺個人化與日常陪伴感的使用者"]
+  },
+  "primary_job_to_be_done": "用一個清楚、有個性的手機介面，快速記下每天的行程與待辦，並在月、週與單日尺度間整理生活節奏。",
+  "core_problem": "一般日曆的輸入步驟與資訊層級容易打斷日常節奏；DayPop 以快速新增、可拖曳時間格與同日整合降低整理負擔。",
+  "core_workflow": ["在月檢視掌握近期安排", "用自然語句開啟已解析的事件表單", "確認後在週檢視或日詳情調整與追蹤"],
+  "verified_features": [
+    {
+      "id": "feature-core-calendar",
+      "name": "多尺度個人日曆",
+      "summary": "提供連續月格、七欄週檢視、列表、日詳情與綜覽。",
+      "evidence_ids": ["evidence-calendar-screen", "evidence-overview-screen"],
+      "marketing_priority": 5
+    },
+    {
+      "id": "feature-quick-add",
+      "name": "快速新增",
+      "summary": "解析繁體中文自然語句中的日期、時間與地點，再交由使用者確認。",
+      "evidence_ids": ["evidence-quick-add-parser", "evidence-event-sheet"],
+      "marketing_priority": 5
+    },
+    {
+      "id": "feature-week-drag",
+      "name": "週檢視拖曳",
+      "summary": "可拖曳事件調整時間、長度與日期，吸附 15 分鐘。",
+      "evidence_ids": ["evidence-week-grid"],
+      "marketing_priority": 4
+    },
+    {
+      "id": "feature-day-detail",
+      "name": "單日整合",
+      "summary": "同一個日詳情面板呈現行程、待辦與貼圖。",
+      "evidence_ids": ["evidence-day-detail"],
+      "marketing_priority": 4
+    },
+    {
+      "id": "feature-themes",
+      "name": "六套外觀主題",
+      "summary": "可保存六套主題，並選擇跟隨系統、淺色或深色。",
+      "evidence_ids": ["evidence-themes"],
+      "marketing_priority": 4
+    },
+    {
+      "id": "feature-account-storage",
+      "name": "帳號資料保存",
+      "summary": "登入模式透過 Supabase repository 保存 canonical domain data；遊客模式維持版本化本機資料。",
+      "evidence_ids": ["evidence-data-provider", "evidence-supabase-repository"],
+      "marketing_priority": 3
+    }
+  ],
+  "differentiators": ["繁體中文快速新增先解析、再確認", "行程、待辦與貼圖共用同一日曆語境", "六套 canonical 主題延續原始漫畫式視覺"],
+  "proof_points": ["六張圖全部使用目前 revision 的真實 UI", "週檢視可直接看見跨日時間配置", "設定畫面可直接看見六套主題選項"],
+  "premium_features": [],
+  "visual_strengths": ["高密度但清楚的月格", "具有辨識度的漫畫主題與粗黑框線", "週時間格與日詳情能形成互補證據"],
+  "brand_personality": ["活潑", "陪伴感", "有秩序", "不過度科技化"],
+  "technical_strengths": ["canonical domain contract", "版本化本機資料與 fail-closed 邊界", "owner-only RLS 與 authenticated repository", "PWA app shell 與自託管資產"],
+  "weak_or_confusing_areas": ["設定頁仍有工程骨架區塊，不適合作為完整產品總覽", "正式 hosting、Google OAuth provider 與 production redirect 尚未完成", "安裝用 PNG／Apple touch icon 尚待 DP-019"],
+  "evidence": [
+    {"id": "evidence-calendar-screen", "path": "src/screens/calendar/CalendarScreen.tsx", "kind": "implementation"},
+    {"id": "evidence-overview-screen", "path": "src/screens/OverviewScreen.tsx", "kind": "implementation"},
+    {"id": "evidence-quick-add-parser", "path": "src/domain/quickAdd.ts", "kind": "implementation"},
+    {"id": "evidence-event-sheet", "path": "src/screens/calendar/EventSheet.tsx", "kind": "implementation"},
+    {"id": "evidence-week-grid", "path": "src/screens/calendar/WeekView.tsx", "kind": "implementation"},
+    {"id": "evidence-day-detail", "path": "src/screens/calendar/DayDetailSheet.tsx", "kind": "implementation"},
+    {"id": "evidence-themes", "path": "src/theme/themes.ts", "kind": "implementation"},
+    {"id": "evidence-data-provider", "path": "src/data/SessionDataProvider.tsx", "kind": "implementation"},
+    {"id": "evidence-supabase-repository", "path": "src/data/supabaseRepository.ts", "kind": "implementation"}
+  ],
+  "source_revision": "773f01b64510ead2d4248f4c9b42bcede5173460"
+}

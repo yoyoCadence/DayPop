@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "art_direction_id": "manga-day-grid-v1",
+  "name": "日常漫畫分鏡",
+  "premise": "讓每天的安排像一頁有節奏的漫畫，而不是一組漂浮的科技卡片。",
+  "product_metaphor": "日曆格線是分鏡框，行程與待辦是每天往前推進的故事節點。",
+  "emotional_tone": ["有活力", "可靠", "親近", "有秩序"],
+  "visual_signature": {
+    "dominant_mood": "活潑、俐落且帶有日常手感",
+    "composition_language": "漫畫分鏡式編排，讓每張畫面只說一件事",
+    "color_character": "暖白紙張、黑色墨線、朱紅與亮黃主色，少量鈷藍平衡",
+    "graphic_motif": "網點、放射線、膠帶與日曆格線",
+    "typography_character": "粗黑繁體中文標題搭配精簡產品說明",
+    "device_usage": "以真實手機 UI 截圖置入可控的平面框架，不捏造裝置或介面",
+    "generation_style": "真實 UI、可重現排版與單一生成式漫畫背景的混合製作"
+  },
+  "campaign_anchors": ["每張只保留一個主標題與一句佐證", "真實 UI 永遠是產品證據主體", "粗黑線、紙張質感與少量漫畫網點維持家族感", "朱紅、亮黃、鈷藍依資產角色輪替"],
+  "asset_variation": ["hero 使用生成式漫畫環境", "快速新增使用放射線強調輸入轉換", "週檢視沿用時間格線", "日詳情使用上下分鏡", "綜覽使用時間軸", "主題使用色彩圓形"],
+  "render_strategy": ["Playwright 擷取目前 revision 的真實 UI", "HTML/CSS 決定所有繁體中文與框架幾何", "Imagegen 只建立不含文字、裝置或 UI 的背景", "以 1290×2796 輸出六張直式展示圖，另重組 README hero 與 thumbnail"],
+  "must_preserve": ["DayPop 品牌名稱與 icon", "現有 UI 標籤、資料結構與互動結果", "繁體中文 approved copy", "合成資料與正式資料隔離"],
+  "avoid": ["生成式假 UI", "App Store 上架暗示", "玻璃擬態與通用 SaaS 漸層", "人物、手持裝置與不必要的硬體 mockup", "AI、即時同步、通知或家庭共享等未完成能力"],
+  "brand_basis": {
+    "repository_evidence": ["src/theme/themes.ts", "src/screens/calendar/calendar.css", "public/icon.svg", "docs/claude-design-source-of-truth.md"],
+    "product_traits": ["漫畫主題", "日常陪伴", "快速輸入", "清楚節奏"],
+    "user_constraints": ["繁體中文", "mobile-first", "真實產品證據優先"],
+    "portfolio_contrast": ["不用浮動玻璃卡", "不用紫藍科技漸層", "不用大型 3D 裝置"]
+  },
+  "generation_prompt": "Create one premium vertical abstract editorial background for the DayPop personal calendar PWA marketing campaign. Project-native visual idea: everyday plans become energetic manga panels. Warm off-white tactile paper, bold black ink panel rules, hot vermilion-red and golden-yellow halftone sunburst energy, a few restrained cobalt-blue paper strips, subtle calendar-grid rhythm, playful but disciplined composition, polished Apple App Store showcase quality. Leave generous calm negative space in the upper third for deterministic Traditional Chinese headline typography, and a broad clean central area where an authentic phone UI screenshot will later be composited. No text, no letters, no numbers, no logos, no devices, no screens, no UI controls, no people, no hands, no fake product interface, no gradients, no cyberpunk, no glassmorphism. Crisp high-resolution raster, portrait composition close to 9:16.",
+  "generated_element_role": "只作為 hero 的抽象漫畫紙張背景；所有文字、品牌與產品 UI 都是後續 deterministic composition。",
+  "style_version": 1
+}

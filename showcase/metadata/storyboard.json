@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "language": "zh-TW",
+  "story_summary": "先建立 DayPop 能整理日常的核心承諾，再從輸入、時間配置、單日整理與回顧走到個人化。",
+  "assets": [
+    {"asset_id": "hero", "order": 1, "communication_goal": "建立核心承諾", "feature": "feature-core-calendar", "user_value": "在同一個日曆掌握行程、待辦與貼圖", "headline": "把每一天，排得剛剛好", "supporting_copy": "行程、待辦與貼圖，收進你的生活節奏。", "proof_ui": ["月檢視"], "claim_ids": ["claim-core-calendar"], "visual_priority": ["核心承諾", "真實月格", "品牌識別"], "composition_intent": "暖白漫畫紙張包住傾斜的真實月格，讓日曆像一頁正在展開的生活分鏡。", "recommended_render_mode": "HYBRID"},
+    {"asset_id": "quick-add", "order": 2, "communication_goal": "呈現低摩擦輸入", "feature": "feature-quick-add", "user_value": "少切換欄位，仍保留最後確認", "headline": "一句話，變成一筆行程", "supporting_copy": "日期、時間與地點先解析，再由你確認。", "proof_ui": ["已解析的事件表單"], "claim_ids": ["claim-quick-add"], "visual_priority": ["一句話", "確認表單", "解析結果"], "composition_intent": "朱紅放射線把注意力推向表單，黃色小標只承擔解析完成的證據。", "recommended_render_mode": "SCREENSHOT-LED"},
+    {"asset_id": "week-rhythm", "order": 3, "communication_goal": "展示週節奏", "feature": "feature-week-drag", "user_value": "在時間格上直接調整安排", "headline": "從月到週，一眼換節奏", "supporting_copy": "7 欄時間格，拖曳調整時間與日期。", "proof_ui": ["週檢視事件區塊"], "claim_ids": ["claim-week-view"], "visual_priority": ["週標題", "時間格", "15 分鐘規則"], "composition_intent": "亮黃格線延伸 UI 的時間網格，讓整張圖讀成一週節拍。", "recommended_render_mode": "SCREENSHOT-LED"},
+    {"asset_id": "day-detail", "order": 4, "communication_goal": "展示單日整合", "feature": "feature-day-detail", "user_value": "不用在不同工具間拼湊一天", "headline": "一天的大小事，都在同一格", "supporting_copy": "行程、待辦與貼圖，一起整理。", "proof_ui": ["月格", "日詳情 sheet"], "claim_ids": ["claim-day-detail"], "visual_priority": ["單日承諾", "詳情 sheet", "行程與待辦"], "composition_intent": "鈷藍與暖白形成上下分鏡，日詳情從月格中展開。", "recommended_render_mode": "HYBRID"},
+    {"asset_id": "overview", "order": 5, "communication_goal": "展示回顧能力", "feature": "feature-core-calendar", "user_value": "在更長時間尺度辨認生活分布", "headline": "拉遠一點，看見整個月", "supporting_copy": "依年、月、週綜覽你的生活紀錄。", "proof_ui": ["月綜覽分組"], "claim_ids": ["claim-overview"], "visual_priority": ["回顧概念", "日期分組", "事件清單"], "composition_intent": "垂直朱紅時間軸串起暖白卡片，呼應綜覽的日期分組。", "recommended_render_mode": "SCREENSHOT-LED"},
+    {"asset_id": "themes", "order": 6, "communication_goal": "以個人化收束", "feature": "feature-themes", "user_value": "讓每天使用的工具貼近自己的視覺偏好", "headline": "日曆，也可以像你", "supporting_copy": "六套主題，搭配系統、淺色與深色。", "proof_ui": ["六套主題設定"], "claim_ids": ["claim-themes"], "visual_priority": ["個人化承諾", "六套主題", "顯示模式"], "composition_intent": "六個柔和彩色圓形在紙張背景散開，實際設定畫面保持最大辨識度。", "recommended_render_mode": "SCREENSHOT-LED"}
+  ]
+}
