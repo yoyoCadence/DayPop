@@ -171,5 +171,5 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 - **DP-064** — 跨午夜行程在月格衝突偵測與週檢視色塊的呈現（需要產品決策，不是還原原稿）。
 - **DP-030** — Playwright e2e。
 - **DP-019** — PWA 安裝圖示（PNG／Apple touch icon）。
-- **DP-065** — `release-notes.json` 仍停在 v0.2.0，落後整個日曆搬移（需要專案擁有者的發布決策）。
+- ~~**DP-065**~~ — 已完成：專案擁有者定案 v0.3.0「完整日曆與雲端保存」，`release-notes.json`、`version.json` 與 `sw.js` 已同步。
 - **DP-035** — 自動版本檢查節流。

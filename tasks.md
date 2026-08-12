@@ -60,8 +60,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~13~~ | ~~DP-028 附件 Storage~~ | 需要 | 已完成；private bucket、policy、簽名 URL、metadata 與 durable cleanup 均已驗證。 |
 | ~~14~~ | ~~DP-030 Playwright e2e~~ | 不使用 | 已完成。真實 guest 入口與 dev-only authenticated harness 已覆蓋手機／桌面核心流程，CI 不使用 secret。 |
 | ~~15~~ | ~~DP-019 PWA 安裝圖示~~ | 不使用 | 已完成；Apple touch／PNG／maskable icon 已產生並提交。 |
-| **16** | **DP-065 release version／notes** | **不使用** | **下一項。**需要專案擁有者決定首個部署版本與公告。 |
-| 17 | DP-033 GitHub Pages staging | 不使用 | 驗證 base path、SPA／OAuth redirect、PWA scope、環境變數與 rollback。 |
+| ~~16~~ | ~~DP-065 release version／notes~~ | 不使用 | 已完成；專案擁有者定案 v0.3.0「完整日曆與雲端保存」。 |
+| **17** | **DP-033 GitHub Pages staging** | **不使用** | **下一項。**驗證 base path、SPA／OAuth redirect、PWA scope、環境變數與 rollback。 |
 | 18 | DP-032 行動裝置 QA | 不使用 | 在 staging 驗證 iOS Safari、Android Chrome、桌面 Chromium 與無障礙。 |
 | 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。 |
 
@@ -71,9 +71,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-065（release note 落後）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-067（`version.json` 的 `dataSchemaVersion` 停在 1）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-065 — release note 已落後整個日曆搬移：** `release-notes.json` 最後一次更新是 PR #2（`4634cf4`，v0.2.0「帳號與資料安全基礎」），`package.json` 也仍是 `0.2.0`。但 DP-050 之後的 DP-051／052／053／055／057／058／059／060／015／061／063 已經把整個日曆搬進 App。結果是設定分頁的「查看這個版本更新了什麼」只列得出五條登入相關項目，`version.json` 與 `sw.js` 的版本化 cache 名稱也停在 0.2.0 — 對使用者而言，更新公告描述的不是他手上的 App。**需要專案擁有者先決定**：這幾段搬移（含 DP-019 的安裝圖示）合併成哪一個版本號、release note 怎麼寫、以及是否在選定 hosting（DP-033）之前就先升。注意 AGENTS.md 的規則 — 已正式部署版本的 release note 不可回寫修改；目前尚未選定 hosting，所以 0.2.0 還沒進入不可變狀態。
+- [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。若選 GitHub Pages，另須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope。通過 DP-030／032 與登入、資料保存 smoke test、達到可供日常使用的明確驗收點時，agent 必須主動提醒專案擁有者，再由擁有者決定是否開始使用，不得只因靜態頁成功發布就宣稱 ready。**部署前先確認**：v0.3.0 一旦部署，其 release note 即進入不可回寫狀態（AGENTS.md）。
 
 ## In Progress
 
@@ -89,8 +89,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ### Quality / release
 
 - [ ] **DP-032 — 行動裝置 QA 與無障礙：** 驗證 iOS Safari、Android Chrome、桌面 Chromium 的 safe area、觸控拖曳、鍵盤、focus、對比與 reduced motion。
-- [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。若選 GitHub Pages，另須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope。通過 DP-030／032 與登入、資料保存 smoke test、達到可供日常使用的明確驗收點時，agent 必須主動提醒專案擁有者，再由擁有者決定是否開始使用，不得只因靜態頁成功發布就宣稱 ready。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
+- [ ] **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** `scripts/generate-release-assets.mjs` 把 `dataSchemaVersion: 1` 寫死，但實際的 user-data schema 早在 DP-028 就到 4（`vite.config.ts` 的 `__DATA_SCHEMA_VERSION__`）。目前**沒有任何程式讀這個欄位** —— `ReleaseInfo` 有宣告它，`useAppUpdate` 只用 `version`／`changes`，所以它不會造成 runtime 錯誤，但每次發布都在公開檔案裡輸出一個錯的數字，遲早有人拿它當判斷依據。DP-065 沒有順手改掉是刻意的：兩個合理選項各自是設計決策 —— **(a) 刪掉這個欄位**（沒人讀，而且 AGENTS.md 明定 release version 與 user-data schema version 必須獨立，把它塞在 release 檔裡本來就在誘導耦合）；**(b) 讓它變成真的單一來源**，但 `vite.config.ts` 與這支 `.mjs` 現在各寫死一份，要真的同步就得再引入一個兩邊都讀得到的來源（例如一個小 JSON），那是新增結構。先決定 (a)／(b) 再動，不要只把 `1` 改成 `4` —— 那正是它第一次漂掉的方式。
 - [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
 ### 原型假功能與待補能力
@@ -134,6 +134,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-065 — 把 release version 與公告補到目前的 App：** 專案擁有者定案為單一版本 **v0.3.0「完整日曆與雲端保存」**（`releasedAt` 2026-08-12），涵蓋 DP-050 之後整段日曆搬移、帳號雲端保存、附件、legacy 匯入與 DP-019 的安裝圖示，不拆成多個中間版本。`package.json`、`package-lock.json`（僅版本欄位，相依未動）升到 `0.3.0`，`npm run release:assets` 重新產生 `public/version.json` 與 `public/sw.js`，cache 名稱隨之變為 `daypop-app-shell-0.3.0`。11 條公告以使用者看得懂的話寫成，並刻意**不宣稱尚未具備的能力**：沒有寫離線編輯、即時跨裝置同步、Google 登入、AI、通知、家庭分享或天氣；「雲端寫入失敗會標示尚未同步」「刪除日曆會把資料移到預設日曆」「附件下載採短效連結」等都照實描述現況。0.1.0／0.2.0 兩筆舊公告一字未改。**驗證**：以 Chromium 對 `npm run preview` 的正式建置實測，`version.json` 回 200 且為 0.3.0，設定分頁顯示「目前版本 v0.3.0」，「查看這個版本更新了什麼」展開後 11 條與 `version.json` 逐條一致（`useAppUpdate` 只在 `release.version === __APP_VERSION__` 時才顯示，等於同時驗證了建置版本與 release asset 沒有脫節），390px 無水平溢出、console 0 error／warning；lint、typecheck、39 files／330 tests、build、check:build 全通過。**沒有一併做的事**：0.3.0 尚未部署，所以 release note 仍可修改，一旦部署即進入 AGENTS.md 的不可回寫狀態；hosting 選定、base path 與 redirect 驗證仍屬 DP-033。過程中發現 `version.json` 的 `dataSchemaVersion` 固定輸出 `1` 而實際 schema 是 4，沒有人讀它，但要修必須先決定刪掉或建立真正的單一來源，已登記為 DP-067 而不在本任務順手改。未使用 Supabase MCP，未碰遠端、schema 或正式資料。下一項 DP-033 已移入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 
 - [x] **DP-019 — 補齊 PWA 安裝圖示：** `public/icons/` 新增五個提交進 repo 的 PNG：`icon-192`／`icon-512`（manifest `any`，保留原圖圓角與透明角落）、`maskable-192`／`maskable-512`（滿版底色，圖案縮到 80% 安全區）與 `apple-touch-icon-180`（滿版、完全不透明）。`index.html` 的 `apple-touch-icon` 不再指向 SVG — iOS 會忽略 SVG，並把透明處填成黑色再自行套用圓角，原本的圓角 SVG 會出現黑色缺角；manifest 仍保留 SVG，但 `purpose` 由不成立的 `any maskable` 改為 `any`（它有透明角落又沒有安全區，圓形遮罩會裁掉圖案）。**圖案沒有重畫**：`daypop.svg` 仍是唯一來源，新增的 `scripts/generate-icons.mjs`（`npm run icons`）以既有的 `@playwright/test` Chromium 把同一個 SVG 依三種取景光柵化，因此 PNG 不可能與 SVG 走鐘；PNG 刻意不在 build 時產生，已安裝的圖示必須跨版本保持穩定。`scripts/check-build-assets.mjs` 擴充為同時檢查建置輸出的圖示：manifest 是否宣告 `any`／`maskable` 各兩個尺寸、每個檔案是否真的存在且尺寸符合宣告、maskable 與 Apple icon 是否仍不透明、`apple-touch-icon` 是否指向 180×180 PNG；已用四種反向測試（刪檔、謊報尺寸、把帶 alpha 的圖標成 maskable、把 Apple icon 改回 SVG）確認每一條真的會擋下並回報。**驗證方式與限制**：以 Chromium 對 `npm run preview` 的正式建置實測，六個圖示全部 200、解碼尺寸正確，並逐像素確認兩個 maskable 在 80% 安全區外的圖案像素為 0、maskable 與 Apple icon 的角落 alpha 為 255（`#f4ce3f`），`any` 圖示則維持透明角落；`npm run test:e2e` 6 案例、lint、typecheck、39 files／330 tests、build、check:build 全通過。真正裝到 iPhone／Android 主畫面看外觀仍屬 DP-032 的實機 QA，本任務不宣稱已在實機驗收。**沒有一併做的事**：service worker 的 `APP_SHELL` 未加入這些 PNG（`addAll` 是全有全無，而安裝圖示由 OS 在安裝時取得，執行期 `/icons/` 已有 runtime cache）；版本號與 release note 屬 DP-065 的發布決策，未動 `package.json` 版本、`release-notes.json` 或 `sw.js`。未使用 Supabase MCP，未碰遠端、schema 或正式資料。下一項 DP-065 已移入 Next，但必須等專案擁有者親自合併本 PR 後才開始。
 
