@@ -31,6 +31,11 @@ function contentSecurityPolicy(supabaseUrl: string | undefined): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
+  // Relative by default so `dist/` can be opened from any path. A deploy under
+  // a subpath (GitHub Pages project sites) must override this with an absolute
+  // `--base=/<repo>/`: `import.meta.env.BASE_URL` feeds the service worker
+  // scope, the version check and the Supabase auth redirect, and `./` would
+  // resolve those against the domain root. See docs/deployment.md.
   base: './',
   // Only the public `VITE_` prefix is read; no secret can reach the bundle.
   plugins: [react(), contentSecurityPolicy(loadEnv(mode, '.', 'VITE_').VITE_SUPABASE_URL)],

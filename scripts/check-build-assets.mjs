@@ -82,6 +82,38 @@ if (!/default-src 'self'/.test(indexHtml)) {
 }
 
 /**
+ * Deploy safety — DP-033.
+ *
+ * The e2e suite mounts the real app against a fake Supabase from
+ * `e2e/auth.html`. It is served by the dev server only and must never reach a
+ * host: it would be a public page that fabricates a signed-in session. The
+ * `service_role` scan is the same idea from the other direction — the frontend
+ * is only ever allowed the project URL and the publishable key.
+ */
+const distFiles = [];
+for await (const file of walk(dist)) distFiles.push(relative(dist, file).replaceAll('\\', '/'));
+
+for (const file of distFiles) {
+  if (file === 'auth.html' || file.startsWith('e2e/')) {
+    problems.push(`dist/${file} is a dev-only test harness and must not be deployed`);
+  }
+}
+
+// The SPA fallback is what keeps an unknown URL under the deploy scope booting
+// the app instead of the host's 404 page.
+if (!distFiles.includes('404.html')) {
+  problems.push('dist/404.html is missing — the SPA fallback would not be deployed');
+}
+
+for (const file of distFiles) {
+  if (!TEXT_EXTENSIONS.has(extname(file))) continue;
+  const text = await readFile(resolve(dist, file), 'utf8');
+  if (/service_role|supabase_admin|SUPABASE_SERVICE/i.test(text)) {
+    problems.push(`dist/${file} mentions a server-only Supabase role`);
+  }
+}
+
+/**
  * Install icons are committed output of `npm run icons`, so nothing else in the
  * build would notice a missing file, a wrong pixel size, or an alpha channel
  * creeping back into an icon that must stay opaque — DP-019.

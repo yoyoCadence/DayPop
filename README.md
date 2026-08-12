@@ -63,13 +63,27 @@ npm run check:build   # 需先 build：檢查建置輸出沒有遠端依賴且�
 
 ## 持續整合
 
-PR 與 `main` 的 push 會由 GitHub Actions（`.github/workflows/ci.yml`）執行 `npm ci`，再依序跑上面四項檢查，並以 mobile／desktop Chromium 執行 Playwright e2e；Node 版本直接讀 `.nvmrc`，與本機一致。CI 目前不需要任何環境變數或密鑰，Supabase 未設定時 build 仍可通過。日後若某個步驟需要密鑰，只能使用 GitHub Secrets 注入，不得寫進 workflow 或 repository。Supabase `db reset`／pgTAP CI 仍待 DP-033。
+PR 與 `main` 的 push 會由 GitHub Actions（`.github/workflows/ci.yml`）執行 `npm ci`，再依序跑上面四項檢查，並以 mobile／desktop Chromium 執行 Playwright e2e；Node 版本直接讀 `.nvmrc`，與本機一致。CI 目前不需要任何環境變數或密鑰，Supabase 未設定時 build 仍可通過。日後若某個步驟需要密鑰，只能使用 GitHub Secrets 注入，不得寫進 workflow 或 repository。部署 workflow 使用的兩個 Supabase 值放在 repository **variables** 而不是 secrets —— 它們依設計是公開的，一定會進到前端 bundle。Supabase `db reset`／pgTAP CI 仍未納入。
 
 Production preview：
 
 ```bash
 npm run preview
 ```
+
+## 部署
+
+Staging 為 GitHub Pages 專案站台。部署由 `.github/workflows/deploy-staging.yml` 以人工 `workflow_dispatch` 觸發（不掛在 push 上），先跑與 PR 相同的品質閘門，再以絕對 base path 建置後發布。
+
+子路徑部署必須用絕對 base，否則 Supabase 的 auth redirect 會掉回網域根目錄：
+
+```bash
+npm run build -- --base=/DayPop/
+```
+
+`postbuild` 會把 `dist/index.html` 複製成 `dist/404.html`，讓靜態主機對未知路徑仍能啟動 App 並保留原網址。
+
+**尚未部署**：開啟 Pages、設定兩個 repository variables、Supabase redirect allowlist 與觸發部署都是專案擁有者的人工設定。完整流程、rollback 與部署後驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
 
 ## Supabase 開發
 

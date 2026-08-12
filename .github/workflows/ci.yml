@@ -6,6 +6,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # DP-033：部署前由 deploy-staging.yml 呼叫同一組檢查，不另外複製一份步驟。
+  workflow_call:
 
 # 這個 workflow 只做唯讀驗證，不寫回 repository。
 permissions:
