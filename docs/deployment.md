@@ -188,3 +188,53 @@ git push origin rollback/staging
 > 上面兩項需要真實 Email 帳號的檢查，與 **DP-023** 的 end-to-end 驗收是同一件事。
 >
 > iOS Safari／Android Chrome 的實機外觀、safe area、觸控與無障礙屬 **DP-032**；備份還原、資料刪除、隱私說明與錯誤監控屬 **DP-034**。全部通過後才可以主動提醒專案擁有者「已達可開始日常使用的驗收點」—— 光是靜態頁發布成功不算。
+
+### 5.1 首次部署的驗收結果（2026-08-13）
+
+專案擁有者完成 §3 的四項設定後觸發部署，run `31702877290` 成功。以 Chromium（390×844、`zh-TW`／`Asia/Taipei`）對 `https://yoyocadence.github.io/DayPop/` 實測：
+
+| 項目 | 結果 |
+| --- | --- |
+| 站台開啟、四個分頁 | 200，`日曆／搜尋／綜覽／設定` |
+| service worker scope | `https://yoyocadence.github.io/DayPop/` |
+| manifest `start_url`／`scope` | 兩者都是 `/DayPop/` |
+| manifest 五個圖示 ＋ Apple touch icon | 全部 200 |
+| `version.json` | `0.3.0`「完整日曆與雲端保存」 |
+| 設定分頁版本與 release note | 顯示 `v0.3.0`，展開 11 條，與 `version.json` 相符 |
+| 遊客建立行程 → 重新載入 | 資料仍在 |
+| 未知路徑 `/DayPop/some/unknown/path` | 啟動 App 且保留原網址 |
+| CSP violation | 0 |
+| 離開 `/DayPop/` 範圍的同源請求 | 0 |
+
+**尚未驗證**：需要真實 Email 帳號的註冊、驗證信 redirect、登入後資料保存（歸 **DP-023**），以及實機瀏覽器 QA（歸 **DP-032**）。因此目前**不能**宣稱已達可開始日常使用的驗收點。
+
+### 5.2 已知行為：SPA fallback 會回 404 狀態碼，且深層網址的相對連結會解析錯
+
+**（a）Pages 的機制。** 供應 `404.html` 時 HTTP 狀態碼**就是 404**，只有內容是 App。實測 `/DayPop/some/unknown/path` 會正確啟動 App、保留網址，但文件請求本身就是一則 404。這不是 DayPop 的缺陷，若日後換到可自訂 rewrite 的平台就會消失。
+
+**（b）DayPop 自己的缺陷 —— `index.html` 用的是文件相對路徑。** 這三個 link 是手寫在 `index.html` 裡的，Vite 不會改寫它們（`--base` 只影響它自己產生的 `<script>`／`<link rel=stylesheet>`）：
+
+| link | 在 `/DayPop/` 解析為 | 在 `/DayPop/some/unknown/path` 解析為 |
+| --- | --- | --- |
+| `rel=manifest` `./manifest.webmanifest` | `/DayPop/manifest.webmanifest`（200） | `/DayPop/some/unknown/manifest.webmanifest`（**404**） |
+| `rel=icon` `./icons/daypop.svg` | `/DayPop/icons/daypop.svg`（200） | `/DayPop/some/unknown/icons/daypop.svg`（**404**） |
+| `rel=apple-touch-icon` `./icons/apple-touch-icon-180.png` | 同上（200） | 同上（**404**） |
+
+三個深層網址都回 `404` 且 `content-type: text/html`（Pages 把 `404.html` 也餵給它們），所以 manifest 拿到的是 HTML、會解析失敗 —— 在這類網址上 PWA 安裝資訊等於不可用。
+
+**console 的 404 則數會因瀏覽器工作階段而異**：headless Chromium 不一定會去抓 `rel=icon`，只看到文件本身那一則；一般瀏覽器會抓，因此會看到兩則（文件 ＋ favicon）。複驗時看到的則數不同是正常的，根因是同一個。
+
+**影響範圍有限但真實**：DayPop 目前沒有 router，正常入口與 Supabase 的 redirect 目標一律是 `/DayPop/` 本身（200），所以登入流程不受影響。真正會踩到的是使用者手動打錯網址、外部連結指向深層路徑，或日後加入路由時。
+
+修正屬 **DP-068**（`index.html` 改用 Vite 的 `%BASE_URL%` placeholder，或其他等效做法），不在部署文件的範圍內。
+
+### 5.3 實測到的 response headers
+
+| Header | 值 |
+| --- | --- |
+| `content-security-policy` | （無 —— CSP 由 `<meta>` 交付） |
+| `x-frame-options` | （無） |
+| `strict-transport-security` | `max-age=31556952` |
+| `cache-control` | `max-age=600` |
+
+證實了 §1 說的限制：Pages 不供應這兩個安全 header，所以 `frame-ancestors` 目前確實沒有涵蓋。
