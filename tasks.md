@@ -61,8 +61,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~14~~ | ~~DP-030 Playwright e2e~~ | 不使用 | 已完成。真實 guest 入口與 dev-only authenticated harness 已覆蓋手機／桌面核心流程，CI 不使用 secret。 |
 | ~~15~~ | ~~DP-019 PWA 安裝圖示~~ | 不使用 | 已完成；Apple touch／PNG／maskable icon 已產生並提交。 |
 | ~~16~~ | ~~DP-065 release version／notes~~ | 不使用 | 已完成；專案擁有者定案 v0.3.0「完整日曆與雲端保存」。 |
-| **17** | **DP-033 GitHub Pages staging** | **不使用** | **下一項。**驗證 base path、SPA／OAuth redirect、PWA scope、環境變數與 rollback。 |
-| 18 | DP-032 行動裝置 QA | 不使用 | 在 staging 驗證 iOS Safari、Android Chrome、桌面 Chromium 與無障礙。 |
+| **17** | **DP-033 GitHub Pages staging** | **不使用** | **進行中。**管線、base path、SPA fallback 與部署安全檢查已完成並驗證；剩下的是專案擁有者的四項人工設定與實際部署，見 [`docs/deployment.md`](docs/deployment.md) §3。 |
+| **18** | **DP-032 行動裝置 QA** | **不使用** | **下一項，但要等 staging 真的上線。**在 staging 驗證 iOS Safari、Android Chrome、桌面 Chromium 與無障礙。 |
 | 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。 |
 
 > DP-023 剩餘的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作。負責 DP-023 的 agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
@@ -71,12 +71,13 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> 若接手的 agent 暫時不使用 MCP，仍有不需要遠端的工作可做：DP-064（跨午夜檢視決策）、DP-067（`version.json` 的 `dataSchemaVersion` 停在 1）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> **DP-032 需要 staging 網址才做得下去**，而 staging 卡在 DP-033 的擁有者人工設定（見 In Progress）。在那之前不需要遠端也不需要 MCP 的工作是：DP-064（跨午夜檢視決策）、DP-067（`version.json` 的 `dataSchemaVersion` 停在 1）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-033 — 部署 staging：** 建立 preview/staging、Supabase redirect allowlist、環境變數與 rollback 流程；驗證 production 不包含 service role、使用者 AI key 或本機測試資料。若選 GitHub Pages，另須驗證 Vite base path、SPA reload／OAuth recovery redirect、PWA manifest／service worker scope。通過 DP-030／032 與登入、資料保存 smoke test、達到可供日常使用的明確驗收點時，agent 必須主動提醒專案擁有者，再由擁有者決定是否開始使用，不得只因靜態頁成功發布就宣稱 ready。**部署前先確認**：v0.3.0 一旦部署，其 release note 即進入不可回寫狀態（AGENTS.md）。
+- [ ] **DP-032 — 行動裝置 QA 與無障礙：** 驗證 iOS Safari、Android Chrome、桌面 Chromium 的 safe area、觸控拖曳、鍵盤、focus、對比與 reduced motion。**開工前提**：DP-033 的 staging 必須已實際部署，且 DP-019 的安裝圖示要在真實主畫面上看過。
 
 ## In Progress
 
+- [ ] **DP-033 — 部署 staging：** **管線側已完成並驗證**：`.github/workflows/deploy-staging.yml` 以人工 `workflow_dispatch` 觸發，先跑與 PR 相同的 lint／typecheck／unit／build／asset check／e2e，再以 `--base=/DayPop/` 建置、上傳 Pages artifact 並發布；`npm run build` 的 `postbuild` 產生 `dist/404.html`（`index.html` 的位元組複本）作為 SPA fallback；`npm run check:build` 擴充為擋下 dev-only e2e harness、缺少的 404.html 與私密金鑰材料；workflow 另以 `grep` 斷言 base path 真的進到產物。**金鑰 fail closed（PR 複審後補上）**：`src/lib/supabaseKey.ts` 是分類 Supabase 金鑰的單一來源，只接受 `sb_publishable_…` 或解碼後 `role === "anon"` 的舊式 JWT，`sb_secret_…`、`service_role` JWT 與任何未知格式一律拒絕；`vite.config.ts` 在建置開始前 throw（不產生任何輸出）、`src/lib/env.ts` 拒絕建立 client、`check:build` 再獨立掃描 `dist/`。產物掃描必須解碼每個 JWT 形狀的 token —— 舊式 `service_role` JWT 把 role 藏在 base64url 裡，搜尋字串是找不到的。所有訊息只說明怎麼修，不輸出金鑰內容。原本「提到 `service_role` 就擋」的粗規則已移除：分類器本身必須在原始碼與錯誤訊息裡寫出這些名稱，那條規則會讓每次建置都失敗。已在本機以 `/DayPop/` 子路徑實測：四分頁渲染、五個 public 資源只在 `/DayPop/` 下 200（根路徑 404）、service worker scope 為 `/DayPop/`、manifest `start_url`／`scope` 解析為 `/DayPop/`、重新載入正常、未知路徑仍啟動 App 且保留原網址、bundle 內帶絕對 base、`dist` 不含 harness。**剩下的都是專案擁有者的人工設定**，agent 不能也不應代做，四項見 [`docs/deployment.md`](docs/deployment.md) §3：開啟 Pages（Source 選 GitHub Actions）、新增兩個 repository **variables**（`VITE_SUPABASE_URL`／`VITE_SUPABASE_PUBLISHABLE_KEY`，是公開值所以不是 secret）、在 Supabase 設定 Site URL 與 redirect allowlist、然後手動觸發 workflow。部署後再依 §5 的 10 項清單驗收；其中需要真實 Email 的兩項與 DP-023 是同一件事。**已知代價**：GitHub Pages 不能設 response header，所以 CSP 只能繼續用 meta 交付，`frame-ancestors` 無法涵蓋。
 - [ ] **DP-023 — 依 Orbit 模式接入 Supabase Auth：** 前端程式、Email flow、session restore、provider capability detection 與 recovery UI 已完成；剩餘 Google OAuth client／Supabase provider、部署 redirect allowlist，以及使用真實 Email／Google 帳號做 end-to-end 驗收。遊客資料不會因登入／登出被清除或自動上傳。
 
 ## Backlog

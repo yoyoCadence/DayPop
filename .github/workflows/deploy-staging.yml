@@ -1,0 +1,119 @@
+name: Deploy staging
+
+# DP-033：把 DayPop 部署到 GitHub Pages 作為 staging。
+#
+# 只由人工觸發（workflow_dispatch），不掛在 push 上 —— 部署是對外公開的動作，
+# 應該由專案擁有者決定時機，而不是每次合併就自動發布。
+#
+# rollback 也走同一個入口，但要注意 dispatch 只接受 branch 或 tag，不接受
+# 任意 commit SHA，而網頁介面的下拉選單只列 branch。詳見 docs/deployment.md。
+on:
+  workflow_dispatch:
+
+# 只讀 repository；寫入 Pages 的權限單獨授予 deploy job。
+permissions:
+  contents: read
+
+# 部署不可互相打斷：同時只跑一個，且不取消進行中的那一個，
+# 否則站台可能停在只上傳一半的狀態。
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  # 與 PR 上完全相同的 lint／typecheck／unit／build／asset check 與 e2e。
+  verify:
+    name: Quality gate
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build for Pages
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # GitHub Pages 專案站台位於 https://<owner>.github.io/<repo>/。
+      # 這個前綴必須是絕對路徑：import.meta.env.BASE_URL 會決定 service
+      # worker scope、版本檢查網址與 Supabase auth redirect，用相對的 './'
+      # 會把它們解析到網域根目錄。改 repository 名稱時這裡要一起改。
+      BASE_PATH: /DayPop/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 這兩個值依設計是公開的（前端只能拿到 project URL 與 publishable
+      # key），所以放在 repository variables 而不是 secrets —— CI 至今不需要
+      # 任何 secret，這一點維持不變。這裡只檢查有沒有設定，不輸出內容。
+      #
+      # 金鑰「格式」不在這裡判斷：vite.config.ts 會在建置開始前分類金鑰，
+      # sb_secret_ 或 service_role JWT 一律讓建置失敗，不會產生任何輸出。
+      # 單純檢查非空無法擋下誤貼的私密金鑰。
+      - name: Require the public Supabase configuration
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          missing=0
+          [ -n "$VITE_SUPABASE_URL" ] || { echo "::error::缺少 repository variable VITE_SUPABASE_URL"; missing=1; }
+          [ -n "$VITE_SUPABASE_PUBLISHABLE_KEY" ] || { echo "::error::缺少 repository variable VITE_SUPABASE_PUBLISHABLE_KEY"; missing=1; }
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::沒有這兩個值，部署出去的站台會無法登入。設定方式見 docs/deployment.md。"
+            exit 1
+          fi
+          echo "Supabase public configuration is present."
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build -- --base=${{ env.BASE_PATH }}
+
+      # DP-015／019／033：無遠端依賴、CSP、安裝圖示、SPA fallback、
+      # 不含 dev-only harness，也不含私密金鑰材料（含解碼後才看得出
+      # role 的舊式 service_role JWT）。
+      - name: Check build assets
+        run: npm run check:build
+
+      # base path 若沒真的進到產物，站台會 200 但資源全部 404，
+      # 而且 auth redirect 會掉回網域根目錄。這一步讓它變成建置失敗。
+      - name: Assert the deploy base path reached the output
+        run: |
+          grep -q "${BASE_PATH}assets/" dist/index.html
+          grep -q "${BASE_PATH}assets/" dist/404.html
+          grep -rq "${BASE_PATH}sw.js" dist/assets
+          echo "Base path ${BASE_PATH} is present in the built output."
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Publish to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

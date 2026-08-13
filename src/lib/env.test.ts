@@ -47,4 +47,42 @@ describe('readSupabasePublicConfig', () => {
       }),
     ).toThrow('HTTPS');
   });
+
+  // DP-033: the build refuses a privileged key, but a browser must never create
+  // a client with one either — the two gates are independent on purpose.
+  it('refuses to build a client from a secret key', () => {
+    expect(() =>
+      readSupabasePublicConfig({
+        VITE_SUPABASE_URL: 'https://example.supabase.co',
+        VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_not-a-real-key',
+      }),
+    ).toThrow(SupabaseConfigurationError);
+  });
+
+  it('refuses a legacy service_role JWT', () => {
+    // Fabricated, unsigned, and shaped only for the parser.
+    const encode = (value: object) =>
+      btoa(JSON.stringify(value)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    const serviceRole = `${encode({ alg: 'HS256' })}.${encode({ role: 'service_role' })}.sig`;
+
+    expect(() =>
+      readSupabasePublicConfig({
+        VITE_SUPABASE_URL: 'https://example.supabase.co',
+        VITE_SUPABASE_PUBLISHABLE_KEY: serviceRole,
+      }),
+    ).toThrow(SupabaseConfigurationError);
+  });
+
+  it('does not put the rejected key in the error message', () => {
+    const key = 'sb_secret_not-a-real-key';
+    try {
+      readSupabasePublicConfig({
+        VITE_SUPABASE_URL: 'https://example.supabase.co',
+        VITE_SUPABASE_PUBLISHABLE_KEY: key,
+      });
+      expect.unreachable('a secret key must be rejected');
+    } catch (error) {
+      expect((error as Error).message).not.toContain(key);
+    }
+  });
 });

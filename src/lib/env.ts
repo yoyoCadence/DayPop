@@ -1,3 +1,9 @@
+import {
+  classifySupabaseKey,
+  describeSupabaseKeyProblem,
+  isBrowserSafeSupabaseKey,
+} from './supabaseKey';
+
 export interface SupabasePublicConfig {
   url: string;
   publishableKey: string;
@@ -39,6 +45,13 @@ export function readSupabasePublicConfig(env: PublicEnvironment): SupabasePublic
 
   if (!isSecureRemote && !isLocalDevelopment) {
     throw new SupabaseConfigurationError('Supabase URL 必須使用 HTTPS；本機開發可使用 HTTP loopback。');
+  }
+
+  // Fail closed on a privileged key — DP-033. The build refuses one too, but a
+  // browser must never create a client with it even if a bundle slips through.
+  const kind = classifySupabaseKey(publishableKey);
+  if (!isBrowserSafeSupabaseKey(kind)) {
+    throw new SupabaseConfigurationError(describeSupabaseKeyProblem(kind));
   }
 
   return { url: parsedUrl.toString().replace(/\/$/, ''), publishableKey };
