@@ -5,8 +5,8 @@ name: Deploy staging
 # 只由人工觸發（workflow_dispatch），不掛在 push 上 —— 部署是對外公開的動作，
 # 應該由專案擁有者決定時機，而不是每次合併就自動發布。
 #
-# rollback 也走同一個入口：在想回到的 commit／tag 上重新 dispatch 這個
-# workflow 即可；Pages 會以該次成品覆蓋現有站台。詳見 docs/deployment.md。
+# rollback 也走同一個入口，但要注意 dispatch 只接受 branch 或 tag，不接受
+# 任意 commit SHA，而網頁介面的下拉選單只列 branch。詳見 docs/deployment.md。
 on:
   workflow_dispatch:
 
@@ -55,6 +55,10 @@ jobs:
       # 這兩個值依設計是公開的（前端只能拿到 project URL 與 publishable
       # key），所以放在 repository variables 而不是 secrets —— CI 至今不需要
       # 任何 secret，這一點維持不變。這裡只檢查有沒有設定，不輸出內容。
+      #
+      # 金鑰「格式」不在這裡判斷：vite.config.ts 會在建置開始前分類金鑰，
+      # sb_secret_ 或 service_role JWT 一律讓建置失敗，不會產生任何輸出。
+      # 單純檢查非空無法擋下誤貼的私密金鑰。
       - name: Require the public Supabase configuration
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
@@ -76,7 +80,8 @@ jobs:
         run: npm run build -- --base=${{ env.BASE_PATH }}
 
       # DP-015／019／033：無遠端依賴、CSP、安裝圖示、SPA fallback、
-      # 不含 dev-only harness 或 server-only role。
+      # 不含 dev-only harness，也不含私密金鑰材料（含解碼後才看得出
+      # role 的舊式 service_role JWT）。
       - name: Check build assets
         run: npm run check:build
 

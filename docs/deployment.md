@@ -71,9 +71,36 @@ Repository → **Settings → Secrets and variables → Actions → Variables** 
 
 放 variables 而不是 secrets 是刻意的：這兩個值**依設計就是公開的**，一定會被打包進前端 bundle，設成 secret 只會製造「它是機密」的錯覺，並讓 log 裡出現無意義的遮蔽。CI 至今不需要任何 secret，這一點維持不變。
 
-**絕對不要**把 `service_role` 或任何伺服器端金鑰放進 variables 或 secrets 供前端建置使用。
+**絕對不要**把 `service_role` 或任何伺服器端金鑰放進 variables 或 secrets 供前端建置使用。誤貼一次，那把金鑰就會被編進公開的 JavaScript，任何訪客都能繞過所有 RLS 讀寫整個資料庫。
 
 沒設定這兩個值時，deploy workflow 會直接失敗並說明原因，而不是發布一個無法登入的站台。
+
+### 金鑰格式是強制檢查的，不只是「有沒有填」
+
+`VITE_SUPABASE_PUBLISHABLE_KEY` 會在**建置開始前**被分類（`src/lib/supabaseKey.ts`），三道關卡都是 fail closed：
+
+| 關卡 | 位置 | 行為 |
+| --- | --- | --- |
+| 建置期 | `vite.config.ts` | 不是 publishable／anon 就 throw，**不產生任何輸出** |
+| 執行期 | `src/lib/env.ts` | 拒絕建立 Supabase client |
+| 產物掃描 | `npm run check:build` | 掃描 `dist/`，見下 |
+
+接受：
+
+- `sb_publishable_…`
+- 舊式 JWT 且解碼後 `role === "anon"`
+
+拒絕（含未知格式）：
+
+- `sb_secret_…`
+- 舊式 JWT 且 `role === "service_role"`
+- 任何無法被正面辨識的值
+
+產物掃描是獨立的最後一道防線，因為兩種洩漏的形狀不同：`sb_secret_…` 是明碼可見；而舊式 `service_role` JWT 把 role 藏在 base64url 裡，**在檔案裡搜尋 `service_role` 這個字串是找不到的**，必須把每個 JWT 形狀的 token 解碼才看得出來。
+
+所有錯誤訊息只說明該怎麼修，不會輸出金鑰內容。
+
+> Supabase 官方對兩種金鑰用途的說明：[API keys](https://supabase.com/docs/guides/api/api-keys)。
 
 ### 3.3 Supabase redirect allowlist
 
@@ -96,11 +123,45 @@ Repository → **Actions → Deploy staging → Run workflow**，選要部署的
 
 ## 4. Rollback
 
-在想回到的 commit 或 tag 上重新 dispatch 同一個 workflow：
+Rollback 就是「在舊的程式碼上重新跑一次同一個 workflow」。Pages 會以這次的成品覆蓋現有站台；因為每次部署都是完整的靜態成品，沒有「部分回滾」這種狀態。
 
-Actions → Deploy staging → Run workflow → 選該 ref → Run。
+**但 `workflow_dispatch` 能指定的 ref 是有限制的**，這決定了實際步驟：
 
-Pages 會以這次的成品覆蓋現有站台。因為每次部署都是完整的靜態成品，沒有「部分回滾」的狀態。
+| 方式 | 可指定的 ref |
+| --- | --- |
+| 網頁介面（Actions → Run workflow） | **只有 branch**，下拉選單不列 tag |
+| `gh` CLI／REST API | **branch 或 tag** |
+| 任何方式 | **不接受任意 commit SHA** |
+
+（GitHub 文件：[Manually running a workflow](https://docs.github.com/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)、[Create a workflow dispatch event](https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event)。）
+
+### 4.1 建議做法：每次部署先打 tag
+
+部署前替該 commit 打一個 tag，rollback 才有明確的目標：
+
+```bash
+git tag -a deploy-2026-08-13 -m "staging 部署"
+git push origin deploy-2026-08-13
+```
+
+之後用 CLI 回到該 tag：
+
+```bash
+gh workflow run deploy-staging.yml --ref deploy-2026-08-13
+```
+
+### 4.2 只能用網頁介面時
+
+介面不列 tag，所以要先把想部署的 commit 變成一個 branch：
+
+```bash
+git branch rollback/staging <要回到的 commit 或 tag>
+git push origin rollback/staging
+```
+
+再到 Actions → Deploy staging → Run workflow 選 `rollback/staging`。
+
+> 注意：workflow 會以**被選中的那個 ref 上的 `deploy-staging.yml`** 執行。回到很舊的 commit 時，跑的是當時那一版的部署流程；若該版本還沒有這個 workflow，就得改用 4.1 的 tag 或先把 workflow 併進該 branch。
 
 **回到舊版時要留意的兩件事：**
 

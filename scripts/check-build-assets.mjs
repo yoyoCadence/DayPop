@@ -105,11 +105,77 @@ if (!distFiles.includes('404.html')) {
   problems.push('dist/404.html is missing — the SPA fallback would not be deployed');
 }
 
+/**
+ * Last line of defence against a privileged Supabase key reaching the public
+ * bundle — DP-033.
+ *
+ * `vite.config.ts` already refuses to build with one (see
+ * `src/lib/supabaseKey.ts`, which is the canonical classifier). This scan is
+ * independent of it and looks at the artifact that would actually be
+ * published, because the two failure shapes are different:
+ *
+ * - `sb_secret_…` is plainly visible, so a literal match finds it.
+ * - a legacy `service_role` JWT hides its role inside base64url, so searching
+ *   the text for "service_role" finds nothing. Every JWT-shaped token has to
+ *   be decoded to see what it is.
+ *
+ * Both rules match key *material*, not mentions of these names. A blunt
+ * "contains the word service_role" rule fires on every build, because the
+ * classifier that rejects such keys necessarily names them in its own source
+ * and error messages — and a check that always fails teaches everyone to
+ * ignore it.
+ *
+ * Nothing here prints a key; only the file it was found in.
+ */
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function decodeBase64Url(segment) {
+  let bits = 0;
+  let bitCount = 0;
+  let output = '';
+  for (const character of segment.replaceAll('-', '+').replaceAll('_', '/')) {
+    if (character === '=') break;
+    const index = BASE64_ALPHABET.indexOf(character);
+    if (index < 0) return null;
+    bits = (bits << 6) | index;
+    bitCount += 6;
+    if (bitCount >= 8) {
+      bitCount -= 8;
+      output += String.fromCharCode((bits >> bitCount) & 0xff);
+    }
+  }
+  return output;
+}
+
+function jwtRole(token) {
+  const payload = decodeBase64Url(token.split('.')[1] ?? '');
+  if (payload === null) return null;
+  try {
+    const parsed = JSON.parse(payload);
+    return typeof parsed?.role === 'string' ? parsed.role : null;
+  } catch {
+    return null;
+  }
+}
+
+const PRIVILEGED_ROLES = new Set(['service_role', 'supabase_admin']);
+
 for (const file of distFiles) {
   if (!TEXT_EXTENSIONS.has(extname(file))) continue;
   const text = await readFile(resolve(dist, file), 'utf8');
-  if (/service_role|supabase_admin|SUPABASE_SERVICE/i.test(text)) {
-    problems.push(`dist/${file} mentions a server-only Supabase role`);
+
+  // The prefix plus enough trailing characters to be actual key material, not
+  // the bare prefix constant the classifier compares against.
+  if (/sb_secret_[A-Za-z0-9_-]{8,}/.test(text)) {
+    problems.push(`dist/${file} contains a Supabase secret key (sb_secret_…)`);
+  }
+
+  // JWTs always start with the base64url of `{"alg"`.
+  for (const match of text.matchAll(/eyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+/g)) {
+    const role = jwtRole(match[0]);
+    if (role !== null && PRIVILEGED_ROLES.has(role)) {
+      problems.push(`dist/${file} embeds a privileged Supabase JWT (role ${role})`);
+    }
   }
 }
 
