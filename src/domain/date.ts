@@ -18,6 +18,23 @@ export function addDays(date: Date, amount: number): Date {
   return next;
 }
 
+/**
+ * Same day-of-month `amount` months away, clamped to the target month's length
+ * — DP-069's PageUp/PageDown paging.
+ *
+ * `setMonth()` alone overflows: 1月31日 plus one month becomes 3月3日, which
+ * would make PageDown skip February entirely. Clamping keeps every page landing
+ * in the month the user asked for.
+ */
+export function addMonths(date: Date, amount: number): Date {
+  const year = date.getFullYear();
+  const month = date.getMonth() + amount;
+  const daysInTarget = new Date(year, month + 1, 0).getDate();
+  const next = new Date(date);
+  next.setFullYear(year, month, Math.min(date.getDate(), daysInTarget));
+  return next;
+}
+
 /** Midnight of the same local day. Mirrors `norm()` in the原檔. */
 export function startOfDay(date: Date): Date {
   const next = new Date(date);

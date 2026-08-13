@@ -10,6 +10,8 @@ import {
 } from 'react';
 import {
   addDays,
+  addMonths,
+  daysBetween,
   fromDateKey,
   monthGridWeekCount,
   startOfWeek,
@@ -92,6 +94,14 @@ export function MonthView({
 
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
   const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
+
+  // Roving tabindex — DP-069. The buffer holds hundreds of day cells and grows
+  // as the user scrolls, so leaving every cell in the tab order put the bottom
+  // tab bar 382 Tab presses away. Exactly one cell is tabbable; the arrow keys
+  // move between days from there.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  /** A ref, not state: this only drives a DOM call, never what is rendered. */
+  const pendingFocus = useRef<string | null>(null);
 
   const scrollToToday = useCallback(
     (smooth: boolean, height?: number) => {
@@ -197,9 +207,124 @@ export function MonthView({
     [weekStartsOn],
   );
 
-  const weeks = useMemo(() => {
-    const gridStart = startOfWeek(fromDateKey(bufferStart), weekStartsOn);
-    return Array.from({ length: bufferWeeks }, (_, week) =>
+  const gridStart = useMemo(
+    () => startOfWeek(fromDateKey(bufferStart), weekStartsOn),
+    [bufferStart, weekStartsOn],
+  );
+  // Date keys are zero-padded `YYYY-MM-DD`, so string order is date order.
+  const firstKey = toDateKey(gridStart);
+  const lastKey = toDateKey(addDays(gridStart, bufferWeeks * 7 - 1));
+  const inBuffer = useCallback(
+    (key: string) => key >= firstKey && key <= lastKey,
+    [firstKey, lastKey],
+  );
+
+  /**
+   * The single tabbable cell: wherever the keyboard left off, else the selected
+   * day, else today. Falling back keeps a tab stop in the grid even when the
+   * selection sits outside the rendered buffer.
+   */
+  const preferredKey = focusKey ?? selectedDate;
+  const activeKey = inBuffer(preferredKey)
+    ? preferredKey
+    : inBuffer(todayKey)
+      ? todayKey
+      : firstKey;
+
+  /**
+   * Extends the rolling buffer so `key` has a cell to focus. Called from the
+   * key handler rather than from the effect below, so the effect stays a pure
+   * DOM side effect with no state updates of its own.
+   */
+  const ensureInBuffer = useCallback(
+    (key: string) => {
+      if (key < firstKey) {
+        const weeks = Math.max(
+          BUFFER_GROWTH_WEEKS,
+          Math.ceil(daysBetween(fromDateKey(key), fromDateKey(firstKey)) / 7) + 1,
+        );
+        // Prepending rows pushes everything down; compensate so the viewport
+        // stays where the user left it, exactly as `handleScroll` does.
+        pendingScrollAdjust.current += weeks * rowHeightRef.current;
+        setBufferStart((current) => toDateKey(addDays(fromDateKey(current), -weeks * 7)));
+        setBufferWeeks((current) => current + weeks);
+      } else if (key > lastKey) {
+        const weeks = Math.max(
+          BUFFER_GROWTH_WEEKS,
+          Math.ceil(daysBetween(fromDateKey(lastKey), fromDateKey(key)) / 7) + 1,
+        );
+        setBufferWeeks((current) => current + weeks);
+      }
+    },
+    [firstKey, lastKey],
+  );
+
+  // Focus follows the key once its cell exists. The buffer bounds are
+  // dependencies so a key that needed a bigger buffer gets focused on the
+  // render that adds its row.
+  useEffect(() => {
+    const key = pendingFocus.current;
+    if (key === null) return;
+
+    const cell = scrollRef.current?.querySelector<HTMLButtonElement>(`[data-date-key="${key}"]`);
+    if (!cell) return;
+
+    cell.focus();
+    pendingFocus.current = null;
+  }, [firstKey, focusKey, lastKey]);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const from = (event.target as HTMLElement).dataset?.dateKey;
+      if (!from || event.altKey || event.ctrlKey || event.metaKey) return;
+
+      const date = fromDateKey(from);
+      // Weekday offset within the row, so Home/End land on the row's own ends
+      // whether the week starts on Sunday or Monday.
+      const offset = (date.getDay() - weekStartsOn + 7) % 7;
+
+      let next: string;
+      switch (event.key) {
+        case 'ArrowLeft':
+          next = toDateKey(addDays(date, -1));
+          break;
+        case 'ArrowRight':
+          next = toDateKey(addDays(date, 1));
+          break;
+        case 'ArrowUp':
+          next = toDateKey(addDays(date, -7));
+          break;
+        case 'ArrowDown':
+          next = toDateKey(addDays(date, 7));
+          break;
+        case 'Home':
+          next = toDateKey(addDays(date, -offset));
+          break;
+        case 'End':
+          next = toDateKey(addDays(date, 6 - offset));
+          break;
+        case 'PageUp':
+          next = toDateKey(addMonths(date, -1));
+          break;
+        case 'PageDown':
+          next = toDateKey(addMonths(date, 1));
+          break;
+        default:
+          return;
+      }
+
+      // Arrow keys would otherwise scroll the buffer out from under the focus.
+      event.preventDefault();
+      ensureInBuffer(next);
+      setFocusKey(next);
+      pendingFocus.current = next;
+    },
+    [ensureInBuffer, weekStartsOn],
+  );
+
+  const weeks = useMemo(
+    () =>
+    Array.from({ length: bufferWeeks }, (_, week) =>
       Array.from({ length: 7 }, (_, day) => {
         const date = addDays(gridStart, week * 7 + day);
         const key = toDateKey(date);
@@ -217,8 +342,9 @@ export function MonthView({
           hasConflict: hasOverlap(dayEvents),
         };
       }),
-    );
-  }, [bufferStart, bufferWeeks, eventsByDate, stickersByDate, weekStartsOn]);
+    ),
+    [bufferWeeks, eventsByDate, gridStart, stickersByDate],
+  );
 
   return (
     <div className="cal-view-pane">
@@ -229,7 +355,12 @@ export function MonthView({
           </div>
         ))}
       </div>
-      <div className="cal-month-scroll" ref={scrollRef} onScroll={handleScroll}>
+      <div
+        className="cal-month-scroll"
+        ref={scrollRef}
+        onScroll={handleScroll}
+        onKeyDown={handleKeyDown}
+      >
         {weeks.map((cells, week) => (
           <div className="cal-week-row" key={week} style={{ height: `${rowHeight}px` }}>
             {cells.map((cell) => {
@@ -241,7 +372,10 @@ export function MonthView({
                   className="cal-cell"
                   key={cell.key}
                   type="button"
+                  data-date-key={cell.key}
+                  tabIndex={cell.key === activeKey ? 0 : -1}
                   onClick={() => onSelectDate(cell.key)}
+                  onFocus={() => setFocusKey(cell.key)}
                   aria-pressed={isSelected}
                   aria-label={`${cell.key}，${cell.dayEvents.length} 個行程`}
                   style={{ background: cellBackground(isToday, isSelected, cell.isZebra) }}
