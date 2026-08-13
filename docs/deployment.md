@@ -208,11 +208,25 @@ git push origin rollback/staging
 
 **尚未驗證**：需要真實 Email 帳號的註冊、驗證信 redirect、登入後資料保存（歸 **DP-023**），以及實機瀏覽器 QA（歸 **DP-032**）。因此目前**不能**宣稱已達可開始日常使用的驗收點。
 
-### 5.2 已知行為：SPA fallback 會回 404 狀態碼
+### 5.2 已知行為：SPA fallback 會回 404 狀態碼，且深層網址的相對連結會解析錯
 
-GitHub Pages 供應 `404.html` 時，HTTP 狀態碼**就是 404**，只有內容是 App。實測 `/DayPop/some/unknown/path` 會正確啟動 App、保留網址，但瀏覽器 console 會留下一則 `Failed to load resource: 404`。
+**（a）Pages 的機制。** 供應 `404.html` 時 HTTP 狀態碼**就是 404**，只有內容是 App。實測 `/DayPop/some/unknown/path` 會正確啟動 App、保留網址，但文件請求本身就是一則 404。這不是 DayPop 的缺陷，若日後換到可自訂 rewrite 的平台就會消失。
 
-這是 Pages 的機制，不是 DayPop 的缺陷，也不影響登入流程 —— Supabase 的 redirect 目標一律是 `/DayPop/` 本身（200）。若日後換到可自訂 rewrite 的平台，這則 404 就會消失。
+**（b）DayPop 自己的缺陷 —— `index.html` 用的是文件相對路徑。** 這三個 link 是手寫在 `index.html` 裡的，Vite 不會改寫它們（`--base` 只影響它自己產生的 `<script>`／`<link rel=stylesheet>`）：
+
+| link | 在 `/DayPop/` 解析為 | 在 `/DayPop/some/unknown/path` 解析為 |
+| --- | --- | --- |
+| `rel=manifest` `./manifest.webmanifest` | `/DayPop/manifest.webmanifest`（200） | `/DayPop/some/unknown/manifest.webmanifest`（**404**） |
+| `rel=icon` `./icons/daypop.svg` | `/DayPop/icons/daypop.svg`（200） | `/DayPop/some/unknown/icons/daypop.svg`（**404**） |
+| `rel=apple-touch-icon` `./icons/apple-touch-icon-180.png` | 同上（200） | 同上（**404**） |
+
+三個深層網址都回 `404` 且 `content-type: text/html`（Pages 把 `404.html` 也餵給它們），所以 manifest 拿到的是 HTML、會解析失敗 —— 在這類網址上 PWA 安裝資訊等於不可用。
+
+**console 的 404 則數會因瀏覽器工作階段而異**：headless Chromium 不一定會去抓 `rel=icon`，只看到文件本身那一則；一般瀏覽器會抓，因此會看到兩則（文件 ＋ favicon）。複驗時看到的則數不同是正常的，根因是同一個。
+
+**影響範圍有限但真實**：DayPop 目前沒有 router，正常入口與 Supabase 的 redirect 目標一律是 `/DayPop/` 本身（200），所以登入流程不受影響。真正會踩到的是使用者手動打錯網址、外部連結指向深層路徑，或日後加入路由時。
+
+修正屬 **DP-068**（`index.html` 改用 Vite 的 `%BASE_URL%` placeholder，或其他等效做法），不在部署文件的範圍內。
 
 ### 5.3 實測到的 response headers
 

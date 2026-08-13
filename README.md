@@ -85,7 +85,7 @@ npm run build -- --base=/DayPop/
 
 Staging 網址：**https://yoyocadence.github.io/DayPop/**（2026-08-13 首次部署，驗收結果見 [`docs/deployment.md`](docs/deployment.md) §5.1）。
 
-需要真實帳號的登入驗收（DP-023）與實機瀏覽器 QA（DP-032）尚未完成，因此還不到「可開始日常使用」的階段。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
+需要真實帳號的登入驗收（DP-023，同時是 DP-033 尚未完成的部分）與實機瀏覽器 QA（DP-032）都還沒做，因此還不到「可開始日常使用」的階段。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
 
 ## Supabase 開發
 
