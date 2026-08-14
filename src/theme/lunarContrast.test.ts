@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
 
 /**
- * The 農曆 line in every month cell must clear WCAG AA — DP-070.
+ * The **ordinary (non-festival)** 農曆 line in every month cell must clear
+ * WCAG AA — DP-070.
  *
  * The原檔 draws it in `--faint`, which measures 2.81:1 against the plain cell.
  * DP-070 gave it its own `--lunar-muted` token so the fix does not drag every
@@ -10,8 +11,11 @@ import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
  * trusted: it re-derives the ratio for all six themes in both modes, against
  * every background a cell can actually have.
  *
- * Festival days are drawn in `--accent` instead and are checked separately —
- * the product decision was to keep that colour, so it is asserted, not tuned.
+ * **Festival days are out of scope and deliberately so.** They are drawn in
+ * `--accent`, which the product decision kept as-is, and that colour does not
+ * clear AA on every cell background — 7 of the 12 theme/mode combinations fail,
+ * down to 2.52:1 (鮮活 light on the today cell). The exception is pinned below
+ * rather than asserted away, so nobody reads this file as covering them.
  */
 
 const REQUIRED_RATIO = 4.5;
@@ -76,18 +80,18 @@ const cases = THEME_IDS.flatMap((id) =>
   })),
 );
 
-describe('月格農曆文字的對比', () => {
+describe('月格一般日農曆文字的對比', () => {
   it.each(cases)('$id $mode clears AA on every cell background', ({ palette }) => {
     const lunar = parseHex(palette.lunarMuted);
 
-    const measured = cellBackgrounds(palette).map(({ label, color }) => ({
-      label,
-      ratio: round(contrast(lunar, color)),
-    }));
+    // The raw ratio decides; rounding is for the failure message only. Comparing
+    // the rounded value would let 4.495 pass as 4.5.
+    const failures = cellBackgrounds(palette)
+      .map(({ label, color }) => ({ label, ratio: contrast(lunar, color) }))
+      .filter(({ ratio }) => ratio < REQUIRED_RATIO)
+      .map(({ label, ratio }) => `${label} ${round(ratio)}:1`);
 
-    for (const { label, ratio } of measured) {
-      expect({ label, ratio: ratio >= REQUIRED_RATIO }).toEqual({ label, ratio: true });
-    }
+    expect(failures).toEqual([]);
   });
 
   it('is a distinct token, not a rename of faint', () => {
@@ -98,13 +102,38 @@ describe('月格農曆文字的對比', () => {
     expect(round(contrast(parseHex(manga.faint), parseHex(manga.bg)))).toBeLessThan(REQUIRED_RATIO);
   });
 
-  it('leaves festival days on the accent colour', () => {
-    // The product decision keeps festivals in `--accent`; this pins that the
-    // accent is still legible where the festival text is drawn.
+  it('keeps the festival colour a separate token, so festivals cannot be "fixed" by accident', () => {
+    // Repointing festivals at `--lunar-muted` would make them stop reading as
+    // festivals. If AA for festivals is ever wanted, it is a colour decision,
+    // not a wiring change.
     for (const { palette } of cases) {
-      const accent = parseHex(palette.accent);
-      const plain = parseHex(palette.bg);
-      expect(round(contrast(accent, plain))).toBeGreaterThan(1);
+      expect(palette.accent).not.toBe(palette.lunarMuted);
     }
+  });
+
+  /**
+   * Characterisation, not a target. The product decision kept festivals on
+   * `--accent` knowing it fails AA on some cells; this pins exactly where, so
+   * the failure list cannot quietly grow — and so that if a future palette
+   * change makes them all pass, this test fails and forces the "非節日" wording
+   * in the docs to be revisited.
+   */
+  it('pins the known festival exceptions', () => {
+    const failing = cases
+      .filter(({ palette }) => {
+        const accent = parseHex(palette.accent);
+        return cellBackgrounds(palette).some(({ color }) => contrast(accent, color) < REQUIRED_RATIO);
+      })
+      .map(({ id, mode }) => `${id}.${mode}`);
+
+    expect(failing).toEqual([
+      'manga.light',
+      'manga.dark',
+      'warm.light',
+      'warm.dark',
+      'business.dark',
+      'vivid.light',
+      'pixel.light',
+    ]);
   });
 });

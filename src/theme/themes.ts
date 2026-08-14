@@ -30,12 +30,18 @@ export interface ThemePalette {
   muted: string;
   faint: string;
   /**
-   * Month-cell 農曆 text — DP-070. **Not from the原檔**: the source uses
-   * `--faint` there, which measures 2.81:1 on 8px text and fails WCAG AA.
-   * This is a separate token rather than a change to `faint` so the other
-   * secondary text keeps the transcribed greys. Each value is the theme's own
-   * `faint` pushed until it clears 4.5:1 against every background a month cell
-   * can have (plain, zebra, selected, today) — see `lunarContrast.test.ts`.
+   * Month-cell 農曆 text on **ordinary (non-festival)** days — DP-070.
+   *
+   * **Not from the原檔**: the source uses `--faint` there, which measures
+   * 2.81:1 on 8px text and fails WCAG AA. This is a separate token rather than
+   * a change to `faint` so the other secondary text keeps the transcribed
+   * greys. Each value is the theme's own `faint` pushed until it clears 4.5:1
+   * against every background a month cell can have (plain, zebra, selected,
+   * today) — see `lunarContrast.test.ts`.
+   *
+   * Festival days stay on `accent` by product decision and are **not** covered
+   * by that guarantee; 7 of the 12 theme/mode combinations fall below 4.5:1
+   * there. The exception is pinned in the same test file.
    */
   lunarMuted: string;
   border: string;
