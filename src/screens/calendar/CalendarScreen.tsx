@@ -219,7 +219,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         <div className="cal-header-top">
           <div className="cal-header-titles">
             <div className="cal-today-full">{todayFull}</div>
-            <div className="cal-period">{periodLabel}</div>
+            <h1 className="cal-period">{periodLabel}</h1>
           </div>
           <div className="cal-header-actions">
             <button className="cal-chip-button" type="button" onClick={goToday}>

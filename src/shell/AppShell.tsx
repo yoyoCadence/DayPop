@@ -66,7 +66,10 @@ export function AppShell({
           <PreviewStatusBar />
           <AppViewportContext.Provider value={viewport}>
             {banner}
-            <div className="dp-appbody">{children}</div>
+            {/* `main` rather than `div` — DP-071. It is the "skip to content"
+                target a screen reader offers, and the only landmark the app
+                body ever needs; the tab bar already carries `nav`. */}
+            <main className="dp-appbody">{children}</main>
             {overlay ? <div className="dp-overlay">{overlay}</div> : null}
             {!hideTabBar && <TabBar active={tab} onSelect={onTabChange} />}
             {dialogs}

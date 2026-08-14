@@ -71,9 +71,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> DP-069 與 DP-068 已完成，接著是 DP-071（DP-032 開出的最後一項，且完全可自行動手）。**DP-068 的修正要重新部署一次才會出現在 staging 上。** 其他不需要遠端也不需要 MCP 的工作：DP-070（農曆對比，需先做產品決策）、DP-064（跨午夜檢視決策）、DP-067（`version.json` 的 `dataSchemaVersion` 停在 1）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> DP-032 開出的三項（DP-069／071 已修，DP-070 待決策）與 DP-068 都已處理完，接著是 DP-035 —— 規格清楚、不需要任何人先做決定。**DP-068 與 DP-071 的修正都要重新部署一次才會出現在 staging 上。** 目前**卡在專案擁有者決策**的有：DP-070（農曆對比要怎麼調）、DP-064（跨午夜行程怎麼呈現）、DP-067（`dataSchemaVersion` 刪掉還是建立單一來源）；**卡在真機／真實帳號**的有 DP-032 與 DP-023。若這些都還沒定案，DP-035 之後可接的實作是 DP-056（匯入匯出，ICS 底層已由 DP-027 完成）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-071 — 沒有 h1，也沒有 `main` landmark：** 整個 App 的 `h1` 數為 0，landmark 只有 `nav[主導覽]`。螢幕閱讀器使用者因此少了標題階層與「跳到主要內容」兩個常用導覽手段。`lang="zh-Hant"` 正確、`nav` 有 `aria-label`，所以缺的只有這兩項。要注意的是原稿沒有這些語意結構可對照，加什麼標題文字、放在哪一層（AppShell 還是各分頁）屬於 DayPop 自己的決定，與 `shell.css` 末段那批 scaffold 橋接（DP-014）是同一類問題，可一起處理。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.3。
+- [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
 ## In Progress
 
@@ -93,7 +93,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
 - [ ] **DP-070 — 農曆文字對比 2.81:1，低於 WCAG AA：** `.cal-cell-lunar` 是 8px 的 `var(--faint)`，實測對比 2.81:1，一般文字門檻是 4.5:1；三種 viewport 各量到 31–34 處（就是每一格的農曆）。**這是逐行移植原稿的結果**，不是搬移瑕疵：原檔第 106 行是 `font-size:8px`，第 1218 行是 `lunarColor: lc.isFest ? 'var(--accent)' : 'var(--faint)'`。依專案規則（同 DP-015 的「週檢視全天列」、DP-064 的跨午夜呈現），改動它是**新的產品決策**。要決定的是：把 `--faint` 在六套主題各調到 4.5:1、加大字級、或只在使用者開啟高對比偏好時改變 —— 三種都會動到原稿的視覺密度，所以要先定案再改，不要各主題各調各的。節日農曆用 `var(--accent)`，不在這 31 處內。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.2。
 - [ ] **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** `scripts/generate-release-assets.mjs` 把 `dataSchemaVersion: 1` 寫死，但實際的 user-data schema 早在 DP-028 就到 4（`vite.config.ts` 的 `__DATA_SCHEMA_VERSION__`）。目前**沒有任何程式讀這個欄位** —— `ReleaseInfo` 有宣告它，`useAppUpdate` 只用 `version`／`changes`，所以它不會造成 runtime 錯誤，但每次發布都在公開檔案裡輸出一個錯的數字，遲早有人拿它當判斷依據。DP-065 沒有順手改掉是刻意的：兩個合理選項各自是設計決策 —— **(a) 刪掉這個欄位**（沒人讀，而且 AGENTS.md 明定 release version 與 user-data schema version 必須獨立，把它塞在 release 檔裡本來就在誘導耦合）；**(b) 讓它變成真的單一來源**，但 `vite.config.ts` 與這支 `.mjs` 現在各寫死一份，要真的同步就得再引入一個兩邊都讀得到的來源（例如一個小 JSON），那是新增結構。先決定 (a)／(b) 再動，不要只把 `1` 改成 `4` —— 那正是它第一次漂掉的方式。
-- [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 
 ### 原型假功能與待補能力
 
@@ -136,6 +135,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-071 — 補上 `main` landmark 與每頁一個 `h1`：** `AppShell` 的 app body 由 `<div>` 改為 `<main>`（tab bar 早就有 `nav`，所以缺的只有這一個），四個分頁各自的標題改為 `<h1>`：日曆是期間標題（`2026年 8月`，隨檢視切換）、其餘三頁是分頁名，資料復原畫面也一併補上。**視覺完全沒動**：`.dp-screen-title` 與 `.cal-period` 補上 `margin: 0` 與 `font-weight: inherit` 抵銷 UA 對 `h1` 的預設，改動前後以 Chromium 逐項量測字級、字重、字體、四邊 margin 與方框 —— **六個量測點數值完全相同**，`.cal-header` 仍是 DP-051 釘住的 390 × 180.59，390px 無水平溢出。原稿沒有這些語意結構可對照，標題文字與層級是 DayPop 自己的決定，記在此處供日後對照。實測四個分頁各自都是 `h1` × 1、`main` × 1、`nav` × 1，且標題確實在 landmark 之內。`App.test.tsx` 新增回歸測試逐一切換四個分頁斷言這三件事；補測試時發現該檔的 mount 沒有 `LegacyImportProvider`（設定分頁的 `LegacyImportCard` 需要它，先前測試沒走到設定所以沒暴露），已比照 `SessionDataProvider` 以遊客模式補上。單元測試 351 → 352。lint、typecheck、build、check:build 與 6 個 e2e 全通過。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.3。
 
 - [x] **DP-068 — 讓 `index.html` 的三個 link 跟著建置的 base：** `rel=manifest`、`rel=icon` 與 `rel=apple-touch-icon` 改用 Vite 的 `%BASE_URL%` placeholder。Vite 只改寫它自己產生的標籤，這三個手寫的 link 原本是 `./…`，會相對於瀏覽器當下的路徑解析 —— 在 SPA fallback 的深層網址上三者都指向不存在的目錄，manifest 還會拿到 HTML 而解析失敗。**兩種 base 的行為都驗過**：預設的相對 base 仍展開成 `./…`（`dist/` 維持可從任何路徑打開，這正是 DP-033 保留相對預設的理由），`--base=/DayPop/` 則展開成絕對路徑。以子路徑 preview 實測根路徑與 `/DayPop/some/unknown/path` 兩種網址，三個 link 都解析到 `/DayPop/` 並回 200、manifest 正常解析成 JSON、非文件本身的 4xx 為 0。`npm run check:build` 新增一致性檢查：從 Vite 產生的 `<script src>` 推出這次建置的 base，只要它是絕對路徑，三個 link 就必須共用同一個 base；相對建置不受檢查。反向測試把 manifest link 改回 `./` 確認會被擋下。**複驗抓到一個 base 邊界**：第一版的 base 推導正則要求 `assets/` 前至少有一段路徑，因此辨識得出 `/DayPop/assets/…` 卻辨識不出同樣合法的根 base `/assets/…`；那會讓一致性檢查被靜默略過，而且 `distPathOf()` 保留開頭的 `/` 會把路徑解析到 `dist` 之外、誤報檔案不存在。已改為可選群組，`/`、`/DayPop/`、`/a/b/c/` 與相對預設四種形狀都驗過。`.github/workflows/ci.yml` 另加兩個步驟，以子路徑與根路徑各建置一次並跑 `check:build` —— 這個缺陷類別只在絕對 base 下出現，原本 CI 只走預設建置所以抓不到。**過程中修掉一個連帶問題**：`check:build` 原本用 `replace(/^.//, "")` 把 href 轉成 `dist/` 內的路徑，遇到絕對 base 會找不到檔案 —— 也就是說這個修正若沒配套，部署 workflow 的 `check:build` 反而會失敗；已改為同時處理兩種形狀。lint、typecheck、351 tests、build（兩種 base）、check:build 與 6 個 e2e 全通過。**注意**：staging 上的站台仍是修正前的版本，要重新部署一次才會生效。發現於 DP-033 的複驗，記於 [`docs/deployment.md`](docs/deployment.md) §5.2。
 
