@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fromDateKey, toDateKey } from '../../domain/date';
+import { lunarCell } from '../../domain/lunar';
 import type { Sticker } from '../../domain/types';
 import { MonthView } from './MonthView';
 
@@ -115,6 +116,57 @@ describe('MonthView stickers', () => {
   it('keeps another day’s stickers out of this cell', () => {
     render([sticker('a', '🎂'), sticker('b', '✈️', '2000-01-01')]);
     expect(todayStickerRow()?.textContent).toBe('🎂');
+  });
+});
+
+/**
+ * DP-070. The colour split is a product decision: ordinary days moved to the
+ * AA-compliant `--lunar-muted`, festivals deliberately stayed on `--accent`.
+ *
+ * `lunarContrast.test.ts` can only check that the two tokens hold different
+ * values — it cannot see which one the cell actually uses. Without this test,
+ * pointing festivals at `--lunar-muted` would keep every other test green
+ * while quietly undoing the decision.
+ */
+describe('MonthView 農曆顏色接線', () => {
+  function lunarStyleOf(dateKey: string): string {
+    const lunar = container
+      .querySelector(`[data-date-key="${dateKey}"]`)
+      ?.querySelector('.cal-cell-lunar');
+    return lunar?.getAttribute('style') ?? '';
+  }
+
+  /** Classified by the domain, not by the colour under test. */
+  function findDays() {
+    const keys = [...container.querySelectorAll<HTMLElement>('[data-date-key]')].map(
+      (element) => element.dataset.dateKey ?? '',
+    );
+    return {
+      festival: keys.find((key) => lunarCell(fromDateKey(key)).isFestival),
+      ordinary: keys.find((key) => !lunarCell(fromDateKey(key)).isFestival),
+    };
+  }
+
+  it('draws festivals in --accent and ordinary days in --lunar-muted', () => {
+    render([]);
+    const { festival, ordinary } = findDays();
+
+    expect(festival).toBeDefined();
+    expect(ordinary).toBeDefined();
+    expect(lunarStyleOf(festival!)).toContain('var(--accent)');
+    expect(lunarStyleOf(festival!)).not.toContain('var(--lunar-muted)');
+    expect(lunarStyleOf(ordinary!)).toContain('var(--lunar-muted)');
+    expect(lunarStyleOf(ordinary!)).not.toContain('var(--accent)');
+  });
+
+  it('never falls back to the shared --faint the原檔 used', () => {
+    render([]);
+    const styles = [...container.querySelectorAll('.cal-cell-lunar')].map(
+      (element) => element.getAttribute('style') ?? '',
+    );
+
+    expect(styles.length).toBeGreaterThan(300);
+    expect(styles.filter((style) => style.includes('var(--faint)'))).toEqual([]);
   });
 });
 

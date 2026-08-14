@@ -396,7 +396,9 @@ export function MonthView({
                   <div
                     className="cal-cell-lunar"
                     style={{
-                      color: cell.lunar.isFestival ? 'var(--accent)' : 'var(--faint)',
+                      // Festivals keep the原檔's accent; ordinary days use the
+                      // DP-070 token instead of `--faint`, which fails AA here.
+                      color: cell.lunar.isFestival ? 'var(--accent)' : 'var(--lunar-muted)',
                       fontWeight: cell.lunar.isFestival ? 800 : 600,
                     }}
                   >

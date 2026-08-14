@@ -29,6 +29,21 @@ export interface ThemePalette {
   fg: string;
   muted: string;
   faint: string;
+  /**
+   * Month-cell 農曆 text on **ordinary (non-festival)** days — DP-070.
+   *
+   * **Not from the原檔**: the source uses `--faint` there, which measures
+   * 2.81:1 on 8px text and fails WCAG AA. This is a separate token rather than
+   * a change to `faint` so the other secondary text keeps the transcribed
+   * greys. Each value is the theme's own `faint` pushed until it clears 4.5:1
+   * against every background a month cell can have (plain, zebra, selected,
+   * today) — see `lunarContrast.test.ts`.
+   *
+   * Festival days stay on `accent` by product decision and are **not** covered
+   * by that guarantee; 7 of the 12 theme/mode combinations fall below 4.5:1
+   * there. The exception is pinned in the same test file.
+   */
+  lunarMuted: string;
   border: string;
   line: string;
   accent: string;
@@ -91,6 +106,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#111111',
       muted: '#555555',
       faint: '#9a9a9a',
+      lunarMuted: '#646464',
       border: '#111111',
       line: '#111111',
       accent: '#e4002b',
@@ -109,6 +125,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#ffffff',
       muted: '#bbbbbb',
       faint: '#777777',
+      lunarMuted: '#989898',
       border: '#ffffff',
       line: '#ffffff',
       accent: '#ff2d4b',
@@ -141,6 +158,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#18181b',
       muted: '#71717a',
       faint: '#a1a1aa',
+      lunarMuted: '#6a6a70',
       border: '#e4e4e7',
       line: '#eeeef0',
       accent: '#18181b',
@@ -159,6 +177,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#fafafa',
       muted: '#a1a1aa',
       faint: '#52525b',
+      lunarMuted: '#8b8b91',
       border: '#282828',
       line: '#1f1f1f',
       accent: '#fafafa',
@@ -191,6 +210,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#3d2f24',
       muted: '#7a6a58',
       faint: '#a89684',
+      lunarMuted: '#6c6054',
       border: '#e2d3bd',
       line: '#ece0cd',
       accent: '#c2683f',
@@ -209,6 +229,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#f0e6d8',
       muted: '#c3b3a0',
       faint: '#8a7a67',
+      lunarMuted: '#afa598',
       border: '#463726',
       line: '#3a2e22',
       accent: '#e0895c',
@@ -241,6 +262,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#0f2440',
       muted: '#5a6b82',
       faint: '#93a1b5',
+      lunarMuted: '#606976',
       border: '#dbe2ec',
       line: '#e9eef5',
       accent: '#1e5fd6',
@@ -259,6 +281,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#e8eef7',
       muted: '#9db0cb',
       faint: '#64768f',
+      lunarMuted: '#8c9aac',
       border: '#25384f',
       line: '#1e2f47',
       accent: '#4b8bff',
@@ -291,6 +314,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#141414',
       muted: '#5b5b52',
       faint: '#93938a',
+      lunarMuted: '#676761',
       border: '#141414',
       line: '#e3e1d7',
       accent: '#ff5a1f',
@@ -309,6 +333,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#f6f1fb',
       muted: '#b4a6c4',
       faint: '#7c6e8c',
+      lunarMuted: '#968ba3',
       border: '#372b45',
       line: '#2b2135',
       accent: '#ff6a2b',
@@ -341,6 +366,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#2b2b22',
       muted: '#5c5a45',
       faint: '#8a866a',
+      lunarMuted: '#615e4a',
       border: '#2b2b22',
       line: '#c3bf9e',
       accent: '#2f8f3e',
@@ -359,6 +385,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       fg: '#cfeccb',
       muted: '#7fa87a',
       faint: '#4d6349',
+      lunarMuted: '#92a090',
       border: '#cfeccb',
       line: '#25301f',
       accent: '#46d160',
@@ -407,6 +434,7 @@ export function themeCssVariables(
     '--fg': palette.fg,
     '--muted': palette.muted,
     '--faint': palette.faint,
+    '--lunar-muted': palette.lunarMuted,
     '--border': palette.border,
     '--line': palette.line,
     '--accent': palette.accent,

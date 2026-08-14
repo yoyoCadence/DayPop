@@ -71,9 +71,22 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-> DP-032 開出的三項（DP-069／071 已修，DP-070 待決策）與 DP-068 都已處理完，接著是 DP-035 —— 規格清楚、不需要任何人先做決定。**DP-068 與 DP-071 的修正都要重新部署一次才會出現在 staging 上。** 目前**卡在專案擁有者決策**的有：DP-070（農曆對比要怎麼調）、DP-064（跨午夜行程怎麼呈現）、DP-067（`dataSchemaVersion` 刪掉還是建立單一來源）；**卡在真機／真實帳號**的有 DP-032 與 DP-023。若這些都還沒定案，DP-035 之後可接的實作是 DP-056（匯入匯出，ICS 底層已由 DP-027 完成）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作 → DP-067 併入下一次版本提升。決策內容分別寫在各任務條目裡。
+>
+> **DP-068、DP-071 與 DP-070 的修正都要重新部署一次才會出現在 staging 上。** 目前仍**卡在真機／真實帳號**的有 DP-032 與 DP-023。不需要任何人先決定的實作還有 DP-035（節流版本檢查）與 DP-056（匯入匯出，ICS 底層已由 DP-027 完成）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
+- [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。
+  >
+  > **2026-08-14 專案擁有者已定案，以下是實作規格：**
+  >
+  > 1. **衝突偵測改用 instant 的半開區間 `[start, end)` 比較。** `00:30` 結束與另一事件 `00:30` 開始**不算**衝突。這順帶解決兩個不同時區的事件互比 wall clock 的問題。
+  > 2. **日／週呈現依畫面使用的時區，在本地午夜切成 display segments。** 23:00–00:30 顯示為：第一天 `23:00 → 24:00`、第二天 `00:00 → 00:30` 並標示「續」。
+  > 3. **不得真的拆成兩筆 domain event** —— 只是同一個 occurrence 的兩個顯示片段。
+  > 4. **月格也要在隔天顯示 continuation。** 否則一個 23:00–隔天 14:00 的事件，隔天整個上午都看不到，比計數問題更誤導。
+  > 5. **「共 N 筆」以 occurrence ID 去重**，不可把顯示片段計成兩筆。
+  > 6. **週檢視現在只涵蓋 07:00–22:00**；該週有範圍外事件時要**動態延伸顯示時段**，不可把 23:00 夾到 22:00 —— 那會呈現錯誤的時間。
+  >
+  > **實作前先把上述規則寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md)**（擁有者指定的順序），再動手，避免三個檢視各改各的。
 
 ## In Progress
 
@@ -87,12 +100,15 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** DP-050／051 後依「週／列表 → 日詳情／事件編輯 → 待辦 → 搜尋／綜覽 → 設定 → 其餘 dialog」逐段搬移；每段同時對照原始 `.dc.html` 的相同狀態並通過視覺／行為 smoke matrix，才可移除對應舊邏輯。週／列表（DP-053）、日詳情 sheet（DP-057）、搜尋／綜覽（DP-058）、日曆管理（DP-059）與事件 sheet 欄位＋快速新增交接（DP-060）已完成。剩下：設定的寵物與一般偏好區塊（需要 DP-018 的偏好寫入路徑）、通知與預設提醒（DP-042）、AI 區塊（DP-043）、匯入匯出（DP-056）、其餘 dialog（DP-027 已完成重複／時區底層，這裡接回事件 sheet 控制項、畫面 occurrence 與單次／全部範圍選擇；匯入預覽依 DP-056、提醒 toast 依 DP-042），以及事件 sheet 的 `全天` 改為原稿的 44×25 開關樣式、列表檢視天氣（DP-054）、移除 `shell.css` 末段的 scaffold 橋接（需先決定 DayPop 自有的帳號／版本區塊與 auth／update dialog 改用哪些 canonical token，原稿沒有這些畫面可對照）。
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
-- [ ] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。要決定的是：跨午夜行程要不要在隔天的格子也出現、週檢視要不要畫到 24:00 再於隔天欄續畫、衝突判定是否改用 instant 直接比較（順帶解決兩個不同時區的事件互比 wall clock 的問題）。決定前不要各檢視各改各的。
 ### Quality / release
 
+- [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
-- [ ] **DP-070 — 農曆文字對比 2.81:1，低於 WCAG AA：** `.cal-cell-lunar` 是 8px 的 `var(--faint)`，實測對比 2.81:1，一般文字門檻是 4.5:1；三種 viewport 各量到 31–34 處（就是每一格的農曆）。**這是逐行移植原稿的結果**，不是搬移瑕疵：原檔第 106 行是 `font-size:8px`，第 1218 行是 `lunarColor: lc.isFest ? 'var(--accent)' : 'var(--faint)'`。依專案規則（同 DP-015 的「週檢視全天列」、DP-064 的跨午夜呈現），改動它是**新的產品決策**。要決定的是：把 `--faint` 在六套主題各調到 4.5:1、加大字級、或只在使用者開啟高對比偏好時改變 —— 三種都會動到原稿的視覺密度，所以要先定案再改，不要各主題各調各的。節日農曆用 `var(--accent)`，不在這 31 處內。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.2。
 - [ ] **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** `scripts/generate-release-assets.mjs` 把 `dataSchemaVersion: 1` 寫死，但實際的 user-data schema 早在 DP-028 就到 4（`vite.config.ts` 的 `__DATA_SCHEMA_VERSION__`）。目前**沒有任何程式讀這個欄位** —— `ReleaseInfo` 有宣告它，`useAppUpdate` 只用 `version`／`changes`，所以它不會造成 runtime 錯誤，但每次發布都在公開檔案裡輸出一個錯的數字，遲早有人拿它當判斷依據。DP-065 沒有順手改掉是刻意的：兩個合理選項各自是設計決策 —— **(a) 刪掉這個欄位**（沒人讀，而且 AGENTS.md 明定 release version 與 user-data schema version 必須獨立，把它塞在 release 檔裡本來就在誘導耦合）；**(b) 讓它變成真的單一來源**，但 `vite.config.ts` 與這支 `.mjs` 現在各寫死一份，要真的同步就得再引入一個兩邊都讀得到的來源（例如一個小 JSON），那是新增結構。先決定 (a)／(b) 再動，不要只把 `1` 改成 `4` —— 那正是它第一次漂掉的方式。
+  >
+  > **2026-08-14 專案擁有者定案：採 (a) 刪除欄位**，同步移除 generator、`ReleaseInfo` 型別與相關測試中的欄位。理由是沒有任何程式讀它、release version 與 user-data schema 本來就必須獨立，而把 schema version 放在 release metadata 裡容易讓未來程式錯誤耦合兩者；等真的需要更新相容性協議時，再設計專門且有消費者的 metadata。
+  >
+  > **但不能現在做。** v0.3.0 已部署，generated `version.json` 不可在相同版號下改寫成不同內容（AGENTS.md）。**DP-067 要併入下一次版本提升**，與新版號一起重新產生 `version.json` 與 `sw.js`。
 
 ### 原型假功能與待補能力
 
@@ -135,6 +151,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-070 — 讓月格「一般日」農曆達到 WCAG AA：** 專案擁有者定案採「新增獨立語意色彩 token」。`ThemePalette` 新增 `lunarMuted`，`themeCssVariables()` 輸出 `--lunar-muted`，月格的一般日改用它。**節日依定案繼續用 `--accent`，而且不在 AA 保證範圍內** —— 該顏色在部分月格背景上不符 AA，12 組裡有 7 組低於 4.5:1（漫畫淺／深、暖陽淺／深、商務深、鮮活淺、像素淺），最低是鮮活淺色的今天格 2.52:1。這是刻意保留的已知例外，不是遺漏；例外清單釘在測試裡，配色若變動會讓測試失敗並強迫回頭修正敘述。**沒有動共用的 `--faint`**，其他次要文字維持原稿的灰階。**字級維持 8px**：放大字體並不能解決 2.81:1 的對比問題，字級是否調整留待真機 QA 後另行決定。12 個色值由各主題自己的 `faint` 依明度推移求得，因此保留原本的色相家族。`src/theme/lunarContrast.test.ts` 是這個 token 可被信任的理由：它對六套主題 × 淺／深色，逐一比對月格四種可能背景（一般、斑馬紋、選取、今天）算出對比，全部要求 ≥ 4.5:1，另外釘住「`lunarMuted` 不得等於 `faint`」以免日後被還原。**兩個數字要分清楚**：DP-032 在瀏覽器量到的 2.81:1 是一般格；把今天／選取格一起納入後，最差可低到 1.91:1（像素深色）。實機驗證以 Chromium 逐一切換六套主題 × 淺／深色共 12 種組合，量到 4.91–6.88:1 全數通過，8px 與版面密度不變。單元測試 352 → 366。lint、typecheck、build、check:build 全通過。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.2。
 
 - [x] **DP-071 — 補上 `main` landmark 與每頁一個 `h1`：** `AppShell` 的 app body 由 `<div>` 改為 `<main>`（tab bar 早就有 `nav`，所以缺的只有這一個），四個分頁各自的標題改為 `<h1>`：日曆是期間標題（`2026年 8月`，隨檢視切換）、其餘三頁是分頁名，資料復原畫面也一併補上。**視覺完全沒動**：`.dp-screen-title` 與 `.cal-period` 補上 `margin: 0` 與 `font-weight: inherit` 抵銷 UA 對 `h1` 的預設，改動前後以 Chromium 逐項量測字級、字重、字體、四邊 margin 與方框 —— **六個量測點數值完全相同**，`.cal-header` 仍是 DP-051 釘住的 390 × 180.59，390px 無水平溢出。原稿沒有這些語意結構可對照，標題文字與層級是 DayPop 自己的決定，記在此處供日後對照。實測四個分頁各自都是 `h1` × 1、`main` × 1、`nav` × 1，且標題確實在 landmark 之內。`App.test.tsx` 新增回歸測試逐一切換四個分頁斷言這三件事；補測試時發現該檔的 mount 沒有 `LegacyImportProvider`（設定分頁的 `LegacyImportCard` 需要它，先前測試沒走到設定所以沒暴露），已比照 `SessionDataProvider` 以遊客模式補上。單元測試 351 → 352。lint、typecheck、build、check:build 與 6 個 e2e 全通過。發現於 DP-032，記於 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) §2.3。
 
