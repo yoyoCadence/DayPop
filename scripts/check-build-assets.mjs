@@ -95,7 +95,10 @@ if (!/default-src 'self'/.test(indexHtml)) {
  * should agree. A relative build (the default `./`) is left alone — that one is
  * meant to be openable from any path.
  */
-const emittedBase = /<script[^>]+src="(\/[^"]*\/)assets\//.exec(indexHtml)?.[1];
+// The optional group matters: a root deploy emits `/assets/…`, a subpath deploy
+// `/DayPop/assets/…`. Requiring a segment before `assets/` silently skipped the
+// check for the root case and left `distPathOf()` with a leading slash.
+const emittedBase = /<script[^>]+src="(\/(?:[^"]*\/)?)assets\//.exec(indexHtml)?.[1];
 if (emittedBase) {
   for (const rel of ['manifest', 'icon', 'apple-touch-icon']) {
     const href = new RegExp(`<link[^>]+rel="${rel}"[^>]+href="([^"]+)"`).exec(indexHtml)?.[1]
