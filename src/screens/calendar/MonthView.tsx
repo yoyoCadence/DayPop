@@ -84,13 +84,15 @@ export function MonthView({
   onPeriodLabelChange,
 }: MonthViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Anchored on the display zone's today, like everything else about "today"
+  // on this grid — DP-064.
   const [bufferStart, setBufferStart] = useState(() =>
-    toDateKey(addDays(startOfWeek(new Date(), weekStartsOn), -INITIAL_WEEKS_BEFORE * 7)),
+    toDateKey(addDays(startOfWeek(fromDateKey(todayKey), weekStartsOn), -INITIAL_WEEKS_BEFORE * 7)),
   );
   const [bufferWeeks, setBufferWeeks] = useState(INITIAL_BUFFER_WEEKS);
   const [rowHeight, setRowHeight] = useState(INITIAL_ROW_HEIGHT);
   const rowHeightRef = useRef(INITIAL_ROW_HEIGHT);
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() => fromDateKey(todayKey));
   const weeksShown = monthGridWeekCount(visibleMonth, weekStartsOn, calendarGridMode);
   const labelRef = useRef('');
   // Scroll compensation for rows prepended above the current position.
@@ -115,10 +117,16 @@ export function MonthView({
       const element = scrollRef.current;
       if (!element) return;
       const row = height ?? rowHeight;
-      const index = weeksBetween(fromDateKey(bufferStart), startOfWeek(new Date(), weekStartsOn));
+      // `todayKey` is already read in the display zone by the screen. Reading
+      // the device clock here instead scrolled to a different day than the one
+      // the grid had highlighted — DP-064.
+      const index = weeksBetween(
+        fromDateKey(bufferStart),
+        startOfWeek(fromDateKey(todayKey), weekStartsOn),
+      );
       element.scrollTo({ top: Math.max(0, index * row), behavior: smooth ? 'smooth' : 'auto' });
     },
-    [bufferStart, rowHeight, weekStartsOn],
+    [bufferStart, rowHeight, todayKey, weekStartsOn],
   );
 
   useImperativeHandle(

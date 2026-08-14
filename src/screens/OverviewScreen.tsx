@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { calendarColor, visibleEvents } from '../domain/calendars';
-import { toDateKey } from '../domain/date';
+import { instantDateInZone } from '../domain/eventTime';
 import {
   buildOverviewGroups,
   overviewLabel,
@@ -48,7 +48,9 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
   const [collapsed, setCollapsed] = useState<string[]>([]);
 
   const weekStartsOn = data.preferences.weekStartsOn;
-  const todayKey = toDateKey(new Date());
+  // Same reading of "today" as the calendar — DP-064. On the device clock this
+  // screen could call a todo overdue that 日曆 still counted as open.
+  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
   const groups = useMemo(
     () =>
       buildOverviewGroups({
