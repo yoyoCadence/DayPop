@@ -42,11 +42,13 @@
   text-transform: uppercase;
 }
 
+/* `<h1>` since DP-071; the margin and weight reset keep the原檔's header box. */
 .cal-period {
-  margin-top: 3px;
+  margin: 3px 0 0;
   color: var(--fg);
   font-family: var(--font-head);
   font-size: 30px;
+  font-weight: inherit;
   letter-spacing: var(--title-ls);
   line-height: 1.02;
   text-transform: var(--title-tt);

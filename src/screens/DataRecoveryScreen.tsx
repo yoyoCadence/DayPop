@@ -70,7 +70,7 @@ export function DataRecoveryScreen({ result, onRecovered }: DataRecoveryScreenPr
   return (
     <div className="dp-screen recovery-screen">
       <div className="dp-screen-header">
-        <div className="dp-screen-title">資料需要處理</div>
+        <h1 className="dp-screen-title">資料需要處理</h1>
       </div>
       <div className="dp-screen-body">
         <div className="recovery-alert">

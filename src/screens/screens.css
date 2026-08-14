@@ -15,8 +15,16 @@
   padding: 14px 16px 8px;
 }
 
+/*
+ * These titles are `<h1>` for the document outline (DP-071). The reset keeps
+ * the heading looking exactly as it did while it was a `<div>`: the UA
+ * stylesheet would otherwise add its own margin and bold weight, and the
+ * canonical design never asked for either.
+ */
 .dp-screen-title {
+  margin: 0;
   color: var(--fg);
+  font-weight: inherit;
   font-family: var(--font-head);
   font-size: 28px;
   letter-spacing: var(--title-ls);

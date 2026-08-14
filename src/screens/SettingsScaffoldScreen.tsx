@@ -88,7 +88,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   return (
     <div className="dp-screen">
       <div className="dp-screen-header">
-        <div className="dp-screen-title">設定</div>
+        <h1 className="dp-screen-title">設定</h1>
       </div>
       <div className="dp-screen-body">
         <div className="dp-section-label">外觀主題</div>

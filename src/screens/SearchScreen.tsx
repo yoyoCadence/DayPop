@@ -32,7 +32,7 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
   return (
     <div className="dp-screen search-screen">
       <div className="search-header">
-        <div className="dp-screen-title">搜尋</div>
+        <h1 className="dp-screen-title">搜尋</h1>
         <div className="search-field">
           <svg
             width="18"

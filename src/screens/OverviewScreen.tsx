@@ -79,7 +79,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
     <div className="dp-screen overview-screen">
       <div className="overview-header">
         <div className="overview-title-row">
-          <div className="dp-screen-title">綜覽</div>
+          <h1 className="dp-screen-title">綜覽</h1>
           <div className="overview-total">共 {total} 筆</div>
         </div>
 
