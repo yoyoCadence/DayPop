@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
-import { searchEntries } from './search';
+import { searchEntries as searchEntriesInZone } from './search';
 import type { CalendarEvent, TodoItem } from './types';
+
+/**
+ * Results are read in the display timezone (DP-064). These fixtures are all
+ * built in Asia/Taipei, so the wrapper pins that as the zone and every existing
+ * assertion keeps testing what it was written to test.
+ */
+const DISPLAY_TIMEZONE = 'Asia/Taipei';
+
+function searchEntries(
+  query: string,
+  events: CalendarEvent[],
+  todos: TodoItem[],
+  calendarFilter: string | null = null,
+) {
+  return searchEntriesInZone(query, events, todos, DISPLAY_TIMEZONE, calendarFilter);
+}
 
 const EVENTS: CalendarEvent[] = [
   timedEventFromWallTime(
@@ -87,6 +103,25 @@ describe('searchEntries', () => {
     const events: CalendarEvent[] = [{ ...EVENTS[0]!, location: '會議室A' }];
 
     expect(searchEntries('會議室', events, [])[0]?.sub).toBe('14:00 · 會議室A · 8月6日');
+  });
+
+  // DP-064: a result has to name the same day the calendar puts the event on.
+  it('reads the date and time in the display timezone', () => {
+    const crossZone: CalendarEvent = {
+      ...EVENTS[0]!,
+      title: '跨時區',
+      allDay: false,
+      startsAt: '2026-08-07T00:00:00.000Z',
+      endsAt: '2026-08-07T01:00:00.000Z',
+      timezone: 'America/New_York',
+    };
+
+    expect(searchEntriesInZone('跨時區', [crossZone], [], 'Asia/Taipei')[0]?.sub).toBe(
+      '08:00 · 8月7日',
+    );
+    expect(searchEntriesInZone('跨時區', [crossZone], [], 'America/New_York')[0]?.sub).toBe(
+      '20:00 · 8月6日',
+    );
   });
 
   it('does not match a todo on anything but its title', () => {

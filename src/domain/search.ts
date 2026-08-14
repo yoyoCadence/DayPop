@@ -1,5 +1,5 @@
 import { fromDateKey } from './date';
-import { eventDate, eventStartTime } from './eventTime';
+import { eventDateInZone, eventStartTimeInZone } from './eventTime';
 import type { CalendarEvent, TodoItem } from './types';
 
 /**
@@ -40,6 +40,8 @@ export function searchEntries(
   query: string,
   events: CalendarEvent[],
   todos: TodoItem[],
+  /** Same zone the calendar and overview are drawn in — DP-064. */
+  displayTimezone: string,
   calendarFilter: string | null = null,
 ): SearchResult[] {
   const needle = query.trim().toLowerCase();
@@ -57,9 +59,9 @@ export function searchEntries(
       // The原檔 puts the location between the time and the rest of the line, so
       // a result matched on its location says why it matched.
       sub: [
-        event.allDay ? '全天' : eventStartTime(event),
+        event.allDay ? '全天' : eventStartTimeInZone(event, displayTimezone),
         ...(event.location ? [event.location] : []),
-        formatDate(eventDate(event)),
+        formatDate(eventDateInZone(event, displayTimezone)),
       ].join(' · '),
       calendarId: event.calendarId,
     });

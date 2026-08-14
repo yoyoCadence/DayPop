@@ -62,6 +62,9 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
         period,
         cursor,
         weekStartsOn,
+        // Same zone as the calendar panes, so one event cannot show a
+        // different day here than it does there — DP-064.
+        displayTimezone: data.preferences.timezone,
         todayKey,
       }),
     [data, type, period, cursor, weekStartsOn, todayKey],

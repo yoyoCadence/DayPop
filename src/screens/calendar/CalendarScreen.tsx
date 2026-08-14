@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { instantDateInZone } from '../../domain/eventTime';
 import { visibleEvents } from '../../domain/calendars';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { isDateKey } from '../../domain/validation';
@@ -65,7 +66,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // it once here keeps every pane consistent, as the原檔's `dayEvents()` does.
   const events = useMemo(() => visibleEvents(data), [data]);
 
-  const todayKey = toDateKey(new Date());
+  // "Today" is a day on this grid, so it has to be read in the grid's zone —
+  // DP-064. With the device in another zone the highlight sat on the wrong cell.
+  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
   // Only a real `YYYY-MM-DD` is honoured. `fromDateKey('')` parses to year 0,
   // which `Date` maps to 1900, so seeding the cursor with an empty key sent the
   // period label and the week grid to January 1900 with nothing to explain it.

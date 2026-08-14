@@ -85,6 +85,14 @@ export interface EventPatch {
    * move a cross-timezone event by the offset between the two zones instead of
    * by the distance dragged. Unlike `timezone`, this does not change
    * `event.timezone`: it only says how to read the numbers in this patch.
+   *
+   * **`timezone` wins if both are given.** The two describe different intents —
+   * "the user picked a new zone for this event" and "these numbers came off a
+   * grid drawn in that zone" — and honouring both at once produces an event
+   * that satisfies neither: the wall clock would be read in one zone and then
+   * stored as belonging to another. No caller sends both (the sheet sends
+   * `timezone`, the week grid sends `wallTimeZone`); this rule exists so the
+   * combination has a defined result rather than an accidental one.
    */
   wallTimeZone?: string;
 }
@@ -311,7 +319,8 @@ export function applyEventPatch(
   // An all-day event has no timezone of its own to keep.
   const ownTimezone = patch.timezone ?? (event.allDay ? defaultTimezone : event.timezone);
 
-  if (patch.wallTimeZone && !event.allDay) {
+  // `timezone` wins over `wallTimeZone`; see the field's contract above.
+  if (patch.wallTimeZone && patch.timezone === undefined && !event.allDay) {
     // Read *and* write the wall clock in the patch's zone, then put the event's
     // own zone back: the instants move by what the user dragged, and the event
     // keeps the zone it was created in.

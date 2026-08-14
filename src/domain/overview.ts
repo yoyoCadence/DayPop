@@ -1,5 +1,5 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
-import { eventDate, eventStartTime } from './eventTime';
+import { eventDateInZone, eventStartTimeInZone } from './eventTime';
 import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 /**
@@ -105,6 +105,12 @@ export interface BuildOverviewInput {
   period: OverviewPeriod;
   cursor: Date;
   weekStartsOn: 0 | 1;
+  /**
+   * The zone the grouping dates and clock labels are read in — DP-064.
+   * Overview must agree with the calendar, so this is the same
+   * `preferences.timezone` the four calendar panes use.
+   */
+  displayTimezone: string;
   /** Today, for the overdue marker on todos. */
   todayKey: string;
 }
@@ -160,15 +166,17 @@ function toOverviewDay(day: { dateKey: string; date: Date; items: OverviewItem[]
 function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[] {
   if (input.type === 'events') {
     return input.events
-      .filter((event) => eventDate(event) === dateKey)
+      .filter((event) => eventDateInZone(event, input.displayTimezone) === dateKey)
       .sort((left, right) => {
         if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return eventStartTime(left).localeCompare(eventStartTime(right));
+        return eventStartTimeInZone(left, input.displayTimezone).localeCompare(
+          eventStartTimeInZone(right, input.displayTimezone),
+        );
       })
       .map((event) => ({
         kind: 'event' as const,
         id: event.id,
-        time: event.allDay ? '全天' : eventStartTime(event),
+        time: event.allDay ? '全天' : eventStartTimeInZone(event, input.displayTimezone),
         title: event.title,
         sub: '',
         done: false,

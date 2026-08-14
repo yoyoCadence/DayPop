@@ -297,6 +297,22 @@ describe('applyEventPatch', () => {
       });
     });
 
+    it('lets an explicit timezone change win over the grid zone', () => {
+      // Nothing sends both today. Pinned so the combination has a defined
+      // result: `timezone` is the user picking a zone, which is the stronger
+      // intent, and the wall time is then the event's own.
+      const changed = applyEventPatch(
+        newYorkEvent(),
+        { start: '09:00', end: '10:00', timezone: 'Europe/Paris', wallTimeZone: 'Asia/Taipei' },
+        'Asia/Taipei',
+        NOW,
+      );
+
+      expect(changed).toMatchObject({ allDay: false, timezone: 'Europe/Paris' });
+      // 09:00 was read in Paris, the zone the event now belongs to.
+      expect(eventStartTimeInZone(changed, 'Europe/Paris')).toBe('09:00');
+    });
+
     it('reads the unchanged half of the patch in the same zone as the changed half', () => {
       // 20:00 in New York on the 6th is already 08:00 in Taipei on the 7th, so
       // the two zones disagree about which day the event is on. Dragging it to
