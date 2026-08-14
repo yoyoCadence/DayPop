@@ -102,10 +102,10 @@ describe('月格一般日農曆文字的對比', () => {
     expect(round(contrast(parseHex(manga.faint), parseHex(manga.bg)))).toBeLessThan(REQUIRED_RATIO);
   });
 
-  it('keeps the festival colour a separate token, so festivals cannot be "fixed" by accident', () => {
-    // Repointing festivals at `--lunar-muted` would make them stop reading as
-    // festivals. If AA for festivals is ever wanted, it is a colour decision,
-    // not a wiring change.
+  it('keeps the festival colour a separate value from the ordinary one', () => {
+    // Palette-level only. Which token a cell actually uses is beyond what this
+    // file can see — `MonthView.test.tsx` asserts that wiring, because a change
+    // there would leave every assertion here green.
     for (const { palette } of cases) {
       expect(palette.accent).not.toBe(palette.lunarMuted);
     }
