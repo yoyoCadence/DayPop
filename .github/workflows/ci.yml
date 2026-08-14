@@ -58,6 +58,19 @@ jobs:
       - name: Check build assets
         run: npm run check:build
 
+      # DP-068：手寫 link 與建置 base 不一致這類問題只在絕對 base 下出現，
+      # 預設的相對建置抓不到。子路徑是 GitHub Pages 的形狀，根路徑則是另一
+      # 種同樣合法、而且第一版正則漏掉的形狀。
+      - name: Build and check with a subpath base
+        run: |
+          npm run build -- --base=/DayPop/
+          npm run check:build
+
+      - name: Build and check with a root base
+        run: |
+          npm run build -- --base=/
+          npm run check:build
+
   e2e:
     name: Playwright / mobile and desktop
     runs-on: ubuntu-latest

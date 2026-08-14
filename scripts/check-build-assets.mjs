@@ -82,6 +82,39 @@ if (!/default-src 'self'/.test(indexHtml)) {
 }
 
 /**
+ * The hand-written links must share the base Vite gave its own tags — DP-068.
+ *
+ * Vite only rewrites the tags it emits, so `manifest`, `icon` and
+ * `apple-touch-icon` are whatever `index.html` says. Left document-relative,
+ * they resolve against the current path: on the SPA fallback (a deep URL served
+ * `404.html`) all three point into a directory that does not exist, and the
+ * manifest comes back as HTML.
+ *
+ * The rule is self-consistency rather than a hard-coded prefix: this script
+ * does not know which base a given build used, but every URL in the document
+ * should agree. A relative build (the default `./`) is left alone — that one is
+ * meant to be openable from any path.
+ */
+// The optional group matters: a root deploy emits `/assets/…`, a subpath deploy
+// `/DayPop/assets/…`. Requiring a segment before `assets/` silently skipped the
+// check for the root case and left `distPathOf()` with a leading slash.
+const emittedBase = /<script[^>]+src="(\/(?:[^"]*\/)?)assets\//.exec(indexHtml)?.[1];
+if (emittedBase) {
+  for (const rel of ['manifest', 'icon', 'apple-touch-icon']) {
+    const href = new RegExp(`<link[^>]+rel="${rel}"[^>]+href="([^"]+)"`).exec(indexHtml)?.[1]
+      ?? new RegExp(`<link[^>]+href="([^"]+)"[^>]+rel="${rel}"`).exec(indexHtml)?.[1];
+    if (!href) {
+      problems.push(`dist/index.html has no rel="${rel}" link`);
+    } else if (!href.startsWith(emittedBase)) {
+      problems.push(
+        `dist/index.html rel="${rel}" is "${href}" but the build's base is "${emittedBase}" — ` +
+          'a deep URL would resolve it against the wrong directory',
+      );
+    }
+  }
+}
+
+/**
  * Deploy safety — DP-033.
  *
  * The e2e suite mounts the real app against a fake Supabase from
@@ -189,6 +222,16 @@ for (const file of distFiles) {
  */
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
+/**
+ * Turns a URL from the built HTML into a path inside `dist/`. Handles both
+ * shapes the build can emit: `./icons/x.png` for the relative default, and
+ * `/DayPop/icons/x.png` once a deploy base is applied (DP-068).
+ */
+function distPathOf(href) {
+  if (emittedBase && href.startsWith(emittedBase)) return href.slice(emittedBase.length);
+  return href.replace(/^\.\//, '');
+}
+
 async function readPngHeader(relativePath) {
   const bytes = await readFile(resolve(dist, relativePath));
   if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.subarray(12, 16).toString('ascii') !== 'IHDR') {
@@ -211,8 +254,7 @@ for (const required of ['any 192x192', 'any 512x512', 'maskable 192x192', 'maska
 }
 
 for (const icon of pngIcons) {
-  const relativePath = icon.src.replace(/^\.\//, '');
-  const header = await readPngHeader(relativePath).catch(() => null);
+  const header = await readPngHeader(distPathOf(icon.src)).catch(() => null);
   if (!header) {
     problems.push(`manifest icon ${icon.src} is missing from dist/ or is not a PNG`);
     continue;
@@ -231,7 +273,7 @@ const appleIcon = /<link rel="apple-touch-icon"[^>]*href="([^"]+)"/.exec(indexHt
 if (!appleIcon || !appleIcon.endsWith('.png')) {
   problems.push('index.html apple-touch-icon does not point at a PNG');
 } else {
-  const header = await readPngHeader(appleIcon.replace(/^\.\//, '')).catch(() => null);
+  const header = await readPngHeader(distPathOf(appleIcon)).catch(() => null);
   if (!header) problems.push(`apple-touch-icon ${appleIcon} is missing from dist/ or is not a PNG`);
   else if (header.width !== 180 || header.height !== 180) {
     problems.push(`apple-touch-icon ${appleIcon} is ${header.width}x${header.height}, expected 180x180`);

@@ -212,7 +212,13 @@ git push origin rollback/staging
 
 **（a）Pages 的機制。** 供應 `404.html` 時 HTTP 狀態碼**就是 404**，只有內容是 App。實測 `/DayPop/some/unknown/path` 會正確啟動 App、保留網址，但文件請求本身就是一則 404。這不是 DayPop 的缺陷，若日後換到可自訂 rewrite 的平台就會消失。
 
-**（b）DayPop 自己的缺陷 —— `index.html` 用的是文件相對路徑。** 這三個 link 是手寫在 `index.html` 裡的，Vite 不會改寫它們（`--base` 只影響它自己產生的 `<script>`／`<link rel=stylesheet>`）：
+**（b）DayPop 自己的缺陷 —— `index.html` 用的是文件相對路徑。✅ DP-068 已修正。**
+
+> **修正後**：三個 link 改用 Vite 的 `%BASE_URL%` placeholder，部署建置會展開成 `/DayPop/…`。實測根路徑與深層網址下三者都解析到 `/DayPop/` 並回 200，manifest 也能正常解析成 JSON。`npm run check:build` 另加了一致性檢查：只要建置用的是絕對 base，這三個 link 就必須共用同一個 base。相對 base（預設 `./`）維持原樣，`dist/` 仍可從任何路徑打開。
+>
+> 下表保留為修正前的紀錄。
+
+這三個 link 是手寫在 `index.html` 裡的，Vite 不會改寫它們（`--base` 只影響它自己產生的 `<script>`／`<link rel=stylesheet>`）：
 
 | link | 在 `/DayPop/` 解析為 | 在 `/DayPop/some/unknown/path` 解析為 |
 | --- | --- | --- |
@@ -226,7 +232,7 @@ git push origin rollback/staging
 
 **影響範圍有限但真實**：DayPop 目前沒有 router，正常入口與 Supabase 的 redirect 目標一律是 `/DayPop/` 本身（200），所以登入流程不受影響。真正會踩到的是使用者手動打錯網址、外部連結指向深層路徑，或日後加入路由時。
 
-修正屬 **DP-068**（`index.html` 改用 Vite 的 `%BASE_URL%` placeholder，或其他等效做法），不在部署文件的範圍內。
+**目前 staging 上的站台仍是修正前的版本** —— DP-068 合併後要重新部署一次才會生效。
 
 ### 5.3 實測到的 response headers
 
