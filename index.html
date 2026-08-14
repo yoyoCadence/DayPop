@@ -5,10 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="日蹦 DayPop — 日曆、待辦與陪伴小幫手" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icons/daypop.svg" type="image/svg+xml" />
+    <!--
+      %BASE_URL% rather than ./ — DP-068. Vite only rewrites the tags it emits
+      itself, so these hand-written links stayed document-relative and resolved
+      against whatever path the browser was on. On the SPA fallback (a deep URL
+      served 404.html) all three pointed into a directory that does not exist,
+      and the manifest came back as HTML. The placeholder becomes the build's
+      base: absolute for a subpath deploy, still ./ for the relative default.
+    -->
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" href="%BASE_URL%icons/daypop.svg" type="image/svg+xml" />
     <!-- iOS ignores SVG here and composites transparency onto black — DP-019. -->
-    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icons/apple-touch-icon-180.png" />
     <title>日蹦 DayPop</title>
   </head>
   <body>
