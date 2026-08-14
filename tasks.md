@@ -86,7 +86,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 5. **「共 N 筆」以 occurrence ID 去重**，不可把顯示片段計成兩筆。
   > 6. **週檢視現在只涵蓋 07:00–22:00**；該週有範圍外事件時要**動態延伸顯示時段**，不可把 23:00 夾到 22:00 —— 那會呈現錯誤的時間。
   >
-  > **實作前先把上述規則寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md)**（擁有者指定的順序），再動手，避免三個檢視各改各的。
+  > **規則已寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6「決策（DP-064）」**（擁有者指定的順序），該節另定死三件實作前必須先有答案的事：**display timezone 唯一來源是 `preferences.timezone`**（必填且已驗證，無效即 fail closed、不得退回裝置時區；決定日格歸屬／午夜切點／now line／拖曳座標，**這會改變現況的 `eventDate()` 行為**。事件 sheet 改時間以 `event.timezone` 解析、週格拖曳以 display timezone 解析，兩者都不得暗自改寫 `event.timezone`；使用者明確更換時區仍走既有 `EventPatch.timezone` contract）、**identity 一律用 `ResolvedEventOccurrence.key` 不可用 `event.id`**、週格範圍以 `min(7, floor(最早))`／`max(22, ceil(最晚))` 推導並 clamp 0–24（午夜在第一天記為 `24:00`）。落點包含：切片邏輯放 domain 的 `displaySegments.ts`、兩份重複的衝突偵測（`MonthView` 的 `hasOverlap()` 與 `DayDetailSheet` 的 `overlappingIds()`）收斂成單一 domain 函式、`timeGrid.ts` 真正依賴起訖小時的四處（`blockGeometry()`／`GRID_HEIGHT`／`hourRail()`／`nowLineTop()`；拖曳的 `snapMinutes`／`moveRange`／`resizeRange`／`columnShift` **不需要改**）、`overview.ts` 依 key 去重。實作依該節進行。
 
 ## In Progress
 

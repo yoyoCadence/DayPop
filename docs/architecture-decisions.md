@@ -150,7 +150,92 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 第七檔 migration `20260808100626_validate_event_timezones.sql` 在 `user_preferences.timezone` 與 `events.timezone` 的 INSERT／UPDATE 邊界查詢 `pg_timezone_names`；不建立錯誤的 immutable CHECK。Trigger function 是 security invoker、固定空 `search_path`，且撤銷 public／anon／authenticated 直接 execute。Migration 由 CLI workflow 套用；24 項 rollback pgTAP、9 張 public tables RLS、generated types 與 security advisor 均通過。
 - 事件 sheet 的 recurrence／timezone 控制項、畫面 occurrence wiring 與 single／all scope dialog 是 DP-014 的 UI 搬移，不在 domain task 內自行改設計。跨午夜事件如何跨兩日呈現在月格／週格仍是 DP-064，不能因 occurrence engine 完成就暗自決定。
 
-**尚未決定：跨午夜行程在檢視層怎麼呈現。** 月格／日詳情的衝突偵測與週檢視的色塊高度都用同日 `HH:MM` 比較，與原稿逐行一致（原檔只存 `HH:MM` 字串才不會遇到）。DayPop 存 instant，因此這是新的產品決策，記在 DP-064，未定案前不要各檢視各改各的。
+### 決策（DP-064，2026-08-14）— 跨午夜行程：instant 判斷衝突，本地午夜切顯示片段
+
+原稿只存 `HH:MM` 字串，永遠遇不到跨午夜；DayPop 存 instant，所以三個檢視都用同日 `HH:MM` 比較是錯的。這不是「還原原稿」而是新的產品決策，由專案擁有者於 2026-08-14 定案如下。**未實作前不要各檢視各改各的。**
+
+#### 規則
+
+1. **衝突偵測改用 instant 的半開區間 `[start, end)`。** 兩個 occurrence 重疊的條件是 `a.start < b.end && b.start < a.end`，比較的是 instant 而不是當日分鐘數。`00:30` 結束與另一事件 `00:30` 開始**不算**衝突。這順帶修正了兩個不同 timezone 的事件互比 wall clock 的問題。
+2. **日／週／月的呈現，依畫面使用的時區在本地午夜切成 display segments。** 23:00–00:30 顯示為第一天 `23:00 → 24:00`、第二天 `00:00 → 00:30`，第二天的片段標示「續」。
+3. **不得真的拆成兩筆 domain event。** display segment 只是同一個 occurrence 的兩個顯示片段，必須帶著原 occurrence 的 identity；repository、`events` 資料表與 ICS 匯出都不受影響。
+4. **月格也要顯示 continuation。** 一個 23:00–隔天 14:00 的事件若只出現在第一天，隔天整個上午都看不到它，比計數不準更誤導。
+5. **綜覽的「共 N 筆」以 occurrence ID 去重**，不可把兩個顯示片段計成兩筆。
+6. **週檢視目前固定 07:00–22:00（`GRID_START_HOUR`／`GRID_END_HOUR`）**；該週有落在範圍外的事件時要**動態延伸顯示時段**。不可沿用原檔 `if(h<20)h=20` 的夾擠，也不可把 23:00 夾到 22:00 —— 那會畫出錯誤的時間。
+
+#### 7. Display timezone 的唯一來源
+
+「依畫面使用的時區」在現況其實有三個候選，必須先定死，否則片段落在哪一天、午夜在哪裡、now line 位置、拖曳後怎麼寫回都會各自解讀：
+
+| 候選 | 目前用在哪 |
+| --- | --- |
+| `event.timezone` | `eventTime.ts` 的 `eventDate()`／`eventStartTime()`／`eventEndTime()` |
+| `preferences.timezone` | 目前主要是新增事件的預設值 |
+| 瀏覽器／裝置時區 | `todayKey`、週格的 now line |
+
+**定案：display timezone = `preferences.timezone`。**
+
+`UserPreferences.timezone` 是必填欄位，`validateDayPopUserData()` 會經 `validateTimezone()` 拒絕缺少或不支援的值，guest corrupt envelope 與 account cache 也依 §1 fail closed，DB 另有 timezone trigger。因此**顯示層不得在遇到無效值時靜默改用裝置時區** —— 那會掩蓋 canonical data 損壞，並讓事件落到不同的日格。已載入的 `DayPopUserData` 一律以 `preferences.timezone` 為準，無效是 fail-closed 條件，由既有閘門處理。
+
+裝置時區只用於**尚未有 canonical preferences 的生命週期**（bootstrap 前、資料載入前的首屏）；一旦 `DayPopUserData` 載入，這個 fallback 即失效。
+
+它是**唯一**決定下列事情的時區：
+
+- occurrence 落在哪一個日格
+- display segment 在哪裡切（本地午夜）
+- 週格的時刻軌、now line 與拖曳座標換算
+- 綜覽的分組日期
+
+**事件自身的 `timezone` 仍然保留為資料**，而「用哪個時區把使用者的輸入解析成 instant」要看操作種類 —— 這兩者不能混為一談：
+
+| 操作 | 使用者實際指定的是 | 解析基準 | `event.timezone` |
+| --- | --- | --- | --- |
+| 事件 sheet 改日期／時間 | 該事件自己的牆上時間 | **`event.timezone`** | 不變 |
+| 週格拖曳、拉長度、跨欄換日 | 格線上的**顯示座標** | **display timezone** | 不變 |
+| 事件 sheet **明確更換時區** | 新選定的時區＋同一個牆上時間 | 新選定的 timezone | **更新為新值** |
+
+**DP-064 的顯示切片與週格拖曳不得暗自改寫 `event.timezone`。** 這條只約束本決策涉及的路徑；使用者在事件 sheet 明確更換時區時，仍依既有的 `EventPatch.timezone` contract（`mutations.ts`：「Reanchors the same wall time in a different IANA timezone」）更新並重新錨定 —— 該控制項屬 DP-014，本決策不封死它。
+
+拖曳 commit 的規則：把拖曳後的 display wall coordinate 依 display timezone 解析成 instant，`event.timezone` 欄位不變。事件 sheet 之後顯示的是換算後的 event-local 時間，這是正確結果。
+
+> 反例（為什麼不能用 `event.timezone` 解析拖曳結果）：紐約 09:00 的事件在台北 display timezone 顯示為 21:00。使用者往下拖一小時到 22:00，若把 22:00 當成紐約牆上時間解析，事件不是移動一小時，而是跳了十幾個小時。
+
+也**不可改用「對 instant 加固定 delta」**代替：跨 DST 轉換時兩者結果不同，而使用者拖到的是格線上的牆上時間位置，因此必須以 display wall time 為準（沿用本節 DP-063 「跨日一律以日曆日重算」的同一條原則）。跨日／跨欄拖曳沿 **display calendar** 的日界計算。
+
+當事件的 timezone 與 display timezone 不同時，sheet 應標示它屬於哪個時區（UI 由 DP-014 負責，這裡只定語意）。
+
+> ⚠️ **這會改變現況。** 目前 `eventDate()` 以事件自己的 timezone 決定日期，所以跨時區事件現在落在「它自己那個時區的那一天」。改用單一 display timezone 後，它會落在使用者日曆的那一天 —— 這才是一個日曆格線該有的行為（一格只能屬於一個時區），但屬於本決策新增的定義，實作時要有對應的回歸測試，並在 PR 說明中明講。
+
+#### 8. Occurrence identity 用哪一個 key
+
+「共 N 筆」與 display segment 的 identity **沿用 `ResolvedEventOccurrence.key`**（`recurrence.ts`，形式為 `${sourceEventId}:${occurrenceKey(occurrence)}`）。它由 source event 加上原 occurrence 組成，replacement 也維持原 occurrence 的 identity，因此是穩定且唯一的。
+
+`EventOccurrence` 本身沒有 `id`，**不可改用 `event.id` 去重** —— 那會把同一個 recurring series 的不同 occurrence 錯誤合併成一筆。
+
+#### 9. 週格動態範圍的推導規則
+
+必須是可測試的公式，而不是「有就延伸」：
+
+- **基線維持 07:00–22:00**，任何一週都不會比它更窄。
+- 由**當週的 display segments**（切片後、非全天）推導：
+  `start = min(7, floor(最早片段的起始小時))`、`end = max(22, ceil(最晚片段的結束小時))`。
+- 結果 **clamp 在 0–24**。
+- 片段結束在本地午夜時，在**第一天**表示為 `24:00`（分鐘數 1440），不是隔天的 `00:00`；隔天的續段從 `00:00` 起算。
+
+#### 落點
+
+- **切片邏輯放在 domain**（預期為 `src/domain/displaySegments.ts`），與 `eventTime.ts`／`recurrence.ts` 同層，三個檢視共用同一份。切片以本地日界計算，沿用 §6「跨日一律以日曆日重算」的規則 —— DST 當天的一日不是 86400000 毫秒。
+- **衝突偵測目前有兩份實作**：`MonthView.tsx` 的 `hasOverlap()` 與 `DayDetailSheet.tsx` 的 `overlappingIds()`，兩者都用 `minutes()` 比較同日時鐘字串。改用 instant 後應收斂成 domain 的單一函式，不要在兩處各自改。
+- **週檢視**的 `src/domain/timeGrid.ts` 把 `GRID_START_HOUR`／`GRID_END_HOUR` 當模組常數。**真正依賴它們、必須改成接受該週推導起訖的只有四處**：`blockGeometry()`、`GRID_HEIGHT`、`hourRail()`、`nowLineTop()`。漏掉任何一個都會讓時刻軌、now line 或色塊互相對不上。既有的 20px 最小高度只可用於「真的很短的事件」，**不可用來掩蓋負高度**。
+  - **拖曳的三個函式不需要改**：`snapMinutes()` 只用 `HOUR_HEIGHT` 換算垂直位移，`moveRange()`／`resizeRange()` 只處理 0–1440 的日內邊界，`columnShift()` 只用欄寬做水平移動 —— 它們都不依賴起訖小時。不要為了這個任務去動它們的簽章。
+  - 需要新增的是**拖曳 commit 的呼叫端**：把拖曳後的 display wall coordinate 依 display timezone 轉回 instant（見上面第 7 點）。
+- **綜覽**的 `src/domain/overview.ts` 以 `items.length` 累計；改為依 `ResolvedEventOccurrence.key` 去重後，`count` 與逐日列表的關係要一併說明（一筆跨日事件在兩天各出現一次，但總數只加一）。
+
+#### 不在此決策內
+
+- 全天事件的呈現不變（原稿的週檢視本來就不顯示全天事件，見 DP-015 的說明）。
+- 跨午夜的**提醒**時間點屬 DP-042。
+- 這條決策不改變資料模型：`events` 仍是單一 instant 區間，不新增「片段」資料表或欄位。
 
 ## 7. 工程治理
 
