@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fromDateKey, toDateKey } from '../../domain/date';
 import { lunarCell } from '../../domain/lunar';
-import type { Sticker } from '../../domain/types';
+import type { CalendarEvent, Sticker } from '../../domain/types';
 import { MonthView } from './MonthView';
 
 /**
@@ -45,6 +45,7 @@ function render(stickers: Sticker[], weekStartsOn: 0 | 1 = 0) {
     root.render(
       <MonthView
         weekStartsOn={weekStartsOn}
+        displayTimezone="Asia/Taipei"
         calendarGridMode="fixed-six"
         events={[]}
         stickers={stickers}
@@ -120,6 +121,75 @@ describe('MonthView stickers', () => {
 });
 
 /**
+ * DP-064. A grid can only be drawn in one timezone. Placement used to come from
+ * `event.timezone`, so an event created in another zone landed in *its own*
+ * day's cell — two events at the same instant could sit in different cells.
+ */
+describe('MonthView display timezone', () => {
+  function crossZoneEvent(): CalendarEvent {
+    // 20:00 on the 6th in New York is 08:00 on the 7th in Taipei.
+    return {
+      id: '88888888-8888-4888-8888-888888888888',
+      calendarId: '11111111-1111-4111-8111-111111111111',
+      title: '跨時區會議',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: false,
+      startsAt: '2026-08-07T00:00:00.000Z',
+      endsAt: '2026-08-07T01:00:00.000Z',
+      timezone: 'America/New_York',
+    };
+  }
+
+  function renderWithZone(displayTimezone: string) {
+    act(() =>
+      root.render(
+        <MonthView
+          weekStartsOn={0}
+          displayTimezone={displayTimezone}
+          calendarGridMode="fixed-six"
+          events={[crossZoneEvent()]}
+          stickers={[]}
+          calendars={[]}
+          selectedDate="2026-08-06"
+          todayKey="2026-08-06"
+          flashToday={false}
+          onSelectDate={vi.fn()}
+          onPeriodLabelChange={vi.fn()}
+        />,
+      ),
+    );
+  }
+
+  function cellText(dateKey: string): string {
+    return container.querySelector(`[data-date-key="${dateKey}"]`)?.textContent ?? '';
+  }
+
+  it('places the event on the display timezone’s day, not the event’s own', () => {
+    renderWithZone('Asia/Taipei');
+    expect(cellText('2026-08-07')).toContain('跨時區會議');
+    expect(cellText('2026-08-06')).not.toContain('跨時區會議');
+
+    renderWithZone('America/New_York');
+    expect(cellText('2026-08-06')).toContain('跨時區會議');
+    expect(cellText('2026-08-07')).not.toContain('跨時區會議');
+  });
+
+  it('labels the event with the display timezone’s clock', () => {
+    renderWithZone('Asia/Taipei');
+    expect(cellText('2026-08-07')).toContain('08:00');
+
+    renderWithZone('America/New_York');
+    expect(cellText('2026-08-06')).toContain('20:00');
+  });
+});
+
+/**
  * DP-070. The colour split is a product decision: ordinary days moved to the
  * AA-compliant `--lunar-muted`, festivals deliberately stayed on `--accent`.
  *
@@ -189,6 +259,7 @@ describe('MonthView keyboard navigation', () => {
       root.render(
         <MonthView
           weekStartsOn={0}
+          displayTimezone="Asia/Taipei"
           calendarGridMode="fixed-six"
           events={[]}
           stickers={[]}

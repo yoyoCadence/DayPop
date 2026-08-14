@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
-import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
+import {
+  eventDateInZone,
+  eventEndTimeInZone,
+  eventStartTimeInZone,
+} from '../../domain/eventTime';
 import {
   blockGeometry,
   columnShift,
@@ -23,6 +27,11 @@ const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 export interface WeekViewProps {
   weekStartsOn: 0 | 1;
+  /**
+   * The one timezone this grid is drawn in — DP-064. A drag therefore hands
+   * back a wall coordinate in *this* zone, not in the event's own.
+   */
+  displayTimezone: string;
   /** Any date inside the week to show. */
   cursor: string;
   todayKey: string;
@@ -57,6 +66,7 @@ interface DragState {
  */
 export function WeekView({
   weekStartsOn,
+  displayTimezone,
   cursor,
   todayKey,
   events,
@@ -84,7 +94,7 @@ export function WeekView({
     const byDate = new Map<string, CalendarEvent[]>();
     for (const event of events) {
       if (event.allDay) continue;
-      const key = eventDate(event);
+      const key = eventDateInZone(event, displayTimezone);
       const list = byDate.get(key);
       if (list) list.push(event);
       else byDate.set(key, [event]);
@@ -95,15 +105,22 @@ export function WeekView({
       const key = toDateKey(date);
       const timed = (byDate.get(key) ?? [])
         .slice()
-        .sort((left, right) => eventStartTime(left).localeCompare(eventStartTime(right)))
+        .sort((left, right) =>
+          eventStartTimeInZone(left, displayTimezone).localeCompare(
+            eventStartTimeInZone(right, displayTimezone),
+          ),
+        )
         .map((event) => {
           const dragging = preview?.id === event.id;
           const startMinutes = dragging
             ? preview.startMinutes
-            : minutesFromTime(eventStartTime(event));
+            : minutesFromTime(eventStartTimeInZone(event, displayTimezone));
           const endMinutes = dragging
             ? preview.endMinutes
-            : minutesFromTime(eventEndTime(event) || eventStartTime(event));
+            : minutesFromTime(
+                eventEndTimeInZone(event, displayTimezone) ||
+                  eventStartTimeInZone(event, displayTimezone),
+              );
           return {
             event,
             dragging,
@@ -113,7 +130,7 @@ export function WeekView({
         });
       return { key, date, isToday: key === todayKey, timed };
     });
-  }, [events, preview, todayKey, weekStart]);
+  }, [displayTimezone, events, preview, todayKey, weekStart]);
 
   const nowTop = toDateKey(now) >= toDateKey(weekStart) && toDateKey(now) <= toDateKey(addDays(weekStart, 6))
     ? nowLineTop(now)
@@ -128,13 +145,16 @@ export function WeekView({
     if (mode === 'resize') domEvent.stopPropagation();
     dragRef.current = {
       id: event.id,
-      dateKey: eventDate(event),
+      dateKey: eventDateInZone(event, displayTimezone),
       mode,
       startX: domEvent.clientX,
       startY: domEvent.clientY,
       origin: {
-        startMinutes: minutesFromTime(eventStartTime(event)),
-        endMinutes: minutesFromTime(eventEndTime(event) || eventStartTime(event)),
+        startMinutes: minutesFromTime(eventStartTimeInZone(event, displayTimezone)),
+        endMinutes: minutesFromTime(
+          eventEndTimeInZone(event, displayTimezone) ||
+            eventStartTimeInZone(event, displayTimezone),
+        ),
       },
       moved: false,
     };
@@ -181,6 +201,9 @@ export function WeekView({
       const patch: EventPatch = {
         start: timeFromMinutes(range.startMinutes),
         end: timeFromMinutes(range.endMinutes),
+        // The numbers above are positions on a grid drawn in the display zone,
+        // not the event's own wall clock — DP-064.
+        wallTimeZone: displayTimezone,
       };
 
       const factor = scale();
@@ -199,7 +222,7 @@ export function WeekView({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [onOpenEvent, onUpdateEvent, preview, weekStart]);
+  }, [displayTimezone, onOpenEvent, onUpdateEvent, preview, weekStart]);
 
   const rail = hourRail();
 

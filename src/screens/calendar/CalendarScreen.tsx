@@ -138,6 +138,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   }, [sheetOpen, dayDetailKey]);
 
   const weekStartsOn = data.preferences.weekStartsOn;
+  // DP-064: one grid, one timezone. Placement and clock labels in every pane
+  // read this; the event sheet keeps editing in the event's own zone.
+  const displayTimezone = data.preferences.timezone;
 
   const todayFull = useMemo(() => {
     const now = new Date();
@@ -290,6 +293,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
           <MonthView
             ref={monthRef}
             weekStartsOn={weekStartsOn}
+            displayTimezone={displayTimezone}
             calendarGridMode={data.preferences.calendarGridMode}
             events={events}
             stickers={data.stickers}
@@ -305,6 +309,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         {view === 'week' && (
           <WeekView
             weekStartsOn={weekStartsOn}
+            displayTimezone={displayTimezone}
             cursor={cursor}
             todayKey={todayKey}
             events={events}
@@ -317,6 +322,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         {view === 'agenda' && (
           <AgendaView
             events={events}
+            displayTimezone={displayTimezone}
             todos={data.todos}
             calendars={data.calendars}
             onOpenEvent={openEvent}
@@ -346,6 +352,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       <DayDetailSheet
         dateKey={dayDetailKey}
         events={events}
+        displayTimezone={displayTimezone}
         todos={data.todos}
         stickers={data.stickers}
         calendars={data.calendars}

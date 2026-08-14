@@ -1,7 +1,13 @@
 import { sortedCalendars } from './calendars';
 import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
-import { eventWallTime, timedEventFromWallTime } from './eventTime';
-import { instantDateInZone } from './eventTime';
+import {
+  eventDateInZone,
+  eventEndTimeInZone,
+  eventStartTimeInZone,
+  eventWallTime,
+  instantDateInZone,
+  timedEventFromWallTime,
+} from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
 import type {
   Calendar,
@@ -70,6 +76,17 @@ export interface EventPatch {
   recurrenceRule?: string | null;
   /** Reanchors the same wall time in a different IANA timezone. */
   timezone?: string;
+  /**
+   * The zone `date`/`start`/`end` in this patch are expressed in, when that is
+   * not the event's own — DP-064.
+   *
+   * The week grid is drawn in the display timezone, so a drag hands back a
+   * *display* wall coordinate. Resolving that against `event.timezone` would
+   * move a cross-timezone event by the offset between the two zones instead of
+   * by the distance dragged. Unlike `timezone`, this does not change
+   * `event.timezone`: it only says how to read the numbers in this patch.
+   */
+  wallTimeZone?: string;
 }
 
 export interface NewCalendarInput {
@@ -291,6 +308,31 @@ export function applyEventPatch(
       endDate: spanDays > 0 ? toDateKey(addDays(fromDateKey(date), spanDays)) : date,
     };
   }
+  // An all-day event has no timezone of its own to keep.
+  const ownTimezone = patch.timezone ?? (event.allDay ? defaultTimezone : event.timezone);
+
+  if (patch.wallTimeZone && !event.allDay) {
+    // Read *and* write the wall clock in the patch's zone, then put the event's
+    // own zone back: the instants move by what the user dragged, and the event
+    // keeps the zone it was created in.
+    const zone = patch.wallTimeZone;
+    const seen = {
+      date: eventDateInZone(event, zone),
+      start: eventStartTimeInZone(event, zone),
+      end: eventEndTimeInZone(event, zone),
+    };
+    const moved = timedEventFromWallTime(
+      common,
+      {
+        date: patch.date ?? seen.date,
+        start: (patch.start ?? seen.start) || '09:00',
+        end: (patch.end ?? seen.end) || '10:00',
+      },
+      zone,
+    );
+    return { ...moved, timezone: ownTimezone };
+  }
+
   return timedEventFromWallTime(
     common,
     {
@@ -298,8 +340,7 @@ export function applyEventPatch(
       start: (patch.start ?? previous.start) || '09:00',
       end: (patch.end ?? previous.end) || '10:00',
     },
-    // An all-day event has no timezone of its own to keep.
-    patch.timezone ?? (event.allDay ? defaultTimezone : event.timezone),
+    ownTimezone,
   );
 }
 

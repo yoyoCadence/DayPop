@@ -16,6 +16,14 @@ export function eventWallTime(event: CalendarEvent): EventWallTime {
   };
 }
 
+/**
+ * The three functions below read an event in **its own** timezone. That is what
+ * the event sheet edits, and what `eventWallTime()` above round-trips.
+ *
+ * Views must not use them for placement or labels — a calendar grid is drawn in
+ * one timezone, and DP-064 made that the display timezone. Use the `…InZone`
+ * pair instead. See `docs/architecture-decisions.md` §6「決策（DP-064）」.
+ */
 export function eventDate(event: CalendarEvent): string {
   return event.allDay ? event.startDate : instantDateInZone(event.startsAt, event.timezone);
 }
@@ -26,6 +34,25 @@ export function eventStartTime(event: CalendarEvent): string {
 
 export function eventEndTime(event: CalendarEvent): string {
   return event.allDay ? '' : instantTimeInZone(event.endsAt, event.timezone);
+}
+
+/**
+ * Where an event sits on a grid drawn in `displayTimezone` — DP-064.
+ *
+ * An all-day event has no instant to convert: its `startDate` is already a
+ * calendar date and stays put in every zone.
+ */
+export function eventDateInZone(event: CalendarEvent, displayTimezone: string): string {
+  return event.allDay ? event.startDate : instantDateInZone(event.startsAt, displayTimezone);
+}
+
+/** The clock label a grid in `displayTimezone` shows for this event. */
+export function eventStartTimeInZone(event: CalendarEvent, displayTimezone: string): string {
+  return event.allDay ? '' : instantTimeInZone(event.startsAt, displayTimezone);
+}
+
+export function eventEndTimeInZone(event: CalendarEvent, displayTimezone: string): string {
+  return event.allDay ? '' : instantTimeInZone(event.endsAt, displayTimezone);
 }
 
 export function wallTimeToInstant(date: string, time: string, timezone: string): string {

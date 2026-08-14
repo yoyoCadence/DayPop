@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { addDays, startOfDay, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
-import { eventDate, eventStartTime } from '../../domain/eventTime';
+import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
 
 /** The原檔 looks ahead 16 days and drops empty days after tomorrow. */
@@ -10,6 +10,8 @@ const WEEKDAY_LABELS = ['週日', '週一', '週二', '週三', '週四', '週�
 
 export interface AgendaViewProps {
   events: CalendarEvent[];
+  /** The one timezone this list is drawn in — DP-064. */
+  displayTimezone: string;
   todos: TodoItem[];
   calendars: Calendar[];
   onOpenEvent(id: string): void;
@@ -32,6 +34,7 @@ export interface AgendaViewProps {
  */
 export function AgendaView({
   events,
+  displayTimezone,
   todos,
   calendars,
   onOpenEvent,
@@ -53,15 +56,17 @@ export function AgendaView({
       const key = toDateKey(date);
 
       const eventItems: AgendaItem[] = events
-        .filter((event) => eventDate(event) === key)
+        .filter((event) => eventDateInZone(event, displayTimezone) === key)
         .sort((left, right) => {
           if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-          return eventStartTime(left).localeCompare(eventStartTime(right));
+          return eventStartTimeInZone(left, displayTimezone).localeCompare(
+            eventStartTimeInZone(right, displayTimezone),
+          );
         })
         .map((event) => ({
           kind: 'event',
           id: event.id,
-          time: event.allDay ? '全天' : eventStartTime(event),
+          time: event.allDay ? '全天' : eventStartTimeInZone(event, displayTimezone),
           title: event.title,
           done: false,
           color: calendarColor(calendars, event.calendarId),
@@ -92,7 +97,7 @@ export function AgendaView({
     }
 
     return result;
-  }, [calendars, events, todos]);
+  }, [calendars, displayTimezone, events, todos]);
 
   return (
     <div className="cal-view-pane cal-agenda">
