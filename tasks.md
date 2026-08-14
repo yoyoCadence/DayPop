@@ -86,7 +86,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 5. **「共 N 筆」以 occurrence ID 去重**，不可把顯示片段計成兩筆。
   > 6. **週檢視現在只涵蓋 07:00–22:00**；該週有範圍外事件時要**動態延伸顯示時段**，不可把 23:00 夾到 22:00 —— 那會呈現錯誤的時間。
   >
-  > **實作前先把上述規則寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md)**（擁有者指定的順序），再動手，避免三個檢視各改各的。
+  > **規則已寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6「決策（DP-064）」**（擁有者指定的順序），該節另記了落點：切片邏輯放 domain 的 `displaySegments.ts`、兩份重複的衝突偵測（`MonthView` 的 `hasOverlap()` 與 `DayDetailSheet` 的 `overlappingIds()`）收斂成單一 domain 函式、`timeGrid.ts` 的 `GRID_START_HOUR`／`GRID_END_HOUR` 由常數改為該週資料的函式、`overview.ts` 的 `items.length` 改為依 occurrence ID 去重。實作依該節進行。
 
 ## In Progress
 
