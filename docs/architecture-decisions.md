@@ -173,7 +173,11 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 | `preferences.timezone` | 目前主要是新增事件的預設值 |
 | 瀏覽器／裝置時區 | `todayKey`、週格的 now line |
 
-**定案：display timezone = `preferences.timezone`，未設定或無效時退回裝置時區。**
+**定案：display timezone = `preferences.timezone`。**
+
+`UserPreferences.timezone` 是必填欄位，`validateDayPopUserData()` 會經 `validateTimezone()` 拒絕缺少或不支援的值，guest corrupt envelope 與 account cache 也依 §1 fail closed，DB 另有 timezone trigger。因此**顯示層不得在遇到無效值時靜默改用裝置時區** —— 那會掩蓋 canonical data 損壞，並讓事件落到不同的日格。已載入的 `DayPopUserData` 一律以 `preferences.timezone` 為準，無效是 fail-closed 條件，由既有閘門處理。
+
+裝置時區只用於**尚未有 canonical preferences 的生命週期**（bootstrap 前、資料載入前的首屏）；一旦 `DayPopUserData` 載入，這個 fallback 即失效。
 
 它是**唯一**決定下列事情的時區：
 
@@ -182,7 +186,20 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 週格的時刻軌、now line 與拖曳座標換算
 - 綜覽的分組日期
 
-**事件自身的 `timezone` 仍然保留為資料**，並且是**編輯回寫**的基準：事件 sheet 顯示該事件自己的牆上時間，拖曳或改時間後仍以該事件的 timezone 重新解析成 instant，不會因為在別的時區檢視就被改掉。當事件的 timezone 與 display timezone 不同時，sheet 應標示它屬於哪個時區（UI 由 DP-014 負責，這裡只定語意）。
+**事件自身的 `timezone` 仍然保留為資料**，且**在任何操作中都不會被改寫**。但「用哪個時區把使用者的輸入解析成 instant」要看操作種類 —— 這兩者不能混為一談：
+
+| 操作 | 使用者實際指定的是 | 解析基準 |
+| --- | --- | --- |
+| 事件 sheet 改日期／時間 | 該事件自己的牆上時間 | **`event.timezone`** |
+| 週格拖曳、拉長度、跨欄換日 | 格線上的**顯示座標** | **display timezone** |
+
+拖曳 commit 的規則：把拖曳後的 display wall coordinate 依 display timezone 解析成 instant，`event.timezone` 欄位不變。事件 sheet 之後顯示的是換算後的 event-local 時間，這是正確結果。
+
+> 反例（為什麼不能用 `event.timezone` 解析拖曳結果）：紐約 09:00 的事件在台北 display timezone 顯示為 21:00。使用者往下拖一小時到 22:00，若把 22:00 當成紐約牆上時間解析，事件不是移動一小時，而是跳了十幾個小時。
+
+也**不可改用「對 instant 加固定 delta」**代替：跨 DST 轉換時兩者結果不同，而使用者拖到的是格線上的牆上時間位置，因此必須以 display wall time 為準（沿用本節 DP-063 「跨日一律以日曆日重算」的同一條原則）。跨日／跨欄拖曳沿 **display calendar** 的日界計算。
+
+當事件的 timezone 與 display timezone 不同時，sheet 應標示它屬於哪個時區（UI 由 DP-014 負責，這裡只定語意）。
 
 > ⚠️ **這會改變現況。** 目前 `eventDate()` 以事件自己的 timezone 決定日期，所以跨時區事件現在落在「它自己那個時區的那一天」。改用單一 display timezone 後，它會落在使用者日曆的那一天 —— 這才是一個日曆格線該有的行為（一格只能屬於一個時區），但屬於本決策新增的定義，實作時要有對應的回歸測試，並在 PR 說明中明講。
 
@@ -206,7 +223,9 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 
 - **切片邏輯放在 domain**（預期為 `src/domain/displaySegments.ts`），與 `eventTime.ts`／`recurrence.ts` 同層，三個檢視共用同一份。切片以本地日界計算，沿用 §6「跨日一律以日曆日重算」的規則 —— DST 當天的一日不是 86400000 毫秒。
 - **衝突偵測目前有兩份實作**：`MonthView.tsx` 的 `hasOverlap()` 與 `DayDetailSheet.tsx` 的 `overlappingIds()`，兩者都用 `minutes()` 比較同日時鐘字串。改用 instant 後應收斂成 domain 的單一函式，不要在兩處各自改。
-- **週檢視**的 `src/domain/timeGrid.ts` 現在把 `GRID_START_HOUR`／`GRID_END_HOUR` 當模組常數，而**吃這兩個常數的不只 `blockGeometry()`**：`GRID_HEIGHT`、`hourRail()`、`nowLineTop()` 以及拖曳座標換算（`snapMinutes()`／`moveRange()`／`resizeRange()`／`columnShift()` 的呼叫端）全部隱含依賴它們。動態範圍表示這些都要改成接受該週推導出的起訖，漏掉任何一個都會讓時刻軌、now line 或拖曳結果對不上色塊。既有的 20px 最小高度只可用於「真的很短的事件」，**不可用來掩蓋負高度**。
+- **週檢視**的 `src/domain/timeGrid.ts` 把 `GRID_START_HOUR`／`GRID_END_HOUR` 當模組常數。**真正依賴它們、必須改成接受該週推導起訖的只有四處**：`blockGeometry()`、`GRID_HEIGHT`、`hourRail()`、`nowLineTop()`。漏掉任何一個都會讓時刻軌、now line 或色塊互相對不上。既有的 20px 最小高度只可用於「真的很短的事件」，**不可用來掩蓋負高度**。
+  - **拖曳的三個函式不需要改**：`snapMinutes()` 只用 `HOUR_HEIGHT` 換算垂直位移，`moveRange()`／`resizeRange()` 只處理 0–1440 的日內邊界，`columnShift()` 只用欄寬做水平移動 —— 它們都不依賴起訖小時。不要為了這個任務去動它們的簽章。
+  - 需要新增的是**拖曳 commit 的呼叫端**：把拖曳後的 display wall coordinate 依 display timezone 轉回 instant（見上面第 7 點）。
 - **綜覽**的 `src/domain/overview.ts` 以 `items.length` 累計；改為依 `ResolvedEventOccurrence.key` 去重後，`count` 與逐日列表的關係要一併說明（一筆跨日事件在兩天各出現一次，但總數只加一）。
 
 #### 不在此決策內
