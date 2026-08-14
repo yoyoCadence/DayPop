@@ -186,12 +186,15 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 週格的時刻軌、now line 與拖曳座標換算
 - 綜覽的分組日期
 
-**事件自身的 `timezone` 仍然保留為資料**，且**在任何操作中都不會被改寫**。但「用哪個時區把使用者的輸入解析成 instant」要看操作種類 —— 這兩者不能混為一談：
+**事件自身的 `timezone` 仍然保留為資料**，而「用哪個時區把使用者的輸入解析成 instant」要看操作種類 —— 這兩者不能混為一談：
 
-| 操作 | 使用者實際指定的是 | 解析基準 |
-| --- | --- | --- |
-| 事件 sheet 改日期／時間 | 該事件自己的牆上時間 | **`event.timezone`** |
-| 週格拖曳、拉長度、跨欄換日 | 格線上的**顯示座標** | **display timezone** |
+| 操作 | 使用者實際指定的是 | 解析基準 | `event.timezone` |
+| --- | --- | --- | --- |
+| 事件 sheet 改日期／時間 | 該事件自己的牆上時間 | **`event.timezone`** | 不變 |
+| 週格拖曳、拉長度、跨欄換日 | 格線上的**顯示座標** | **display timezone** | 不變 |
+| 事件 sheet **明確更換時區** | 新選定的時區＋同一個牆上時間 | 新選定的 timezone | **更新為新值** |
+
+**DP-064 的顯示切片與週格拖曳不得暗自改寫 `event.timezone`。** 這條只約束本決策涉及的路徑；使用者在事件 sheet 明確更換時區時，仍依既有的 `EventPatch.timezone` contract（`mutations.ts`：「Reanchors the same wall time in a different IANA timezone」）更新並重新錨定 —— 該控制項屬 DP-014，本決策不封死它。
 
 拖曳 commit 的規則：把拖曳後的 display wall coordinate 依 display timezone 解析成 instant，`event.timezone` 欄位不變。事件 sheet 之後顯示的是換算後的 event-local 時間，這是正確結果。
 
