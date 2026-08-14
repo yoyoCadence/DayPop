@@ -21,6 +21,21 @@ import type { CalendarEvent, TimedCalendarEvent } from './types';
  *   rather than `0` on the next, so the first day draws a full block.
  * - Conflicts compare **instants** on the half-open interval `[start, end)`:
  *   an event ending at 00:30 does not conflict with one starting at 00:30.
+ *
+ * Two consequences of cutting in wall-clock minutes, both on DST nights, both
+ * deliberate rather than defects:
+ *
+ * - **A repeated hour runs the wall clock backwards.** 01:30 EDT → 01:00 EST on
+ *   a fall-back night is 30 real minutes, but the second minute number is the
+ *   smaller one. A 24-hour rail has no room for the hour that happened twice, so
+ *   such a segment collapses to zero height and the grid's 20px minimum applies
+ *   for the reason §6 does allow it — a genuinely short event — never to hide a
+ *   negative height, which §6 forbids. `endMinutes` is therefore never below
+ *   `startMinutes`.
+ * - **A skipped midnight over-draws by the gap.** Where the clocks spring
+ *   forward *at* midnight (America/Santiago has no 00:00 on 2026-09-06), a
+ *   continuation reads `00:00 → 03:00` for an event whose local day starts at
+ *   01:00. The block is one hour tall too many, one night a year.
  */
 
 /** Minutes in a wall-clock day. A segment may end exactly here (24:00). */
@@ -66,6 +81,13 @@ export function eventDisplaySegments(
   key: string,
   displayTimezone: string,
 ): DisplaySegment[] {
+  // Instants, not date keys: a reversal *inside* one day shares its date key
+  // with the start, so a date-key comparison lets it through into a segment
+  // whose end minute is below its start. `validateDayPopUserData()` and the DB's
+  // `events_time_shape` both reject `ends_at <= starts_at` already; this is the
+  // last gate before a corrupt local document reaches a view.
+  if (Date.parse(event.endsAt) <= Date.parse(event.startsAt)) return [];
+
   const startDateKey = instantDateInZone(event.startsAt, displayTimezone);
   const startMinutes = minutesOfDay(instantTimeInZone(event.startsAt, displayTimezone));
   const rawEndDateKey = instantDateInZone(event.endsAt, displayTimezone);
@@ -74,15 +96,16 @@ export function eventDisplaySegments(
   // Ending exactly at midnight belongs to the day that just finished: 24:00 on
   // the first day, not 00:00 on a day the event never really occupies.
   const endsAtMidnight = rawEndMinutes === 0;
-  const endDateKey = endsAtMidnight
+  const derivedEndDateKey = endsAtMidnight
     ? toDateKey(addDays(fromDateKey(rawEndDateKey), -1))
     : rawEndDateKey;
   const endMinutes = endsAtMidnight ? MINUTES_PER_DAY : rawEndMinutes;
 
-  if (endDateKey < startDateKey) {
-    // Only reachable from data that violates `ends_at > starts_at`.
-    return [];
-  }
+  // Ordered instants still allow a derived end before the start day: a zone that
+  // ends DST at 01:00 repeats 00:00, so both ends can read 00:00 on one date key
+  // and the midnight rule then walks the end back a day. Pin it to the start day
+  // so the loop cannot run past its own terminator.
+  const endDateKey = derivedEndDateKey < startDateKey ? startDateKey : derivedEndDateKey;
 
   const segments: DisplaySegment[] = [];
   let dateKey = startDateKey;
@@ -96,12 +119,17 @@ export function eventDisplaySegments(
 
     const isFirst = dateKey === startDateKey;
     const isLast = dateKey === endDateKey;
+    const segmentStart = isFirst ? startMinutes : 0;
     segments.push({
       key,
       event,
       dateKey,
-      startMinutes: isFirst ? startMinutes : 0,
-      endMinutes: isLast ? endMinutes : MINUTES_PER_DAY,
+      startMinutes: segmentStart,
+      // Never below `segmentStart`: a repeated hour makes the end wall clock the
+      // smaller number on valid data, and a negative height must not reach the
+      // grid. Only a first-and-last segment can hit this — a continuation starts
+      // at 0, and any earlier day ends at 1440.
+      endMinutes: isLast ? Math.max(endMinutes, segmentStart) : MINUTES_PER_DAY,
       isContinuation: !isFirst,
       continuesNextDay: !isLast,
     });

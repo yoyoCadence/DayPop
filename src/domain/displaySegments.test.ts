@@ -165,6 +165,53 @@ describe('eventDisplaySegments', () => {
     expect(eventDisplaySegments(event, KEY, 'UTC')).toEqual([]);
   });
 
+  it('returns nothing when the reversal is inside one day', () => {
+    // The date keys match, so only comparing them let this through as a segment
+    // ending on a smaller minute than it started — the negative height §6
+    // forbids the grid's 20px minimum from hiding.
+    const event = spanning(
+      wallTimeToInstant('2026-08-13', '15:00', 'UTC'),
+      wallTimeToInstant('2026-08-13', '10:00', 'UTC'),
+      'UTC',
+    );
+
+    expect(eventDisplaySegments(event, KEY, 'UTC')).toEqual([]);
+  });
+
+  it('returns nothing for a zero-length event', () => {
+    const at = wallTimeToInstant('2026-08-13', '10:00', 'UTC');
+
+    expect(eventDisplaySegments(spanning(at, at, 'UTC'), KEY, 'UTC')).toEqual([]);
+  });
+
+  it('collapses a repeated fall-back hour rather than drawing a negative height', () => {
+    // New York puts the clocks back at 02:00 EDT on 2026-11-01, so 01:00–02:00
+    // happens twice. 05:30Z reads 01:30 EDT and 06:00Z reads 01:00 EST: thirty
+    // real minutes whose end wall clock is the *smaller* number. The rail has no
+    // room for the hour that ran twice, so the segment has no height — but it
+    // must never have less than none.
+    const event = spanning('2026-11-01T05:30:00.000Z', '2026-11-01T06:00:00.000Z', 'America/New_York');
+    const segments = eventDisplaySegments(event, KEY, 'America/New_York');
+
+    expect(shape(segments)).toEqual([
+      { dateKey: '2026-11-01', startMinutes: 90, endMinutes: 90, isContinuation: false, continuesNextDay: false },
+    ]);
+  });
+
+  it('keeps wall-clock minutes across a fall-back night', () => {
+    // The mirror of the spring-forward case: this local day is 25 hours long and
+    // the segment must still read 00:30→23:30.
+    const event = spanning(
+      wallTimeToInstant('2026-11-01', '00:30', 'America/New_York'),
+      wallTimeToInstant('2026-11-01', '23:30', 'America/New_York'),
+      'America/New_York',
+    );
+
+    expect(shape(eventDisplaySegments(event, KEY, 'America/New_York'))).toEqual([
+      { dateKey: '2026-11-01', startMinutes: 30, endMinutes: 1410, isContinuation: false, continuesNextDay: false },
+    ]);
+  });
+
   it('fails closed on an absurd span rather than building a million segments', () => {
     const event = spanning(
       wallTimeToInstant('2026-01-01', '00:00', 'UTC'),
