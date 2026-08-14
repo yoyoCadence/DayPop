@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { toDateKey } from '../../domain/date';
+import { fromDateKey, toDateKey } from '../../domain/date';
 import type { Sticker } from '../../domain/types';
 import { MonthView } from './MonthView';
 
@@ -39,11 +39,11 @@ function sticker(id: string, glyph: string, date = TODAY): Sticker {
   };
 }
 
-function render(stickers: Sticker[]) {
+function render(stickers: Sticker[], weekStartsOn: 0 | 1 = 0) {
   act(() =>
     root.render(
       <MonthView
-        weekStartsOn={0}
+        weekStartsOn={weekStartsOn}
         calendarGridMode="fixed-six"
         events={[]}
         stickers={stickers}
@@ -56,6 +56,26 @@ function render(stickers: Sticker[]) {
       />,
     ),
   );
+}
+
+function cell(dateKey: string): HTMLButtonElement | null {
+  return container.querySelector<HTMLButtonElement>(`[data-date-key="${dateKey}"]`);
+}
+
+/** The one cell in the tab order. */
+function tabbableKeys(): string[] {
+  return [...container.querySelectorAll<HTMLButtonElement>('[data-date-key]')]
+    .filter((button) => button.tabIndex === 0)
+    .map((button) => button.dataset.dateKey ?? '');
+}
+
+function pressOn(dateKey: string, key: string) {
+  const button = cell(dateKey);
+  if (!button) throw new Error(`no cell for ${dateKey}`);
+  act(() => {
+    button.focus();
+    button.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+  });
 }
 
 /** The sticker row inside today's cell, whatever else the grid renders. */
@@ -95,5 +115,111 @@ describe('MonthView stickers', () => {
   it('keeps another day’s stickers out of this cell', () => {
     render([sticker('a', '🎂'), sticker('b', '✈️', '2000-01-01')]);
     expect(todayStickerRow()?.textContent).toBe('🎂');
+  });
+});
+
+/**
+ * DP-069. The buffer renders hundreds of day cells and grows while scrolling,
+ * so every cell being tabbable put the bottom tab bar 382 Tab presses away.
+ */
+describe('MonthView keyboard navigation', () => {
+  it('leaves exactly one day cell in the tab order', () => {
+    render([]);
+
+    const cells = container.querySelectorAll('[data-date-key]');
+    expect(cells.length).toBeGreaterThan(300);
+    expect(tabbableKeys()).toEqual([TODAY]);
+  });
+
+  it('moves focus by day, week and month without changing the selection', () => {
+    const onSelectDate = vi.fn();
+    act(() =>
+      root.render(
+        <MonthView
+          weekStartsOn={0}
+          calendarGridMode="fixed-six"
+          events={[]}
+          stickers={[]}
+          calendars={[]}
+          selectedDate="2026-08-13"
+          todayKey="2026-08-13"
+          flashToday={false}
+          onSelectDate={onSelectDate}
+          onPeriodLabelChange={vi.fn()}
+        />,
+      ),
+    );
+
+    pressOn('2026-08-13', 'ArrowRight');
+    expect(document.activeElement).toBe(cell('2026-08-14'));
+
+    pressOn('2026-08-14', 'ArrowDown');
+    expect(document.activeElement).toBe(cell('2026-08-21'));
+
+    pressOn('2026-08-21', 'ArrowLeft');
+    expect(document.activeElement).toBe(cell('2026-08-20'));
+
+    pressOn('2026-08-20', 'ArrowUp');
+    expect(document.activeElement).toBe(cell('2026-08-13'));
+
+    pressOn('2026-08-13', 'PageDown');
+    expect(document.activeElement).toBe(cell('2026-09-13'));
+
+    pressOn('2026-09-13', 'PageUp');
+    expect(document.activeElement).toBe(cell('2026-08-13'));
+
+    // Arrow keys move the focus only; activating a day is still a click/Enter.
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it('moves the tab stop with the focus so Tab returns where the user left off', () => {
+    render([]);
+
+    pressOn(TODAY, 'ArrowRight');
+    const next = tabbableKeys();
+
+    expect(next).toHaveLength(1);
+    expect(next[0]).not.toBe(TODAY);
+    expect(document.activeElement).toBe(cell(next[0]!));
+  });
+
+  it('sends Home and End to the ends of the row for both week starts', () => {
+    // 2026-08-13 is a Thursday.
+    render([], 0);
+    pressOn('2026-08-13', 'Home');
+    expect(document.activeElement).toBe(cell('2026-08-09')); // Sunday
+    pressOn('2026-08-13', 'End');
+    expect(document.activeElement).toBe(cell('2026-08-15')); // Saturday
+
+    render([], 1);
+    pressOn('2026-08-13', 'Home');
+    expect(document.activeElement).toBe(cell('2026-08-10')); // Monday
+    pressOn('2026-08-13', 'End');
+    expect(document.activeElement).toBe(cell('2026-08-16')); // Sunday
+  });
+
+  it('grows the buffer when the keyboard walks past its edge', () => {
+    render([]);
+
+    const keys = [...container.querySelectorAll<HTMLButtonElement>('[data-date-key]')].map(
+      (button) => button.dataset.dateKey ?? '',
+    );
+    const lastKey = keys[keys.length - 1]!;
+    expect(cell(lastKey)).not.toBeNull();
+
+    pressOn(lastKey, 'ArrowRight');
+
+    const dayAfter = toDateKey(new Date(fromDateKey(lastKey).getTime() + 86_400_000));
+    expect(cell(dayAfter)).not.toBeNull();
+    expect(document.activeElement).toBe(cell(dayAfter));
+  });
+
+  it('ignores keys it does not own', () => {
+    render([]);
+    const before = document.activeElement;
+
+    pressOn(TODAY, 'a');
+    expect(document.activeElement).toBe(cell(TODAY));
+    expect(before).not.toBeUndefined();
   });
 });

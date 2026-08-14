@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
+  addMonths,
   buildMonthGrid,
   daysBetween,
   formatDayTitle,
@@ -63,6 +64,35 @@ describe('addDays', () => {
     addDays(original, 5);
 
     expect(toDateKey(original)).toBe('2026-08-06');
+  });
+});
+
+describe('addMonths', () => {
+  it('keeps the day of month when the target month is long enough', () => {
+    expect(toDateKey(addMonths(fromDateKey('2026-08-13'), 1))).toBe('2026-09-13');
+    expect(toDateKey(addMonths(fromDateKey('2026-08-13'), -1))).toBe('2026-07-13');
+  });
+
+  it('clamps instead of overflowing into the following month', () => {
+    // Plain setMonth() turns this into 3月3日, which would make PageDown skip
+    // February altogether.
+    expect(toDateKey(addMonths(fromDateKey('2026-01-31'), 1))).toBe('2026-02-28');
+    expect(toDateKey(addMonths(fromDateKey('2028-01-31'), 1))).toBe('2028-02-29');
+    expect(toDateKey(addMonths(fromDateKey('2026-03-31'), -1))).toBe('2026-02-28');
+    expect(toDateKey(addMonths(fromDateKey('2026-05-31'), 1))).toBe('2026-06-30');
+  });
+
+  it('crosses year boundaries in both directions', () => {
+    expect(toDateKey(addMonths(fromDateKey('2026-12-15'), 1))).toBe('2027-01-15');
+    expect(toDateKey(addMonths(fromDateKey('2026-01-15'), -1))).toBe('2025-12-15');
+    expect(toDateKey(addMonths(fromDateKey('2026-06-15'), 12))).toBe('2027-06-15');
+  });
+
+  it('leaves its input alone', () => {
+    const original = fromDateKey('2026-01-31');
+    addMonths(original, 1);
+
+    expect(toDateKey(original)).toBe('2026-01-31');
   });
 });
 
