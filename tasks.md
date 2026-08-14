@@ -86,7 +86,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 5. **「共 N 筆」以 occurrence ID 去重**，不可把顯示片段計成兩筆。
   > 6. **週檢視現在只涵蓋 07:00–22:00**；該週有範圍外事件時要**動態延伸顯示時段**，不可把 23:00 夾到 22:00 —— 那會呈現錯誤的時間。
   >
-  > **規則已寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6「決策（DP-064）」**（擁有者指定的順序），該節另記了落點：切片邏輯放 domain 的 `displaySegments.ts`、兩份重複的衝突偵測（`MonthView` 的 `hasOverlap()` 與 `DayDetailSheet` 的 `overlappingIds()`）收斂成單一 domain 函式、`timeGrid.ts` 的 `GRID_START_HOUR`／`GRID_END_HOUR` 由常數改為該週資料的函式、`overview.ts` 的 `items.length` 改為依 occurrence ID 去重。實作依該節進行。
+  > **規則已寫進 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6「決策（DP-064）」**（擁有者指定的順序），該節另定死三件實作前必須先有答案的事：**display timezone 唯一來源是 `preferences.timezone`**（未設定退回裝置時區，決定日格歸屬／午夜切點／now line／拖曳座標；事件自身 `timezone` 仍是編輯回寫基準，**且這會改變現況的 `eventDate()` 行為**）、**identity 一律用 `ResolvedEventOccurrence.key` 不可用 `event.id`**、週格範圍以 `min(7, floor(最早))`／`max(22, ceil(最晚))` 推導並 clamp 0–24（午夜在第一天記為 `24:00`）。落點包含：切片邏輯放 domain 的 `displaySegments.ts`、兩份重複的衝突偵測（`MonthView` 的 `hasOverlap()` 與 `DayDetailSheet` 的 `overlappingIds()`）收斂成單一 domain 函式、`timeGrid.ts` 吃常數的**全部**呼叫端（`GRID_HEIGHT`／`hourRail()`／`nowLineTop()`／拖曳換算，不只 `blockGeometry()`）、`overview.ts` 依 key 去重。實作依該節進行。
 
 ## In Progress
 

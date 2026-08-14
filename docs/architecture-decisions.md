@@ -163,12 +163,51 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 5. **綜覽的「共 N 筆」以 occurrence ID 去重**，不可把兩個顯示片段計成兩筆。
 6. **週檢視目前固定 07:00–22:00（`GRID_START_HOUR`／`GRID_END_HOUR`）**；該週有落在範圍外的事件時要**動態延伸顯示時段**。不可沿用原檔 `if(h<20)h=20` 的夾擠，也不可把 23:00 夾到 22:00 —— 那會畫出錯誤的時間。
 
+#### 7. Display timezone 的唯一來源
+
+「依畫面使用的時區」在現況其實有三個候選，必須先定死，否則片段落在哪一天、午夜在哪裡、now line 位置、拖曳後怎麼寫回都會各自解讀：
+
+| 候選 | 目前用在哪 |
+| --- | --- |
+| `event.timezone` | `eventTime.ts` 的 `eventDate()`／`eventStartTime()`／`eventEndTime()` |
+| `preferences.timezone` | 目前主要是新增事件的預設值 |
+| 瀏覽器／裝置時區 | `todayKey`、週格的 now line |
+
+**定案：display timezone = `preferences.timezone`，未設定或無效時退回裝置時區。**
+
+它是**唯一**決定下列事情的時區：
+
+- occurrence 落在哪一個日格
+- display segment 在哪裡切（本地午夜）
+- 週格的時刻軌、now line 與拖曳座標換算
+- 綜覽的分組日期
+
+**事件自身的 `timezone` 仍然保留為資料**，並且是**編輯回寫**的基準：事件 sheet 顯示該事件自己的牆上時間，拖曳或改時間後仍以該事件的 timezone 重新解析成 instant，不會因為在別的時區檢視就被改掉。當事件的 timezone 與 display timezone 不同時，sheet 應標示它屬於哪個時區（UI 由 DP-014 負責，這裡只定語意）。
+
+> ⚠️ **這會改變現況。** 目前 `eventDate()` 以事件自己的 timezone 決定日期，所以跨時區事件現在落在「它自己那個時區的那一天」。改用單一 display timezone 後，它會落在使用者日曆的那一天 —— 這才是一個日曆格線該有的行為（一格只能屬於一個時區），但屬於本決策新增的定義，實作時要有對應的回歸測試，並在 PR 說明中明講。
+
+#### 8. Occurrence identity 用哪一個 key
+
+「共 N 筆」與 display segment 的 identity **沿用 `ResolvedEventOccurrence.key`**（`recurrence.ts`，形式為 `${sourceEventId}:${occurrenceKey(occurrence)}`）。它由 source event 加上原 occurrence 組成，replacement 也維持原 occurrence 的 identity，因此是穩定且唯一的。
+
+`EventOccurrence` 本身沒有 `id`，**不可改用 `event.id` 去重** —— 那會把同一個 recurring series 的不同 occurrence 錯誤合併成一筆。
+
+#### 9. 週格動態範圍的推導規則
+
+必須是可測試的公式，而不是「有就延伸」：
+
+- **基線維持 07:00–22:00**，任何一週都不會比它更窄。
+- 由**當週的 display segments**（切片後、非全天）推導：
+  `start = min(7, floor(最早片段的起始小時))`、`end = max(22, ceil(最晚片段的結束小時))`。
+- 結果 **clamp 在 0–24**。
+- 片段結束在本地午夜時，在**第一天**表示為 `24:00`（分鐘數 1440），不是隔天的 `00:00`；隔天的續段從 `00:00` 起算。
+
 #### 落點
 
 - **切片邏輯放在 domain**（預期為 `src/domain/displaySegments.ts`），與 `eventTime.ts`／`recurrence.ts` 同層，三個檢視共用同一份。切片以本地日界計算，沿用 §6「跨日一律以日曆日重算」的規則 —— DST 當天的一日不是 86400000 毫秒。
 - **衝突偵測目前有兩份實作**：`MonthView.tsx` 的 `hasOverlap()` 與 `DayDetailSheet.tsx` 的 `overlappingIds()`，兩者都用 `minutes()` 比較同日時鐘字串。改用 instant 後應收斂成 domain 的單一函式，不要在兩處各自改。
-- **週檢視**的 `src/domain/timeGrid.ts` 現在把 `GRID_START_HOUR`／`GRID_END_HOUR` 當常數；動態延伸表示這兩個值要成為該週資料的函式，`blockGeometry()` 與 `GRID_HEIGHT` 需一併調整，既有的 20px 最小高度只可用於「真的很短的事件」，不可用來掩蓋負高度。
-- **綜覽**的 `src/domain/overview.ts` 以 `items.length` 累計；改為依 occurrence ID 去重後，`count` 與逐日列表的關係要一併說明（一筆跨日事件在兩天各出現一次，但總數只加一）。
+- **週檢視**的 `src/domain/timeGrid.ts` 現在把 `GRID_START_HOUR`／`GRID_END_HOUR` 當模組常數，而**吃這兩個常數的不只 `blockGeometry()`**：`GRID_HEIGHT`、`hourRail()`、`nowLineTop()` 以及拖曳座標換算（`snapMinutes()`／`moveRange()`／`resizeRange()`／`columnShift()` 的呼叫端）全部隱含依賴它們。動態範圍表示這些都要改成接受該週推導出的起訖，漏掉任何一個都會讓時刻軌、now line 或拖曳結果對不上色塊。既有的 20px 最小高度只可用於「真的很短的事件」，**不可用來掩蓋負高度**。
+- **綜覽**的 `src/domain/overview.ts` 以 `items.length` 累計；改為依 `ResolvedEventOccurrence.key` 去重後，`count` 與逐日列表的關係要一併說明（一筆跨日事件在兩天各出現一次，但總數只加一）。
 
 #### 不在此決策內
 
