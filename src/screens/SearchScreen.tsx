@@ -24,8 +24,9 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
   const [calendarFilter, setCalendarFilter] = useState<string | null>(null);
   const calendars = sortedCalendars(data.calendars);
   const results = useMemo(
-    () => searchEntries(query, data.events, data.todos, calendarFilter),
-    [query, data.events, data.todos, calendarFilter],
+    () =>
+      searchEntries(query, data.events, data.todos, data.preferences.timezone, calendarFilter),
+    [query, data.events, data.todos, data.preferences.timezone, calendarFilter],
   );
   const trimmed = query.trim();
 

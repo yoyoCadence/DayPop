@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { calendarColor, visibleEvents } from '../domain/calendars';
-import { toDateKey } from '../domain/date';
+import { fromDateKey } from '../domain/date';
+import { instantDateInZone } from '../domain/eventTime';
 import {
   buildOverviewGroups,
   overviewLabel,
@@ -44,11 +45,13 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
   const { data, toggleTodo } = useDayPopData();
   const [type, setType] = useState<OverviewType>('events');
   const [period, setPeriod] = useState<OverviewPeriod>('month');
-  const [cursor, setCursor] = useState(() => new Date());
-  const [collapsed, setCollapsed] = useState<string[]>([]);
-
   const weekStartsOn = data.preferences.weekStartsOn;
-  const todayKey = toDateKey(new Date());
+  // Same reading of "today" as the calendar — DP-064. On the device clock this
+  // screen could call a todo overdue that 日曆 still counted as open, and the
+  // browsing cursor could open the wrong month at a month boundary.
+  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
+  const [cursor, setCursor] = useState(() => fromDateKey(todayKey));
+  const [collapsed, setCollapsed] = useState<string[]>([]);
   const groups = useMemo(
     () =>
       buildOverviewGroups({
@@ -62,6 +65,9 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
         period,
         cursor,
         weekStartsOn,
+        // Same zone as the calendar panes, so one event cannot show a
+        // different day here than it does there — DP-064.
+        displayTimezone: data.preferences.timezone,
         todayKey,
       }),
     [data, type, period, cursor, weekStartsOn, todayKey],
@@ -132,7 +138,8 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
           <button
             className="cal-chip-button"
             type="button"
-            onClick={() => setCursor(new Date())}
+            // The same today the grouping uses, not a second clock reading.
+            onClick={() => setCursor(fromDateKey(todayKey))}
           >
             今天
           </button>

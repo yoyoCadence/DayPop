@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { addDays, startOfDay, toDateKey } from '../../domain/date';
+import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
-import { eventDate, eventStartTime } from '../../domain/eventTime';
+import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
 
 /** The原檔 looks ahead 16 days and drops empty days after tomorrow. */
@@ -10,6 +10,10 @@ const WEEKDAY_LABELS = ['週日', '週一', '週二', '週三', '週四', '週�
 
 export interface AgendaViewProps {
   events: CalendarEvent[];
+  /** The one timezone this list is drawn in — DP-064. */
+  displayTimezone: string;
+  /** Today in that zone, computed once by the screen. */
+  todayKey: string;
   todos: TodoItem[];
   calendars: Calendar[];
   onOpenEvent(id: string): void;
@@ -32,14 +36,18 @@ export interface AgendaViewProps {
  */
 export function AgendaView({
   events,
+  displayTimezone,
+  todayKey,
   todos,
   calendars,
   onOpenEvent,
   onToggleTodo,
 }: AgendaViewProps) {
   const days = useMemo(() => {
-    const today = startOfDay(new Date());
-    const todayKey = toDateKey(today);
+    // The screen's one reading of "today", not a second one from the device
+    // clock — DP-064. The rows are filled with events placed by the display
+    // zone, so the row they start from has to come from the same zone.
+    const today = fromDateKey(todayKey);
     const result: {
       key: string;
       dateLabel: string;
@@ -53,15 +61,17 @@ export function AgendaView({
       const key = toDateKey(date);
 
       const eventItems: AgendaItem[] = events
-        .filter((event) => eventDate(event) === key)
+        .filter((event) => eventDateInZone(event, displayTimezone) === key)
         .sort((left, right) => {
           if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-          return eventStartTime(left).localeCompare(eventStartTime(right));
+          return eventStartTimeInZone(left, displayTimezone).localeCompare(
+            eventStartTimeInZone(right, displayTimezone),
+          );
         })
         .map((event) => ({
           kind: 'event',
           id: event.id,
-          time: event.allDay ? '全天' : eventStartTime(event),
+          time: event.allDay ? '全天' : eventStartTimeInZone(event, displayTimezone),
           title: event.title,
           done: false,
           color: calendarColor(calendars, event.calendarId),
@@ -92,7 +102,7 @@ export function AgendaView({
     }
 
     return result;
-  }, [calendars, events, todos]);
+  }, [calendars, displayTimezone, events, todayKey, todos]);
 
   return (
     <div className="cal-view-pane cal-agenda">

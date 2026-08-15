@@ -18,7 +18,8 @@ import {
   toDateKey,
   weeksBetween,
 } from '../../domain/date';
-import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
+import { occurrencesConflict } from '../../domain/displaySegments';
+import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
@@ -54,6 +55,8 @@ export interface MonthViewHandle {
 export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
   weekStartsOn: 0 | 1;
+  /** The one timezone this grid is drawn in — DP-064. */
+  displayTimezone: string;
   calendarGridMode: CalendarGridMode;
   events: CalendarEvent[];
   stickers: Sticker[];
@@ -69,6 +72,7 @@ export interface MonthViewProps {
 export function MonthView({
   ref,
   weekStartsOn,
+  displayTimezone,
   calendarGridMode,
   events,
   stickers,
@@ -80,19 +84,24 @@ export function MonthView({
   onPeriodLabelChange,
 }: MonthViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Anchored on the display zone's today, like everything else about "today"
+  // on this grid — DP-064.
   const [bufferStart, setBufferStart] = useState(() =>
-    toDateKey(addDays(startOfWeek(new Date(), weekStartsOn), -INITIAL_WEEKS_BEFORE * 7)),
+    toDateKey(addDays(startOfWeek(fromDateKey(todayKey), weekStartsOn), -INITIAL_WEEKS_BEFORE * 7)),
   );
   const [bufferWeeks, setBufferWeeks] = useState(INITIAL_BUFFER_WEEKS);
   const [rowHeight, setRowHeight] = useState(INITIAL_ROW_HEIGHT);
   const rowHeightRef = useRef(INITIAL_ROW_HEIGHT);
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
+  const [visibleMonth, setVisibleMonth] = useState(() => fromDateKey(todayKey));
   const weeksShown = monthGridWeekCount(visibleMonth, weekStartsOn, calendarGridMode);
   const labelRef = useRef('');
   // Scroll compensation for rows prepended above the current position.
   const pendingScrollAdjust = useRef(0);
 
-  const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+  const eventsByDate = useMemo(
+    () => groupEventsByDate(events, displayTimezone),
+    [displayTimezone, events],
+  );
   const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
 
   // Roving tabindex — DP-069. The buffer holds hundreds of day cells and grows
@@ -108,10 +117,16 @@ export function MonthView({
       const element = scrollRef.current;
       if (!element) return;
       const row = height ?? rowHeight;
-      const index = weeksBetween(fromDateKey(bufferStart), startOfWeek(new Date(), weekStartsOn));
+      // `todayKey` is already read in the display zone by the screen. Reading
+      // the device clock here instead scrolled to a different day than the one
+      // the grid had highlighted — DP-064.
+      const index = weeksBetween(
+        fromDateKey(bufferStart),
+        startOfWeek(fromDateKey(todayKey), weekStartsOn),
+      );
       element.scrollTo({ top: Math.max(0, index * row), behavior: smooth ? 'smooth' : 'auto' });
     },
-    [bufferStart, rowHeight, weekStartsOn],
+    [bufferStart, rowHeight, todayKey, weekStartsOn],
   );
 
   useImperativeHandle(
@@ -415,7 +430,9 @@ export function MonthView({
                         color: CALENDAR_TEXT_COLOR,
                       }}
                     >
-                      {event.allDay ? event.title : `${eventStartTime(event)} ${event.title}`}
+                      {event.allDay
+                        ? event.title
+                        : `${eventStartTimeInZone(event, displayTimezone)} ${event.title}`}
                     </div>
                   ))}
                   {hidden > 0 && <div className="cal-cell-more">+{hidden}</div>}
@@ -447,10 +464,13 @@ function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean)
   return isZebra ? 'rgba(130,130,130,0.06)' : 'transparent';
 }
 
-function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
+function groupEventsByDate(
+  events: CalendarEvent[],
+  displayTimezone: string,
+): Map<string, CalendarEvent[]> {
   const map = new Map<string, CalendarEvent[]>();
   for (const event of events) {
-    const key = eventDate(event);
+    const key = eventDateInZone(event, displayTimezone);
     const list = map.get(key);
     if (list) list.push(event);
     else map.set(key, [event]);
@@ -459,7 +479,9 @@ function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]
   for (const list of map.values()) {
     list.sort((left, right) => {
       if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-      return eventStartTime(left).localeCompare(eventStartTime(right));
+      return eventStartTimeInZone(left, displayTimezone).localeCompare(
+        eventStartTimeInZone(right, displayTimezone),
+      );
     });
   }
   return map;
@@ -476,25 +498,18 @@ function groupStickersByDate(stickers: Sticker[]): Map<string, Sticker[]> {
   return map;
 }
 
-/** Two timed events on the same day overlapping — the red dot in the corner. */
+/**
+ * Two timed events overlapping — the red dot in the corner.
+ *
+ * DP-064 replaced the same-day clock-string comparison this used to do with the
+ * shared instant check: `minutes(end) = 30 < minutes(start) = 1380` meant a
+ * cross-midnight event could never be flagged, however obvious the overlap.
+ */
 function hasOverlap(events: CalendarEvent[]): boolean {
-  const timed = events.filter((event) => !event.allDay);
-  for (let i = 0; i < timed.length; i += 1) {
-    for (let j = i + 1; j < timed.length; j += 1) {
-      const a = timed[i]!;
-      const b = timed[j]!;
-      if (
-        minutes(eventStartTime(a)) < minutes(eventEndTime(b)) &&
-        minutes(eventStartTime(b)) < minutes(eventEndTime(a))
-      ) {
-        return true;
-      }
+  for (let i = 0; i < events.length; i += 1) {
+    for (let j = i + 1; j < events.length; j += 1) {
+      if (occurrencesConflict(events[i]!, events[j]!)) return true;
     }
   }
   return false;
-}
-
-function minutes(time: string): number {
-  const [hour = 0, minute = 0] = (time || '0:0').split(':').map(Number);
-  return hour * 60 + minute;
 }

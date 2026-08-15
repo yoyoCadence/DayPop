@@ -1,7 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { fromDateKey, toDateKey } from '../../domain/date';
-import { eventDate, eventEndTime, eventStartTime } from '../../domain/eventTime';
-import { minutesFromTime } from '../../domain/timeGrid';
+import { fromDateKey } from '../../domain/date';
+import { conflictingOccurrenceKeys } from '../../domain/displaySegments';
+import {
+  eventDateInZone,
+  eventEndTimeInZone,
+  eventStartTimeInZone,
+} from '../../domain/eventTime';
 import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
 import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
@@ -14,6 +18,14 @@ export interface DayDetailSheetProps {
   /** `YYYY-MM-DD`, or null when the sheet is closed. */
   dateKey: string | null;
   events: CalendarEvent[];
+  /** The one timezone this sheet is drawn in — DP-064. */
+  displayTimezone: string;
+  /**
+   * Today in that zone, computed once by the screen. The overdue marker below
+   * compares against it: read from the device clock instead, this sheet and
+   * 綜覽 disagreed about whether the same todo was late.
+   */
+  todayKey: string;
   todos: TodoItem[];
   stickers: Sticker[];
   calendars: Calendar[];
@@ -44,6 +56,8 @@ export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
 function DayDetailSheetBody({
   dateKey,
   events,
+  displayTimezone,
+  todayKey,
   todos,
   stickers,
   calendars,
@@ -63,22 +77,29 @@ function DayDetailSheetBody({
   // on top of this one, and two window listeners would close both at once.
   const date = fromDateKey(dateKey);
   const dayLabel = `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAY_NAMES[date.getDay()]}`;
-  const todayKey = toDateKey(new Date());
 
   const dayEvents = useMemo(() => {
     const list = events
-      .filter((event) => eventDate(event) === dateKey)
+      .filter((event) => eventDateInZone(event, displayTimezone) === dateKey)
       .sort((left, right) => {
         if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return eventStartTime(left).localeCompare(eventStartTime(right));
+        return eventStartTimeInZone(left, displayTimezone).localeCompare(
+          eventStartTimeInZone(right, displayTimezone),
+        );
       });
-    const conflicting = overlappingIds(list);
+    // Identity is the event id here: this list is one day of single events, so
+    // there is no recurring occurrence to tell apart yet (DP-014 wires those).
+    const conflicting = conflictingOccurrenceKeys(
+      list.map((event) => ({ key: event.id, event })),
+    );
     return list.map((event) => ({
       event,
-      time: event.allDay ? '全天' : `${eventStartTime(event)}–${eventEndTime(event)}`,
+      time: event.allDay
+        ? '全天'
+        : `${eventStartTimeInZone(event, displayTimezone)}–${eventEndTimeInZone(event, displayTimezone)}`,
       conflict: conflicting.has(event.id),
     }));
-  }, [dateKey, events]);
+  }, [dateKey, displayTimezone, events]);
 
   const dayStickers = useMemo(
     () => stickers.filter((sticker) => sticker.date === dateKey),
@@ -253,22 +274,3 @@ function DayDetailSheetBody({
   );
 }
 
-/** Ids of timed events that overlap another timed event on the same day. */
-function overlappingIds(events: CalendarEvent[]): Set<string> {
-  const result = new Set<string>();
-  const timed = events.filter((event) => !event.allDay);
-  for (let i = 0; i < timed.length; i += 1) {
-    for (let j = i + 1; j < timed.length; j += 1) {
-      const a = timed[i]!;
-      const b = timed[j]!;
-      if (
-        minutesFromTime(eventStartTime(a)) < minutesFromTime(eventEndTime(b)) &&
-        minutesFromTime(eventStartTime(b)) < minutesFromTime(eventEndTime(a))
-      ) {
-        result.add(a.id);
-        result.add(b.id);
-      }
-    }
-  }
-  return result;
-}

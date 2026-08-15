@@ -58,11 +58,53 @@ function sticker(id: string, date: string, glyph: string): Sticker {
   };
 }
 
+/**
+ * DP-064. Overview groups by the display timezone, exactly as the calendar
+ * places cells. When these disagreed, one event showed a different date in 綜覽
+ * than it did in 日曆.
+ */
+describe('display timezone', () => {
+  // 20:00 on the 6th in New York is 08:00 on the 7th in Taipei.
+  const crossZone: CalendarEvent = {
+    id: 'e-zone',
+    calendarId: 'calendar-1',
+    title: '跨時區',
+    location: null,
+    notes: null,
+    reminderMinutes: [],
+    recurrence: null,
+    sharingScope: 'inherit',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+    allDay: false,
+    startsAt: '2026-08-07T00:00:00.000Z',
+    endsAt: '2026-08-07T01:00:00.000Z',
+    timezone: 'America/New_York',
+  };
+
+  function dayOf(displayTimezone: string) {
+    const groups = buildOverviewGroups(
+      input({ events: [crossZone], displayTimezone, cursor: new Date(2026, 7, 1) }),
+    );
+    return groups
+      .flatMap((group) => group.days)
+      .filter((day) => day.items.some((item) => item.id === 'e-zone'))
+      .map((day) => ({ dateKey: day.dateKey, time: day.items[0]?.time }));
+  }
+
+  it('groups by the display zone, not the event’s own', () => {
+    expect(dayOf('Asia/Taipei')).toEqual([{ dateKey: '2026-08-07', time: '08:00' }]);
+    expect(dayOf('America/New_York')).toEqual([{ dateKey: '2026-08-06', time: '20:00' }]);
+  });
+});
+
 function input(overrides: Partial<BuildOverviewInput> = {}): BuildOverviewInput {
   return {
     events: [],
     todos: [],
     stickers: [],
+    // The fixtures are built in Taipei; grouping reads the same zone (DP-064).
+    displayTimezone: 'Asia/Taipei',
     type: 'events',
     period: 'month',
     cursor: CURSOR,

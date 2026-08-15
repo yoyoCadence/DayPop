@@ -3,6 +3,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataProvider } from '../../data/DataProvider';
 import { addDays, startOfWeek, toDateKey } from '../../domain/date';
+import { createEmptyUserData } from '../../domain/types';
+import { writeUserData } from '../../storage/versionedStorage';
 import { CalendarScreen, type CalendarFocus } from './CalendarScreen';
 
 /**
@@ -83,5 +85,83 @@ describe('CalendarScreen focus', () => {
 
     await click(weekButton());
     expect(periodLabel()).toBe(weekLabelFor(toDateKey(new Date())));
+  });
+});
+
+/**
+ * DP-064. "Today" is a day on this grid, so every use of it has to be read in
+ * the grid's zone. They were moved one at a time and drifted apart: the
+ * highlight sat on one day while 今天 selected and scrolled to another.
+ *
+ * The zone here is deliberately far from any machine the suite runs on, so the
+ * assertions fail if any single site goes back to reading the device clock.
+ */
+describe('CalendarScreen today sources', () => {
+  // Pinned so the two readings of "today" are guaranteed to disagree; without
+  // that the test could pass on a machine where both zones share the date.
+  const INSTANT = new Date('2026-08-15T12:00:00.000Z');
+
+  function dateIn(timeZone: string): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(INSTANT);
+  }
+
+  /** Whichever extreme zone is on a different date than this machine is. */
+  const FAR_ZONE = (() => {
+    const device = dateIn(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const candidate = ['Etc/GMT-14', 'Etc/GMT+12'].find((zone) => dateIn(zone) !== device);
+    if (!candidate) throw new Error('no zone differs from the device date');
+    return candidate;
+  })();
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(INSTANT);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function expectedToday(): string {
+    return dateIn(FAR_ZONE);
+  }
+
+  async function renderInZone() {
+    const data = createEmptyUserData();
+    data.preferences.timezone = FAR_ZONE;
+    writeUserData(data, 0);
+    await render(null);
+  }
+
+  it('is a meaningful test: the display zone is a different day than the device', () => {
+    expect(dateIn(FAR_ZONE)).not.toBe(dateIn(Intl.DateTimeFormat().resolvedOptions().timeZone));
+  });
+
+  it('reads the header date, the highlight and 今天 from one source', async () => {
+    await renderInZone();
+    const today = expectedToday();
+    const date = new Date(`${today}T00:00:00`);
+
+    // Header date line.
+    expect(container.querySelector('.cal-today-full')?.textContent).toContain(
+      `${date.getFullYear()} / ${date.getMonth() + 1} / ${date.getDate()}`,
+    );
+
+    // 今天 must land on the same day, in the week view where the label shows it.
+    await click(weekButton());
+    await click([...container.querySelectorAll('.cal-chip-button')].find((b) => b.textContent === '今天'));
+    expect(periodLabel()).toBe(weekLabelFor(today));
+  });
+
+  it('opens the month label on the display zone’s month', async () => {
+    await renderInZone();
+    const date = new Date(`${expectedToday()}T00:00:00`);
+
+    expect(periodLabel()).toBe(`${date.getFullYear()}年 ${date.getMonth() + 1}月`);
   });
 });

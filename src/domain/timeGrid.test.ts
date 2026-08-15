@@ -92,13 +92,16 @@ describe('drag maths', () => {
 });
 
 describe('now line', () => {
+  /** Minutes from local midnight, which is what the caller reads in the display zone. */
+  const at = (hour: number, minute = 0) => hour * 60 + minute;
+
   it('is placed by hour and minute', () => {
-    expect(nowLineTop(new Date(2026, 7, 6, 7, 0))).toBe(0);
-    expect(nowLineTop(new Date(2026, 7, 6, 9, 30))).toBe(110);
+    expect(nowLineTop(at(7))).toBe(0);
+    expect(nowLineTop(at(9, 30))).toBe(110);
   });
 
   it('is hidden outside the rail', () => {
-    expect(nowLineTop(new Date(2026, 7, 6, 6, 59))).toBeNull();
-    expect(nowLineTop(new Date(2026, 7, 6, 23, 0))).toBeNull();
+    expect(nowLineTop(at(6, 59))).toBeNull();
+    expect(nowLineTop(at(23))).toBeNull();
   });
 });

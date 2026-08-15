@@ -15,6 +15,7 @@ import {
   withoutEvent,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
+import { eventDateInZone, eventStartTimeInZone } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
 
 const NOW = '2026-08-04T00:00:00.000Z';
@@ -236,6 +237,111 @@ describe('applyEventPatch', () => {
     const allDay = applyEventPatch(timedEvent(data), { allDay: true }, 'Asia/Taipei', NOW);
 
     expect(allDay).toMatchObject({ startDate: '2026-08-06', endDate: '2026-08-06' });
+  });
+
+  /**
+   * DP-064. The week grid is drawn in the display timezone, so a drag reports a
+   * wall coordinate in *that* zone. Resolving it against the event's own zone
+   * would move the event by the offset between the two, not by the drag.
+   */
+  describe('wallTimeZone', () => {
+    /** 09:00–10:00 in New York, which reads 21:00–22:00 in Taipei. */
+    function newYorkEvent(): CalendarEvent {
+      return createEventFromInput(
+        baseData(),
+        {
+          title: '會議',
+          date: '2026-08-06',
+          allDay: false,
+          start: '09:00',
+          end: '10:00',
+          timezone: 'America/New_York',
+        },
+        { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+      );
+    }
+
+    function startsAt(event: CalendarEvent): number {
+      if (event.allDay) throw new Error('expected a timed event');
+      return Date.parse(event.startsAt);
+    }
+
+    it('moves by the distance dragged, not by the offset between the zones', () => {
+      const before = newYorkEvent();
+      // Dragged one hour down the Taipei grid: 21:00 → 22:00.
+      const moved = applyEventPatch(
+        before,
+        { start: '22:00', end: '23:00', wallTimeZone: 'Asia/Taipei' },
+        'Asia/Taipei',
+        NOW,
+      );
+
+      expect(startsAt(moved) - startsAt(before)).toBe(60 * 60 * 1000);
+      // The event keeps its own zone; only the instants moved.
+      expect(moved).toMatchObject({ allDay: false, timezone: 'America/New_York' });
+    });
+
+    it('leaves the event on its own zone for a sheet edit', () => {
+      // No `wallTimeZone`: 10:00 means 10:00 in New York, as the sheet shows it.
+      const edited = applyEventPatch(
+        newYorkEvent(),
+        { start: '10:00', end: '11:00' },
+        'Asia/Taipei',
+        NOW,
+      );
+
+      expect(edited).toMatchObject({
+        allDay: false,
+        startsAt: '2026-08-06T14:00:00.000Z',
+        timezone: 'America/New_York',
+      });
+    });
+
+    it('lets an explicit timezone change win over the grid zone', () => {
+      // Nothing sends both today. Pinned so the combination has a defined
+      // result: `timezone` is the user picking a zone, which is the stronger
+      // intent, and the wall time is then the event's own.
+      const changed = applyEventPatch(
+        newYorkEvent(),
+        { start: '09:00', end: '10:00', timezone: 'Europe/Paris', wallTimeZone: 'Asia/Taipei' },
+        'Asia/Taipei',
+        NOW,
+      );
+
+      expect(changed).toMatchObject({ allDay: false, timezone: 'Europe/Paris' });
+      // 09:00 was read in Paris, the zone the event now belongs to.
+      expect(eventStartTimeInZone(changed, 'Europe/Paris')).toBe('09:00');
+    });
+
+    it('reads the unchanged half of the patch in the same zone as the changed half', () => {
+      // 20:00 in New York on the 6th is already 08:00 in Taipei on the 7th, so
+      // the two zones disagree about which day the event is on. Dragging it to
+      // the 8th column of a Taipei grid must land on the 8th; taking the date
+      // from the New York reading instead lands a day late.
+      const lateEvening = createEventFromInput(
+        baseData(),
+        {
+          title: '會議',
+          date: '2026-08-06',
+          allDay: false,
+          start: '20:00',
+          end: '21:00',
+          timezone: 'America/New_York',
+        },
+        { id: '77777777-7777-4777-8777-777777777777', now: NOW },
+      );
+      expect(eventDateInZone(lateEvening, 'Asia/Taipei')).toBe('2026-08-07');
+
+      const moved = applyEventPatch(
+        lateEvening,
+        { date: '2026-08-08', wallTimeZone: 'Asia/Taipei' },
+        'Asia/Taipei',
+        NOW,
+      );
+
+      expect(eventDateInZone(moved, 'Asia/Taipei')).toBe('2026-08-08');
+      expect(eventStartTimeInZone(moved, 'Asia/Taipei')).toBe('08:00');
+    });
   });
 });
 

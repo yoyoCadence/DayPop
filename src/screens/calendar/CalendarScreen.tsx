@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { instantDateInZone } from '../../domain/eventTime';
 import { visibleEvents } from '../../domain/calendars';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { isDateKey } from '../../domain/validation';
@@ -65,7 +66,13 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // it once here keeps every pane consistent, as the原檔's `dayEvents()` does.
   const events = useMemo(() => visibleEvents(data), [data]);
 
-  const todayKey = toDateKey(new Date());
+  // "Today" is a day on this grid, so every one of its uses has to be read in
+  // the grid's zone — DP-064. This is the screen's only source: the highlight,
+  // the 今天 button, the header date and the month label all derive from it,
+  // because moving one of them alone made 今天 scroll to a different day than
+  // the one it had highlighted.
+  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
+  const todayDate = fromDateKey(todayKey);
   // Only a real `YYYY-MM-DD` is honoured. `fromDateKey('')` parses to year 0,
   // which `Date` maps to 1900, so seeding the cursor with an empty key sent the
   // period label and the week grid to January 1900 with nothing to explain it.
@@ -74,10 +81,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const [view, setView] = useState<CalendarView>('month');
   const [cursor, setCursor] = useState(focusDay ?? todayKey);
   const [selected, setSelected] = useState(focusDay ?? todayKey);
-  const [monthLabel, setMonthLabel] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}年 ${now.getMonth() + 1}月`;
-  });
+  const [monthLabel, setMonthLabel] = useState(
+    () => `${todayDate.getFullYear()}年 ${todayDate.getMonth() + 1}月`,
+  );
   const [flashToday, setFlashToday] = useState(false);
   const [quick, setQuick] = useState('');
   const [quickNote, setQuickNote] = useState<string | null>(null);
@@ -138,11 +144,15 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   }, [sheetOpen, dayDetailKey]);
 
   const weekStartsOn = data.preferences.weekStartsOn;
+  // DP-064: one grid, one timezone. Placement and clock labels in every pane
+  // read this; the event sheet keeps editing in the event's own zone.
+  const displayTimezone = data.preferences.timezone;
 
-  const todayFull = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()} / ${now.getMonth() + 1} / ${now.getDate()}  ${WEEKDAY_NAMES[now.getDay()]}`;
-  }, []);
+  const todayFull = useMemo(
+    () =>
+      `${todayDate.getFullYear()} / ${todayDate.getMonth() + 1} / ${todayDate.getDate()}  ${WEEKDAY_NAMES[todayDate.getDay()]}`,
+    [todayDate],
+  );
 
   const periodLabel = useMemo(() => {
     if (view === 'month') return monthLabel;
@@ -167,14 +177,14 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   }
 
   function goToday() {
-    const now = new Date();
-    const key = toDateKey(now);
+    // The same `todayKey` the highlight uses, not a second reading of the clock.
+    const key = todayKey;
     setFlashToday(true);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashToday(false), 1300);
     setSelected(key);
     if (view === 'month') {
-      setMonthLabel(`${now.getFullYear()}年 ${now.getMonth() + 1}月`);
+      setMonthLabel(`${todayDate.getFullYear()}年 ${todayDate.getMonth() + 1}月`);
       monthRef.current?.scrollToToday(true);
       return;
     }
@@ -183,7 +193,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
   function submitQuick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseQuickAdd(quick);
+    // "明天下午3點" is relative to today on this grid, not to the device's day.
+    const parsed = parseQuickAdd(quick, todayDate);
     if (!parsed || !parsed.title) return;
 
     // The原檔 hands the parsed line to the event sheet for confirmation rather
@@ -290,6 +301,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
           <MonthView
             ref={monthRef}
             weekStartsOn={weekStartsOn}
+            displayTimezone={displayTimezone}
             calendarGridMode={data.preferences.calendarGridMode}
             events={events}
             stickers={data.stickers}
@@ -305,6 +317,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         {view === 'week' && (
           <WeekView
             weekStartsOn={weekStartsOn}
+            displayTimezone={displayTimezone}
             cursor={cursor}
             todayKey={todayKey}
             events={events}
@@ -317,6 +330,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         {view === 'agenda' && (
           <AgendaView
             events={events}
+            displayTimezone={displayTimezone}
+            todayKey={todayKey}
             todos={data.todos}
             calendars={data.calendars}
             onOpenEvent={openEvent}
@@ -346,6 +361,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       <DayDetailSheet
         dateKey={dayDetailKey}
         events={events}
+        displayTimezone={displayTimezone}
+        todayKey={todayKey}
         todos={data.todos}
         stickers={data.stickers}
         calendars={data.calendars}
