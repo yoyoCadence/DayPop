@@ -4,6 +4,7 @@ import { fromDateKey } from '../domain/date';
 import { instantDateInZone } from '../domain/eventTime';
 import {
   buildOverviewGroups,
+  countOverviewOccurrences,
   overviewLabel,
   stepOverviewCursor,
   type OverviewPeriod,
@@ -72,7 +73,9 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
       }),
     [data, type, period, cursor, weekStartsOn, todayKey],
   );
-  const total = groups.reduce((sum, group) => sum + group.count, 0);
+  // Not a sum of `group.count`: outside the year view every day is its own
+  // group, so a cross-midnight event would be counted once per group — DP-064.
+  const total = countOverviewOccurrences(groups);
   const collapsedSet = new Set(collapsed);
 
   function toggleGroup(key: string) {

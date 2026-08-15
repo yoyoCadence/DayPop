@@ -1,11 +1,14 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { fromDateKey } from '../../domain/date';
-import { conflictingOccurrenceKeys } from '../../domain/displaySegments';
 import {
-  eventDateInZone,
-  eventEndTimeInZone,
-  eventStartTimeInZone,
-} from '../../domain/eventTime';
+  conflictingOccurrenceKeys,
+  eventDisplaySegments,
+  segmentTimeRange,
+} from '../../domain/displaySegments';
+import { eventDateInZone } from '../../domain/eventTime';
+
+/** Marks the second and later days of a cross-midnight event — DP-064. */
+const CONTINUATION_LABEL = '續';
 import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
 import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
@@ -79,25 +82,45 @@ function DayDetailSheetBody({
   const dayLabel = `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAY_NAMES[date.getDay()]}`;
 
   const dayEvents = useMemo(() => {
-    const list = events
-      .filter((event) => eventDateInZone(event, displayTimezone) === dateKey)
-      .sort((left, right) => {
-        if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return eventStartTimeInZone(left, displayTimezone).localeCompare(
-          eventStartTimeInZone(right, displayTimezone),
-        );
-      });
+    // Display segments, not just the starting day — DP-064. The month cell for
+    // the second day of an overnight event says 「續」; opening it used to show
+    // 「這天沒有行程」.
+    const window = { startDateKey: dateKey, endDateKey: dateKey };
+    const rows: { event: CalendarEvent; time: string; isContinuation: boolean }[] = [];
+
+    for (const event of events) {
+      if (event.allDay) {
+        if (eventDateInZone(event, displayTimezone) === dateKey) {
+          rows.push({ event, time: '全天', isContinuation: false });
+        }
+        continue;
+      }
+      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, window)) {
+        rows.push({
+          event,
+          // The segment's own span: 23:00–24:00 on the first day, 00:00–00:30
+          // on the second, rather than the whole event's clock on both.
+          time: segmentTimeRange(segment),
+          isContinuation: segment.isContinuation,
+        });
+      }
+    }
+
+    rows.sort((left, right) => {
+      if (left.event.allDay !== right.event.allDay) return left.event.allDay ? -1 : 1;
+      if (left.isContinuation !== right.isContinuation) return left.isContinuation ? -1 : 1;
+      return left.time.localeCompare(right.time);
+    });
+
     // Identity is the event id here: this list is one day of single events, so
     // there is no recurring occurrence to tell apart yet (DP-014 wires those).
     const conflicting = conflictingOccurrenceKeys(
-      list.map((event) => ({ key: event.id, event })),
+      rows.map((row) => ({ key: row.event.id, event: row.event })),
     );
-    return list.map((event) => ({
-      event,
-      time: event.allDay
-        ? '全天'
-        : `${eventStartTimeInZone(event, displayTimezone)}–${eventEndTimeInZone(event, displayTimezone)}`,
-      conflict: conflicting.has(event.id),
+    return rows.map((row) => ({
+      event: row.event,
+      time: row.isContinuation ? `${CONTINUATION_LABEL} ${row.time}` : row.time,
+      conflict: conflicting.has(row.event.id),
     }));
   }, [dateKey, displayTimezone, events]);
 

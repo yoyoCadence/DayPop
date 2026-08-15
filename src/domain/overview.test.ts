@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
 import {
   buildOverviewGroups,
+  countOverviewOccurrences,
   overviewLabel,
   overviewRange,
   stepOverviewCursor,
@@ -24,9 +25,16 @@ function event(id: string, date: string, start: string, allDay = false): Calenda
     createdAt: '2026-08-01T00:00:00.000Z',
     updatedAt: '2026-08-01T00:00:00.000Z',
   };
+  // `end: start` would not be a zero-length event: `timedEventFromWallTime()`
+  // reads an end at or before the start as running into the next day, so these
+  // fixtures were silently 24 hours long. Harmless while placement used only
+  // `startsAt`; once DP-064 cut events into display segments they showed up on
+  // two days. One hour is what they were always meant to be.
+  const [hour = 0, minute = 0] = start.split(':').map(Number);
+  const end = `${String((hour + 1) % 24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   return allDay
     ? { ...common, allDay: true, startDate: date, endDate: date }
-    : timedEventFromWallTime(common, { date, start, end: start }, 'Asia/Taipei');
+    : timedEventFromWallTime(common, { date, start, end }, 'Asia/Taipei');
 }
 
 function todo(id: string, date: string, done = false): TodoItem {
@@ -95,6 +103,69 @@ describe('display timezone', () => {
   it('groups by the display zone, not the event’s own', () => {
     expect(dayOf('Asia/Taipei')).toEqual([{ dateKey: '2026-08-07', time: '08:00' }]);
     expect(dayOf('America/New_York')).toEqual([{ dateKey: '2026-08-06', time: '20:00' }]);
+  });
+});
+
+/**
+ * DP-064. A cross-midnight event occupies both days, so it is listed on both —
+ * but 「共 N 筆」 counts occurrences, so it is still one.
+ */
+describe('cross-midnight events', () => {
+  const overnight = timedEventFromWallTime(
+    {
+      id: 'overnight',
+      calendarId: 'calendar-1',
+      title: '夜班',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit' as const,
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    },
+    { date: '2026-08-06', start: '23:00', end: '00:30' },
+    'Asia/Taipei',
+  );
+
+  it('appears on both days, the second marked as a continuation', () => {
+    const groups = buildOverviewGroups(input({ events: [overnight] }));
+    const rows = groups.flatMap((group) =>
+      group.days.map((day) => ({ dateKey: day.dateKey, time: day.items[0]?.time })),
+    );
+
+    expect(rows).toEqual([
+      { dateKey: '2026-08-06', time: '23:00' },
+      { dateKey: '2026-08-07', time: '續' },
+    ]);
+  });
+
+  it('counts as one occurrence, not two rows', () => {
+    const groups = buildOverviewGroups(input({ period: 'year', events: [overnight] }));
+    const august = groups.find((group) => group.title === '8月');
+
+    // Two day rows, one event.
+    expect(august?.days).toHaveLength(2);
+    expect(august?.count).toBe(1);
+  });
+
+  it('counts as one across the whole period, not once per day group', () => {
+    // Outside the year view each day is its own group, so summing group counts
+    // reported the same event twice — what 綜覽 actually showed before this.
+    const groups = buildOverviewGroups(input({ events: [overnight] }));
+
+    expect(groups).toHaveLength(2);
+    expect(groups.reduce((sum, group) => sum + group.count, 0)).toBe(2);
+    expect(countOverviewOccurrences(groups)).toBe(1);
+  });
+
+  it('still counts two different events on the same day as two', () => {
+    const groups = buildOverviewGroups(
+      input({ events: [overnight, event('b', '2026-08-06', '09:00')] }),
+    );
+    const sixth = groups.find((group) => group.key === '2026-08-06');
+
+    expect(sixth?.count).toBe(2);
   });
 });
 
@@ -177,6 +248,36 @@ describe('buildOverviewGroups', () => {
     expect(groups.map((group) => group.title)).toEqual(['3月', '8月']);
     expect(groups[0]?.labelDays).toBe(true);
     expect(groups[0]?.days[0]?.dayLabel).toBe('2日 週一');
+  });
+
+  it('renders an event longer than the period instead of failing on it', () => {
+    // `events_time_shape` only requires `ends_at > starts_at`, so a two-year
+    // block is valid data. Cutting it without a window threw past 400 days and
+    // took the whole screen down with it — and 綜覽 walks every event, so one
+    // such event blanked the screen whatever month was being viewed.
+    const long: CalendarEvent = {
+      id: 'long',
+      calendarId: 'calendar-1',
+      title: '長期專案',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: false,
+      startsAt: '2026-01-01T00:00:00.000Z',
+      endsAt: '2028-01-01T00:00:00.000Z',
+      timezone: 'Asia/Taipei',
+    };
+
+    const groups = buildOverviewGroups(input({ events: [long] }));
+
+    // Every day of August, each a continuation, and still one occurrence.
+    expect(groups).toHaveLength(31);
+    expect(groups[0]?.days[0]?.items[0]?.time).toBe('續');
+    expect(countOverviewOccurrences(groups)).toBe(1);
   });
 
   it('puts all-day events first and sorts the rest by start', () => {

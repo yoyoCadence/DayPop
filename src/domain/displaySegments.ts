@@ -42,9 +42,14 @@ import type { CalendarEvent, TimedCalendarEvent } from './types';
 const MINUTES_PER_DAY = 1440;
 
 /**
- * Corrupt or absurd data should not produce a million segments. A year of
- * continuous event is already far past anything the views can draw, so this
- * fails closed rather than hanging the render.
+ * Corrupt or absurd data should not produce a million segments when the caller
+ * has not said how many days it can use.
+ *
+ * This only applies to an unwindowed call. A view always knows the range it is
+ * drawing, and passing that window is what bounds the work — throwing at a view
+ * would be worse than useless, because `ends_at > starts_at` is the only length
+ * rule the database has, so a two-year block is valid data that must still
+ * render. See `DisplaySegmentWindow`.
  */
 const MAX_SEGMENT_DAYS = 400;
 
@@ -71,15 +76,36 @@ export class DisplaySegmentRangeError extends Error {
 }
 
 /**
+ * The span of days a caller can actually draw, both ends inclusive.
+ *
+ * Clipping happens at both ends, so a two-year event asked for one month walks
+ * that month rather than seven hundred days. The flags on each segment still
+ * describe the **event's** shape, not the window's: a segment clipped at the
+ * window start is still `isContinuation` when the event really did begin
+ * earlier, which is what the 「續」 label depends on.
+ */
+export interface DisplaySegmentWindow {
+  /** First date key to emit, inclusive. */
+  startDateKey: string;
+  /** Last date key to emit, inclusive. */
+  endDateKey: string;
+}
+
+/**
  * Cuts one timed occurrence into the days it visibly occupies.
  *
  * All-day events are deliberately not handled here: their placement already
  * comes from `startDate`/`endDate` and DP-064 does not change it.
+ *
+ * Views should pass `window`. Without one the whole event is cut and an absurd
+ * span throws `DisplaySegmentRangeError`; with one the result is bounded by the
+ * window and nothing throws.
  */
 export function eventDisplaySegments(
   event: TimedCalendarEvent,
   key: string,
   displayTimezone: string,
+  window?: DisplaySegmentWindow,
 ): DisplaySegment[] {
   // Instants, not date keys: a reversal *inside* one day shares its date key
   // with the start, so a date-key comparison lets it through into a segment
@@ -107,11 +133,21 @@ export function eventDisplaySegments(
   // so the loop cannot run past its own terminator.
   const endDateKey = derivedEndDateKey < startDateKey ? startDateKey : derivedEndDateKey;
 
+  // Clip to what the caller can draw. Both ends matter: clipping only the tail
+  // would still walk every day from a distant start before reaching the window.
+  const fromKey =
+    window && window.startDateKey > startDateKey ? window.startDateKey : startDateKey;
+  const toKey = window && window.endDateKey < endDateKey ? window.endDateKey : endDateKey;
+  // The event falls entirely outside the window.
+  if (toKey < fromKey) return [];
+
   const segments: DisplaySegment[] = [];
-  let dateKey = startDateKey;
+  let dateKey = fromKey;
 
   for (let day = 0; ; day += 1) {
-    if (day >= MAX_SEGMENT_DAYS) {
+    // A window already bounds the loop; the guard is for the caller that gave
+    // no bound of its own.
+    if (window === undefined && day >= MAX_SEGMENT_DAYS) {
       throw new DisplaySegmentRangeError(
         `event ${event.id} spans more than ${MAX_SEGMENT_DAYS} display days`,
       );
@@ -134,12 +170,32 @@ export function eventDisplaySegments(
       continuesNextDay: !isLast,
     });
 
-    if (isLast) break;
+    if (isLast || dateKey === toKey) break;
     // Calendar-day arithmetic, not a fixed millisecond offset (§6, DP-063).
     dateKey = toDateKey(addDays(fromDateKey(dateKey), 1));
   }
 
   return segments;
+}
+
+/**
+ * A segment's clock, where a day ends at `24:00` rather than wrapping to
+ * `00:00` — DP-064.
+ *
+ * `timeFromMinutes()` in `timeGrid.ts` deliberately wraps, because a grid
+ * position of 1440 is the same pixel row as 0. A *label* must not: "23:00–00:00"
+ * reads as a zero-length event, and the first day of a cross-midnight event has
+ * to say where it actually stops.
+ */
+export function segmentClock(minutes: number): string {
+  const clamped = Math.max(0, Math.min(MINUTES_PER_DAY, Math.round(minutes)));
+  const hour = Math.floor(clamped / 60);
+  return `${String(hour).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
+}
+
+/** `23:00–24:00` for the first day of an overnight event, `00:00–00:30` for the second. */
+export function segmentTimeRange(segment: DisplaySegment): string {
+  return `${segmentClock(segment.startMinutes)}–${segmentClock(segment.endMinutes)}`;
 }
 
 /** The occurrences to test for conflict, paired with their identity. */

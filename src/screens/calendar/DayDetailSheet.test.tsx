@@ -93,6 +93,62 @@ function click(element: Element | null | undefined) {
 const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
 
+/**
+ * DP-064. The month cell for the second day of an overnight event says 「續」;
+ * opening that cell used to show 「這天沒有行程」, because this sheet still
+ * filtered on the event's starting day.
+ */
+describe('DayDetailSheet cross-midnight events', () => {
+  /** 23:00 on the 6th → 00:30 on the 7th, Taipei. */
+  const overnight = timedEventFromWallTime(
+    {
+      id: 'overnight',
+      calendarId: CALENDAR,
+      title: '夜班',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit' as const,
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    },
+    { date: DATE, start: '23:00', end: '00:30' },
+    'Asia/Taipei',
+  );
+
+  function rows(): string[] {
+    return [...container.querySelectorAll('.cal-day-event')].map((el) =>
+      (el.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    );
+  }
+
+  it('lists the first day with the segment that actually falls on it', () => {
+    render({ dateKey: DATE, events: [overnight] });
+
+    // 23:00–24:00, not 23:00–00:30: the sheet shows this day's part.
+    expect(rows().join(' | ')).toContain('23:00–24:00');
+    expect(rows().join(' | ')).toContain('夜班');
+  });
+
+  it('lists the second day as a continuation instead of showing nothing', () => {
+    render({ dateKey: '2026-08-07', events: [overnight] });
+
+    const text = rows().join(' | ');
+    expect(text).toContain('夜班');
+    expect(text).toContain('續');
+    expect(text).toContain('00:00–00:30');
+    expect(container.textContent).not.toContain('這天沒有行程');
+  });
+
+  it('leaves an unrelated day empty', () => {
+    render({ dateKey: '2026-08-09', events: [overnight] });
+
+    expect(rows()).toEqual([]);
+    expect(container.textContent).toContain('這天沒有行程');
+  });
+});
+
 describe('DayDetailSheet stickers', () => {
   it('keeps the picker closed until ＋ 貼圖 is tapped', () => {
     render();
