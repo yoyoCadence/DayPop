@@ -223,6 +223,124 @@ describe('eventDisplaySegments', () => {
   });
 });
 
+/**
+ * A view knows the range it draws, and saying so is what bounds the work —
+ * DP-064. `ends_at > starts_at` is the only length rule the database has, so a
+ * multi-year block is valid data a window has to render rather than throw on.
+ */
+describe('eventDisplaySegments window', () => {
+  const zone = 'Asia/Taipei';
+
+  /** 2026-08-13 09:00 through 2026-08-17 14:00 — five days. */
+  function fiveDays() {
+    return spanning(
+      wallTimeToInstant('2026-08-13', '09:00', zone),
+      wallTimeToInstant('2026-08-17', '14:00', zone),
+      zone,
+    );
+  }
+
+  it('emits only the days inside the window', () => {
+    const segments = eventDisplaySegments(fiveDays(), KEY, zone, {
+      startDateKey: '2026-08-14',
+      endDateKey: '2026-08-16',
+    });
+
+    expect(segments.map((segment) => segment.dateKey)).toEqual([
+      '2026-08-14',
+      '2026-08-15',
+      '2026-08-16',
+    ]);
+  });
+
+  it('keeps the flags describing the event, not the window', () => {
+    const [clipped] = eventDisplaySegments(fiveDays(), KEY, zone, {
+      startDateKey: '2026-08-14',
+      endDateKey: '2026-08-14',
+    });
+
+    // The window starts here, but the event did not: this day is still a
+    // continuation, which is what the 「續」 label reads.
+    expect(clipped).toMatchObject({
+      dateKey: '2026-08-14',
+      startMinutes: 0,
+      endMinutes: 1440,
+      isContinuation: true,
+      continuesNextDay: true,
+    });
+  });
+
+  it('still reports the true first and last day when they are inside', () => {
+    expect(
+      shape(
+        eventDisplaySegments(timed('2026-08-13', '23:00', '00:30', zone), KEY, zone, {
+          startDateKey: '2026-08-01',
+          endDateKey: '2026-08-31',
+        }),
+      ),
+    ).toEqual([
+      { dateKey: '2026-08-13', startMinutes: 1380, endMinutes: 1440, isContinuation: false, continuesNextDay: true },
+      { dateKey: '2026-08-14', startMinutes: 0, endMinutes: 30, isContinuation: true, continuesNextDay: false },
+    ]);
+  });
+
+  it('returns nothing for an event that misses the window entirely', () => {
+    const event = fiveDays();
+
+    expect(
+      eventDisplaySegments(event, KEY, zone, {
+        startDateKey: '2026-09-01',
+        endDateKey: '2026-09-30',
+      }),
+    ).toEqual([]);
+    expect(
+      eventDisplaySegments(event, KEY, zone, {
+        startDateKey: '2026-07-01',
+        endDateKey: '2026-07-31',
+      }),
+    ).toEqual([]);
+  });
+
+  it('renders a multi-year event instead of throwing, clipped to the window', () => {
+    // Valid data: `events_time_shape` only requires `ends_at > starts_at`. The
+    // unwindowed call still throws, which is what the guard is for.
+    const long = spanning(
+      wallTimeToInstant('2026-01-01', '00:00', zone),
+      wallTimeToInstant('2028-01-01', '00:00', zone),
+      zone,
+    );
+
+    expect(() => eventDisplaySegments(long, KEY, zone)).toThrow(DisplaySegmentRangeError);
+
+    const windowed = eventDisplaySegments(long, KEY, zone, {
+      startDateKey: '2026-08-01',
+      endDateKey: '2026-08-31',
+    });
+    expect(windowed).toHaveLength(31);
+    expect(windowed.every((segment) => segment.isContinuation && segment.continuesNextDay)).toBe(true);
+  });
+
+  it('honours a window wider than the unwindowed guard', () => {
+    // `MonthView` starts at a 53-week buffer and grows by 12 weeks a scroll, so
+    // it asks for more than `MAX_SEGMENT_DAYS` days as soon as the user scrolls
+    // once. The guard counts days walked, so it would have fired on the window
+    // rather than on the event — every event vanishing from a grid that had
+    // simply been scrolled far enough.
+    const long = spanning(
+      wallTimeToInstant('2026-01-01', '00:00', zone),
+      wallTimeToInstant('2028-01-01', '00:00', zone),
+      zone,
+    );
+
+    const windowed = eventDisplaySegments(long, KEY, zone, {
+      startDateKey: '2026-02-01',
+      endDateKey: '2027-06-30',
+    });
+
+    expect(windowed).toHaveLength(515);
+  });
+});
+
 describe('occurrencesConflict', () => {
   const zone = 'Asia/Taipei';
 

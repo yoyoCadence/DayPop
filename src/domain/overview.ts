@@ -1,10 +1,17 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
-import { eventDisplaySegments } from './displaySegments';
+import { eventDisplaySegments, type DisplaySegmentWindow } from './displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
+import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
-import type { CalendarEvent, Sticker, TodoItem } from './types';
+
+/** One listed row before it becomes an `OverviewItem`; sorted on these fields. */
+interface EventRow {
+  event: CalendarEvent;
+  time: string;
+  isContinuation: boolean;
+}
 
 /**
  * Grouping for the 綜覽 screen, ported from `overviewGroups()` and
@@ -123,12 +130,21 @@ export function buildOverviewGroups(input: BuildOverviewInput): OverviewGroup[] 
   const { start, end } = overviewRange(input.cursor, input.period, input.weekStartsOn);
   const lastKey = toDateKey(end);
 
+  const firstDay = startOfDay(start);
+  // One pass over the data, not one per day — DP-064. Cutting every event into
+  // display segments inside the day loop re-derived and discarded the same
+  // segments up to 400 times: a 200-event year view took 16 seconds.
+  const itemsByDate = collectItemsByDate(input, {
+    startDateKey: toDateKey(firstDay),
+    endDateKey: lastKey,
+  });
+
   const perDay: { dateKey: string; date: Date; items: OverviewItem[] }[] = [];
-  let cursor = startOfDay(start);
+  let cursor = firstDay;
   for (let guard = 0; toDateKey(cursor) <= lastKey && guard < MAX_DAYS; guard += 1) {
     const dateKey = toDateKey(cursor);
-    const items = collectItems(input, dateKey);
-    if (items.length > 0) perDay.push({ dateKey, date: cursor, items });
+    const items = itemsByDate.get(dateKey);
+    if (items !== undefined && items.length > 0) perDay.push({ dateKey, date: cursor, items });
     cursor = addDays(cursor, 1);
   }
 
@@ -193,21 +209,52 @@ function toOverviewDay(day: { dateKey: string; date: Date; items: OverviewItem[]
   };
 }
 
-function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[] {
+/**
+ * Every item in the period, bucketed by the day it is listed on.
+ *
+ * Built in a single pass. The per-day version of this cut each event into
+ * display segments once for every day in the range and kept one — the work grew
+ * with days × events, and each segment costs four `Intl.DateTimeFormat` builds.
+ */
+function collectItemsByDate(
+  input: BuildOverviewInput,
+  window: DisplaySegmentWindow,
+): Map<string, OverviewItem[]> {
+  const byDate = new Map<string, OverviewItem[]>();
+  const push = (dateKey: string, item: OverviewItem) => {
+    const list = byDate.get(dateKey);
+    if (list) list.push(item);
+    else byDate.set(dateKey, [item]);
+  };
+
   if (input.type === 'events') {
     // A cross-midnight event occupies both days, so it is listed on both — the
-    // count above deduplicates it back to one (DP-064).
-    const rows: { event: CalendarEvent; time: string; isContinuation: boolean }[] = [];
+    // count deduplicates it back to one (DP-064).
+    const rowsByDate = new Map<string, EventRow[]>();
+    const pushRow = (dateKey: string, row: EventRow) => {
+      const list = rowsByDate.get(dateKey);
+      if (list) list.push(row);
+      else rowsByDate.set(dateKey, [row]);
+    };
+
     for (const event of input.events) {
       if (event.allDay) {
-        if (eventDateInZone(event, input.displayTimezone) === dateKey) {
-          rows.push({ event, time: '全天', isContinuation: false });
-        }
+        pushRow(eventDateInZone(event, input.displayTimezone), {
+          event,
+          time: '全天',
+          isContinuation: false,
+        });
         continue;
       }
-      for (const segment of eventDisplaySegments(event, event.id, input.displayTimezone)) {
-        if (segment.dateKey !== dateKey) continue;
-        rows.push({
+      // Windowed to the period: an event longer than the range is clipped to it
+      // rather than cut into hundreds of segments this screen cannot show.
+      for (const segment of eventDisplaySegments(
+        event,
+        event.id,
+        input.displayTimezone,
+        window,
+      )) {
+        pushRow(segment.dateKey, {
           event,
           time: segment.isContinuation
             ? CONTINUATION_LABEL
@@ -217,46 +264,50 @@ function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[
       }
     }
 
-    return rows
-      .sort((left, right) => {
+    for (const [dateKey, rows] of rowsByDate) {
+      rows.sort((left, right) => {
         if (left.event.allDay !== right.event.allDay) return left.event.allDay ? -1 : 1;
         if (left.isContinuation !== right.isContinuation) return left.isContinuation ? -1 : 1;
         return left.time.localeCompare(right.time);
-      })
-      .map((row) => ({
-        kind: 'event' as const,
-        id: row.event.id,
-        time: row.time,
-        title: row.event.title,
-        sub: '',
-        done: false,
-        calendarId: row.event.calendarId,
-      }));
+      });
+      byDate.set(
+        dateKey,
+        rows.map((row) => ({
+          kind: 'event' as const,
+          id: row.event.id,
+          time: row.time,
+          title: row.event.title,
+          sub: '',
+          done: false,
+          calendarId: row.event.calendarId,
+        })),
+      );
+    }
+    return byDate;
   }
 
   if (input.type === 'todos') {
-    return input.todos
-      .filter((todo) => todo.dueDate === dateKey)
-      .map((todo) => {
-        const done = todo.completedAt !== null;
-        const overdue = !done && todo.dueDate !== null && todo.dueDate < input.todayKey;
-        const due = fromDateKey(todo.dueDate!);
-        return {
-          kind: 'todo' as const,
-          id: todo.id,
-          time: done ? '完成' : '待辦',
-          title: todo.title,
-          sub: overdue ? `逾期・原${due.getMonth() + 1}/${due.getDate()}` : '',
-          done,
-        };
+    for (const todo of input.todos) {
+      if (todo.dueDate === null) continue;
+      const done = todo.completedAt !== null;
+      const overdue = !done && todo.dueDate < input.todayKey;
+      const due = fromDateKey(todo.dueDate);
+      push(todo.dueDate, {
+        kind: 'todo' as const,
+        id: todo.id,
+        time: done ? '完成' : '待辦',
+        title: todo.title,
+        sub: overdue ? `逾期・原${due.getMonth() + 1}/${due.getDate()}` : '',
+        done,
       });
+    }
+    return byDate;
   }
 
   // The原檔 gives a sticker no time column and the literal title 貼圖; the
   // glyph itself stands in for the colour bar.
-  return input.stickers
-    .filter((sticker) => sticker.date === dateKey)
-    .map((sticker) => ({
+  for (const sticker of input.stickers) {
+    push(sticker.date, {
       kind: 'sticker' as const,
       id: sticker.id,
       time: '',
@@ -264,5 +315,7 @@ function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[
       sub: '',
       done: false,
       glyph: sticker.glyph ?? '',
-    }));
+    });
+  }
+  return byDate;
 }

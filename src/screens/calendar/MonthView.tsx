@@ -18,7 +18,11 @@ import {
   toDateKey,
   weeksBetween,
 } from '../../domain/date';
-import { eventDisplaySegments, occurrencesConflict } from '../../domain/displaySegments';
+import {
+  eventDisplaySegments,
+  occurrencesConflict,
+  type DisplaySegmentWindow,
+} from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
@@ -101,9 +105,24 @@ export function MonthView({
   // Scroll compensation for rows prepended above the current position.
   const pendingScrollAdjust = useRef(0);
 
+  const gridStart = useMemo(
+    () => startOfWeek(fromDateKey(bufferStart), weekStartsOn),
+    [bufferStart, weekStartsOn],
+  );
+  // Date keys are zero-padded `YYYY-MM-DD`, so string order is date order.
+  const firstKey = toDateKey(gridStart);
+  const lastKey = toDateKey(addDays(gridStart, bufferWeeks * 7 - 1));
+  const inBuffer = useCallback(
+    (key: string) => key >= firstKey && key <= lastKey,
+    [firstKey, lastKey],
+  );
+
   const eventsByDate = useMemo(
-    () => groupEventsByDate(events, displayTimezone),
-    [displayTimezone, events],
+    // Windowed to the rendered buffer: an event longer than it is clipped to
+    // what this grid can draw rather than cut into every day it spans, and a
+    // span past `MAX_SEGMENT_DAYS` stays a drawable event instead of throwing.
+    () => groupEventsByDate(events, displayTimezone, { startDateKey: firstKey, endDateKey: lastKey }),
+    [displayTimezone, events, firstKey, lastKey],
   );
   const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
 
@@ -223,18 +242,6 @@ export function MonthView({
         };
       }),
     [weekStartsOn],
-  );
-
-  const gridStart = useMemo(
-    () => startOfWeek(fromDateKey(bufferStart), weekStartsOn),
-    [bufferStart, weekStartsOn],
-  );
-  // Date keys are zero-padded `YYYY-MM-DD`, so string order is date order.
-  const firstKey = toDateKey(gridStart);
-  const lastKey = toDateKey(addDays(gridStart, bufferWeeks * 7 - 1));
-  const inBuffer = useCallback(
-    (key: string) => key >= firstKey && key <= lastKey,
-    [firstKey, lastKey],
   );
 
   /**
@@ -488,6 +495,7 @@ export interface MonthCellEntry {
 function groupEventsByDate(
   events: CalendarEvent[],
   displayTimezone: string,
+  window: DisplaySegmentWindow,
 ): Map<string, MonthCellEntry[]> {
   const map = new Map<string, MonthCellEntry[]>();
   const push = (dateKey: string, entry: MonthCellEntry) => {
@@ -511,7 +519,7 @@ function groupEventsByDate(
     // Identity is the event id until DP-014 wires recurring occurrences into
     // these views; both halves of one event still share it, which is the
     // property the conflict check and the counts rely on.
-    for (const segment of eventDisplaySegments(event, event.id, displayTimezone)) {
+    for (const segment of eventDisplaySegments(event, event.id, displayTimezone, window)) {
       push(segment.dateKey, {
         event,
         key: segment.key,

@@ -180,6 +180,41 @@ describe('MonthView display timezone', () => {
     expect(cellText('2026-08-07')).not.toContain('跨時區會議');
   });
 
+  it('draws an event longer than the buffer instead of failing on it', () => {
+    // The database only requires `ends_at > starts_at`, so a two-year block is
+    // valid. Cutting it without a window threw past 400 days, and this grid
+    // walks every event — so one such event blanked the whole month.
+    const base = crossZoneEvent();
+    if (base.allDay) throw new Error('expected a timed fixture');
+    const long: CalendarEvent = {
+      ...base,
+      title: '長期專案',
+      startsAt: '2026-01-01T00:00:00.000Z',
+      endsAt: '2028-01-01T00:00:00.000Z',
+      timezone: 'Asia/Taipei',
+    };
+    act(() =>
+      root.render(
+        <MonthView
+          weekStartsOn={0}
+          displayTimezone="Asia/Taipei"
+          calendarGridMode="fixed-six"
+          events={[long]}
+          stickers={[]}
+          calendars={[]}
+          selectedDate="2026-08-06"
+          todayKey="2026-08-06"
+          flashToday={false}
+          onSelectDate={vi.fn()}
+          onPeriodLabelChange={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(cellText('2026-08-06')).toContain('續 長期專案');
+    expect(cellText('2026-08-07')).toContain('續 長期專案');
+  });
+
   it('shows a cross-midnight event on both days, the second marked 續', () => {
     // 23:00 → 00:30 in Taipei on the 6th/7th.
     const base = crossZoneEvent();

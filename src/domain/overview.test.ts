@@ -250,6 +250,36 @@ describe('buildOverviewGroups', () => {
     expect(groups[0]?.days[0]?.dayLabel).toBe('2日 週一');
   });
 
+  it('renders an event longer than the period instead of failing on it', () => {
+    // `events_time_shape` only requires `ends_at > starts_at`, so a two-year
+    // block is valid data. Cutting it without a window threw past 400 days and
+    // took the whole screen down with it — and 綜覽 walks every event, so one
+    // such event blanked the screen whatever month was being viewed.
+    const long: CalendarEvent = {
+      id: 'long',
+      calendarId: 'calendar-1',
+      title: '長期專案',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: null,
+      sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: false,
+      startsAt: '2026-01-01T00:00:00.000Z',
+      endsAt: '2028-01-01T00:00:00.000Z',
+      timezone: 'Asia/Taipei',
+    };
+
+    const groups = buildOverviewGroups(input({ events: [long] }));
+
+    // Every day of August, each a continuation, and still one occurrence.
+    expect(groups).toHaveLength(31);
+    expect(groups[0]?.days[0]?.items[0]?.time).toBe('續');
+    expect(countOverviewOccurrences(groups)).toBe(1);
+  });
+
   it('puts all-day events first and sorts the rest by start', () => {
     const groups = buildOverviewGroups(
       input({
