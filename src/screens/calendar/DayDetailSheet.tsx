@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { fromDateKey, toDateKey } from '../../domain/date';
+import { fromDateKey } from '../../domain/date';
 import { conflictingOccurrenceKeys } from '../../domain/displaySegments';
 import {
   eventDateInZone,
@@ -20,6 +20,12 @@ export interface DayDetailSheetProps {
   events: CalendarEvent[];
   /** The one timezone this sheet is drawn in — DP-064. */
   displayTimezone: string;
+  /**
+   * Today in that zone, computed once by the screen. The overdue marker below
+   * compares against it: read from the device clock instead, this sheet and
+   * 綜覽 disagreed about whether the same todo was late.
+   */
+  todayKey: string;
   todos: TodoItem[];
   stickers: Sticker[];
   calendars: Calendar[];
@@ -51,6 +57,7 @@ function DayDetailSheetBody({
   dateKey,
   events,
   displayTimezone,
+  todayKey,
   todos,
   stickers,
   calendars,
@@ -70,7 +77,6 @@ function DayDetailSheetBody({
   // on top of this one, and two window listeners would close both at once.
   const date = fromDateKey(dateKey);
   const dayLabel = `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAY_NAMES[date.getDay()]}`;
-  const todayKey = toDateKey(new Date());
 
   const dayEvents = useMemo(() => {
     const list = events

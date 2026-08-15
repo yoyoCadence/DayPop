@@ -4,6 +4,8 @@ import {
   eventDateInZone,
   eventEndTimeInZone,
   eventStartTimeInZone,
+  instantDateInZone,
+  instantTimeInZone,
 } from '../../domain/eventTime';
 import {
   blockGeometry,
@@ -132,9 +134,13 @@ export function WeekView({
     });
   }, [displayTimezone, events, preview, todayKey, weekStart]);
 
-  const nowTop = toDateKey(now) >= toDateKey(weekStart) && toDateKey(now) <= toDateKey(addDays(weekStart, 6))
-    ? nowLineTop(now)
-    : null;
+  // Both the "is now inside this week" test and the line's height are read in
+  // the display zone — the columns are, so the line has to be too (DP-064).
+  const nowKey = instantDateInZone(now.toISOString(), displayTimezone);
+  const nowTop =
+    nowKey >= toDateKey(weekStart) && nowKey <= toDateKey(addDays(weekStart, 6))
+      ? nowLineTop(minutesFromTime(instantTimeInZone(now.toISOString(), displayTimezone)))
+      : null;
 
   function beginDrag(
     domEvent: ReactPointerEvent<HTMLElement>,

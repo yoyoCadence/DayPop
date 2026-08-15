@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addDays, startOfDay, toDateKey } from '../../domain/date';
+import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
@@ -12,6 +12,8 @@ export interface AgendaViewProps {
   events: CalendarEvent[];
   /** The one timezone this list is drawn in — DP-064. */
   displayTimezone: string;
+  /** Today in that zone, computed once by the screen. */
+  todayKey: string;
   todos: TodoItem[];
   calendars: Calendar[];
   onOpenEvent(id: string): void;
@@ -35,14 +37,17 @@ export interface AgendaViewProps {
 export function AgendaView({
   events,
   displayTimezone,
+  todayKey,
   todos,
   calendars,
   onOpenEvent,
   onToggleTodo,
 }: AgendaViewProps) {
   const days = useMemo(() => {
-    const today = startOfDay(new Date());
-    const todayKey = toDateKey(today);
+    // The screen's one reading of "today", not a second one from the device
+    // clock — DP-064. The rows are filled with events placed by the display
+    // zone, so the row they start from has to come from the same zone.
+    const today = fromDateKey(todayKey);
     const result: {
       key: string;
       dateLabel: string;
@@ -97,7 +102,7 @@ export function AgendaView({
     }
 
     return result;
-  }, [calendars, displayTimezone, events, todos]);
+  }, [calendars, displayTimezone, events, todayKey, todos]);
 
   return (
     <div className="cal-view-pane cal-agenda">

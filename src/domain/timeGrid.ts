@@ -97,11 +97,17 @@ export function columnShift(deltaPixels: number, fromIndex: number): number {
   return Math.max(0, Math.min(6, fromIndex + shift));
 }
 
-/** Offset of the current-time line, or `null` when now is off the rail. */
-export function nowLineTop(now: Date): number | null {
-  const hour = now.getHours();
+/**
+ * Offset of the current-time line, or `null` when now is off the rail.
+ *
+ * Takes minutes from local midnight rather than a `Date` — DP-064. Reading
+ * `now.getHours()` here meant the line was drawn on the *device's* clock while
+ * the columns around it were drawn on the display timezone's.
+ */
+export function nowLineTop(minutesOfDay: number): number | null {
+  const hour = minutesOfDay / 60;
   if (hour < GRID_START_HOUR || hour > GRID_END_HOUR) return null;
-  return Math.round((hour - GRID_START_HOUR + now.getMinutes() / 60) * HOUR_HEIGHT);
+  return Math.round((hour - GRID_START_HOUR) * HOUR_HEIGHT);
 }
 
 export function hourRail(): { label: string; top: number }[] {

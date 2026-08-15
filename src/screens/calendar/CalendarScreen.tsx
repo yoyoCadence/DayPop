@@ -193,7 +193,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
   function submitQuick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseQuickAdd(quick);
+    // "明天下午3點" is relative to today on this grid, not to the device's day.
+    const parsed = parseQuickAdd(quick, todayDate);
     if (!parsed || !parsed.title) return;
 
     // The原檔 hands the parsed line to the event sheet for confirmation rather
@@ -330,6 +331,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
           <AgendaView
             events={events}
             displayTimezone={displayTimezone}
+            todayKey={todayKey}
             todos={data.todos}
             calendars={data.calendars}
             onOpenEvent={openEvent}
@@ -360,6 +362,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         dateKey={dayDetailKey}
         events={events}
         displayTimezone={displayTimezone}
+        todayKey={todayKey}
         todos={data.todos}
         stickers={data.stickers}
         calendars={data.calendars}

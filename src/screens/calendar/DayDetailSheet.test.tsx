@@ -65,6 +65,7 @@ function render(overrides: Partial<DayDetailSheetProps> = {}) {
     dateKey: DATE,
     events: [],
     displayTimezone: 'Asia/Taipei',
+    todayKey: DATE,
     todos: [],
     stickers: [],
     calendars: [],
