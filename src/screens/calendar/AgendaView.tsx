@@ -1,8 +1,12 @@
 import { useMemo } from 'react';
 import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
+import { eventDisplaySegments } from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
+
+/** Marks the second and later days of a cross-midnight event — DP-064. */
+const CONTINUATION_LABEL = '續';
 
 /** The原檔 looks ahead 16 days and drops empty days after tomorrow. */
 const LOOKAHEAD_DAYS = 16;
@@ -48,6 +52,40 @@ export function AgendaView({
     // clock — DP-064. The rows are filled with events placed by the display
     // zone, so the row they start from has to come from the same zone.
     const today = fromDateKey(todayKey);
+    // One pass over the events for the whole look-ahead, not one per day —
+    // cutting every event 16 times and keeping one slice is what made 綜覽 take
+    // 16 seconds before it was bucketed (DP-064).
+    const lastKey = toDateKey(addDays(today, LOOKAHEAD_DAYS - 1));
+    const segmentsByDate = new Map<string, { event: CalendarEvent; time: string; isContinuation: boolean }[]>();
+    const bucket = (dateKey: string, row: { event: CalendarEvent; time: string; isContinuation: boolean }) => {
+      const list = segmentsByDate.get(dateKey);
+      if (list) list.push(row);
+      else segmentsByDate.set(dateKey, [row]);
+    };
+
+    for (const event of events) {
+      if (event.allDay) {
+        const dateKey = eventDateInZone(event, displayTimezone);
+        if (dateKey >= todayKey && dateKey <= lastKey) {
+          bucket(dateKey, { event, time: '全天', isContinuation: false });
+        }
+        continue;
+      }
+      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, {
+        startDateKey: todayKey,
+        endDateKey: lastKey,
+      })) {
+        bucket(segment.dateKey, {
+          event,
+          // A continuation day says so instead of repeating the start clock.
+          time: segment.isContinuation
+            ? CONTINUATION_LABEL
+            : eventStartTimeInZone(event, displayTimezone),
+          isContinuation: segment.isContinuation,
+        });
+      }
+    }
+
     const result: {
       key: string;
       dateLabel: string;
@@ -60,21 +98,20 @@ export function AgendaView({
       const date = addDays(today, offset);
       const key = toDateKey(date);
 
-      const eventItems: AgendaItem[] = events
-        .filter((event) => eventDateInZone(event, displayTimezone) === key)
+      const eventItems: AgendaItem[] = (segmentsByDate.get(key) ?? [])
+        .slice()
         .sort((left, right) => {
-          if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-          return eventStartTimeInZone(left, displayTimezone).localeCompare(
-            eventStartTimeInZone(right, displayTimezone),
-          );
+          if (left.event.allDay !== right.event.allDay) return left.event.allDay ? -1 : 1;
+          if (left.isContinuation !== right.isContinuation) return left.isContinuation ? -1 : 1;
+          return left.time.localeCompare(right.time);
         })
-        .map((event) => ({
+        .map((row) => ({
           kind: 'event',
-          id: event.id,
-          time: event.allDay ? '全天' : eventStartTimeInZone(event, displayTimezone),
-          title: event.title,
+          id: row.event.id,
+          time: row.time,
+          title: row.event.title,
           done: false,
-          color: calendarColor(calendars, event.calendarId),
+          color: calendarColor(calendars, row.event.calendarId),
         }));
 
       const todoItems: AgendaItem[] = todos

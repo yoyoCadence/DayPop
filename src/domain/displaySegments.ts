@@ -178,6 +178,26 @@ export function eventDisplaySegments(
   return segments;
 }
 
+/**
+ * A segment's clock, where a day ends at `24:00` rather than wrapping to
+ * `00:00` — DP-064.
+ *
+ * `timeFromMinutes()` in `timeGrid.ts` deliberately wraps, because a grid
+ * position of 1440 is the same pixel row as 0. A *label* must not: "23:00–00:00"
+ * reads as a zero-length event, and the first day of a cross-midnight event has
+ * to say where it actually stops.
+ */
+export function segmentClock(minutes: number): string {
+  const clamped = Math.max(0, Math.min(MINUTES_PER_DAY, Math.round(minutes)));
+  const hour = Math.floor(clamped / 60);
+  return `${String(hour).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
+}
+
+/** `23:00–24:00` for the first day of an overnight event, `00:00–00:30` for the second. */
+export function segmentTimeRange(segment: DisplaySegment): string {
+  return `${segmentClock(segment.startMinutes)}–${segmentClock(segment.endMinutes)}`;
+}
+
 /** The occurrences to test for conflict, paired with their identity. */
 export interface ConflictCandidate {
   key: string;
