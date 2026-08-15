@@ -4,15 +4,22 @@
  * Constants and formulas are transcribed from `buildWeek()` and the
  * `wkDown`/`wkMove`/`wkUp` pointer handlers of
  * `日曆桌寵 Calendar Pet.dc.html`.
+ *
+ * The rail's first and last hour used to be module constants here (07:00–22:00,
+ * as in the原檔). They are now a parameter — DP-064: the range is derived per
+ * week from the segments that week actually contains, so a 23:00 event is drawn
+ * at 23:00 instead of being clamped onto the 22:00 line. `hourRangeForSegments()`
+ * in `displaySegments.ts` is the one place that derives it; the four functions
+ * below all take the result, because a rail, a now line and a block computed
+ * against different ranges would not line up.
  */
 
-/** First and last hour drawn on the rail, and the pixel height of one hour. */
-export const GRID_START_HOUR = 7;
-export const GRID_END_HOUR = 22;
+import { type HourRange } from './displaySegments';
+
+/** Pixel height of one hour. */
 export const HOUR_HEIGHT = 44;
-/** Trailing space below the last hour line, so a 22:00 event still fits. */
+/** Trailing space below the last hour line, so an event on it still fits. */
 export const GRID_PADDING = 16;
-export const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_HEIGHT + GRID_PADDING;
 /** Width of one day column, and of the hour rail on its left. */
 export const COLUMN_WIDTH = 60;
 export const RAIL_WIDTH = 36;
@@ -34,17 +41,31 @@ export function timeFromMinutes(minutes: number): string {
   return `${String(hour).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
 }
 
+/** Pixel height of a grid drawn for `range`. */
+export function gridHeight(range: HourRange): number {
+  return (range.endHour - range.startHour) * HOUR_HEIGHT + GRID_PADDING;
+}
+
 export interface BlockGeometry {
   top: number;
   height: number;
 }
 
 /**
- * Where a timed event sits on the grid. Events starting before `GRID_START_HOUR`
- * are clipped at the top rather than drawn off-grid, as in the原檔.
+ * Where a timed event sits on the grid.
+ *
+ * Blocks starting before `range.startHour` are clipped at the top rather than
+ * drawn off-grid, as in the原檔. A committed segment never needs that clip now
+ * that the range is derived from the week's own segments; a *drag preview* still
+ * can, because `moveRange()` bounds a drag by the day rather than by the rail.
+ * That is transient — the range is recomputed once the drag commits.
  */
-export function blockGeometry(startMinutes: number, endMinutes: number): BlockGeometry {
-  let top = (startMinutes / 60 - GRID_START_HOUR) * HOUR_HEIGHT;
+export function blockGeometry(
+  startMinutes: number,
+  endMinutes: number,
+  range: HourRange,
+): BlockGeometry {
+  let top = (startMinutes / 60 - range.startHour) * HOUR_HEIGHT;
   let height = ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT;
   if (height < MIN_BLOCK_HEIGHT) height = MIN_BLOCK_HEIGHT;
   if (top < 0) {
@@ -104,18 +125,25 @@ export function columnShift(deltaPixels: number, fromIndex: number): number {
  * `now.getHours()` here meant the line was drawn on the *device's* clock while
  * the columns around it were drawn on the display timezone's.
  */
-export function nowLineTop(minutesOfDay: number): number | null {
+export function nowLineTop(minutesOfDay: number, range: HourRange): number | null {
   const hour = minutesOfDay / 60;
-  if (hour < GRID_START_HOUR || hour > GRID_END_HOUR) return null;
-  return Math.round((hour - GRID_START_HOUR) * HOUR_HEIGHT);
+  if (hour < range.startHour || hour > range.endHour) return null;
+  return Math.round((hour - range.startHour) * HOUR_HEIGHT);
 }
 
-export function hourRail(): { label: string; top: number }[] {
+/**
+ * The hour labels down the left rail.
+ *
+ * The last row of a full day reads `24:00`, not `00:00` — the same rule
+ * `segmentClock()` follows, and the one §6 of the ADR fixes for the end of a
+ * cross-midnight segment.
+ */
+export function hourRail(range: HourRange): { label: string; top: number }[] {
   const rows: { label: string; top: number }[] = [];
-  for (let hour = GRID_START_HOUR; hour <= GRID_END_HOUR; hour += 1) {
+  for (let hour = range.startHour; hour <= range.endHour; hour += 1) {
     rows.push({
       label: `${String(hour).padStart(2, '0')}:00`,
-      top: (hour - GRID_START_HOUR) * HOUR_HEIGHT,
+      top: (hour - range.startHour) * HOUR_HEIGHT,
     });
   }
   return rows;
