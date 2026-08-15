@@ -18,7 +18,7 @@ import {
   toDateKey,
   weeksBetween,
 } from '../../domain/date';
-import { occurrencesConflict } from '../../domain/displaySegments';
+import { eventDisplaySegments, occurrencesConflict } from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
@@ -43,6 +43,9 @@ const MIN_ROW_HEIGHT = 58;
 const INITIAL_ROW_HEIGHT = 96;
 /** Events drawn inside a cell before collapsing into a `+N` line. */
 const MAX_CELL_EVENTS = 3;
+
+/** Marks the second and later days of a cross-midnight event — DP-064. */
+const CONTINUATION_LABEL = '續';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -421,18 +424,18 @@ export function MonthView({
                   </div>
                   {isToday && flashToday && <div className="cal-cell-flash" aria-hidden="true" />}
                   {cell.hasConflict && <div className="cal-cell-conflict" aria-hidden="true" />}
-                  {cell.dayEvents.slice(0, MAX_CELL_EVENTS).map((event) => (
+                  {cell.dayEvents.slice(0, MAX_CELL_EVENTS).map((entry) => (
                     <div
                       className="cal-cell-event"
-                      key={event.id}
+                      // A cross-midnight event has one entry per day, so the
+                      // event id alone is not unique across the grid.
+                      key={`${entry.key}:${entry.isContinuation ? 'cont' : 'start'}`}
                       style={{
-                        background: calendarColor(calendars, event.calendarId),
+                        background: calendarColor(calendars, entry.event.calendarId),
                         color: CALENDAR_TEXT_COLOR,
                       }}
                     >
-                      {event.allDay
-                        ? event.title
-                        : `${eventStartTimeInZone(event, displayTimezone)} ${event.title}`}
+                      {entry.time ? `${entry.time} ${entry.event.title}` : entry.event.title}
                     </div>
                   ))}
                   {hidden > 0 && <div className="cal-cell-more">+{hidden}</div>}
@@ -464,24 +467,69 @@ function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean)
   return isZebra ? 'rgba(130,130,130,0.06)' : 'transparent';
 }
 
+/** One row inside a cell: an event, plus whether this day continues it. */
+export interface MonthCellEntry {
+  event: CalendarEvent;
+  /** The occurrence's identity, shared by both halves of a cross-midnight event. */
+  key: string;
+  isContinuation: boolean;
+  /** Clock label for this day, or `''` for an all-day event. */
+  time: string;
+}
+
+/**
+ * Places events on the days they visibly occupy — DP-064.
+ *
+ * A timed event is cut into display segments, so a 23:00–隔天 14:00 event
+ * appears on both days instead of vanishing from the second one. The segments
+ * share the occurrence key, which is what the conflict check and any count
+ * deduplicate on.
+ */
 function groupEventsByDate(
   events: CalendarEvent[],
   displayTimezone: string,
-): Map<string, CalendarEvent[]> {
-  const map = new Map<string, CalendarEvent[]>();
+): Map<string, MonthCellEntry[]> {
+  const map = new Map<string, MonthCellEntry[]>();
+  const push = (dateKey: string, entry: MonthCellEntry) => {
+    const list = map.get(dateKey);
+    if (list) list.push(entry);
+    else map.set(dateKey, [entry]);
+  };
+
   for (const event of events) {
-    const key = eventDateInZone(event, displayTimezone);
-    const list = map.get(key);
-    if (list) list.push(event);
-    else map.set(key, [event]);
+    if (event.allDay) {
+      // All-day placement is unchanged by DP-064; it has no instants to cut.
+      push(eventDateInZone(event, displayTimezone), {
+        event,
+        key: event.id,
+        isContinuation: false,
+        time: '',
+      });
+      continue;
+    }
+
+    // Identity is the event id until DP-014 wires recurring occurrences into
+    // these views; both halves of one event still share it, which is the
+    // property the conflict check and the counts rely on.
+    for (const segment of eventDisplaySegments(event, event.id, displayTimezone)) {
+      push(segment.dateKey, {
+        event,
+        key: segment.key,
+        isContinuation: segment.isContinuation,
+        time: segment.isContinuation
+          ? CONTINUATION_LABEL
+          : eventStartTimeInZone(event, displayTimezone),
+      });
+    }
   }
-  // All-day first, then by start time — the原檔's `dayEvents()` ordering.
+
+  // All-day first, then by start time — the原檔's `dayEvents()` ordering. A
+  // continuation starts at midnight, so it naturally leads the timed rows.
   for (const list of map.values()) {
     list.sort((left, right) => {
-      if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-      return eventStartTimeInZone(left, displayTimezone).localeCompare(
-        eventStartTimeInZone(right, displayTimezone),
-      );
+      if (left.event.allDay !== right.event.allDay) return left.event.allDay ? -1 : 1;
+      if (left.isContinuation !== right.isContinuation) return left.isContinuation ? -1 : 1;
+      return left.time.localeCompare(right.time);
     });
   }
   return map;
@@ -504,11 +552,17 @@ function groupStickersByDate(stickers: Sticker[]): Map<string, Sticker[]> {
  * DP-064 replaced the same-day clock-string comparison this used to do with the
  * shared instant check: `minutes(end) = 30 < minutes(start) = 1380` meant a
  * cross-midnight event could never be flagged, however obvious the overlap.
+ *
+ * Entries are compared, not segments: the same occurrence appearing twice in a
+ * cell would otherwise be read as conflicting with itself.
  */
-function hasOverlap(events: CalendarEvent[]): boolean {
-  for (let i = 0; i < events.length; i += 1) {
-    for (let j = i + 1; j < events.length; j += 1) {
-      if (occurrencesConflict(events[i]!, events[j]!)) return true;
+function hasOverlap(entries: MonthCellEntry[]): boolean {
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = i + 1; j < entries.length; j += 1) {
+      const left = entries[i]!;
+      const right = entries[j]!;
+      if (left.key === right.key) continue;
+      if (occurrencesConflict(left.event, right.event)) return true;
     }
   }
   return false;

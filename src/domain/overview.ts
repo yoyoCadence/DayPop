@@ -1,5 +1,9 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
+import { eventDisplaySegments } from './displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
+
+/** Marks the second and later days of a cross-midnight event — DP-064. */
+const CONTINUATION_LABEL = '續';
 import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 /**
@@ -137,7 +141,7 @@ export function buildOverviewGroups(input: BuildOverviewInput): OverviewGroup[] 
         key: `${input.cursor.getFullYear()}-${month}`,
         title: `${month + 1}月`,
         sub: '',
-        count: days.reduce((total, day) => total + day.items.length, 0),
+        count: countDistinctItems(days),
         labelDays: true,
         days: days.map(toOverviewDay),
       });
@@ -149,10 +153,36 @@ export function buildOverviewGroups(input: BuildOverviewInput): OverviewGroup[] 
     key: day.dateKey,
     title: `${day.date.getMonth() + 1}/${day.date.getDate()}`,
     sub: `週${WEEKDAY_LABELS[day.date.getDay()]}`,
-    count: day.items.length,
+    count: countDistinctItems([day]),
     labelDays: false,
     days: [toOverviewDay(day)],
   }));
+}
+
+/**
+ * Counts occurrences, not rows — DP-064.
+ *
+ * A cross-midnight event is listed on both days it occupies; counting rows
+ * would report it twice. The id is the occurrence identity here (recurring
+ * occurrences reach these views as base events until DP-014).
+ */
+function countDistinctItems(days: { items: OverviewItem[] }[]): number {
+  const seen = new Set<string>();
+  for (const day of days) {
+    for (const item of day.items) seen.add(item.id);
+  }
+  return seen.size;
+}
+
+/**
+ * The 「共 N 筆」 total across the whole period — DP-064.
+ *
+ * Summing `group.count` is not the same thing: outside the year view every day
+ * is its own group, so a cross-midnight event would be counted once per group
+ * even though each group had already deduplicated it.
+ */
+export function countOverviewOccurrences(groups: OverviewGroup[]): number {
+  return countDistinctItems(groups.flatMap((group) => group.days));
 }
 
 function toOverviewDay(day: { dateKey: string; date: Date; items: OverviewItem[] }): OverviewDay {
@@ -165,22 +195,42 @@ function toOverviewDay(day: { dateKey: string; date: Date; items: OverviewItem[]
 
 function collectItems(input: BuildOverviewInput, dateKey: string): OverviewItem[] {
   if (input.type === 'events') {
-    return input.events
-      .filter((event) => eventDateInZone(event, input.displayTimezone) === dateKey)
+    // A cross-midnight event occupies both days, so it is listed on both — the
+    // count above deduplicates it back to one (DP-064).
+    const rows: { event: CalendarEvent; time: string; isContinuation: boolean }[] = [];
+    for (const event of input.events) {
+      if (event.allDay) {
+        if (eventDateInZone(event, input.displayTimezone) === dateKey) {
+          rows.push({ event, time: '全天', isContinuation: false });
+        }
+        continue;
+      }
+      for (const segment of eventDisplaySegments(event, event.id, input.displayTimezone)) {
+        if (segment.dateKey !== dateKey) continue;
+        rows.push({
+          event,
+          time: segment.isContinuation
+            ? CONTINUATION_LABEL
+            : eventStartTimeInZone(event, input.displayTimezone),
+          isContinuation: segment.isContinuation,
+        });
+      }
+    }
+
+    return rows
       .sort((left, right) => {
-        if (left.allDay !== right.allDay) return left.allDay ? -1 : 1;
-        return eventStartTimeInZone(left, input.displayTimezone).localeCompare(
-          eventStartTimeInZone(right, input.displayTimezone),
-        );
+        if (left.event.allDay !== right.event.allDay) return left.event.allDay ? -1 : 1;
+        if (left.isContinuation !== right.isContinuation) return left.isContinuation ? -1 : 1;
+        return left.time.localeCompare(right.time);
       })
-      .map((event) => ({
+      .map((row) => ({
         kind: 'event' as const,
-        id: event.id,
-        time: event.allDay ? '全天' : eventStartTimeInZone(event, input.displayTimezone),
-        title: event.title,
+        id: row.event.id,
+        time: row.time,
+        title: row.event.title,
         sub: '',
         done: false,
-        calendarId: event.calendarId,
+        calendarId: row.event.calendarId,
       }));
   }
 
