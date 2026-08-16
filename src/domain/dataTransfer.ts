@@ -89,10 +89,72 @@ export interface ImportPreview {
   replacedTotal: number;
 }
 
+/** The portable half of a document — what a backup file can carry. */
+export type PortableUserData = Omit<DayPopUserData, 'eventAttachments'>;
+
+/**
+ * What the user confirmed, in a form that can be applied to whatever the data
+ * looks like at commit time.
+ *
+ * Deliberately **not** a finished document. Between showing the preview and the
+ * user pressing 確認 the data can legitimately change — another tab, a sync, or
+ * simply the user editing something first — and writing back a document
+ * assembled from the older snapshot would silently discard that. An append in
+ * particular has to land on the current rows, not the ones that existed when the
+ * file was opened.
+ */
+export type ImportCommand =
+  | { kind: 'replace'; data: PortableUserData }
+  | { kind: 'appendIcs'; events: CalendarEvent[]; eventExceptions: EventException[] };
+
 export interface ImportPlan {
+  /** Counts to show before confirming; computed against the data at plan time. */
   preview: ImportPreview;
-  /** The document to save when the user confirms. Nothing is written before that. */
-  next: DayPopUserData;
+  /** Applied at commit time by the repository, against the data as it is then. */
+  command: ImportCommand;
+}
+
+/**
+ * Applies a confirmed command to the data as it stands right now.
+ *
+ * Every adapter runs this — the guest one inside its re-read-and-write barrier,
+ * and the authenticated one to build the payload it hands to the RPC — so the
+ * rules below hold no matter which store is behind it.
+ */
+export function applyImportCommand(
+  current: DayPopUserData,
+  command: ImportCommand,
+): DayPopUserData {
+  if (command.kind === 'replace') {
+    // Fail closed rather than orphan or silently delete attachments: their
+    // binaries live in private Storage and a backup carries none, so replacing
+    // the document would either strand the rows or destroy the files.
+    if (current.eventAttachments.length > 0) {
+      throw new DataTransferError(
+        `這個帳號目前有 ${current.eventAttachments.length} 個附件，備份檔不包含附件，因此不能用取代的方式匯入。請先下載或刪除附件後再試。`,
+      );
+    }
+    return validated({ ...command.data, eventAttachments: [] });
+  }
+
+  const renamed = renameIncomingCollisions(command, current);
+  return validated({
+    ...current,
+    events: [...current.events, ...renamed.events],
+    eventExceptions: [...current.eventExceptions, ...renamed.eventExceptions],
+  });
+}
+
+function validated(next: DayPopUserData): DayPopUserData {
+  try {
+    return parseDayPopUserData(next);
+  } catch (cause) {
+    throw new DataTransferError(
+      `匯入後的資料無法通過驗證，沒有匯入任何資料。（${
+        cause instanceof Error ? cause.message : '未知原因'
+      }）`,
+    );
+  }
 }
 
 export interface BuildBackupOptions {
@@ -224,7 +286,17 @@ export function planJsonImport(text: string, current: DayPopUserData): ImportPla
       skippedAttachments,
       replacedTotal: documentRowCount(current),
     },
-    next,
+    command: {
+      kind: 'replace',
+      data: {
+        calendars: next.calendars,
+        events: next.events,
+        eventExceptions: next.eventExceptions,
+        todos: next.todos,
+        stickers: next.stickers,
+        preferences: next.preferences,
+      },
+    },
   };
 }
 
@@ -279,26 +351,18 @@ export function planIcsImport(
     throw new DataTransferError('無法從此檔案辨識出行程。請確認是有效的 .ics（iCalendar）匯出檔。');
   }
 
-  const renamed = renameIncomingCollisions(imported, current);
-
-  const next: DayPopUserData = {
-    ...current,
-    events: [...current.events, ...renamed.events],
-    eventExceptions: [...current.eventExceptions, ...renamed.eventExceptions],
+  const command: ImportCommand = {
+    kind: 'appendIcs',
+    events: imported.events,
+    eventExceptions: imported.eventExceptions,
   };
 
-  // The assembled document, not just the imported slice: a plan that cannot be
-  // saved must not reach the confirm button. This is what catches a dangling
-  // reference the renaming above could still have produced.
-  try {
-    parseDayPopUserData(next);
-  } catch (cause) {
-    throw new DataTransferError(
-      `匯入後的資料無法通過驗證，沒有匯入任何資料。（${
-        cause instanceof Error ? cause.message : '未知原因'
-      }）`,
-    );
-  }
+  // Assembled and validated once here as well, so a file that cannot produce a
+  // saveable document never reaches the confirm button. The result is thrown
+  // away — the commit re-applies the command against the data as it is then —
+  // but the counts below describe a plan that is known to be applicable.
+  applyImportCommand(current, command);
+  const renamedCount = countRenamed(imported, current);
 
   return {
     preview: {
@@ -308,12 +372,20 @@ export function planIcsImport(
       eventExceptions: imported.eventExceptions.length,
       todos: 0,
       stickers: 0,
-      remappedDuplicateIds: renamed.remapped,
+      remappedDuplicateIds: renamedCount,
       skippedAttachments: 0,
       replacedTotal: 0,
     },
-    next,
+    command,
   };
+}
+
+/** How many incoming ids collide with the data as it stands, for the preview. */
+function countRenamed(
+  imported: { events: CalendarEvent[]; eventExceptions: EventException[] },
+  current: DayPopUserData,
+): number {
+  return renameIncomingCollisions(imported, current).remapped;
 }
 
 /** Rows a document holds, for the 「會取代目前的 N 筆」 line. */

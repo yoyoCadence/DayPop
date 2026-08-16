@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyImportCommand,
   backupFileName,
   BACKUP_FORMAT,
   BACKUP_FORMAT_VERSION,
@@ -11,6 +12,7 @@ import {
   planJsonImport,
   previewTotal,
   serializeJsonBackup,
+  type ImportPlan,
 } from './dataTransfer';
 import { timedEventFromWallTime } from './eventTime';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
@@ -46,6 +48,19 @@ function timed(data: DayPopUserData, id: string, title: string, date: string): C
     { date, start: '09:00', end: '10:00' },
     ZONE,
   );
+}
+
+/**
+ * The document a confirmed plan produces — reached through the same call the
+ * repositories make, so these assertions exercise the real commit path rather
+ * than a snapshot the plan happened to carry.
+ *
+ * An `appendIcs` plan must be applied to the *same* document it was planned
+ * against: `baseData()` mints a new calendar id each call, so the default is
+ * only safe for `replace`, which does not read the current rows.
+ */
+function applied(plan: ImportPlan, current: DayPopUserData = baseData()): DayPopUserData {
+  return applyImportCommand(current, plan.command);
 }
 
 function populated(): DayPopUserData {
@@ -91,11 +106,11 @@ describe('JSON backup', () => {
 
     const plan = planJsonImport(text, baseData());
 
-    expect(plan.next.events).toEqual(source.events);
-    expect(plan.next.todos).toEqual(source.todos);
-    expect(plan.next.stickers).toEqual(source.stickers);
-    expect(plan.next.calendars).toEqual(source.calendars);
-    expect(plan.next.preferences).toEqual(source.preferences);
+    expect(applied(plan).events).toEqual(source.events);
+    expect(applied(plan).todos).toEqual(source.todos);
+    expect(applied(plan).stickers).toEqual(source.stickers);
+    expect(applied(plan).calendars).toEqual(source.calendars);
+    expect(applied(plan).preferences).toEqual(source.preferences);
   });
 
   it('carries no attachment rows and says how many it dropped', () => {
@@ -121,7 +136,7 @@ describe('JSON backup', () => {
     expect(text).not.toContain('objectPath');
 
     const plan = planJsonImport(text, baseData());
-    expect(plan.next.eventAttachments).toEqual([]);
+    expect(applied(plan).eventAttachments).toEqual([]);
     // A normal export has no attachment rows left to count, so the number has
     // to be carried explicitly or the person importing is never told.
     expect(plan.preview.skippedAttachments).toBe(1);
@@ -136,7 +151,7 @@ describe('JSON backup', () => {
 
     const plan = planJsonImport(JSON.stringify(withAttachments), baseData());
     expect(plan.preview.skippedAttachments).toBe(2);
-    expect(plan.next.eventAttachments).toEqual([]);
+    expect(applied(plan).eventAttachments).toEqual([]);
   });
 
   it('never lets an AI key ride along', () => {
@@ -148,7 +163,7 @@ describe('JSON backup', () => {
     };
 
     const plan = planJsonImport(JSON.stringify(poisoned), baseData());
-    expect(JSON.stringify(plan.next)).not.toContain('sk-should-not-survive');
+    expect(JSON.stringify(applied(plan))).not.toContain('sk-should-not-survive');
   });
 
   it('reports what a replace would discard', () => {
@@ -264,26 +279,27 @@ describe('ICS import adds without touching what is there', () => {
     expect(plan.preview.mode).toBe('append');
     expect(plan.preview.events).toBe(1);
     expect(plan.preview.replacedTotal).toBe(0);
-    expect(plan.next.events).toHaveLength(current.events.length + 1);
+    expect(applied(plan, current).events).toHaveLength(current.events.length + 1);
     for (const event of current.events) {
-      expect(plan.next.events).toContainEqual(event);
+      expect(applied(plan, current).events).toContainEqual(event);
     }
-    expect(plan.next.events.at(-1)?.title).toBe('外部會議');
+    expect(applied(plan, current).events.at(-1)?.title).toBe('外部會議');
   });
 
   it('round-trips DayPop events through the .ics it exports', () => {
     const source = populated();
     const exported = buildIcsExport(source);
 
-    const plan = planIcsImport(exported, baseData(), { defaultTimezone: ZONE });
+    const current = baseData();
+    const plan = planIcsImport(exported, current, { defaultTimezone: ZONE });
 
     expect(plan.preview.events).toBe(source.events.length);
-    const titles = plan.next.events.map((event) => event.title).sort();
+    const titles = applied(plan, current).events.map((event) => event.title).sort();
     expect(titles).toEqual(['夜班', '晨會']);
     // Same instants, even though the ids are re-minted by the importer.
     const instants = (events: CalendarEvent[]) =>
       events.flatMap((event) => (event.allDay ? [] : [event.startsAt])).sort();
-    expect(instants(plan.next.events)).toEqual(instants(source.events));
+    expect(instants(applied(plan, current).events)).toEqual(instants(source.events));
   });
 
   it('renames an imported id that collides with an existing event', () => {
@@ -296,9 +312,9 @@ describe('ICS import adds without touching what is there', () => {
 
     expect(plan.preview.remappedDuplicateIds).toBe(1);
     // The row that was already there keeps its id and its title.
-    const kept = plan.next.events.find((event) => event.id === collidingId);
+    const kept = applied(plan, current).events.find((event) => event.id === collidingId);
     expect(kept?.title).toBe('晨會');
-    expect(plan.next.events).toHaveLength(current.events.length + 1);
+    expect(applied(plan, current).events).toHaveLength(current.events.length + 1);
   });
 
   it('refuses a file with no events, leaving the document alone', () => {
@@ -371,11 +387,14 @@ describe('ICS import adds without touching what is there', () => {
     };
 
     // Pass 1: learn which generated id the replacement event gets.
-    const dry = planIcsImport(recurring, baseData(), {
+    const dryCurrent = baseData();
+    const dry = planIcsImport(recurring, dryCurrent, {
       defaultTimezone: ZONE,
       idFactory: sequential(),
     });
-    const dryReplacement = dry.next.eventExceptions.find((exception) => !exception.isCancelled);
+    const dryReplacement = applied(dry, dryCurrent).eventExceptions.find(
+      (exception) => !exception.isCancelled,
+    );
     expect(dryReplacement).toBeDefined();
     const replacementId = (dryReplacement as { replacementEventId: string }).replacementEventId;
 
@@ -394,17 +413,116 @@ describe('ICS import adds without touching what is there', () => {
     });
 
     expect(plan.preview.remappedDuplicateIds).toBeGreaterThan(0);
-    const replacements = plan.next.eventExceptions.filter((exception) => !exception.isCancelled);
+
+    // Applied once and reused: a rename mints a fresh id, so two applications of
+    // the same command do not agree on it — which is fine, since a commit
+    // applies it exactly once.
+    const next = applied(plan, current);
+    const replacements = next.eventExceptions.filter((exception) => !exception.isCancelled);
     expect(replacements.length).toBeGreaterThan(0);
     for (const exception of replacements) {
       // Never the user's own event, which is what a stale pointer would hit.
       expect(existingIds.has(exception.replacementEventId)).toBe(false);
-      expect(plan.next.events.some((event) => event.id === exception.replacementEventId)).toBe(true);
+      expect(next.events.some((event) => event.id === exception.replacementEventId)).toBe(true);
     }
     // The user's row is untouched.
-    expect(plan.next.events.find((event) => event.id === replacementId)?.title).toBe(
-      '使用者自己的行程',
+    expect(next.events.find((event) => event.id === replacementId)?.title).toBe('使用者自己的行程');
+  });
+});
+
+describe('replace fails closed when the account still has attachments', () => {
+  function withAttachment(): DayPopUserData {
+    const data = populated();
+    data.eventAttachments = [
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        eventId: data.events[0]!.id,
+        objectPath: `77777777-7777-4777-8777-777777777777/${data.events[0]!.id}/55555555-5555-4555-8555-555555555555`,
+        fileName: 'file.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 10,
+        createdAt: '2026-08-01T00:00:00.000Z',
+        updatedAt: '2026-08-01T00:00:00.000Z',
+      },
+    ];
+    return data;
+  }
+
+  it('refuses rather than orphaning or deleting them', () => {
+    // A backup carries no attachments, so replacing would either strand the
+    // rows or destroy files the user never agreed to lose.
+    const current = withAttachment();
+    const plan = planJsonImport(serializeJsonBackup(buildJsonBackup(baseData())), current);
+
+    expect(() => applyImportCommand(current, plan.command)).toThrow(DataTransferError);
+    expect(() => applyImportCommand(current, plan.command)).toThrow(/附件/);
+    expect(current.eventAttachments).toHaveLength(1);
+  });
+
+  it('still allows an .ics append, which does not touch attachments', () => {
+    const current = withAttachment();
+    const plan = planIcsImport(
+      [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//test//EN',
+        'BEGIN:VEVENT',
+        'UID:appended@example.com',
+        'DTSTAMP:20260801T000000Z',
+        'DTSTART:20260816T010000Z',
+        'DTEND:20260816T020000Z',
+        'SUMMARY:外部會議',
+        'END:VEVENT',
+        'END:VCALENDAR',
+        '',
+      ].join('\r\n'),
+      current,
+      { defaultTimezone: ZONE },
     );
+
+    const next = applyImportCommand(current, plan.command);
+    expect(next.eventAttachments).toEqual(current.eventAttachments);
+    expect(next.events).toHaveLength(current.events.length + 1);
+  });
+});
+
+describe('a command applies to the data as it is at commit time', () => {
+  it('appends onto rows added after the plan was made', () => {
+    const atPlanTime = populated();
+    const plan = planIcsImport(
+      [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//test//EN',
+        'BEGIN:VEVENT',
+        'UID:appended@example.com',
+        'DTSTAMP:20260801T000000Z',
+        'DTSTART:20260816T010000Z',
+        'DTEND:20260816T020000Z',
+        'SUMMARY:外部會議',
+        'END:VEVENT',
+        'END:VCALENDAR',
+        '',
+      ].join('\r\n'),
+      atPlanTime,
+      { defaultTimezone: ZONE },
+    );
+
+    // The user adds something between seeing the preview and confirming.
+    const atCommitTime: DayPopUserData = {
+      ...atPlanTime,
+      events: [
+        ...atPlanTime.events,
+        timed(atPlanTime, '66666666-6666-4666-8666-666666666666', '確認前才加的', '2026-08-18'),
+      ],
+    };
+
+    const next = applyImportCommand(atCommitTime, plan.command);
+
+    // Writing back a document assembled at plan time would have dropped this.
+    expect(next.events.some((event) => event.title === '確認前才加的')).toBe(true);
+    expect(next.events.some((event) => event.title === '外部會議')).toBe(true);
+    expect(next.events).toHaveLength(atCommitTime.events.length + 1);
   });
 });
 
