@@ -50,6 +50,13 @@ export interface DayPopBackup {
   formatVersion: number;
   exportedAt: string;
   appVersion: string;
+  /**
+   * What the export left out, as counts only — never a path, a file name or a
+   * URL. Without this a normal backup could not tell the person importing it
+   * that anything was missing: the rows are gone from `data`, so there is
+   * nothing left to count on the way back in.
+   */
+  omitted: { eventAttachments: number };
   data: Omit<DayPopUserData, 'eventAttachments'>;
 }
 
@@ -102,6 +109,7 @@ export function buildJsonBackup(
     formatVersion: BACKUP_FORMAT_VERSION,
     exportedAt: options.now ?? new Date().toISOString(),
     appVersion: options.appVersion ?? 'unknown',
+    omitted: { eventAttachments: data.eventAttachments.length },
     // Listed field by field rather than spread-minus-attachments: this object
     // leaves the device, so what travels should be an allowlist. A field added
     // to `DayPopUserData` later then fails to compile here — which is the moment
@@ -161,16 +169,29 @@ export function planJsonImport(text: string, current: DayPopUserData): ImportPla
         : '這個檔案不是 DayPop 備份格式（缺少 format 標記）。',
     );
   }
-  if (typeof parsed.formatVersion !== 'number' || parsed.formatVersion > BACKUP_FORMAT_VERSION) {
+  // Exactly 1, not "at most 1": there is no v0 and no fractional format, so
+  // nothing exists that could read one. The accepted set widens only when a
+  // migrator for an older layout actually exists.
+  if (parsed.formatVersion !== BACKUP_FORMAT_VERSION) {
+    const newer =
+      typeof parsed.formatVersion === 'number' && parsed.formatVersion > BACKUP_FORMAT_VERSION;
     throw new DataTransferError(
-      '這個備份檔來自較新版本的 DayPop，請先更新 App 再匯入，以免讀錯資料。',
+      newer
+        ? '這個備份檔來自較新版本的 DayPop，請先更新 App 再匯入，以免讀錯資料。'
+        : '這個備份檔的格式版本無法辨識，沒有匯入任何資料。',
     );
   }
 
   const body = parsed.data;
   if (!isRecord(body)) throw new DataTransferError('這個備份檔沒有可讀取的資料內容。');
 
-  const skippedAttachments = countArray(body.eventAttachments);
+  // Two sources: the count a normal export records, and a raw array a
+  // hand-edited file might still carry. Neither is trusted for anything but a
+  // number shown to the user.
+  const omitted = isRecord(parsed.omitted) ? parsed.omitted.eventAttachments : undefined;
+  const skippedAttachments =
+    (typeof omitted === 'number' && Number.isInteger(omitted) && omitted >= 0 ? omitted : 0) +
+    countArray(body.eventAttachments);
   assertWithinLimits(body);
 
   // Validated as a whole canonical document, so a file that is internally
@@ -230,6 +251,11 @@ export function planIcsImport(
   if (!calendarId) {
     throw new DataTransferError('目前沒有任何日曆可以放這些行程，請先建立一個日曆。');
   }
+  // A caller-supplied id that is not one of this document's calendars would
+  // leave every imported event pointing at nothing.
+  if (!current.calendars.some((calendar) => calendar.id === calendarId)) {
+    throw new DataTransferError('選定的日曆不存在，沒有匯入任何資料。');
+  }
 
   let imported: { events: CalendarEvent[]; eventExceptions: EventException[] };
   try {
@@ -255,6 +281,25 @@ export function planIcsImport(
 
   const renamed = renameIncomingCollisions(imported, current);
 
+  const next: DayPopUserData = {
+    ...current,
+    events: [...current.events, ...renamed.events],
+    eventExceptions: [...current.eventExceptions, ...renamed.eventExceptions],
+  };
+
+  // The assembled document, not just the imported slice: a plan that cannot be
+  // saved must not reach the confirm button. This is what catches a dangling
+  // reference the renaming above could still have produced.
+  try {
+    parseDayPopUserData(next);
+  } catch (cause) {
+    throw new DataTransferError(
+      `匯入後的資料無法通過驗證，沒有匯入任何資料。（${
+        cause instanceof Error ? cause.message : '未知原因'
+      }）`,
+    );
+  }
+
   return {
     preview: {
       mode: 'append',
@@ -267,11 +312,7 @@ export function planIcsImport(
       skippedAttachments: 0,
       replacedTotal: 0,
     },
-    next: {
-      ...current,
-      events: [...current.events, ...renamed.events],
-      eventExceptions: [...current.eventExceptions, ...renamed.eventExceptions],
-    },
+    next,
   };
 }
 
@@ -341,6 +382,25 @@ function renameIncomingCollisions(
   const eventExceptions = imported.eventExceptions.map((exception) => {
     const id = claim(exception.id);
     const eventId = eventIdMap.get(exception.eventId) ?? exception.eventId;
+    // `replacementEventId` has to follow the rename as well. Leaving it alone
+    // was the worse half of the same bug: the imported event moves to a new id
+    // while its exception keeps pointing at the old one — which is now the
+    // user's own event, so their row would be shown in place of an occurrence
+    // it has nothing to do with.
+    // `replacementEventId` has to follow the rename as well. Leaving it alone
+    // was the worse half of the same bug: the imported event moves to a new id
+    // while its exception keeps pointing at the old one — which is now the
+    // user's own event, so their row would be shown in place of an occurrence
+    // it has nothing to do with.
+    if (!exception.isCancelled) {
+      const replacementEventId =
+        eventIdMap.get(exception.replacementEventId) ?? exception.replacementEventId;
+      return id === exception.id &&
+        eventId === exception.eventId &&
+        replacementEventId === exception.replacementEventId
+        ? exception
+        : { ...exception, id, eventId, replacementEventId };
+    }
     return id === exception.id && eventId === exception.eventId
       ? exception
       : { ...exception, id, eventId };

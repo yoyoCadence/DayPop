@@ -114,13 +114,17 @@ describe('JSON backup', () => {
     ];
 
     const text = serializeJsonBackup(buildJsonBackup(source));
-    // The private Storage path must not be in a file the user hands around.
+    // Neither the private Storage path nor the file name may be in a file the
+    // user hands around — only a count.
     expect(text).not.toContain('private/user-a');
-    expect(text).not.toContain('eventAttachments');
+    expect(text).not.toContain('secret.pdf');
+    expect(text).not.toContain('objectPath');
 
     const plan = planJsonImport(text, baseData());
     expect(plan.next.eventAttachments).toEqual([]);
-    expect(plan.preview.skippedAttachments).toBe(0);
+    // A normal export has no attachment rows left to count, so the number has
+    // to be carried explicitly or the person importing is never told.
+    expect(plan.preview.skippedAttachments).toBe(1);
   });
 
   it('counts an attachment array that a hand-edited file still carries', () => {
@@ -187,6 +191,15 @@ describe('JSON import refuses without touching anything', () => {
   it('refuses a file from a newer format version', () => {
     const backup = { ...buildJsonBackup(populated()), formatVersion: BACKUP_FORMAT_VERSION + 1 };
     rejects(JSON.stringify(backup), /較新版本/);
+  });
+
+  it('accepts only the one format version that exists', () => {
+    // There is no v0 and no fractional layout, so nothing can read one. The
+    // accepted set widens when a migrator exists, not before.
+    for (const formatVersion of [0, -1, 0.5, 1.5, '1', null]) {
+      const backup = { ...buildJsonBackup(populated()), formatVersion };
+      rejects(JSON.stringify(backup), /格式版本無法辨識|較新版本/);
+    }
   });
 
   it('refuses a file whose rows are not valid canonical data', () => {
@@ -308,6 +321,90 @@ describe('ICS import adds without touching what is there', () => {
     const empty = baseData();
     empty.calendars = [];
     expect(() => planIcsImport(ics, empty, { defaultTimezone: ZONE })).toThrow(/先建立一個日曆/);
+  });
+
+  it('refuses a calendar id that is not in this document', () => {
+    const current = populated();
+    const before = JSON.stringify(current);
+    // Otherwise every imported event points at a calendar that does not exist.
+    expect(() =>
+      planIcsImport(ics, current, {
+        defaultTimezone: ZONE,
+        calendarId: '99999999-9999-4999-8999-999999999999',
+      }),
+    ).toThrow(/選定的日曆不存在/);
+    expect(JSON.stringify(current)).toBe(before);
+  });
+
+  it('moves a replacement exception with the event it points at', () => {
+    // An .ics with RECURRENCE-ID produces an exception whose replacement is the
+    // imported event. If the event is renamed on a collision but the pointer is
+    // not, it lands on the user's own event instead.
+    const recurring = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//test//EN',
+      'BEGIN:VEVENT',
+      'UID:series-1@example.com',
+      'DTSTAMP:20260801T000000Z',
+      'DTSTART:20260816T010000Z',
+      'DTEND:20260816T020000Z',
+      'RRULE:FREQ=DAILY;COUNT=3',
+      'SUMMARY:每日站會',
+      'END:VEVENT',
+      'BEGIN:VEVENT',
+      'UID:series-1@example.com',
+      'RECURRENCE-ID:20260817T010000Z',
+      'DTSTAMP:20260801T000000Z',
+      'DTSTART:20260817T030000Z',
+      'DTEND:20260817T040000Z',
+      'SUMMARY:改期的站會',
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n');
+
+    // Sequential ids so the same import can be run twice and land identically.
+    const sequential = () => {
+      let n = 0;
+      return () => `aaaaaaaa-0000-4000-8000-${String((n += 1)).padStart(12, '0')}`;
+    };
+
+    // Pass 1: learn which generated id the replacement event gets.
+    const dry = planIcsImport(recurring, baseData(), {
+      defaultTimezone: ZONE,
+      idFactory: sequential(),
+    });
+    const dryReplacement = dry.next.eventExceptions.find((exception) => !exception.isCancelled);
+    expect(dryReplacement).toBeDefined();
+    const replacementId = (dryReplacement as { replacementEventId: string }).replacementEventId;
+
+    // Pass 2: the user already owns an event with exactly that id, so the
+    // imported replacement must be renamed — and the pointer must follow it.
+    const current = populated();
+    current.events = [
+      ...current.events,
+      timed(current, replacementId, '使用者自己的行程', '2026-08-20'),
+    ];
+    const existingIds = new Set(current.events.map((event) => event.id));
+
+    const plan = planIcsImport(recurring, current, {
+      defaultTimezone: ZONE,
+      idFactory: sequential(),
+    });
+
+    expect(plan.preview.remappedDuplicateIds).toBeGreaterThan(0);
+    const replacements = plan.next.eventExceptions.filter((exception) => !exception.isCancelled);
+    expect(replacements.length).toBeGreaterThan(0);
+    for (const exception of replacements) {
+      // Never the user's own event, which is what a stale pointer would hit.
+      expect(existingIds.has(exception.replacementEventId)).toBe(false);
+      expect(plan.next.events.some((event) => event.id === exception.replacementEventId)).toBe(true);
+    }
+    // The user's row is untouched.
+    expect(plan.next.events.find((event) => event.id === replacementId)?.title).toBe(
+      '使用者自己的行程',
+    );
   });
 });
 
