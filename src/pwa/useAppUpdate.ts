@@ -15,6 +15,24 @@ export interface AppUpdateState {
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
+/**
+ * Floor between checks that nothing asked for — DP-035.
+ *
+ * `visibilitychange` and `online` fire far more often than a release ships. On a
+ * phone, every switch away and back is one more `version.json` request, and a
+ * flaky connection can produce a burst of `online` events; the 30-minute timer
+ * below already guarantees the app notices a release on its own.
+ *
+ * The window is measured from the moment a check *starts*, which also means a
+ * second trigger arriving while one is still in flight is skipped rather than
+ * duplicating the request. A failed attempt starts the window too: coming back
+ * online right after a failure therefore waits, which is the deliberate trade —
+ * being up to five minutes late to an update beats hammering an endpoint that is
+ * failing while the tab flaps. 手動「檢查更新」 is never throttled, so the user
+ * always has an immediate way out.
+ */
+const AUTO_CHECK_MIN_INTERVAL_MS = 5 * 60 * 1000;
+
 export function useAppUpdate(): AppUpdateState {
   const [currentRelease, setCurrentRelease] = useState<ReleaseInfo | null>(null);
   const [availableRelease, setAvailableRelease] = useState<ReleaseInfo | null>(null);
@@ -26,6 +44,8 @@ export function useAppUpdate(): AppUpdateState {
   const applyWhenReadyRef = useRef(false);
   const reloadOnControllerChangeRef = useRef(false);
   const dismissedVersionRef = useRef<string | null>(null);
+  /** When the last check of any kind began; `null` until the first one — DP-035. */
+  const lastCheckStartedAtRef = useRef<number | null>(null);
 
   const captureWorker = useCallback((registration: ServiceWorkerRegistration) => {
     registrationRef.current = registration;
@@ -46,6 +66,9 @@ export function useAppUpdate(): AppUpdateState {
   }, []);
 
   const checkForUpdate = useCallback(async () => {
+    // Recorded for every trigger, manual included: a check the user just asked
+    // for makes an automatic one moments later redundant.
+    lastCheckStartedAtRef.current = Date.now();
     setChecking(true);
     setError(null);
     try {
@@ -90,11 +113,22 @@ export function useAppUpdate(): AppUpdateState {
         setError(cause instanceof Error ? cause.message : '無法註冊離線更新服務');
       });
 
+    // The timer is not throttled: it fires every 30 minutes, which is already
+    // well outside the window, and it is the guarantee that a release is noticed
+    // without any user action.
     const timer = window.setInterval(() => void checkForUpdate(), CHECK_INTERVAL_MS);
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') void checkForUpdate();
+
+    /** An automatic trigger; runs only if the window has passed — DP-035. */
+    const checkIfDue = () => {
+      const startedAt = lastCheckStartedAtRef.current;
+      if (startedAt !== null && Date.now() - startedAt < AUTO_CHECK_MIN_INTERVAL_MS) return;
+      void checkForUpdate();
     };
-    const onOnline = () => void checkForUpdate();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') checkIfDue();
+    };
+    const onOnline = () => checkIfDue();
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('online', onOnline);
 
