@@ -29,7 +29,7 @@
 | 行為 | 分類 | 後續處理 |
 | --- | --- | --- |
 | App 內建寵物小幫手 | 原型可用；React 已有最小摘要 | 保留 App 內定位；素材與狀態機延後，不做 OS 桌面寵物。 |
-| JSON／ICS 匯入匯出 | 原型限定 | 加入 schema validation、預覽、錯誤回復與 round-trip 測試後再搬移。 |
+| JSON／ICS 匯入匯出 | 原型限定 | 加入 schema validation、預覽、錯誤回復與 round-trip 測試後再搬移。**DP-056 的 domain 層已完成**（`src/domain/dataTransfer.ts`）；設定頁 UI 與「匯入怎麼套用到已登入帳號」仍未完成。**兩處刻意偏離原稿，都是任務指定而非實作者自選**：(1) **JSON 匯入也要預覽** —— 原檔只對 `.ics` 顯示預覽，JSON 匯入是 `onImportFile()` 解析完就 `commit()`，一個截斷或不相干的檔案會直接蓋掉行事曆；DayPop 改為任何匯入都先產生計畫、由使用者確認後才寫入。(2) **不匯入 AI key** —— 原檔會從檔案還原 `settings.aiKey`；DayPop 的 canonical 文件沒有這個欄位，而且備份內容以允許清單逐欄建立，未知欄位無法夾帶。另有一項不屬於原稿範圍的決定：**備份不含附件**（檔案裡只有 private Storage 的 `objectPath`，離開該帳號沒有意義），preview 會告知略過筆數。 |
 | 瀏覽器通知 timer | 原型限定 | 不宣稱是可靠背景提醒；Web Push 另案設計。 |
 | 附件 | 假功能 | 使用 Supabase 私人 Storage、signed URL、限制與 RLS 後才啟用。 |
 | 天氣 | 假功能 | 未選資料來源、權限與失敗體驗前維持停用。 |
