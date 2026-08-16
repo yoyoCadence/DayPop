@@ -75,7 +75,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 >
 > **DP-064、DP-068、DP-071 與 DP-070 的修正已於 2026-08-16 一併部署到 staging**（deploy run 的 head 為 `3f404d03`，即當時的 `main`），並已對線上實測跨午夜呈現無誤；版號仍是 0.3.0，未重新產生 `version.json`／`sw.js`。目前仍**卡在真機／真實帳號**的有 DP-032 與 DP-023。不需要任何人先決定的實作還有 DP-035（節流版本檢查）與 DP-056（匯入匯出，ICS 底層已由 DP-027 完成）。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 
-- 目前沒有待起的任務。DP-064 已完成並移入 Done；它衍生的 DP-072（跨午夜事件在週格的拖曳）放在 Backlog，因為要先定義多日事件跨欄拖曳的語意，屬新的產品決策。下一批要起哪一個由專案擁有者從 Backlog 指定，agent 不自行遞補。
+- 目前沒有待起的任務。DP-064 已完成並移入 Done；它衍生的 DP-072（跨午夜事件在週格的拖曳）放在 Backlog，因為要先定義多日事件跨欄拖曳的語意，屬新的產品決策。
+  > **2026-08-16 更新**：專案擁有者當面指示繼續，因此由上方說明點名的兩項未卡住實作（DP-035、DP-056）中挑了較小且規格完整的 **DP-035**，由 Backlog 直接接手並在完成後移入 Done。DP-056（匯入匯出）仍在 Backlog，範圍大得多。它衍生的 DP-073（冷啟動兩次版本檢查）也放進 Backlog —— 成因在 `SessionDataProvider` 的 keyed remount，修法有兩個各有取捨的方向，要先定案。
 
 ## In Progress
 
@@ -93,7 +94,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Quality / release
 
-- [ ] **DP-035 — 節流自動版本檢查：** 為 visibility／online 自動觸發保留至少 5 分鐘間隔，30 分鐘 timer 可維持；手動「檢查更新」不受節流，並以 fake timers／fetch spy 驗證。
+- [ ] **DP-073 — 冷啟動會做兩次版本檢查：** 實測（instrumented build ＋ Playwright）冷啟動時 `useAppUpdate` 的 effect 跑**兩次**，`version.json` 因此被請求兩次、間隔 1 毫秒。原因不在 `useAppUpdate`：`SessionDataProvider` 以 `<DataProvider key={identity}>` 掛載，而 `identity` 在 auth 解析前是 `'auth-initializing'`、解析後變成 `'guest'` 或帳號 id，**key 改變會把整棵子樹（含 `App`）卸載重掛**，hook 也就重跑一次。那個 keyed remount 是刻意的安全邊界（guest／帳號 A／帳號 B 不得共用狀態，見該檔註解），**不可為了這件事移除**。DP-035 的節流擋不住它 —— 節流的時間戳存在 hook 自己的 ref 裡，重掛就沒了。兩個可行方向各有取捨，要先定案再動：**(a) 把 `useAppUpdate()` 提到 keyed provider 之上**（例如在 `main.tsx` 呼叫後以 prop／context 傳進 `App`），版本檢查本來就與帳號無關，但要改動 App 的組成方式；**(b) 把「上次檢查時間」放到模組層級**讓它跨重掛存活，改動小但引入模組層可變狀態，測試之間必須重設。這是既有行為，不是 DP-035 造成的。
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
 - [ ] **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** `scripts/generate-release-assets.mjs` 把 `dataSchemaVersion: 1` 寫死，但實際的 user-data schema 早在 DP-028 就到 4（`vite.config.ts` 的 `__DATA_SCHEMA_VERSION__`）。目前**沒有任何程式讀這個欄位** —— `ReleaseInfo` 有宣告它，`useAppUpdate` 只用 `version`／`changes`，所以它不會造成 runtime 錯誤，但每次發布都在公開檔案裡輸出一個錯的數字，遲早有人拿它當判斷依據。DP-065 沒有順手改掉是刻意的：兩個合理選項各自是設計決策 —— **(a) 刪掉這個欄位**（沒人讀，而且 AGENTS.md 明定 release version 與 user-data schema version 必須獨立，把它塞在 release 檔裡本來就在誘導耦合）；**(b) 讓它變成真的單一來源**，但 `vite.config.ts` 與這支 `.mjs` 現在各寫死一份，要真的同步就得再引入一個兩邊都讀得到的來源（例如一個小 JSON），那是新增結構。先決定 (a)／(b) 再動，不要只把 `1` 改成 `4` —— 那正是它第一次漂掉的方式。
   >
@@ -143,6 +144,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-035 — 節流自動版本檢查：** `visibilitychange` 與 `online` 兩個自動觸發加上 5 分鐘下限（`AUTO_CHECK_MIN_INTERVAL_MS`），30 分鐘 timer 與手機上的初次檢查維持不變，手動「檢查更新」完全不受節流。**視窗從檢查「開始」起算**，因此同時附帶兩個效果：一是還在飛行中的請求不會被第二個觸發複製，二是失敗的嘗試同樣開啟視窗 —— 剛斷線失敗後立刻回到線上會等，這是刻意的取捨（晚五分鐘拿到更新，好過在端點正在失敗、分頁又反覆切換時猛打），而手動檢查永遠是使用者的即時出口。手動檢查也會更新時間戳：使用者剛按過，幾秒後的自動檢查就是多餘的。**本任務由 Backlog 直接接手**（Next 為空、In Progress 三項都卡在專案擁有者），完成後移入 Done。`useAppUpdate.ts` 先前**完全沒有測試**，新增 `src/pwa/useAppUpdate.test.ts` 7 項：掛載檢查一次、視窗內的 4 次 visibility／online 觸發全部忽略、視窗過後放行一次並重新關窗、連按 3 次手動都送出、手動檢查會重設自動檢查的視窗、30 分鐘 timer 連續兩次都照跑、卸載後不再檢查。節流只存在於 production 分支（`import.meta.env.PROD` ＋ service worker），所以測試以 `vi.stubEnv('PROD', true)` 與 stub 的 `navigator.serviceWorker` 進到那條路徑 —— 測 dev 分支等於測一條根本沒有 listener 的程式碼。反向測試兩輪：把兩個 handler 改回直接呼叫 `checkForUpdate()`，3 項失敗（`expected 4 to be 1`）；把 `PROD` stub 改成 `false`，7 項裡 5 項失敗，證明測試真的走 production 分支而不是空過。實機驗證（Chromium 390×844、production build、service worker controller 已接管）：6 次 visibility／online 觸發後 `version.json` 請求數 **+0**，3 次手動「檢查更新」後 **+3**，console 0 error。**順帶量到一個既有問題並登記為 DP-073**：冷啟動時 `useAppUpdate` 的 effect 跑兩次、`version.json` 被請求兩次（間隔 1 毫秒），成因是 `SessionDataProvider` 的 `key={identity}` 在 auth 解析時由 `'auth-initializing'` 變成 `'guest'`、整棵子樹重掛；節流的時間戳存在 hook 的 ref 裡，重掛就沒了，擋不住它。那不是本任務造成的，修法也有兩個各有取捨的方向，因此另立任務而不在此順手改。單元測試 434 → 441。
 - [x] **DP-064 — 決定跨午夜行程在月格與週檢視怎麼呈現：** DayPop 的 timed event 存的是 instant，`timedEventFromWallTime()` 會把 23:00–00:30 的結束時間順延到隔天（DP-063 已修好它在 DST 夜晚的長度）。但三個檢視仍把 `eventEndTime()` 當成同一天的時鐘字串：**月格與日詳情的衝突偵測**（`hasOverlap()`／`overlappingIds()`）用 `minutes(end) = 30 < minutes(start) = 1380`，所以跨午夜行程永遠不會被判為衝突，連 23:00–00:30 與 23:30–23:45 這種明顯重疊也漏掉；**週檢視**的 `blockGeometry()` 會算出負高度並被夾成 20px 的色塊。**這兩處與原稿逐行一致**（原檔 `overlapIds()` 是 `mins(a.start)<mins(b.end)`，`buildWeek()` 是 `if(h<20)h=20`），原檔因為只存 `HH:MM` 字串才不會遇到；因此改動是**新的產品決策，不是還原原稿**，比照 DP-015 對「週檢視全天列」的處理另立此任務。
   >
   > **2026-08-14 專案擁有者已定案，以下是實作規格：**
