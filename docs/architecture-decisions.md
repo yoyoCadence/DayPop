@@ -228,6 +228,7 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - **衝突偵測目前有兩份實作**：`MonthView.tsx` 的 `hasOverlap()` 與 `DayDetailSheet.tsx` 的 `overlappingIds()`，兩者都用 `minutes()` 比較同日時鐘字串。改用 instant 後應收斂成 domain 的單一函式，不要在兩處各自改。
 - **週檢視**的 `src/domain/timeGrid.ts` 把 `GRID_START_HOUR`／`GRID_END_HOUR` 當模組常數。**真正依賴它們、必須改成接受該週推導起訖的只有四處**：`blockGeometry()`、`GRID_HEIGHT`、`hourRail()`、`nowLineTop()`。漏掉任何一個都會讓時刻軌、now line 或色塊互相對不上。既有的 20px 最小高度只可用於「真的很短的事件」，**不可用來掩蓋負高度**。
   - **拖曳的三個函式不需要改**：`snapMinutes()` 只用 `HOUR_HEIGHT` 換算垂直位移，`moveRange()`／`resizeRange()` 只處理 0–1440 的日內邊界，`columnShift()` 只用欄寬做水平移動 —— 它們都不依賴起訖小時。不要為了這個任務去動它們的簽章。
+  - > **實作時發現的後果（2026-08-16，這一條是實作者的判斷，不是擁有者定案）**：上一句的「只處理 0–1440 的日內邊界」正好說明**跨午夜的 occurrence 無法用現行拖曳模型表示**。一次拖曳送出的是單一天的 `date`＋`start`／`end` 牆上時間，而 `moveRange()` 會把區間夾在同一天內；把它套到 23:00–00:30 的第一段，送出的 patch 會把事件截成 60 分鐘，等於靜默刪掉使用者的資料。因此**跨午夜事件的每一個片段都不提供拖曳與拉長度**，點擊改為開啟事件（單日事件的拖曳行為完全不變）。要真的支援跨午夜拖曳需要新的 patch 形狀（以 instant delta 或起訖各自帶日期），已登記為 **DP-072**，不在 DP-064 內。
   - 需要新增的是**拖曳 commit 的呼叫端**：把拖曳後的 display wall coordinate 依 display timezone 轉回 instant（見上面第 7 點）。
 - **綜覽**的 `src/domain/overview.ts` 以 `items.length` 累計；改為依 `ResolvedEventOccurrence.key` 去重後，`count` 與逐日列表的關係要一併說明（一筆跨日事件在兩天各出現一次，但總數只加一）。
 

@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { instantDateInZone, instantTimeInZone } from '../../domain/eventTime';
 import {
-  eventDateInZone,
-  eventEndTimeInZone,
-  eventStartTimeInZone,
-  instantDateInZone,
-  instantTimeInZone,
-} from '../../domain/eventTime';
+  eventDisplaySegments,
+  hourRangeForSegments,
+  segmentClock,
+  segmentTimeRange,
+  type DisplaySegment,
+} from '../../domain/displaySegments';
 import {
   blockGeometry,
   columnShift,
   COLUMN_WIDTH,
-  GRID_HEIGHT,
+  gridHeight,
   hourRail,
   minutesFromTime,
   moveRange,
@@ -26,6 +27,9 @@ import type { Calendar, CalendarEvent } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+
+/** Marks the second and later days of a cross-midnight event — DP-064. */
+const CONTINUATION_LABEL = '續';
 
 export interface WeekViewProps {
   weekStartsOn: 0 | 1;
@@ -92,76 +96,94 @@ export function WeekView({
     [cursor, weekStartsOn],
   );
 
-  const columns = useMemo(() => {
-    const byDate = new Map<string, CalendarEvent[]>();
-    for (const event of events) {
-      if (event.allDay) continue;
-      const key = eventDateInZone(event, displayTimezone);
-      const list = byDate.get(key);
-      if (list) list.push(event);
-      else byDate.set(key, [event]);
-    }
+  const weekStartKey = toDateKey(weekStart);
+  const weekEndKey = toDateKey(addDays(weekStart, 6));
 
+  // Cut once for the whole week, not once per column — DP-064. The window is
+  // the week itself, so a multi-month event walks seven days rather than its
+  // own length.
+  const segmentsByDate = useMemo(() => {
+    const byDate = new Map<string, DisplaySegment[]>();
+    for (const event of events) {
+      // All-day events are not drawn on the grid in the原檔 either (DP-015).
+      if (event.allDay) continue;
+      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, {
+        startDateKey: weekStartKey,
+        endDateKey: weekEndKey,
+      })) {
+        const list = byDate.get(segment.dateKey);
+        if (list) list.push(segment);
+        else byDate.set(segment.dateKey, [segment]);
+      }
+    }
+    return byDate;
+  }, [displayTimezone, events, weekEndKey, weekStartKey]);
+
+  // The rail is derived from what this week actually contains, so a 23:00 event
+  // is drawn at 23:00 instead of being clamped onto the 22:00 line — DP-064 §9.
+  // A drag preview is deliberately left out: it is bounded by the day rather
+  // than by the rail, and growing the range mid-drag would slide every block
+  // out from under the pointer. The range settles when the drag commits.
+  const range = useMemo(
+    () => hourRangeForSegments([...segmentsByDate.values()].flat()),
+    [segmentsByDate],
+  );
+
+  const columns = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
       const date = addDays(weekStart, index);
       const key = toDateKey(date);
-      const timed = (byDate.get(key) ?? [])
+      const blocks = (segmentsByDate.get(key) ?? [])
         .slice()
-        .sort((left, right) =>
-          eventStartTimeInZone(left, displayTimezone).localeCompare(
-            eventStartTimeInZone(right, displayTimezone),
-          ),
-        )
-        .map((event) => {
-          const dragging = preview?.id === event.id;
-          const startMinutes = dragging
-            ? preview.startMinutes
-            : minutesFromTime(eventStartTimeInZone(event, displayTimezone));
-          const endMinutes = dragging
-            ? preview.endMinutes
-            : minutesFromTime(
-                eventEndTimeInZone(event, displayTimezone) ||
-                  eventStartTimeInZone(event, displayTimezone),
-              );
+        .sort((left, right) => left.startMinutes - right.startMinutes)
+        .map((segment) => {
+          const dragging = preview?.id === segment.event.id;
+          const startMinutes = dragging ? preview.startMinutes : segment.startMinutes;
+          const endMinutes = dragging ? preview.endMinutes : segment.endMinutes;
           return {
-            event,
+            segment,
             dragging,
-            timeLabel: timeFromMinutes(startMinutes),
-            ...blockGeometry(startMinutes, endMinutes),
+            // The segment's own clock, where a day ends at 24:00 — writing
+            // 23:00–00:00 on the first night would read as zero length.
+            timeLabel: segment.isContinuation
+              ? `${CONTINUATION_LABEL} ${segmentClock(startMinutes)}`
+              : segmentClock(startMinutes),
+            rangeLabel: segmentTimeRange({ ...segment, startMinutes, endMinutes }),
+            // A drag rewrites one wall-clock range on one day, which cannot
+            // express an occurrence that spans several — see the ADR §6 note on
+            // 跨午夜拖曳 and DP-072. Those blocks open the event instead.
+            draggable: !segment.isContinuation && !segment.continuesNextDay,
+            ...blockGeometry(startMinutes, endMinutes, range),
           };
         });
-      return { key, date, isToday: key === todayKey, timed };
+      return { key, date, isToday: key === todayKey, blocks };
     });
-  }, [displayTimezone, events, preview, todayKey, weekStart]);
+  }, [preview, range, segmentsByDate, todayKey, weekStart]);
 
   // Both the "is now inside this week" test and the line's height are read in
   // the display zone — the columns are, so the line has to be too (DP-064).
   const nowKey = instantDateInZone(now.toISOString(), displayTimezone);
   const nowTop =
-    nowKey >= toDateKey(weekStart) && nowKey <= toDateKey(addDays(weekStart, 6))
-      ? nowLineTop(minutesFromTime(instantTimeInZone(now.toISOString(), displayTimezone)))
+    nowKey >= weekStartKey && nowKey <= weekEndKey
+      ? nowLineTop(minutesFromTime(instantTimeInZone(now.toISOString(), displayTimezone)), range)
       : null;
 
   function beginDrag(
     domEvent: ReactPointerEvent<HTMLElement>,
-    event: CalendarEvent,
+    segment: DisplaySegment,
     mode: 'move' | 'resize',
   ) {
     domEvent.preventDefault();
     if (mode === 'resize') domEvent.stopPropagation();
     dragRef.current = {
-      id: event.id,
-      dateKey: eventDateInZone(event, displayTimezone),
+      id: segment.event.id,
+      dateKey: segment.dateKey,
       mode,
       startX: domEvent.clientX,
       startY: domEvent.clientY,
-      origin: {
-        startMinutes: minutesFromTime(eventStartTimeInZone(event, displayTimezone)),
-        endMinutes: minutesFromTime(
-          eventEndTimeInZone(event, displayTimezone) ||
-            eventStartTimeInZone(event, displayTimezone),
-        ),
-      },
+      // The segment's minutes, which for a draggable block are the whole
+      // occurrence's — the grid and the drag then start from one reading.
+      origin: { startMinutes: segment.startMinutes, endMinutes: segment.endMinutes },
       moved: false,
     };
   }
@@ -230,7 +252,7 @@ export function WeekView({
     };
   }, [displayTimezone, onOpenEvent, onUpdateEvent, preview, weekStart]);
 
-  const rail = hourRail();
+  const rail = hourRail(range);
 
   return (
     <div className="cal-view-pane cal-week">
@@ -262,40 +284,54 @@ export function WeekView({
               </div>
             ))}
           </div>
-          <div className="cal-week-grid" ref={gridRef} style={{ height: `${GRID_HEIGHT}px` }}>
+          <div className="cal-week-grid" ref={gridRef} style={{ height: `${gridHeight(range)}px` }}>
             {rail.map((hour) => (
               <div className="cal-week-hour-line" key={hour.label} style={{ top: `${hour.top}px` }} />
             ))}
             <div className="cal-week-columns">
               {columns.map((column) => (
                 <div className="cal-week-col" key={column.key} style={{ width: `${COLUMN_WIDTH}px` }}>
-                  {column.timed.map((block) => (
+                  {column.blocks.map((block) => (
                     <div
                       className={`cal-week-event${block.dragging ? ' dragging' : ''}`}
-                      key={block.event.id}
+                      // Keyed by day as well: one occurrence draws a block in
+                      // every column it crosses.
+                      key={`${block.segment.key}-${block.segment.dateKey}`}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${block.timeLabel} ${block.event.title}`}
-                      onPointerDown={(domEvent) => beginDrag(domEvent, block.event, 'move')}
+                      aria-label={`${block.segment.isContinuation ? `${CONTINUATION_LABEL} ` : ''}${block.rangeLabel} ${block.segment.event.title}`}
+                      onPointerDown={
+                        block.draggable
+                          ? (domEvent) => beginDrag(domEvent, block.segment, 'move')
+                          : undefined
+                      }
+                      // A block with no drag handler needs its own way to open:
+                      // the draggable ones open from the pointerup that turned
+                      // out not to be a drag.
+                      onClick={
+                        block.draggable ? undefined : () => onOpenEvent(block.segment.event.id)
+                      }
                       onKeyDown={(domEvent) => {
                         if (domEvent.key === 'Enter' || domEvent.key === ' ') {
                           domEvent.preventDefault();
-                          onOpenEvent(block.event.id);
+                          onOpenEvent(block.segment.event.id);
                         }
                       }}
                       style={{
                         top: `${block.top}px`,
                         height: `${block.height}px`,
-                        background: calendarColor(calendars, block.event.calendarId),
+                        background: calendarColor(calendars, block.segment.event.calendarId),
                         color: CALENDAR_TEXT_COLOR,
                       }}
                     >
                       <div className="cal-week-event-time">{block.timeLabel}</div>
-                      <div className="cal-week-event-title">{block.event.title}</div>
-                      <div
-                        className="cal-week-event-resize"
-                        onPointerDown={(domEvent) => beginDrag(domEvent, block.event, 'resize')}
-                      />
+                      <div className="cal-week-event-title">{block.segment.event.title}</div>
+                      {block.draggable && (
+                        <div
+                          className="cal-week-event-resize"
+                          onPointerDown={(domEvent) => beginDrag(domEvent, block.segment, 'resize')}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
