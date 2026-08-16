@@ -2,7 +2,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataProvider } from '../../data/DataProvider';
-import { addDays, startOfWeek, toDateKey } from '../../domain/date';
+import { addDays, startOfWeek } from '../../domain/date';
+import { instantDateInZone } from '../../domain/eventTime';
 import { createEmptyUserData } from '../../domain/types';
 import { writeUserData } from '../../storage/versionedStorage';
 import { CalendarScreen, type CalendarFocus } from './CalendarScreen';
@@ -54,6 +55,19 @@ function weekLabelFor(dateKey: string): string {
   return `${start.getMonth() + 1}/${start.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`;
 }
 
+/**
+ * Today as **the screen** reads it — DP-064.
+ *
+ * `toDateKey(new Date())` is the device's today, and the screen stopped using
+ * that: it reads `preferences.timezone`, which the guest default sets to
+ * Asia/Taipei. The two name different days for the eight hours a day when UTC
+ * has not caught up, so expecting the device's day made these tests fail on CI
+ * every afternoon while passing on any machine already at UTC+8.
+ */
+function screenTodayKey(): string {
+  return instantDateInZone(new Date().toISOString(), createEmptyUserData().preferences.timezone);
+}
+
 describe('CalendarScreen focus', () => {
   it('opens the day it was sent to and moves the week with it', async () => {
     await render({ kind: 'day', dateKey: '2026-08-06' });
@@ -75,7 +89,7 @@ describe('CalendarScreen focus', () => {
     expect(daySheet()).toBeNull();
 
     await click(weekButton());
-    expect(periodLabel()).toBe(weekLabelFor(toDateKey(new Date())));
+    expect(periodLabel()).toBe(weekLabelFor(screenTodayKey()));
   });
 
   it('starts on today when nothing sent it anywhere', async () => {
@@ -84,7 +98,7 @@ describe('CalendarScreen focus', () => {
     expect(daySheet()).toBeNull();
 
     await click(weekButton());
-    expect(periodLabel()).toBe(weekLabelFor(toDateKey(new Date())));
+    expect(periodLabel()).toBe(weekLabelFor(screenTodayKey()));
   });
 });
 
