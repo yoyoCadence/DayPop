@@ -67,11 +67,15 @@ export function blockGeometry(
 ): BlockGeometry {
   let top = (startMinutes / 60 - range.startHour) * HOUR_HEIGHT;
   let height = ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT;
-  if (height < MIN_BLOCK_HEIGHT) height = MIN_BLOCK_HEIGHT;
   if (top < 0) {
     height += top;
     top = 0;
   }
+  // Floored *after* the clip, not before: flooring first let the clip subtract
+  // from an already-minimal height and hand back a negative one — a 30-minute
+  // preview dragged to 00:00 on a 07:00 rail came out at -286px, which §6
+  // forbids and the browser drops as an invalid length.
+  if (height < MIN_BLOCK_HEIGHT) height = MIN_BLOCK_HEIGHT;
   return { top: Math.round(top), height: Math.round(height) };
 }
 

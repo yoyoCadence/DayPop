@@ -5,6 +5,7 @@ import {
   columnShift,
   gridHeight,
   hourRail,
+  MIN_BLOCK_HEIGHT,
   minutesFromTime,
   moveRange,
   nowLineTop,
@@ -43,6 +44,28 @@ describe('grid geometry', () => {
   it('clips events that start before the rail', () => {
     // 06:00–08:00 — the first hour is above the grid.
     expect(blockGeometry(360, 480, BASELINE)).toEqual({ top: 0, height: 44 });
+  });
+
+  /**
+   * A committed segment never lands above the rail now that the range is
+   * derived from the week's own segments — but a *drag preview* still can,
+   * because `moveRange()` bounds a drag by the day rather than by the rail. The
+   * height must survive that: §6 forbids a negative one, and a browser drops
+   * `height: -286px` as an invalid length.
+   */
+  it('never returns a negative height for a block dragged above the rail', () => {
+    // The drag really does produce this: a 09:00–09:30 block pulled ten hours
+    // up is bounded at the top of the *day*, not the top of the rail.
+    const dragged = moveRange({ startMinutes: 540, endMinutes: 570 }, -600);
+    expect(dragged).toEqual({ startMinutes: 0, endMinutes: 30 });
+
+    for (const [start, end] of [
+      [dragged.startMinutes, dragged.endMinutes],
+      [0, 30],
+      [180, 240],
+    ] as const) {
+      expect(blockGeometry(start, end, BASELINE).height).toBeGreaterThanOrEqual(MIN_BLOCK_HEIGHT);
+    }
   });
 
   it('draws the rail from 07:00 to 22:00', () => {
