@@ -74,7 +74,17 @@ export function blockGeometry(
   // Floored *after* the clip, not before: flooring first let the clip subtract
   // from an already-minimal height and hand back a negative one — a 30-minute
   // preview dragged to 00:00 on a 07:00 rail came out at -286px, which §6
-  // forbids and the browser drops as an invalid length.
+  // forbids.
+  //
+  // This is the one formula on this module that is **not** the原檔's: `buildWeek()`
+  // floors before clipping (`if(h<20)h=20; if(top<0){ h+=top; top=0; }`) and so
+  // produces that negative height too. Reversing the two is a deliberate
+  // divergence recorded in `docs/prototype-behavior-baseline.md` and ADR §6, not
+  // a transcription slip. Measured symptom of the原檔 order: the browser rejects
+  // `height:-286px` as an invalid length and keeps whatever was set last, so the
+  // preview freezes at its final valid height and stops following the pointer —
+  // it does not collapse. Everything else is unchanged: 06:00–08:00 on a 07:00
+  // rail is still top 0, height 44.
   if (height < MIN_BLOCK_HEIGHT) height = MIN_BLOCK_HEIGHT;
   return { top: Math.round(top), height: Math.round(height) };
 }

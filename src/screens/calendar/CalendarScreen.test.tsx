@@ -62,7 +62,14 @@ function weekLabelFor(dateKey: string): string {
  * that: it reads `preferences.timezone`, which the guest default sets to
  * Asia/Taipei. The two name different days for the eight hours a day when UTC
  * has not caught up, so expecting the device's day made these tests fail on CI
- * every afternoon while passing on any machine already at UTC+8.
+ * while passing on any machine already at UTC+8.
+ *
+ * The assertion below is a *week* label, so the mismatch only shows when those
+ * two days also fall in different weeks — Saturday 16:00–24:00 UTC, about eight
+ * hours a week rather than eight hours a day. Measured at 17:00 UTC: Wednesday,
+ * Thursday and Friday all pass; Saturday fails with the exact CI message
+ * (`expected '8/16 – 8/22' to be '8/9 – 8/15'`), which is why the red run was
+ * the 2026-08-15 merge.
  */
 function screenTodayKey(): string {
   return instantDateInZone(new Date().toISOString(), createEmptyUserData().preferences.timezone);
