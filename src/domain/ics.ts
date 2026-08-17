@@ -128,10 +128,32 @@ export function importCalendarFromIcs(
 
   const events: CalendarEvent[] = [];
   const eventExceptions: EventException[] = [];
+
+  /**
+   * Every id this import has already handed out.
+   *
+   * `UUID_PREFIX` drops the `@domain` half of a UID, so two genuinely different
+   * UIDs — `<uuid>@a.example` and `<uuid>@b.example` — derive the *same* master
+   * id. Left alone that produces two series sharing an id, and the caller's
+   * collision renaming (which maps by original id) then reattaches the first
+   * series' exceptions to the second. Both are valid recurring events, so the
+   * document still validates: a silent misattribution rather than an error.
+   *
+   * Uniqueness is therefore settled here, while each group's identity is still
+   * known, rather than guessed later from a flattened list.
+   */
+  const usedIds = new Set<string>();
+  const mintId = (preferred?: string): string => {
+    let id = preferred && !usedIds.has(preferred) ? preferred : idFactory();
+    while (usedIds.has(id)) id = idFactory();
+    usedIds.add(id);
+    return id;
+  };
+
   for (const [uid, componentsForUid] of groups) {
     const master = componentsForUid.find((component) => !property(component, 'RECURRENCE-ID'));
     if (!master) throw new IcsFormatError(`UID ${uid} has no master VEVENT`);
-    const masterId = UUID_PREFIX.exec(uid)?.[1] ?? idFactory();
+    const masterId = mintId(UUID_PREFIX.exec(uid)?.[1]);
     const source = parseEventComponent(master, {
       id: masterId,
       calendarId: context.calendarId,
@@ -145,7 +167,7 @@ export function importCalendarFromIcs(
         const occurrence = parseOccurrenceProperty({ ...exdate, value }, source);
         eventExceptions.push(
           parseEventException({
-            id: idFactory(),
+            id: mintId(),
             eventId: source.id,
             occurrence,
             isCancelled: true,
@@ -164,7 +186,7 @@ export function importCalendarFromIcs(
       if (property(override, 'STATUS')?.value.toUpperCase() === 'CANCELLED') {
         eventExceptions.push(
           parseEventException({
-            id: idFactory(),
+            id: mintId(),
             eventId: source.id,
             occurrence,
             isCancelled: true,
@@ -177,7 +199,7 @@ export function importCalendarFromIcs(
       }
 
       const replacement = parseEventComponent(override, {
-        id: idFactory(),
+        id: mintId(),
         calendarId: context.calendarId,
         defaultTimezone: context.defaultTimezone,
         now,
@@ -186,7 +208,7 @@ export function importCalendarFromIcs(
       events.push(replacement);
       eventExceptions.push(
         parseEventException({
-          id: idFactory(),
+          id: mintId(),
           eventId: source.id,
           occurrence,
           isCancelled: false,

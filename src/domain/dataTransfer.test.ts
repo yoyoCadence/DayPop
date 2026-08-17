@@ -430,6 +430,87 @@ describe('ICS import adds without touching what is there', () => {
   });
 });
 
+describe('two UIDs that share a UUID prefix', () => {
+  /**
+   * `UUID_PREFIX` in `ics.ts` drops the `@domain` half of a UID, so these two
+   * genuinely different series derive the same master id. Before the fix the
+   * second one took over: the collision renaming maps by original id, so the
+   * first series' exceptions were reattached to the second — and because both
+   * are valid recurring events the document still validated. A silent
+   * misattribution, not an error.
+   */
+  const shared = '12345678-1234-4234-8234-123456789abc';
+  const twoSeries = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//test//EN',
+    // Series A: recurring, with one occurrence cancelled by EXDATE.
+    'BEGIN:VEVENT',
+    `UID:${shared}@a.example`,
+    'DTSTAMP:20260801T000000Z',
+    'DTSTART:20260816T010000Z',
+    'DTEND:20260816T020000Z',
+    'RRULE:FREQ=DAILY;COUNT=3',
+    'EXDATE:20260817T010000Z',
+    'SUMMARY:系列 A',
+    'END:VEVENT',
+    // Series B: same UUID prefix, different domain, with a moved occurrence.
+    'BEGIN:VEVENT',
+    `UID:${shared}@b.example`,
+    'DTSTAMP:20260801T000000Z',
+    'DTSTART:20260816T050000Z',
+    'DTEND:20260816T060000Z',
+    'RRULE:FREQ=DAILY;COUNT=3',
+    'SUMMARY:系列 B',
+    'END:VEVENT',
+    'BEGIN:VEVENT',
+    `UID:${shared}@b.example`,
+    'RECURRENCE-ID:20260817T050000Z',
+    'DTSTAMP:20260801T000000Z',
+    'DTSTART:20260817T090000Z',
+    'DTEND:20260817T100000Z',
+    'SUMMARY:系列 B 改期',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n');
+
+  it('keeps each series distinct and its exceptions on its own master', () => {
+    const current = baseData();
+    const plan = planIcsImport(twoSeries, current, { defaultTimezone: ZONE });
+    const next = applyImportCommand(current, plan.command);
+
+    const seriesA = next.events.find((event) => event.title === '系列 A');
+    const seriesB = next.events.find((event) => event.title === '系列 B');
+    expect(seriesA).toBeDefined();
+    expect(seriesB).toBeDefined();
+    // Two series, two ids — the whole point.
+    expect(seriesA!.id).not.toBe(seriesB!.id);
+
+    // A's cancellation stays on A.
+    const cancelled = next.eventExceptions.filter((exception) => exception.isCancelled);
+    expect(cancelled).toHaveLength(1);
+    expect(cancelled[0]!.eventId).toBe(seriesA!.id);
+
+    // B's moved occurrence stays on B, and points at B's replacement event.
+    const moved = next.eventExceptions.filter((exception) => !exception.isCancelled);
+    expect(moved).toHaveLength(1);
+    expect(moved[0]!.eventId).toBe(seriesB!.id);
+    expect(next.events.find((event) => event.id === moved[0]!.replacementEventId)?.title).toBe(
+      '系列 B 改期',
+    );
+  });
+
+  it('gives every imported row a distinct id', () => {
+    const current = baseData();
+    const plan = planIcsImport(twoSeries, current, { defaultTimezone: ZONE });
+    const next = applyImportCommand(current, plan.command);
+
+    const ids = next.events.map((event) => event.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
 describe('replace fails closed when the account still has attachments', () => {
   function withAttachment(): DayPopUserData {
     const data = populated();

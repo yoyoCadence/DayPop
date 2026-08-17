@@ -459,11 +459,6 @@ function renameIncomingCollisions(
     // while its exception keeps pointing at the old one — which is now the
     // user's own event, so their row would be shown in place of an occurrence
     // it has nothing to do with.
-    // `replacementEventId` has to follow the rename as well. Leaving it alone
-    // was the worse half of the same bug: the imported event moves to a new id
-    // while its exception keeps pointing at the old one — which is now the
-    // user's own event, so their row would be shown in place of an occurrence
-    // it has nothing to do with.
     if (!exception.isCancelled) {
       const replacementEventId =
         eventIdMap.get(exception.replacementEventId) ?? exception.replacementEventId;
