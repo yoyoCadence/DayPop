@@ -56,6 +56,7 @@ import {
   type EventAttachment,
   type TodoItem,
 } from '../domain/types';
+import type { ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
 import type { Database } from '../lib/database.types';
 import type { DayPopRepository, EventAttachmentRepository } from './repository';
@@ -67,6 +68,17 @@ import type { DayPopRepository, EventAttachmentRepository } from './repository';
  * server said no" (RLS, offline, constraint) apart from "the row we received
  * does not match the domain contract".
  */
+/**
+ * Thrown when an import is attempted against an account before the atomic
+ * RPCs exist — DP-056. Refusing keeps the account untouched.
+ */
+export class ImportUnavailableError extends Error {
+  constructor(readonly kind: ImportCommand['kind']) {
+    super('登入帳號的匯入功能尚未開放：需要資料庫端的原子匯入，尚未部署。請先在未登入狀態使用，或稍後再試。');
+    this.name = 'ImportUnavailableError';
+  }
+}
+
 export class RemoteDataError extends Error {
   constructor(
     readonly operation: string,
@@ -399,6 +411,23 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     );
     if (error || !row) throw new RemoteDataError('寫入偏好', error);
     return this.#commit({ ...data, preferences: preferencesFromRow(row) });
+  }
+
+  /**
+   * DP-056 — not wired to a database yet.
+   *
+   * Applying an import to an account means replacing or appending across nine
+   * tables **atomically**; anything less can leave the account half-imported.
+   * This client cannot do that with row-level writes, so the owner-approved
+   * design puts it in two RPCs (`replace_daypop_data` / `append_daypop_ics`)
+   * added by a migration that has not shipped yet.
+   *
+   * Until it does this refuses, loudly and before touching anything. The
+   * alternative — looping the existing row writes — is exactly the
+   * half-applied import the decision forbids.
+   */
+  importData(command: ImportCommand): Promise<DayPopUserData> {
+    return Promise.reject(new ImportUnavailableError(command.kind));
   }
 
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {

@@ -78,5 +78,6 @@ const AUTH_INITIALIZING_REPOSITORY: DayPopRepository = {
   addCalendar: unavailable,
   updateCalendar: unavailable,
   deleteCalendar: unavailable,
+  importData: unavailable,
   updatePreferences: unavailable,
 };

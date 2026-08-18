@@ -27,6 +27,7 @@ import {
   type PreferencesPatch,
 } from '../domain/mutations';
 import { createDomainId, type DayPopUserData } from '../domain/types';
+import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
 import type { DayPopRepository, SyncLoadCapable } from '../data/repository';
 import { getAppStorage, type StorageLike } from './browserStorage';
@@ -168,6 +169,18 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
       ...data,
       preferences: applyPreferencesPatch(data.preferences, patch),
     }));
+  }
+
+  /**
+   * DP-056. Goes through the same `#mutate` barrier as every other edit, which
+   * is what the import decision asks for: re-read the versioned envelope,
+   * refuse if it is not `ready`, apply to *that* data rather than to the
+   * snapshot the preview was built from, validate the whole document, and
+   * write once. `applyImportCommand` throws on a document it cannot produce, so
+   * a failed import never reaches `writeUserData()`.
+   */
+  importData(command: ImportCommand): Promise<DayPopUserData> {
+    return this.#mutate((data) => applyImportCommand(data, command));
   }
 
   async #mutate(
