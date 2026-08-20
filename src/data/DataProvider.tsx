@@ -145,6 +145,11 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       updatePreferences(patch) {
         run(() => activeRepository.updatePreferences(patch));
       },
+      async importData(command) {
+        // Awaited so the preview sheet can report the outcome, and queued so it
+        // cannot overtake an edit already in flight.
+        await enqueue(() => activeRepository.importData(command));
+      },
       async uploadEventAttachment(eventId, file) {
         if (!canManageEventAttachments(activeRepository)) {
           throw new Error('附件只會保存到登入帳號的私人雲端空間。');
