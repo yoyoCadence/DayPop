@@ -5,18 +5,27 @@
 -- fails part-way leaves the account half-imported. Both operations therefore
 -- live in one function each, so the whole thing commits or none of it does.
 --
--- Shape and guards deliberately mirror `import_legacy_daypop`: the same row
--- limits, `security invoker` with an empty `search_path`, and an
--- `authenticated`-only grant. The owner is always `auth.uid()`; an `owner_id`
--- in the payload is neither read nor trusted.
+-- Guards mirror `import_legacy_daypop`: the same row limits, `security invoker`
+-- with an empty `search_path`, and an `authenticated`-only grant. The owner is
+-- always `auth.uid()`; an `owner_id` in the payload is neither read nor trusted.
 --
 -- The per-collection key allowlist is written out in each function body rather
 -- than shared. `daypop_private.jsonb_array_has_unknown_keys` was dropped when
 -- the legacy RPC moved to `security invoker`, because a function running as the
--- caller cannot execute a helper in a schema the caller has no rights to.
+-- caller cannot execute a helper in a schema the caller has no rights to, and
+-- widening that schema's privileges for two RPCs is not worth it.
+--
+-- **Missing keys must fail closed.** `jsonb_typeof(p_payload -> 'absent')` is
+-- SQL NULL, and `if NULL then ... end if` takes neither branch, so a check
+-- written as "reject when the type is wrong" lets `{}` through — and `{}` would
+-- reach the deletes and empty the account. Every shape test below is therefore
+-- written as "require the exact type" and wrapped in `coalesce(..., false)`.
 --
 -- Neither function touches `profiles`, the legacy import marker, Auth identity,
--- `event_attachments` or `attachment_cleanup_jobs`.
+-- `event_attachments`, `event_attendees` or `attachment_cleanup_jobs`. The two
+-- tables that are *not* in the portable payload — attachments and attendees —
+-- would be destroyed by the event cascade, so a replace refuses while either
+-- still has rows rather than deleting data no backup carries.
 
 create or replace function public.replace_daypop_data(
   p_payload jsonb
@@ -29,6 +38,9 @@ as $$
 declare
   account_id uuid := (select auth.uid());
   attachment_count integer;
+  attendee_count integer;
+  default_calendar_count integer;
+  preference_keys text[];
 begin
   if account_id is null then
     raise exception 'Authentication is required for import'
@@ -55,14 +67,18 @@ begin
       using errcode = '22023';
   end if;
 
-  if pg_catalog.jsonb_typeof(p_payload -> 'calendars') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'events') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'event_exceptions') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'todos') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'stickers') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'preferences') <> 'object'
-  then
-    raise exception 'Import collections have invalid shapes'
+  -- Required *and* exactly typed. See the note above on why this is phrased
+  -- positively and coalesced.
+  if not coalesce(
+    pg_catalog.jsonb_typeof(p_payload -> 'calendars') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'events') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'event_exceptions') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'todos') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'stickers') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences') = 'object',
+    false
+  ) then
+    raise exception 'Import payload is missing a required collection or has an invalid shape'
       using errcode = '22023';
   end if;
 
@@ -122,21 +138,111 @@ begin
         where not (object_key.key = any (collection.allowed_keys))
       )
     end
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_object_keys(p_payload -> 'preferences') as preference_key(key)
-    where key not in (
-      'timezone', 'week_starts_on', 'theme', 'theme_id',
-      'fixed_six_week_grid', 'default_reminder_minutes', 'pet_name', 'pet_enabled'
-    )
   ) then
     raise exception 'Import payload contains unsupported or sensitive fields'
       using errcode = '22023';
   end if;
 
-  -- Re-checked here rather than trusting the screen's snapshot: a backup file
-  -- carries no attachments, so replacing the document would either strand the
-  -- metadata rows or destroy files in private Storage. Refuse instead.
+  -- Preferences are replaced wholesale, so every key has to be present. A
+  -- partial patch here would silently keep values the backup did not contain.
+  select coalesce(pg_catalog.array_agg(key), array[]::text[])
+  into preference_keys
+  from pg_catalog.jsonb_object_keys(p_payload -> 'preferences') as preference_key(key);
+
+  if not (
+    preference_keys @> array[
+      'default_reminder_minutes', 'fixed_six_week_grid', 'pet_enabled', 'pet_name',
+      'theme', 'theme_id', 'timezone', 'week_starts_on'
+    ]::text[]
+    and coalesce(pg_catalog.array_length(preference_keys, 1), 0) = 8
+  ) then
+    raise exception 'Import preferences must contain exactly the supported keys'
+      using errcode = '22023';
+  end if;
+
+  if not coalesce(
+    pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'default_reminder_minutes') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'timezone') = 'string'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'theme') = 'string'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'theme_id') = 'string'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'pet_name') = 'string'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'week_starts_on') = 'number'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'fixed_six_week_grid') = 'boolean'
+      and pg_catalog.jsonb_typeof(p_payload -> 'preferences' -> 'pet_enabled') = 'boolean',
+    false
+  ) then
+    raise exception 'Import preferences have invalid value types'
+      using errcode = '22023';
+  end if;
+
+  -- Cross-row invariants the canonical document guarantees. An unknown-key
+  -- allowlist alone would accept a document the App cannot open.
+  if pg_catalog.jsonb_array_length(p_payload -> 'calendars') < 1 then
+    raise exception 'Import must contain at least one calendar'
+      using errcode = '22023';
+  end if;
+
+  select count(*) filter (where imported.is_default)
+  into default_calendar_count
+  from pg_catalog.jsonb_to_recordset(p_payload -> 'calendars') as imported(is_default boolean);
+
+  if default_calendar_count <> 1 then
+    raise exception 'Import must contain exactly one default calendar, found %',
+      default_calendar_count
+      using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'calendars') as imported(
+      id uuid, name text, color text, is_visible boolean, sort_order integer
+    )
+    where imported.id is null or imported.name is null or imported.color is null
+      or imported.is_visible is null or imported.sort_order is null
+  ) or exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
+      id uuid, calendar_id uuid, title text, is_all_day boolean, timezone text
+    )
+    where imported.id is null or imported.calendar_id is null or imported.title is null
+      or imported.is_all_day is null or imported.timezone is null
+  ) or exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'event_exceptions') as imported(
+      id uuid, event_id uuid, is_cancelled boolean
+    )
+    where imported.id is null or imported.event_id is null or imported.is_cancelled is null
+  ) or exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'todos') as imported(
+      id uuid, calendar_id uuid, title text, priority text, sort_order integer
+    )
+    where imported.id is null or imported.calendar_id is null or imported.title is null
+      or imported.priority is null or imported.sort_order is null
+  ) or exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'stickers') as imported(
+      id uuid, calendar_id uuid, sticker_date date, sort_order integer
+    )
+    where imported.id is null or imported.calendar_id is null
+      or imported.sticker_date is null or imported.sort_order is null
+  ) then
+    raise exception 'Import contains a row missing a required field'
+      using errcode = '23502';
+  end if;
+
+  -- Locked before the attachment and attendee counts, not after: a concurrent
+  -- `finalize_event_attachment_upload` inserts into `event_attachments`, which
+  -- needs a FOR KEY SHARE lock on its parent event row. Taking FOR UPDATE on
+  -- this account's events first makes that wait, so an attachment cannot appear
+  -- between the count and the delete and lose its cleanup job. The other tab
+  -- this protects against is real — the DataProvider queue is per document, not
+  -- per account.
+  perform 1
+  from public.events event
+  where event.owner_id = account_id
+  for update;
+
   select count(*) into attachment_count
   from public.event_attachments attachment
   where attachment.owner_id = account_id;
@@ -147,10 +253,21 @@ begin
       using errcode = '23503';
   end if;
 
+  -- Attendees are not in the portable payload either, and the event cascade
+  -- would delete them without any backup carrying them. Refuse for the same
+  -- reason as attachments until the contract covers them.
+  select count(*) into attendee_count
+  from public.event_attendees attendee
+  where attendee.owner_id = account_id;
+
+  if attendee_count > 0 then
+    raise exception 'Account still has % attendee row(s); import would delete them',
+      attendee_count
+      using errcode = '23503';
+  end if;
+
   -- Children before parents so foreign keys stay satisfied inside the
-  -- transaction. Only this owner's portable rows; attachments and their cleanup
-  -- jobs are never in scope, and the count check above guarantees there are
-  -- none to consider.
+  -- transaction.
   delete from public.stickers where owner_id = account_id;
   delete from public.todos where owner_id = account_id;
   delete from public.event_exceptions where owner_id = account_id;
@@ -177,7 +294,8 @@ begin
   )
   select
     id, account_id, calendar_id, title, is_all_day, start_date, end_date,
-    starts_at, ends_at, timezone, location, notes, reminder_minutes,
+    starts_at, ends_at, timezone, location, notes,
+    coalesce(reminder_minutes, array[]::integer[]),
     recurrence_rule, coalesce(sharing_scope, 'inherit')
   from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
     id uuid,
@@ -266,17 +384,16 @@ begin
     sort_order integer
   );
 
+  -- Assigned outright, never coalesced against the current row: this is a
+  -- restore, so `default_reminder_minutes: []` has to clear the list rather
+  -- than quietly keep whatever was there before.
   update public.user_preferences
   set
-    timezone = coalesce(p_payload -> 'preferences' ->> 'timezone', timezone),
-    week_starts_on = coalesce(
-      (p_payload -> 'preferences' ->> 'week_starts_on')::integer, week_starts_on
-    ),
-    theme = coalesce(p_payload -> 'preferences' ->> 'theme', theme),
-    theme_id = coalesce(p_payload -> 'preferences' ->> 'theme_id', theme_id),
-    fixed_six_week_grid = coalesce(
-      (p_payload -> 'preferences' ->> 'fixed_six_week_grid')::boolean, fixed_six_week_grid
-    ),
+    timezone = p_payload -> 'preferences' ->> 'timezone',
+    week_starts_on = (p_payload -> 'preferences' ->> 'week_starts_on')::integer,
+    theme = p_payload -> 'preferences' ->> 'theme',
+    theme_id = p_payload -> 'preferences' ->> 'theme_id',
+    fixed_six_week_grid = (p_payload -> 'preferences' ->> 'fixed_six_week_grid')::boolean,
     default_reminder_minutes = coalesce(
       (
         select pg_catalog.array_agg(minutes.value::integer)
@@ -284,12 +401,10 @@ begin
           p_payload -> 'preferences' -> 'default_reminder_minutes'
         ) as minutes(value)
       ),
-      default_reminder_minutes
+      array[]::integer[]
     ),
-    pet_name = coalesce(p_payload -> 'preferences' ->> 'pet_name', pet_name),
-    pet_enabled = coalesce(
-      (p_payload -> 'preferences' ->> 'pet_enabled')::boolean, pet_enabled
-    )
+    pet_name = p_payload -> 'preferences' ->> 'pet_name',
+    pet_enabled = (p_payload -> 'preferences' ->> 'pet_enabled')::boolean
   where user_id = account_id;
 
   if not found then
@@ -331,10 +446,12 @@ begin
       using errcode = '22023';
   end if;
 
-  if pg_catalog.jsonb_typeof(p_payload -> 'events') <> 'array'
-    or pg_catalog.jsonb_typeof(p_payload -> 'event_exceptions') <> 'array'
-  then
-    raise exception 'ICS append collections have invalid shapes'
+  if not coalesce(
+    pg_catalog.jsonb_typeof(p_payload -> 'events') = 'array'
+      and pg_catalog.jsonb_typeof(p_payload -> 'event_exceptions') = 'array',
+    false
+  ) then
+    raise exception 'ICS append is missing a required collection or has an invalid shape'
       using errcode = '22023';
   end if;
 
@@ -376,10 +493,27 @@ begin
         where not (object_key.key = any (collection.allowed_keys))
       )
     end
-  )
   ) then
     raise exception 'ICS append payload contains unsupported or sensitive fields'
       using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
+      id uuid, calendar_id uuid, title text, is_all_day boolean, timezone text
+    )
+    where imported.id is null or imported.calendar_id is null or imported.title is null
+      or imported.is_all_day is null or imported.timezone is null
+  ) or exists (
+    select 1
+    from pg_catalog.jsonb_to_recordset(p_payload -> 'event_exceptions') as imported(
+      id uuid, event_id uuid, is_cancelled boolean
+    )
+    where imported.id is null or imported.event_id is null or imported.is_cancelled is null
+  ) then
+    raise exception 'ICS append contains a row missing a required field'
+      using errcode = '23502';
   end if;
 
   -- The calendar must already belong to this account. RLS would reject a
@@ -387,13 +521,12 @@ begin
   if exists (
     select 1
     from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(calendar_id uuid)
-    where imported.calendar_id is null
-      or not exists (
-        select 1
-        from public.calendars calendar
-        where calendar.id = imported.calendar_id
-          and calendar.owner_id = account_id
-      )
+    where not exists (
+      select 1
+      from public.calendars calendar
+      where calendar.id = imported.calendar_id
+        and calendar.owner_id = account_id
+    )
   ) then
     raise exception 'ICS append references a calendar this account does not own'
       using errcode = '23503';
@@ -406,7 +539,8 @@ begin
   )
   select
     id, account_id, calendar_id, title, is_all_day, start_date, end_date,
-    starts_at, ends_at, timezone, location, notes, reminder_minutes,
+    starts_at, ends_at, timezone, location, notes,
+    coalesce(reminder_minutes, array[]::integer[]),
     recurrence_rule, coalesce(sharing_scope, 'inherit')
   from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
     id uuid,

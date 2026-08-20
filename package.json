@@ -15,6 +15,7 @@
     "build": "tsc -b && vite build",
     "postbuild": "node scripts/copy-spa-fallback.mjs",
     "check:build": "node scripts/check-build-assets.mjs",
+    "check:migrations": "node scripts/check-migrations.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
