@@ -7,8 +7,17 @@ import { join } from 'node:path';
  * CI never builds a database, so a migration that does not parse reaches review
  * — an `IF EXISTS (...)` with one bracket too many did exactly that in DP-056.
  * This is not a SQL parser and does not pretend to be one; it catches the
- * bracket, quote and block mistakes that hand-written PL/pgSQL actually makes,
- * which is the class of error that got through.
+ * bracket and quote mistakes that hand-written PL/pgSQL actually makes, which
+ * is the class of error that got through.
+ *
+ * **This is a structural lint, not a SQL parser, and it does not replace a local
+ * reset or the rollback DB tests.** It says brackets and dollar-quoted blocks
+ * balance; it says nothing about whether the SQL means anything.
+ *
+ * A `begin`/`if`/`end` token counter was tried and removed: it reported three
+ * existing, working migrations as unbalanced, so it would have produced exactly
+ * the kind of untrustworthy signal this file exists to avoid. Block structure is
+ * left to the database.
  *
  * String literals, dollar-quoted bodies and `--` comments are stripped before
  * counting, so an apostrophe or a bracket inside text never trips it.
@@ -130,24 +139,6 @@ for (const name of readdirSync(DIR).filter((file) => file.endsWith('.sql')).sort
       );
     }
 
-    // Every `begin`, `if`, `case` and `loop` closes with exactly one `end`
-    // token (`end;`, `end if`, `end case`, `end loop`), so counting openers
-    // against `end` catches a missing or surplus one. `elsif`/`else` are not
-    // openers. Counted on the stripped body, so keywords inside strings and
-    // comments do not register.
-    const words = inner.text.toLowerCase().match(/[a-z_]+/g) ?? [];
-    let open = 0;
-    for (let i = 0; i < words.length; i += 1) {
-      const word = words[i];
-      if (word === 'end') open -= 1;
-      else if (word === 'begin' || word === 'case' || word === 'loop') open += 1;
-      else if (word === 'if' && words[i - 1] !== 'end') open += 1;
-    }
-    if (open !== 0) {
-      problems.push(
-        `${name}: ${open > 0 ? open + ' unclosed' : -open + ' extra'} begin/if/case block(s) in the body starting at line ${body.line}`,
-      );
-    }
   }
 }
 
@@ -158,4 +149,6 @@ if (problems.length > 0) {
 }
 
 const count = readdirSync(DIR).filter((file) => file.endsWith('.sql')).length;
-console.log(`Migration check passed: ${count} files, brackets and blocks balanced.`);
+console.log(
+  `Migration check passed: ${count} files, brackets and dollar-quoted blocks balanced.`,
+);
