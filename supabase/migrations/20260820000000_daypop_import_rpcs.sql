@@ -194,54 +194,80 @@ begin
 
   if exists (
     select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'calendars') as imported(
-      id uuid, name text, color text, is_visible boolean, sort_order integer
-    )
-    where imported.id is null or imported.name is null or imported.color is null
-      or imported.is_visible is null or imported.sort_order is null
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
-      id uuid, calendar_id uuid, title text, is_all_day boolean, timezone text
-    )
-    where imported.id is null or imported.calendar_id is null or imported.title is null
-      or imported.is_all_day is null or imported.timezone is null
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'event_exceptions') as imported(
-      id uuid, event_id uuid, is_cancelled boolean
-    )
-    where imported.id is null or imported.event_id is null or imported.is_cancelled is null
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'todos') as imported(
-      id uuid, calendar_id uuid, title text, priority text, sort_order integer
-    )
-    where imported.id is null or imported.calendar_id is null or imported.title is null
-      or imported.priority is null or imported.sort_order is null
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'stickers') as imported(
-      id uuid, calendar_id uuid, sticker_date date, sort_order integer
-    )
-    where imported.id is null or imported.calendar_id is null
-      or imported.sticker_date is null or imported.sort_order is null
+    from (
+      values
+        (
+          'calendars',
+          array['id', 'name', 'color', 'is_visible', 'is_default', 'sort_order']::text[]
+        ),
+        (
+          'events',
+          array['id', 'calendar_id', 'title', 'is_all_day', 'start_date', 'end_date', 'starts_at', 'ends_at', 'timezone', 'location', 'notes', 'reminder_minutes', 'recurrence_rule', 'sharing_scope']::text[]
+        ),
+        (
+          'event_exceptions',
+          array['id', 'event_id', 'occurrence_date', 'occurrence_starts_at', 'is_cancelled', 'replacement_event_id']::text[]
+        ),
+        (
+          'todos',
+          array['id', 'calendar_id', 'parent_id', 'title', 'due_date', 'priority', 'completed_at', 'sort_order', 'sharing_scope']::text[]
+        ),
+        (
+          'stickers',
+          array['id', 'calendar_id', 'sticker_date', 'glyph', 'asset_key', 'sort_order']::text[]
+        )
+    ) as collection(name, required_keys)
+    cross join lateral pg_catalog.jsonb_array_elements(
+      p_payload -> collection.name
+    ) as element(value)
+    where pg_catalog.jsonb_typeof(element.value) <> 'object'
+      or not (
+        select coalesce(pg_catalog.array_agg(object_key.key), array[]::text[])
+        from pg_catalog.jsonb_object_keys(element.value) as object_key(key)
+      ) @> collection.required_keys
   ) then
-    raise exception 'Import contains a row missing a required field'
+    raise exception 'Import row is missing a required field'
       using errcode = '23502';
   end if;
 
-  -- Locked before the attachment and attendee counts, not after: a concurrent
-  -- `finalize_event_attachment_upload` inserts into `event_attachments`, which
-  -- needs a FOR KEY SHARE lock on its parent event row. Taking FOR UPDATE on
-  -- this account's events first makes that wait, so an attachment cannot appear
-  -- between the count and the delete and lose its cleanup job. The other tab
-  -- this protects against is real — the DataProvider queue is per document, not
-  -- per account.
-  perform 1
-  from public.events event
-  where event.owner_id = account_id
-  for update;
+  if exists (
+    select 1
+    from pg_catalog.jsonb_array_elements(p_payload -> 'events') as element(value)
+    where case
+      when pg_catalog.jsonb_typeof(element.value -> 'is_all_day') <> 'boolean' then true
+      when (element.value ->> 'is_all_day')::boolean then
+        -- All-day: dates carry the occurrence, the instant columns must be null.
+        pg_catalog.jsonb_typeof(element.value -> 'start_date') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'end_date') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'starts_at') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'ends_at') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'timezone') <> 'null'
+      else
+        -- Timed: instants plus a timezone, and no date columns.
+        pg_catalog.jsonb_typeof(element.value -> 'starts_at') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'ends_at') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'timezone') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'start_date') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'end_date') <> 'null'
+    end
+  ) then
+    raise exception 'Event rows must match the all-day or timed shape'
+      using errcode = '22023';
+  end if;
+
+  -- A row lock is not enough here. FOR UPDATE only locks rows that already
+  -- exist, so another session can still insert a *new* event and finalize an
+  -- attachment on it between the count and the delete — the cleanup job is
+  -- consumed by the finalize, the cascade then removes the metadata, and the
+  -- Storage object is orphaned. That is a predicate gap, and closing it needs a
+  -- lock over the whole relation rather than over the rows read.
+  --
+  -- SHARE conflicts with ROW EXCLUSIVE, so while this transaction holds it no
+  -- session anywhere can insert, update or delete in these two tables; readers
+  -- are unaffected. It is coarse, and deliberately so: an import is rare, runs
+  -- for a moment, and the alternative is an advisory lock that every writer of
+  -- both tables would have to remember to take.
+  lock table public.event_attachments, public.event_attendees in share mode;
 
   select count(*) into attachment_count
   from public.event_attachments attachment
@@ -277,7 +303,7 @@ begin
   insert into public.calendars (
     id, owner_id, name, color, is_visible, is_default, sort_order
   )
-  select id, account_id, name, color, is_visible, coalesce(is_default, false), sort_order
+  select id, account_id, name, color, is_visible, is_default, sort_order
   from pg_catalog.jsonb_to_recordset(p_payload -> 'calendars') as imported(
     id uuid,
     name text,
@@ -294,9 +320,8 @@ begin
   )
   select
     id, account_id, calendar_id, title, is_all_day, start_date, end_date,
-    starts_at, ends_at, timezone, location, notes,
-    coalesce(reminder_minutes, array[]::integer[]),
-    recurrence_rule, coalesce(sharing_scope, 'inherit')
+    starts_at, ends_at, timezone, location, notes, reminder_minutes,
+    recurrence_rule, sharing_scope
   from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
     id uuid,
     calendar_id uuid,
@@ -337,7 +362,7 @@ begin
   )
   select
     id, account_id, calendar_id, parent_id, title, due_date, priority,
-    completed_at, sort_order, coalesce(sharing_scope, 'inherit')
+    completed_at, sort_order, sharing_scope
   from pg_catalog.jsonb_to_recordset(p_payload -> 'todos') as imported(
     id uuid,
     calendar_id uuid,
@@ -357,7 +382,7 @@ begin
   )
   select
     id, account_id, calendar_id, parent_id, title, due_date, priority,
-    completed_at, sort_order, coalesce(sharing_scope, 'inherit')
+    completed_at, sort_order, sharing_scope
   from pg_catalog.jsonb_to_recordset(p_payload -> 'todos') as imported(
     id uuid,
     calendar_id uuid,
@@ -500,20 +525,53 @@ begin
 
   if exists (
     select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
-      id uuid, calendar_id uuid, title text, is_all_day boolean, timezone text
-    )
-    where imported.id is null or imported.calendar_id is null or imported.title is null
-      or imported.is_all_day is null or imported.timezone is null
-  ) or exists (
-    select 1
-    from pg_catalog.jsonb_to_recordset(p_payload -> 'event_exceptions') as imported(
-      id uuid, event_id uuid, is_cancelled boolean
-    )
-    where imported.id is null or imported.event_id is null or imported.is_cancelled is null
+    from (
+      values
+        (
+          'events',
+          array['id', 'calendar_id', 'title', 'is_all_day', 'start_date', 'end_date', 'starts_at', 'ends_at', 'timezone', 'location', 'notes', 'reminder_minutes', 'recurrence_rule', 'sharing_scope']::text[]
+        ),
+        (
+          'event_exceptions',
+          array['id', 'event_id', 'occurrence_date', 'occurrence_starts_at', 'is_cancelled', 'replacement_event_id']::text[]
+        )
+    ) as collection(name, required_keys)
+    cross join lateral pg_catalog.jsonb_array_elements(
+      p_payload -> collection.name
+    ) as element(value)
+    where pg_catalog.jsonb_typeof(element.value) <> 'object'
+      or not (
+        select coalesce(pg_catalog.array_agg(object_key.key), array[]::text[])
+        from pg_catalog.jsonb_object_keys(element.value) as object_key(key)
+      ) @> collection.required_keys
   ) then
-    raise exception 'ICS append contains a row missing a required field'
+    raise exception 'ICS append row is missing a required field'
       using errcode = '23502';
+  end if;
+
+  if exists (
+    select 1
+    from pg_catalog.jsonb_array_elements(p_payload -> 'events') as element(value)
+    where case
+      when pg_catalog.jsonb_typeof(element.value -> 'is_all_day') <> 'boolean' then true
+      when (element.value ->> 'is_all_day')::boolean then
+        -- All-day: dates carry the occurrence, the instant columns must be null.
+        pg_catalog.jsonb_typeof(element.value -> 'start_date') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'end_date') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'starts_at') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'ends_at') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'timezone') <> 'null'
+      else
+        -- Timed: instants plus a timezone, and no date columns.
+        pg_catalog.jsonb_typeof(element.value -> 'starts_at') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'ends_at') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'timezone') <> 'string'
+        or pg_catalog.jsonb_typeof(element.value -> 'start_date') <> 'null'
+        or pg_catalog.jsonb_typeof(element.value -> 'end_date') <> 'null'
+    end
+  ) then
+    raise exception 'Event rows must match the all-day or timed shape'
+      using errcode = '22023';
   end if;
 
   -- The calendar must already belong to this account. RLS would reject a
@@ -539,9 +597,8 @@ begin
   )
   select
     id, account_id, calendar_id, title, is_all_day, start_date, end_date,
-    starts_at, ends_at, timezone, location, notes,
-    coalesce(reminder_minutes, array[]::integer[]),
-    recurrence_rule, coalesce(sharing_scope, 'inherit')
+    starts_at, ends_at, timezone, location, notes, reminder_minutes,
+    recurrence_rule, sharing_scope
   from pg_catalog.jsonb_to_recordset(p_payload -> 'events') as imported(
     id uuid,
     calendar_id uuid,
