@@ -9,7 +9,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(39);
 
 -- Two accounts, so cross-account isolation can be checked.
 insert into auth.users (id, email)
@@ -387,6 +387,38 @@ select is(
 );
 
 delete from public.event_attendees where owner_id = 'aaaaaaaa-0000-4000-8000-000000000001';
+
+insert into public.event_attachments (
+  id, owner_id, event_id, object_path, file_name, mime_type, size_bytes
+)
+values (
+  'eeeeeeee-0000-4000-8000-000000000002',
+  'aaaaaaaa-0000-4000-8000-000000000001',
+  'dddddddd-0000-4000-8000-000000000001',
+  'aaaaaaaa-0000-4000-8000-000000000001/dddddddd-0000-4000-8000-000000000001/eeeeeeee-0000-4000-8000-000000000002',
+  'agenda.pdf',
+  'application/pdf',
+  6
+);
+
+select throws_ok(
+  $$select public.replace_daypop_data(pg_temp.payload('bbbbbbbb-0000-4000-8000-000000000001'))$$,
+  '23503',
+  null,
+  'replace refuses while attachment rows exist'
+);
+select is(
+  (select count(*)::int from public.event_attachments where owner_id = 'aaaaaaaa-0000-4000-8000-000000000001'),
+  1,
+  'the attachment row is still there after the refusal'
+);
+select is(
+  (select count(*)::int from public.events where id = 'dddddddd-0000-4000-8000-000000000001'),
+  1,
+  'the attachment parent event is still there, so the whole call rolled back'
+);
+
+delete from public.event_attachments where owner_id = 'aaaaaaaa-0000-4000-8000-000000000001';
 
 -- ------------------------------------------------------------ append (ics) ---
 
