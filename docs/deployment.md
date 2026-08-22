@@ -174,16 +174,16 @@ git push origin rollback/staging
 
 這份清單是 DP-033 的實際驗收；在 staging 網址上逐項確認：
 
-- [ ] `https://yoyocadence.github.io/DayPop/` 開得起來，四個分頁都在。
-- [ ] DevTools Network 沒有 404；所有資源都在 `/DayPop/` 底下。
-- [ ] Application → Service workers：scope 是 `https://yoyocadence.github.io/DayPop/`。
-- [ ] Application → Manifest：可安裝，圖示齊全，`start_url` 與 `scope` 都是 `/DayPop/`。
-- [ ] 重新整理不會 404；隨便打一個 `/DayPop/xxx` 也會回到 App（`404.html`）。
-- [ ] 設定分頁顯示「目前版本 v0.3.0」，且展得開 release note（代表 `version.json` 與 bundle 版本一致）。
-- [ ] 遊客模式可建立行程與待辦，重新載入後還在。
-- [ ] Email 註冊 → 收到驗證信 → 連結導回 `/DayPop/` 而不是網域根目錄。
-- [ ] 登入後建立資料 → 登出 → 重新登入，資料仍在（DP-034 的資料保存 smoke test 也需要這一項）。
-- [ ] Console 沒有 CSP violation。
+- [x] `https://yoyocadence.github.io/DayPop/` 開得起來，四個分頁都在。
+- [x] DevTools Network 沒有 404；所有資源都在 `/DayPop/` 底下。
+- [x] Application → Service workers：scope 是 `https://yoyocadence.github.io/DayPop/`。
+- [x] Application → Manifest：可安裝，圖示齊全，`start_url` 與 `scope` 都是 `/DayPop/`。
+- [x] 重新整理不會 404；隨便打一個 `/DayPop/xxx` 也會回到 App（`404.html`）。
+- [x] 設定分頁顯示「目前版本 v0.3.0」，且展得開 release note（代表 `version.json` 與 bundle 版本一致）。
+- [x] 遊客模式可建立行程與待辦，重新載入後還在。
+- [x] Email 註冊 → 收到驗證信 → 連結導回 `/DayPop/` 而不是網域根目錄。
+- [x] 登入後建立資料 → 登出 → 重新登入，資料仍在（DP-034 的資料保存 smoke test 也需要這一項）。
+- [x] Console 沒有 CSP violation。
 
 > 上面兩項需要真實 Email 帳號的檢查，與 **DP-023** 的 end-to-end 驗收是同一件事。
 >
@@ -206,7 +206,7 @@ git push origin rollback/staging
 | CSP violation | 0 |
 | 離開 `/DayPop/` 範圍的同源請求 | 0 |
 
-**尚未驗證**：需要真實 Email 帳號的註冊、驗證信 redirect、登入後資料保存（歸 **DP-023**），以及實機瀏覽器 QA（歸 **DP-032**）。因此目前**不能**宣稱已達可開始日常使用的驗收點。
+**2026-08-22 補驗完成**：專案擁有者以真實 Email 帳號完成註冊、收信、驗證連結導回 `/DayPop/#`、帳號 bootstrap、建立行程後顯示「已同步」、登出回到原 guest 資料、同帳號重登與 reload 後遠端行程仍存在；另完成 Google OAuth client／最小 `openid`、Email、profile scopes／Supabase provider 設定，以同 Email Google identity 登入、redirect、identity linking、同步與 session restore 全數通過。Google 目前保留 Supabase 預設 callback hostname；專案擁有者知悉 account chooser 會顯示隨機 project ref，並定案熟人使用階段接受，品牌化 custom domain 延後。DP-023 與 DP-033 的驗收條件至此完成，待本次 signup 終態修正 PR 合併後結案；實機瀏覽器 QA（DP-032）與正式上線清單（DP-034）仍未完成，因此目前仍**不能**宣稱已達可開始日常使用的驗收點。
 
 ### 5.2 已知行為：SPA fallback 會回 404 狀態碼，且深層網址的相對連結會解析錯
 
@@ -232,7 +232,7 @@ git push origin rollback/staging
 
 **影響範圍有限但真實**：DayPop 目前沒有 router，正常入口與 Supabase 的 redirect 目標一律是 `/DayPop/` 本身（200），所以登入流程不受影響。真正會踩到的是使用者手動打錯網址、外部連結指向深層路徑，或日後加入路由時。
 
-**目前 staging 上的站台仍是修正前的版本** —— DP-068 合併後要重新部署一次才會生效。
+**DP-068 已於 2026-08-16 隨部署上線**；深層 fallback 的三個手寫 public link 現在都保留 `/DayPop/` base。
 
 ### 5.3 實測到的 response headers
 
@@ -244,3 +244,7 @@ git push origin rollback/staging
 | `cache-control` | `max-age=600` |
 
 證實了 §1 說的限制：Pages 不供應這兩個安全 header，所以 `frame-ancestors` 目前確實沒有涵蓋。
+
+### 5.4 Google OAuth 的已知品牌差異
+
+Google account chooser 目前會顯示 Supabase 預設的 `<project-ref>.supabase.co` callback hostname，而不是 DayPop 網址；這是 Supabase 預設 OAuth domain 的既有行為，不是 redirect drift。Google Cloud project 僅要求 `openid`、`userinfo.email`、`userinfo.profile` 三個基本登入 scope，Client Secret 只保存於 Google／Supabase 的 server-side 設定與專案擁有者的密碼管理器，未進 repo、前端環境變數或對話紀錄。專案擁有者已定案熟人使用階段保留 provider；若日後面向一般使用者，應先評估自有網域與 Supabase paid custom-domain add-on，再把新 callback URI 加到 Google client 後啟用，不能直接改掉既有 callback。

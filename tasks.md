@@ -74,6 +74,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（**仍待版本提升**）。決策內容分別寫在各任務條目裡。
 >
 > **DP-064、DP-068、DP-071 與 DP-070 的修正已於 2026-08-16 一併部署到 staging**（deploy run 的 head 為 `3f404d03`，即當時的 `main`），並已對線上實測跨午夜呈現無誤；版號仍是 0.3.0，未重新產生 `version.json`／`sw.js`。目前仍**卡在真機／真實帳號**的有 DP-032 與 DP-023。DP-035 與 DP-056 均已完成並移入 Done。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+>
+> **2026-08-22 Auth 驗收更新**：DP-023／033 的真實 Email／Google redirect、identity linking、帳號保存、登出隔離、重登與 reload 均已通過。驗收發現 signup 成功後 form 與密碼仍留在畫面，本修正 PR 會清空 credentials 並改為不可重複提交的完成狀態；兩項維持 In Progress 到 PR 合併，再一起移入 Done。未使用 Supabase MCP、未查正式帳號資料、未更動 schema。
 
 - 目前沒有待起的任務。DP-064 已完成並移入 Done；它衍生的 DP-072（跨午夜事件在週格的拖曳）放在 Backlog，因為要先定義多日事件跨欄拖曳的語意，屬新的產品決策。
   > **2026-08-22 更新**：DP-035 與 DP-056 均已完成並移入 Done。DP-073（冷啟動兩次版本檢查）仍在 Backlog —— 成因在 `SessionDataProvider` 的 keyed remount，修法有兩個各有取捨的方向，要先定案。
