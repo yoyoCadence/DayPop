@@ -88,4 +88,50 @@ describe('ThemeProvider', () => {
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content'))
       .toBe('#f4ede1');
   });
+
+  // DP-074. The page canvas cannot read `var(--bg)` — the theme tokens live on
+  // `.dp-preview`, which is a descendant of the element being painted. These
+  // pin the one property that closes that gap; without it the canvas falls back
+  // to a fixed colour that no theme can change, which is the original defect.
+  it('publishes the theme background as --canvas-bg on the root element', async () => {
+    const data = createEmptyUserData();
+    data.preferences.theme = 'system';
+    data.preferences.themeId = 'warm';
+    writeUserData(data, 0);
+
+    await act(async () => {
+      root.render(
+        <DataProvider>
+          <ThemeProvider><Probe /></ThemeProvider>
+        </DataProvider>,
+      );
+    });
+
+    // Same values the theme-color meta gets: the canvas and the OS chrome must
+    // not disagree about what colour the app is.
+    expect(document.documentElement.style.getPropertyValue('--canvas-bg')).toBe('#241d17');
+
+    dark = false;
+    await act(async () => changeListener?.());
+
+    expect(document.documentElement.style.getPropertyValue('--canvas-bg')).toBe('#f4ede1');
+  });
+
+  it('removes --canvas-bg on unmount so it cannot outlive the provider', async () => {
+    writeUserData(createEmptyUserData(), 0);
+
+    await act(async () => {
+      root.render(
+        <DataProvider>
+          <ThemeProvider><Probe /></ThemeProvider>
+        </DataProvider>,
+      );
+    });
+    expect(document.documentElement.style.getPropertyValue('--canvas-bg')).not.toBe('');
+
+    await act(async () => root.unmount());
+    root = createRoot(container);
+
+    expect(document.documentElement.style.getPropertyValue('--canvas-bg')).toBe('');
+  });
 });

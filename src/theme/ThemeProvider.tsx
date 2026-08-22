@@ -14,6 +14,9 @@ export interface ThemeProviderProps {
   children: ReactNode;
 }
 
+/** Consumed by `shell.css` to paint the page canvas — see the effect below. */
+const CANVAS_BG_PROPERTY = '--canvas-bg';
+
 /**
  * Resolves the persisted theme preferences owned by `DataProvider`.
  * `system` follows the live media query; explicit light/dark never does.
@@ -53,11 +56,27 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const previousMeta = meta?.content;
     const previousScheme = document.documentElement.style.colorScheme;
+    const previousCanvas = document.documentElement.style.getPropertyValue(CANVAS_BG_PROPERTY);
     if (meta) meta.content = value.palette.bg;
     document.documentElement.style.colorScheme = resolvedMode;
+    // The theme tokens live on `.dp-preview`, so the page canvas — which is an
+    // ancestor — cannot reach `var(--bg)`. Publishing one dedicated property on
+    // the root element is what lets `shell.css` paint the canvas in the active
+    // theme. A dedicated name rather than the token set itself: `--muted`,
+    // `--surface`, `--line` and `--accent` collide with the scaffold's own
+    // `:root` declarations in `styles.css`, and hoisting all of them would put
+    // those four into a cascade fight that the scaffold blocks would lose.
+    // A custom property rather than an inline `background-color`: that would
+    // beat every stylesheet rule and take the canvas away from CSS — DP-074.
+    document.documentElement.style.setProperty(CANVAS_BG_PROPERTY, value.palette.bg);
     return () => {
       if (meta && previousMeta !== undefined) meta.content = previousMeta;
       document.documentElement.style.colorScheme = previousScheme;
+      if (previousCanvas) {
+        document.documentElement.style.setProperty(CANVAS_BG_PROPERTY, previousCanvas);
+      } else {
+        document.documentElement.style.removeProperty(CANVAS_BG_PROPERTY);
+      }
     };
   }, [resolvedMode, value.palette.bg]);
 
