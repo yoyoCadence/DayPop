@@ -62,10 +62,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | ~~15~~ | ~~DP-019 PWA 安裝圖示~~ | 不使用 | 已完成；Apple touch／PNG／maskable icon 已產生並提交。 |
 | ~~16~~ | ~~DP-065 release version／notes~~ | 不使用 | 已完成；專案擁有者定案 v0.3.0「完整日曆與雲端保存」。 |
 | ~~17~~ | ~~DP-033 GitHub Pages staging~~ | 不使用 | 已完成。2026-08-13 部署到 `https://yoyocadence.github.io/DayPop/`；最後兩項需要真實帳號的登入 smoke test 已於 2026-08-22 由專案擁有者補驗通過，修正 PR #59 合併後結案。 |
-| **18** | **DP-032 行動裝置 QA** | **不使用** | **進行中。**模擬環境第一輪已完成（[`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)），發現 DP-069／070／071；真機 iOS Safari／Android Chrome 與螢幕閱讀器仍待專案擁有者操作。 |
+| **18** | **DP-032 行動裝置 QA** | **不使用** | **進行中。**模擬環境第一輪已完成（[`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)），發現 DP-069／070／071。真機第二輪已在 iPhone 15 Pro Max 完成 iOS 端四項驗收並開出 DP-074〜079（[`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)）；**仍待專案擁有者的是 Android Chrome、螢幕閱讀器與實體鍵盤三項**。 |
 | 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。 |
 
-> DP-023 剩餘的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作。負責 DP-023 的 agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
+> DP-023 的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作；**三項均已於 2026-08-22 完成，DP-023 已結案**。這條規則保留給日後同類的人工設定檢查點：agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
 
 > 進入 MCP 階段後仍禁止透過 MCP 直接執行 DDL、禁止 remote reset，也不得查改正式使用者資料。MCP 只用於任務必要的專案狀態檢查、read-only schema／advisor 驗證與安全測試；所有 schema 變更必須先存在於 migration 檔並由可追蹤的 migration workflow 套用。
 
@@ -73,7 +73,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（**仍待版本提升**）。決策內容分別寫在各任務條目裡。
 >
-> **DP-064、DP-068、DP-071 與 DP-070 的修正已於 2026-08-16 一併部署到 staging**（deploy run 的 head 為 `3f404d03`，即當時的 `main`），並已對線上實測跨午夜呈現無誤；版號仍是 0.3.0，未重新產生 `version.json`／`sw.js`。目前仍**卡在真機／真實帳號**的有 DP-032 與 DP-023。DP-035 與 DP-056 均已完成並移入 Done。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
+> **DP-064、DP-068、DP-071 與 DP-070 的修正已於 2026-08-16 一併部署到 staging**（deploy run 的 head 為 `3f404d03`，即當時的 `main`），並已對線上實測跨午夜呈現無誤；版號仍是 0.3.0，未重新產生 `version.json`／`sw.js`。DP-023 已於 2026-08-22 結案，目前仍**卡在真機**的只剩 DP-032（且只剩 Android、螢幕閱讀器與實體鍵盤三項）。DP-035 與 DP-056 均已完成並移入 Done。DP-014 剩下的設定區塊（寵物、一般偏好）本身就卡在 DP-018 的偏好寫入路徑，不能繞過。
 >
 > **2026-08-22 Auth 驗收更新**：DP-023／033 的真實 Email／Google redirect、identity linking、帳號保存、登出隔離、重登與 reload 均已通過。驗收發現 signup 成功後 form 與密碼仍留在畫面，修正 PR 清空 credentials 並改為不可重複提交的完成狀態。**該 PR（#59）已由專案擁有者於 2026-08-22 合併，DP-023 與 DP-033 已一併移入 Done**；發布 runway 只剩 DP-032 真機 QA → DP-034 正式上線檢查。未使用 Supabase MCP、未查正式帳號資料、未更動 schema。
 
@@ -82,7 +82,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 - [ ] **DP-032 — 行動裝置 QA 與無障礙：** **第一輪（模擬環境）已完成**，報告見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)。以 Playwright Chromium 在 393×852 觸控、412×915 觸控與 1280×900 三種 viewport 對 staging 實測。**通過**：3 viewport × 4 分頁水平溢出全部 0px、沒有小於 24×24 的互動元素、實際按 Tab 走訪的 30 個元素全部有 `2px solid` 焦點框且 `:focus-visible` 成立、sheet 有 `role=dialog`／`aria-modal`／`aria-label` 且開啟後 focus 在內、Escape 可關閉、viewport meta 沒有封鎖縮放、`env(safe-area-inset-*)` 與 `@media (prefers-reduced-motion: reduce)` 都有實作、console 全程 0 error／0 warning。**發現三項**：日期格佔滿 tab 順序（DP-069，高）、農曆 8px 對比 2.81:1（DP-070，中，屬原稿逐行移植故另立決策）、沒有 h1 與 `main` landmark（DP-071，低）。**剩下的是真實裝置**，agent 無法涵蓋、需要專案擁有者操作實體裝置：iOS Safari 的瀏海／home indicator safe area 與加到主畫面後的外觀（含 DP-019 圖示）、Android Chrome 的安裝橫幅與 maskable 裁切、週檢視在真實觸控下的拖曳手感、VoiceOver／TalkBack 走訪，以及外接鍵盤。清單見報告 §4；完成前本任務不結案。
-  > **2026-08-22 第二輪（真機）已進行，報告見 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)，但仍未結案。** 開工前先把 staging 從 `3f404d03` 重新部署到當時的 `main`（`f7dd158`），並以線上 bundle 的字串比對確認新版真的上線，才開始測。**裝置只有 iPhone 15 Pro Max**，由專案擁有者實機操作。**通過四項**（全部是第一輪量不到的）：動態島不遮住內容、home indicator 不壓住底部分頁列、加到主畫面的圖示外觀（**擁有者目視確認，無截圖佐證**，已在報告註明）、standalone 啟動無 Safari 網址列。**開出五項**：DP-074（畫布底色寫死 `#f7f3ff` 不隨主題變）、DP-075（快速新增不吃中文數字時間，**屬忠實移植故為產品決策**）、DP-076（只給時間時標題為空且儲存靜默失效，**屬偏離原稿**）、DP-077（週檢視拖曳在真機觸控無即時回饋，資料正確）、DP-078／DP-079（橫向沒有版面；轉回直向殘留放大）。**本輪未涵蓋三項，如實記為未測**：Android Chrome（擁有者無此裝置）、螢幕閱讀器 VoiceOver／TalkBack（擁有者決定延後，因此 DP-069 與 DP-071 這兩個專為螢幕閱讀器做的修正**至今仍只在模擬環境驗過**）、實體鍵盤（無裝置）。這三項補齊前 DP-032 維持 In Progress。
+  > **2026-08-22 第二輪（真機）已進行，報告見 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)，但仍未結案。** 開工前先把 staging 從 `3f404d03` 重新部署到當時的 `main`（`f7dd158`），並以線上 bundle 的字串比對確認新版真的上線，才開始測。**裝置只有 iPhone 15 Pro Max**，由專案擁有者實機操作。**通過四項**（全部是第一輪量不到的）：動態島不遮住內容、home indicator 不壓住底部分頁列、加到主畫面的圖示外觀（**擁有者目視確認，無截圖佐證**，已在報告註明）、standalone 啟動無 Safari 網址列。**開出六項**：DP-074（畫布底色寫死 `#f7f3ff` 不隨主題變）、DP-075（快速新增不吃中文數字時間，**屬忠實移植故為產品決策**）、DP-076（只給時間時標題為空且儲存靜默失效，**屬偏離原稿**）、DP-077（週檢視拖曳在真機觸控無即時回饋，資料正確）、DP-078（橫向沒有版面）、DP-079（轉回直向殘留放大）。**本輪未涵蓋三項，如實記為未測**：Android Chrome（擁有者無此裝置）、螢幕閱讀器 VoiceOver／TalkBack（擁有者決定延後，因此 DP-069 與 DP-071 這兩個專為螢幕閱讀器做的修正**至今仍只在模擬環境驗過**）、實體鍵盤（無裝置）。這三項補齊前 DP-032 維持 In Progress。
 
 ## Backlog
 

@@ -84,7 +84,7 @@
 - Storage 與 Postgres 無法共享 transaction，因此 upload 先建立 cleanup job、傳 binary，再原子 finalize metadata；附件／事件刪除先原子 enqueue 並移除 metadata，再由 Storage API remove，失敗保留 queue 給下次 load retry。Object path 不含檔名，private 下載 URL 只存活 60 秒；guest 不提供附件 capability。
 - 第一輪 repo rollback pgTAP 發現 delete RPC 的 `ON CONFLICT DO NOTHING` 會觸發 queue row 的 RLS visibility，導致 owner delete 被拒絕。因第 12 檔已套用，沒有回寫歷史；第 13 檔 `20260809085514_fix_attachment_cleanup_enqueue.sql` 由專案擁有者再次 dry-run／push，以追加函式修正 enqueue。
 - 正式 postflight 為 repo／remote 正好 13 檔、10 張 public tables RLS 全開、security advisor 0、generated TypeScript types 18,354 字元一致；repo `attachment_storage.test.sql` 36／36 rollback pgTAP 通過，固定假 auth users、metadata 與 Storage objects 殘留均為 0。本機 39 files／330 tests 與五項品質命令全通過。
-- DP-028 後沒有立即需要 Supabase MCP 的任務。下一項是**不使用 MCP**的 DP-030 Playwright e2e；接著依 `tasks.md` 完成 DP-019、DP-065、DP-033、DP-032、DP-034 的 GitHub Pages／日常使用 release runway。DP-023 剩餘 Google provider 與 redirect allowlist 是專案擁有者人工設定，不是 MCP schema 工作。未來若進入 Edge Function（DP-043）或家庭群組 schema／RLS（DP-047／048），agent 才應再次提醒專案擁有者切回可使用 MCP 的階段。
+- DP-028 後沒有立即需要 Supabase MCP 的任務。下一項是**不使用 MCP**的 DP-030 Playwright e2e；接著依 `tasks.md` 完成 DP-019、DP-065、DP-033、DP-032、DP-034 的 GitHub Pages／日常使用 release runway。**2026-08-22 更新：DP-019、DP-065、DP-033 與 DP-023 均已完成，runway 只剩 DP-032（真機 QA，仍差 Android、螢幕閱讀器與實體鍵盤）與 DP-034。**DP-023 的 Google provider 與 redirect allowlist 是專案擁有者人工設定、不是 MCP schema 工作，該三項已於 2026-08-22 設定完成。未來若進入 Edge Function（DP-043）或家庭群組 schema／RLS（DP-047／048），agent 才應再次提醒專案擁有者切回可使用 MCP 的階段。
 
 ## 0.8 DP-056 Supabase 階段完成後更新（2026-08-22）
 
@@ -118,7 +118,7 @@ CI（`.github/workflows/ci.yml`）在 PR 與 `main` 的 push 上跑同樣五項�
 - Supabase security advisor：0 警告。
 - `src/lib/database.types.ts` 是 generated types，與上述 migration 一致。
 
-**尚未完成、且不屬於 MCP schema 工作的人工設定**（DP-023 剩餘部分）：Google OAuth client、Supabase 的 Google provider 開關、production redirect allowlist。需要時提醒專案擁有者自行設定，**不得要求或輸出任何 secret 值**。
+**不屬於 MCP schema 工作的人工設定**（原 DP-023 剩餘部分）：Google OAuth client、Supabase 的 Google provider 開關、production redirect allowlist。**三項均已於 2026-08-22 由專案擁有者完成，DP-023 已結案。**規則保留給日後同類設定：需要時提醒專案擁有者自行設定，**不得要求或輸出任何 secret 值**。
 
 ---
 
