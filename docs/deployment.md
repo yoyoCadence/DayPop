@@ -111,7 +111,7 @@ Supabase Dashboard → **Authentication → URL Configuration**：
 
 沒有這一項，Email 驗證信與密碼重設連結會被 Supabase 拒絕或導回錯誤網址。
 
-> Google OAuth client 與 provider 啟用仍屬 **DP-023** 的未完成項；在那之前 App 只顯示 Email 登入，這是正常的。
+> **2026-08-22 更新：Google OAuth client 與 Supabase provider 已啟用**（DP-023 結案），App 的登入畫面因此同時提供 Email 與 Google。已知的 callback hostname 品牌差異見 §5.4。
 
 ### 3.4 觸發部署
 
@@ -206,7 +206,7 @@ git push origin rollback/staging
 | CSP violation | 0 |
 | 離開 `/DayPop/` 範圍的同源請求 | 0 |
 
-**2026-08-22 補驗完成**：專案擁有者以真實 Email 帳號完成註冊、收信、驗證連結導回 `/DayPop/#`、帳號 bootstrap、建立行程後顯示「已同步」、登出回到原 guest 資料、同帳號重登與 reload 後遠端行程仍存在；另完成 Google OAuth client／最小 `openid`、Email、profile scopes／Supabase provider 設定，以同 Email Google identity 登入、redirect、identity linking、同步與 session restore 全數通過。Google 目前保留 Supabase 預設 callback hostname；專案擁有者知悉 account chooser 會顯示隨機 project ref，並定案熟人使用階段接受，品牌化 custom domain 延後。DP-023 與 DP-033 的驗收條件至此完成，待本次 signup 終態修正 PR 合併後結案；實機瀏覽器 QA（DP-032）與正式上線清單（DP-034）仍未完成，因此目前仍**不能**宣稱已達可開始日常使用的驗收點。
+**2026-08-22 補驗完成**：專案擁有者以真實 Email 帳號完成註冊、收信、驗證連結導回 `/DayPop/#`、帳號 bootstrap、建立行程後顯示「已同步」、登出回到原 guest 資料、同帳號重登與 reload 後遠端行程仍存在；另完成 Google OAuth client／最小 `openid`、Email、profile scopes／Supabase provider 設定，以同 Email Google identity 登入、redirect、identity linking、同步與 session restore 全數通過。Google 目前保留 Supabase 預設 callback hostname；專案擁有者知悉 account chooser 會顯示隨機 project ref，並定案熟人使用階段接受，品牌化 custom domain 延後。DP-023 與 DP-033 的驗收條件至此完成；signup 終態修正 PR #59 已於 2026-08-22 由專案擁有者合併，**兩項任務均已移入 Done**。實機瀏覽器 QA（DP-032）與正式上線清單（DP-034）仍未完成，因此目前仍**不能**宣稱已達可開始日常使用的驗收點。
 
 ### 5.2 已知行為：SPA fallback 會回 404 狀態碼，且深層網址的相對連結會解析錯
 
