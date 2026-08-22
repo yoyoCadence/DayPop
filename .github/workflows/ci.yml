@@ -47,6 +47,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check Supabase migrations parse structurally
+        run: npm run check:migrations
+
       - name: Unit tests
         run: npm run test
 

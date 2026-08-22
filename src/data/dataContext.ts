@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { ImportCommand } from '../domain/dataTransfer';
 import type {
   CalendarPatch,
   EventPatch,
@@ -53,6 +54,15 @@ export interface DataActions {
   uploadEventAttachment(eventId: string, file: File): Promise<void>;
   deleteEventAttachment(id: string): Promise<void>;
   createEventAttachmentUrl(id: string): Promise<string>;
+  /**
+   * Applies a confirmed import — DP-056.
+   *
+   * Awaitable, unlike the row edits above: the screen has to know whether the
+   * import landed before it closes the preview and tells the user how many
+   * rows arrived. It goes through the same mutation queue as everything else,
+   * so it cannot interleave with an edit the user issued a moment earlier.
+   */
+  importData(command: ImportCommand): Promise<void>;
 }
 
 export interface DataContextValue {

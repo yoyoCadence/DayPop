@@ -7,6 +7,7 @@ import type {
   NewTodoInput,
   PreferencesPatch,
 } from '../domain/mutations';
+import type { ImportCommand } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
 
 /**
@@ -46,6 +47,19 @@ export interface DayPopRepository {
    */
   deleteCalendar(id: string): Promise<DayPopUserData>;
   updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData>;
+  /**
+   * Applies a confirmed import — DP-056.
+   *
+   * Takes the command rather than a finished document on purpose. The plan is
+   * built when the preview is shown, and the data can legitimately change
+   * before the user confirms; an adapter therefore applies the command to
+   * whatever it reads at commit time. There is deliberately **no** general
+   * `save(document)` on this contract, because that is the shape that lets a
+   * stale snapshot overwrite newer rows.
+   *
+   * All-or-nothing: on failure the stored data is left exactly as it was.
+   */
+  importData(command: ImportCommand): Promise<DayPopUserData>;
 }
 
 /** Optional binary boundary implemented only by the authenticated adapter. */

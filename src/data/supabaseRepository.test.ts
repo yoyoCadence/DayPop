@@ -12,6 +12,7 @@ const CALENDAR = '33333333-3333-4333-8333-333333333333';
 const EVENT = '44444444-4444-4444-8444-444444444444';
 const TODO = '55555555-5555-4555-8555-555555555555';
 const ATTACHMENT = '66666666-6666-4666-8666-666666666666';
+const IMPORT_CALENDAR = '77777777-7777-4777-8777-777777777777';
 
 function calendarRow(overrides: FakeRow = {}): FakeRow {
   return {
@@ -411,5 +412,108 @@ describe('SupabaseDayPopRepository writes', () => {
     db.rejections.clear();
     const reloaded = await repository.load();
     expect(reloaded.events.map((event) => event.title)).toEqual(['既有會議']);
+  });
+
+  it('replaces account data through one RPC and reloads the server snapshot', async () => {
+    const { db, repository } = bootstrapped();
+    const current = await repository.load();
+    const calendar = {
+      ...current.calendars[0]!,
+      id: IMPORT_CALENDAR,
+      name: '還原的日曆',
+    };
+
+    const data = await repository.importData({
+      kind: 'replace',
+      data: {
+        calendars: [calendar],
+        events: [],
+        eventExceptions: [],
+        todos: [],
+        stickers: [],
+        preferences: { ...current.preferences, petName: '備份夥伴' },
+      },
+    });
+
+    expect(db.rpcCalls.at(-1)?.name).toBe('replace_daypop_data');
+    const payload = db.rpcCalls.at(-1)?.args.p_payload as Record<string, unknown>;
+    expect(payload).not.toHaveProperty('owner_id');
+    expect((payload.calendars as FakeRow[])[0]).toEqual(
+      expect.objectContaining({ id: IMPORT_CALENDAR, name: '還原的日曆' }),
+    );
+    expect((payload.calendars as FakeRow[])[0]).not.toHaveProperty('owner_id');
+    expect((payload.calendars as FakeRow[])[0]).not.toHaveProperty('created_at');
+    expect(payload.preferences).not.toHaveProperty('user_id');
+    expect(data.calendars[0]).toMatchObject({
+      id: IMPORT_CALENDAR,
+      name: '還原的日曆',
+      updatedAt: db.serverTime,
+    });
+    expect(data.preferences.petName).toBe('備份夥伴');
+  });
+
+  it('renames an incoming ICS collision before the append RPC', async () => {
+    const { db, repository } = bootstrapped();
+    const current = await repository.load();
+    const incoming = {
+      ...current.events[0]!,
+      title: '匯入的同 ID 行程',
+    };
+
+    const data = await repository.importData({
+      kind: 'appendIcs',
+      events: [incoming],
+      eventExceptions: [],
+    });
+
+    const call = db.rpcCalls.at(-1);
+    expect(call?.name).toBe('append_daypop_ics');
+    const payload = call?.args.p_payload as { events: FakeRow[]; event_exceptions: FakeRow[] };
+    expect(payload.events).toHaveLength(1);
+    expect(payload.events[0]?.id).not.toBe(EVENT);
+    expect(payload.events[0]).not.toHaveProperty('owner_id');
+    expect(payload.event_exceptions).toEqual([]);
+    expect(data.events.map((event) => event.title)).toEqual([
+      '既有會議',
+      '匯入的同 ID 行程',
+    ]);
+    expect(new Set(data.events.map((event) => event.id)).size).toBe(2);
+  });
+
+  it('keeps the previous snapshot when the import RPC is rejected', async () => {
+    const { db, repository } = bootstrapped();
+    const current = await repository.load();
+    db.failures.set('rpc:append_daypop_ics', 'new row violates row-level security policy');
+
+    await expect(
+      repository.importData({
+        kind: 'appendIcs',
+        events: [{ ...current.events[0]!, id: OTHER_OWNER, title: '不應落地' }],
+        eventExceptions: [],
+      }),
+    ).rejects.toThrow(RemoteDataError);
+
+    db.failures.clear();
+    expect((await repository.updateEvent(EVENT, { title: '仍可編輯既有快照' })).events).toEqual([
+      expect.objectContaining({ id: EVENT, title: '仍可編輯既有快照' }),
+    ]);
+    expect(db.rpcCalls.filter((call) => call.name === 'append_daypop_ics')).toHaveLength(1);
+  });
+
+  it('does not trust the submitted payload when the post-RPC reload fails', async () => {
+    const { db, repository } = bootstrapped();
+    const current = await repository.load();
+    db.failures.set('events', 'reload unavailable');
+
+    await expect(
+      repository.importData({
+        kind: 'appendIcs',
+        events: [{ ...current.events[0]!, id: OTHER_OWNER, title: '遠端已匯入' }],
+        eventExceptions: [],
+      }),
+    ).rejects.toThrow(RemoteDataError);
+
+    expect(db.rows('events').map((row) => row.title)).toEqual(['既有會議', '遠端已匯入']);
+    expect(db.rpcCalls.filter((call) => call.name === 'append_daypop_ics')).toHaveLength(1);
   });
 });

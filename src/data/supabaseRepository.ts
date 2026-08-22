@@ -5,6 +5,7 @@ import {
   eventAttachmentFromRow,
   eventAttachmentToInsert,
   eventExceptionFromRow,
+  eventExceptionToInsert,
   eventFromRow,
   eventToInsert,
   preferencesFromRow,
@@ -56,8 +57,9 @@ import {
   type EventAttachment,
   type TodoItem,
 } from '../domain/types';
+import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
-import type { Database } from '../lib/database.types';
+import type { Database, Json } from '../lib/database.types';
 import type { DayPopRepository, EventAttachmentRepository } from './repository';
 
 /**
@@ -401,6 +403,32 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     return this.#commit({ ...data, preferences: preferencesFromRow(row) });
   }
 
+  /**
+   * Applies a confirmed import through the two DP-056 atomic RPCs.
+   *
+   * The command is applied against the repository snapshot at commit time so
+   * an ICS id collision is renamed on the incoming side. The database repeats
+   * the shape, ownership and attachment/attendee guards; after it commits, the
+   * adapter reloads the canonical rows instead of trusting the submitted
+   * payload. A failed RPC or reload therefore never advances this snapshot.
+   */
+  async importData(command: ImportCommand): Promise<DayPopUserData> {
+    const current = this.#requireSnapshot();
+    const applied = applyImportCommand(current, command);
+    const operation = command.kind === 'replace' ? '還原備份' : '匯入 iCalendar';
+    const request =
+      command.kind === 'replace'
+        ? this.client.rpc('replace_daypop_data', {
+            p_payload: replaceImportPayload(applied, this.userId),
+          })
+        : this.client.rpc('append_daypop_ics', {
+            p_payload: appendImportPayload(current, applied, this.userId),
+          });
+    const { error } = await requestRemote(operation, request);
+    if (error) throw new RemoteDataError(operation, error);
+    return this.load();
+  }
+
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {
     const { data, error } = await requestRemote(
       '寫入日曆',
@@ -489,6 +517,46 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     if (!this.#snapshot) throw new Error('請先呼叫 load() 再進行編輯。');
     return this.#snapshot;
   }
+}
+
+/** Maps canonical values to the exact snake_case allowlist accepted by the RPC. */
+function replaceImportPayload(data: DayPopUserData, ownerId: string): Json {
+  return {
+    calendars: data.calendars.map((calendar) =>
+      omitKey(calendarToInsert(calendar, ownerId), 'owner_id'),
+    ),
+    events: data.events.map((event) => omitKey(eventToInsert(event, ownerId), 'owner_id')),
+    event_exceptions: data.eventExceptions.map((exception) =>
+      omitKey(eventExceptionToInsert(exception, ownerId), 'owner_id'),
+    ),
+    todos: data.todos.map((todo) => omitKey(todoToInsert(todo, ownerId), 'owner_id')),
+    stickers: data.stickers.map((sticker) =>
+      omitKey(stickerToInsert(sticker, ownerId), 'owner_id'),
+    ),
+    preferences: omitKey(preferencesToInsert(data.preferences, ownerId), 'user_id'),
+  };
+}
+
+/** Only the newly appended suffix belongs in the ICS RPC payload. */
+function appendImportPayload(
+  before: DayPopUserData,
+  after: DayPopUserData,
+  ownerId: string,
+): Json {
+  return {
+    events: after.events
+      .slice(before.events.length)
+      .map((event) => omitKey(eventToInsert(event, ownerId), 'owner_id')),
+    event_exceptions: after.eventExceptions
+      .slice(before.eventExceptions.length)
+      .map((exception) => omitKey(eventExceptionToInsert(exception, ownerId), 'owner_id')),
+  };
+}
+
+function omitKey<Row extends object, Key extends keyof Row>(row: Row, key: Key): Omit<Row, Key> {
+  const copy = { ...row };
+  delete copy[key];
+  return copy;
 }
 
 /** Turns a PostgREST `{ data, error }` pair into rows or a `RemoteDataError`. */

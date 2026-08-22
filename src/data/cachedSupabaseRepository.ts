@@ -8,6 +8,7 @@ import type {
   NewTodoInput,
   PreferencesPatch,
 } from '../domain/mutations';
+import type { ImportCommand } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
 import type { Database } from '../lib/database.types';
 import {
@@ -129,6 +130,15 @@ export class CachedSupabaseDayPopRepository
 
   async updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.updatePreferences(patch));
+  }
+
+  /**
+   * DP-056. The cache is only written from what the remote returns, never
+   * from the command or a locally applied document: if the RPC fails, the
+   * cached snapshot has to stay exactly as it was.
+   */
+  async importData(command: ImportCommand): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.importData(command));
   }
 
   #persist(data: DayPopUserData): DayPopUserData {

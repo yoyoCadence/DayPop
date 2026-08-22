@@ -87,6 +87,7 @@ describe('DataProvider concurrent writes', () => {
       updateCalendar: pending,
       deleteCalendar: pending,
       updatePreferences: pending,
+      importData: pending,
     };
 
     seen.length = 0;
@@ -156,6 +157,7 @@ describe('DataProvider concurrent writes', () => {
       updateCalendar: pending,
       deleteCalendar: pending,
       updatePreferences: pending,
+      importData: pending,
     };
 
     seen.length = 0;

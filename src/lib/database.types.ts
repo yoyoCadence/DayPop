@@ -459,6 +459,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      append_daypop_ics: { Args: { p_payload: Json }; Returns: undefined }
       delete_event_attachment_with_cleanup: {
         Args: { p_attachment_id: string }
         Returns: boolean
@@ -498,6 +499,7 @@ export type Database = {
         Args: { p_fingerprint: string; p_payload: Json }
         Returns: Json
       }
+      replace_daypop_data: { Args: { p_payload: Json }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

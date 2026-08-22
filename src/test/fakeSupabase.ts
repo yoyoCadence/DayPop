@@ -23,6 +23,8 @@ export class FakeSupabase {
   readonly rejections = new Map<string, string>();
   /** Every write the adapter attempted, for asserting what reached the wire. */
   readonly writes: { table: string; row: FakeRow }[] = [];
+  /** Every RPC call, including its serialized argument payload. */
+  readonly rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
   readonly objects = new Map<string, Blob>();
   /** Server-controlled timestamp handed to inserted rows. */
   serverTime = '2026-08-04T00:00:00.000Z';
@@ -44,8 +46,12 @@ export class FakeSupabase {
   };
 
   async rpc(name: string, args: Record<string, unknown>): Promise<QueryResult> {
+    this.rpcCalls.push({ name, args: structuredClone(args) });
     const failure = this.failures.get(`rpc:${name}`);
     if (failure) return { data: null, error: { message: failure } };
+    if (name === 'replace_daypop_data' || name === 'append_daypop_ics') {
+      return this.#importData(name, args.p_payload);
+    }
     if (name === 'finalize_event_attachment_upload') {
       const metadataFailure = this.failures.get('event_attachments');
       if (metadataFailure) return { data: null, error: { message: metadataFailure } };
@@ -108,6 +114,60 @@ export class FakeSupabase {
     return { data: null, error: { message: `unsupported rpc ${name}` } };
   }
 
+  #importData(name: 'replace_daypop_data' | 'append_daypop_ics', value: unknown): QueryResult {
+    if (!isFakeRow(value)) return { data: null, error: { message: 'invalid import payload' } };
+    const ownerId = this.rows('user_preferences')[0]?.user_id;
+    if (typeof ownerId !== 'string') {
+      return { data: null, error: { message: 'account is not bootstrapped' } };
+    }
+
+    const append = name === 'append_daypop_ics';
+    for (const [payloadKey, table] of [
+      ['events', 'events'],
+      ['event_exceptions', 'event_exceptions'],
+    ] as const) {
+      const incoming = Array.isArray(value[payloadKey]) ? value[payloadKey] : [];
+      const rows = incoming.filter(isFakeRow).map((row) => this.#importRow(row, ownerId));
+      this.tables.set(table, append ? [...this.rows(table), ...rows] : rows);
+    }
+
+    if (!append) {
+      for (const [payloadKey, table] of [
+        ['calendars', 'calendars'],
+        ['todos', 'todos'],
+        ['stickers', 'stickers'],
+      ] as const) {
+        const incoming = Array.isArray(value[payloadKey]) ? value[payloadKey] : [];
+        this.tables.set(
+          table,
+          incoming.filter(isFakeRow).map((row) => this.#importRow(row, ownerId)),
+        );
+      }
+      if (isFakeRow(value.preferences)) {
+        this.tables.set('user_preferences', [
+          {
+            ...value.preferences,
+            user_id: ownerId,
+            created_at: this.rows('user_preferences')[0]?.created_at ?? this.serverTime,
+            updated_at: this.serverTime,
+          },
+        ]);
+      }
+    }
+    return { data: undefined, error: null };
+  }
+
+  #importRow(row: FakeRow, ownerId: string): FakeRow {
+    const stored = {
+      ...row,
+      owner_id: ownerId,
+      created_at: this.serverTime,
+      updated_at: this.serverTime,
+    };
+    this.writes.push({ table: 'rpc-import', row: stored });
+    return stored;
+  }
+
   #queueObject(row: FakeRow) {
     const jobs = this.rows('attachment_cleanup_jobs');
     if (jobs.some((job) => job.object_path === row.object_path)) return;
@@ -127,6 +187,10 @@ export class FakeSupabase {
   asClient(): SupabaseClient<Database> {
     return this as unknown as SupabaseClient<Database>;
   }
+}
+
+function isFakeRow(value: unknown): value is FakeRow {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 type QueryResult = { data: unknown; error: { message: string } | null };
