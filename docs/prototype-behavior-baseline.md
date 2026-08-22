@@ -34,7 +34,7 @@
 | 附件 | 假功能 | 使用 Supabase 私人 Storage、signed URL、限制與 RLS 後才啟用。 |
 | 天氣 | 假功能 | 未選資料來源、權限與失敗體驗前維持停用。 |
 | AI 助理 | 模擬／不安全原型 | 延後；若恢復必須走 server-side／Edge Function，禁止把 API key 放前端。 |
-| 雲端同步狀態 | 原稿是假功能 | 已接上（DP-026）：登入帳號依真實 repository pending／warning 顯示「已同步／同步中／尚未同步」；短暫讀取失敗顯示同帳號最後確認快取與持續警告，寫入失敗不冒充成功。遊客模式仍只顯示本機保存。 |
+| 雲端同步狀態 | 原稿是假功能 | 已接上（DP-026／DP-023）：登入帳號依真實 repository pending／warning 顯示「已同步／同步中／尚未同步」；短暫讀取失敗顯示同帳號最後確認快取與持續警告，寫入失敗不冒充成功。遊客模式仍只顯示本機保存。2026-08-22 已以真實 Email 與 Google 帳號驗證 redirect、identity linking、遠端保存、登出隔離、重登與 reload；Email 註冊成功後改為清除 credentials 並以完成畫面取代表單，不能重複提交。 |
 
 ## DP-030 自動化 browser baseline
 
