@@ -18,10 +18,18 @@
 /* ---------- page ---------- */
 
 html {
-  /* Only visible behind the desktop preview frame; the App viewport paints its
-     own themed background. */
+  /* The page canvas. It is NOT only visible behind the desktop preview frame,
+     which is what the previous comment here claimed and what made the bug easy
+     to miss: on iOS the canvas also shows through in the safe-area strip above
+     the App viewport, and it does not follow the theme on its own because the
+     theme tokens live on `.dp-preview`, a descendant. `--canvas-bg` is
+     published on this element by `ThemeProvider` for exactly that reason; the
+     fallback covers the first paint, before React has mounted and set it.
+     No desktop override is needed: with the preview frame active `.dp-preview`
+     paints its own grey gradient across the whole viewport, so the canvas is
+     not visible there at all — DP-074. */
   background: none;
-  background-color: #0a0a0c;
+  background-color: var(--canvas-bg, #0a0a0c);
   min-height: 100%;
 }
 
