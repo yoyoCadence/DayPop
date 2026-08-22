@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
+import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
+import {
+  backupFileName,
+  buildIcsExport,
+  buildJsonBackup,
+  planIcsImport,
+  planJsonImport,
+  previewTotal,
+  serializeJsonBackup,
+  type ImportPlan,
+} from '../domain/dataTransfer';
 import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
 import { LegacyImportCard } from '../legacy/LegacyImportCard';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
+import { DataImportDialog } from './DataImportDialog';
 import './screens.css';
 import './calendarManage.css';
+import './dataTransfer.css';
 
 export interface SettingsScaffoldScreenProps {
   updater: AppUpdateState;
@@ -39,8 +52,24 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   const { themeId, mode, selectTheme, selectMode } = useTheme();
   const auth = useAuth();
   const { state: dataState } = useDayPopDataState();
-  const { data, addCalendar, updateCalendar, deleteCalendar, updatePreferences } = useDayPopData();
+  const {
+    data,
+    addCalendar,
+    updateCalendar,
+    deleteCalendar,
+    updatePreferences,
+    importData,
+  } = useDayPopData();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<{
+    fileName: string;
+    plan: ImportPlan;
+  } | null>(null);
+  const [transferMessage, setTransferMessage] = useState<string | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+  const icsInputRef = useRef<HTMLInputElement>(null);
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
   const [editing, setEditing] = useState<string | 'new' | null>(null);
 
@@ -82,6 +111,82 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
       await auth.signOut();
     } catch (error) {
       setAuthActionError(error instanceof Error ? error.message : '登出失敗，請稍後再試。');
+    }
+  }
+
+  function exportJson() {
+    setTransferError(null);
+    try {
+      downloadTextFile(
+        backupFileName('json'),
+        serializeJsonBackup(buildJsonBackup(data, { appVersion: updater.currentVersion })),
+        'application/json;charset=utf-8',
+      );
+      setTransferMessage(
+        data.eventAttachments.length > 0
+          ? `已開始下載備份；${data.eventAttachments.length} 個附件未包含在檔案內。`
+          : '已開始下載 DayPop 備份。',
+      );
+    } catch (error) {
+      setTransferError(describeError(error, '建立備份檔案失敗。'));
+    }
+  }
+
+  function exportIcs() {
+    setTransferError(null);
+    try {
+      downloadTextFile(
+        backupFileName('ics'),
+        buildIcsExport(data),
+        'text/calendar;charset=utf-8',
+      );
+      setTransferMessage(`已開始下載 ${data.events.length} 筆行程的 iCalendar 檔案。`);
+    } catch (error) {
+      setTransferError(describeError(error, '建立 iCalendar 檔案失敗。'));
+    }
+  }
+
+  async function chooseImport(kind: 'json' | 'ics', event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    setTransferMessage(null);
+    setTransferError(null);
+    try {
+      const text = await readTextFile(file);
+      const plan =
+        kind === 'json'
+          ? planJsonImport(text, data)
+          : planIcsImport(text, data, {
+              calendarId: data.calendars.find((calendar) => calendar.isDefault)?.id,
+              defaultTimezone: data.preferences.timezone,
+            });
+      setPendingImport({ fileName: file.name, plan });
+    } catch (error) {
+      setTransferError(describeError(error, `無法讀取「${file.name}」。`));
+    } finally {
+      // Selecting the same file again must fire another change event.
+      input.value = '';
+    }
+  }
+
+  async function confirmImport() {
+    if (!pendingImport || importing) return;
+    setImporting(true);
+    setTransferError(null);
+    try {
+      await importData(pendingImport.plan.command);
+      const count = previewTotal(pendingImport.plan.preview);
+      setTransferMessage(
+        pendingImport.plan.preview.mode === 'replace'
+          ? `已從「${pendingImport.fileName}」還原 ${count} 筆資料。`
+          : `已從「${pendingImport.fileName}」匯入 ${count} 筆資料。`,
+      );
+      setPendingImport(null);
+    } catch (error) {
+      setTransferError(describeError(error, '匯入失敗；原有資料沒有被預覽內容覆寫。'));
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -245,6 +350,95 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           <LegacyImportCard />
         </div>
 
+        <div className="dp-section-label">資料備份</div>
+        <div className="data-transfer-actions">
+          <button
+            className="data-transfer-button"
+            type="button"
+            disabled={importing}
+            onClick={exportJson}
+          >
+            ⬇ 匯出資料
+          </button>
+          <button
+            className="data-transfer-button"
+            type="button"
+            disabled={importing}
+            onClick={() => jsonInputRef.current?.click()}
+          >
+            ⬆ 匯入資料
+          </button>
+          <input
+            ref={jsonInputRef}
+            className="data-transfer-json-input"
+            type="file"
+            accept="application/json,.json"
+            aria-label="選擇 DayPop JSON 備份"
+            hidden
+            onChange={(event) => void chooseImport('json', event)}
+          />
+        </div>
+        <p className="data-transfer-help">
+          匯出成 JSON 存到裝置；換手機或清除瀏覽器資料前先備份。備份不含附件，匯入前會先預覽且確認後才取代資料。
+        </p>
+        <div className="data-transfer-actions">
+          <button
+            className="data-transfer-button"
+            type="button"
+            disabled={importing}
+            onClick={exportIcs}
+          >
+            ⬇ 匯出 .ics
+          </button>
+          <button
+            className="data-transfer-button"
+            type="button"
+            disabled={importing}
+            onClick={() => icsInputRef.current?.click()}
+          >
+            ⬆ 匯入 .ics
+          </button>
+          <input
+            ref={icsInputRef}
+            className="data-transfer-ics-input"
+            type="file"
+            accept=".ics,text/calendar"
+            aria-label="選擇 iCalendar 檔案"
+            hidden
+            onChange={(event) => void chooseImport('ics', event)}
+          />
+        </div>
+        <p className="data-transfer-help">
+          .ics 是 Google 日曆、Apple 日曆與 Outlook 等服務共用的格式；匯入只會附加行程，不會取代現有資料。
+        </p>
+        {transferMessage ? (
+          <p className="data-transfer-status" role="status">
+            {transferMessage}
+          </p>
+        ) : null}
+        {transferError && !pendingImport ? (
+          <p className="data-transfer-status error" role="alert">
+            {transferError}
+          </p>
+        ) : null}
+
+        {pendingImport ? (
+          <DataImportDialog
+            fileName={pendingImport.fileName}
+            plan={pendingImport.plan}
+            currentCalendars={data.calendars}
+            busy={importing}
+            error={transferError}
+            onConfirm={() => void confirmImport()}
+            onCancel={() => {
+              if (!importing) {
+                setPendingImport(null);
+                setTransferError(null);
+              }
+            }}
+          />
+        ) : null}
+
         <div className="dp-section-label">版本與更新</div>
         <div className="dp-legacy-scaffold">
           <section className="release-panel">
@@ -277,7 +471,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             <li>寵物：命名、品種與開關</li>
             <li>一般偏好：週起始日、時區、滑動方向</li>
             <li>通知與預設提醒</li>
-            <li>資料匯入匯出與開發／示範資料控制</li>
+            <li>開發／示範資料控制</li>
           </ul>
         </div>
 
@@ -287,4 +481,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
       </div>
     </div>
   );
+}
+
+function describeError(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }

@@ -5,6 +5,7 @@ import {
   eventAttachmentFromRow,
   eventAttachmentToInsert,
   eventExceptionFromRow,
+  eventExceptionToInsert,
   eventFromRow,
   eventToInsert,
   preferencesFromRow,
@@ -56,9 +57,9 @@ import {
   type EventAttachment,
   type TodoItem,
 } from '../domain/types';
-import type { ImportCommand } from '../domain/dataTransfer';
+import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
-import type { Database } from '../lib/database.types';
+import type { Database, Json } from '../lib/database.types';
 import type { DayPopRepository, EventAttachmentRepository } from './repository';
 
 /**
@@ -68,17 +69,6 @@ import type { DayPopRepository, EventAttachmentRepository } from './repository';
  * server said no" (RLS, offline, constraint) apart from "the row we received
  * does not match the domain contract".
  */
-/**
- * Thrown when an import is attempted against an account before the atomic
- * RPCs exist — DP-056. Refusing keeps the account untouched.
- */
-export class ImportUnavailableError extends Error {
-  constructor(readonly kind: ImportCommand['kind']) {
-    super('登入帳號的匯入功能尚未開放：需要資料庫端的原子匯入，尚未部署。請先在未登入狀態使用，或稍後再試。');
-    this.name = 'ImportUnavailableError';
-  }
-}
-
 export class RemoteDataError extends Error {
   constructor(
     readonly operation: string,
@@ -414,20 +404,29 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   }
 
   /**
-   * DP-056 — not wired to a database yet.
+   * Applies a confirmed import through the two DP-056 atomic RPCs.
    *
-   * Applying an import to an account means replacing or appending across nine
-   * tables **atomically**; anything less can leave the account half-imported.
-   * This client cannot do that with row-level writes, so the owner-approved
-   * design puts it in two RPCs (`replace_daypop_data` / `append_daypop_ics`)
-   * added by a migration that has not shipped yet.
-   *
-   * Until it does this refuses, loudly and before touching anything. The
-   * alternative — looping the existing row writes — is exactly the
-   * half-applied import the decision forbids.
+   * The command is applied against the repository snapshot at commit time so
+   * an ICS id collision is renamed on the incoming side. The database repeats
+   * the shape, ownership and attachment/attendee guards; after it commits, the
+   * adapter reloads the canonical rows instead of trusting the submitted
+   * payload. A failed RPC or reload therefore never advances this snapshot.
    */
-  importData(command: ImportCommand): Promise<DayPopUserData> {
-    return Promise.reject(new ImportUnavailableError(command.kind));
+  async importData(command: ImportCommand): Promise<DayPopUserData> {
+    const current = this.#requireSnapshot();
+    const applied = applyImportCommand(current, command);
+    const operation = command.kind === 'replace' ? '還原備份' : '匯入 iCalendar';
+    const request =
+      command.kind === 'replace'
+        ? this.client.rpc('replace_daypop_data', {
+            p_payload: replaceImportPayload(applied, this.userId),
+          })
+        : this.client.rpc('append_daypop_ics', {
+            p_payload: appendImportPayload(current, applied, this.userId),
+          });
+    const { error } = await requestRemote(operation, request);
+    if (error) throw new RemoteDataError(operation, error);
+    return this.load();
   }
 
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {
@@ -518,6 +517,46 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     if (!this.#snapshot) throw new Error('請先呼叫 load() 再進行編輯。');
     return this.#snapshot;
   }
+}
+
+/** Maps canonical values to the exact snake_case allowlist accepted by the RPC. */
+function replaceImportPayload(data: DayPopUserData, ownerId: string): Json {
+  return {
+    calendars: data.calendars.map((calendar) =>
+      omitKey(calendarToInsert(calendar, ownerId), 'owner_id'),
+    ),
+    events: data.events.map((event) => omitKey(eventToInsert(event, ownerId), 'owner_id')),
+    event_exceptions: data.eventExceptions.map((exception) =>
+      omitKey(eventExceptionToInsert(exception, ownerId), 'owner_id'),
+    ),
+    todos: data.todos.map((todo) => omitKey(todoToInsert(todo, ownerId), 'owner_id')),
+    stickers: data.stickers.map((sticker) =>
+      omitKey(stickerToInsert(sticker, ownerId), 'owner_id'),
+    ),
+    preferences: omitKey(preferencesToInsert(data.preferences, ownerId), 'user_id'),
+  };
+}
+
+/** Only the newly appended suffix belongs in the ICS RPC payload. */
+function appendImportPayload(
+  before: DayPopUserData,
+  after: DayPopUserData,
+  ownerId: string,
+): Json {
+  return {
+    events: after.events
+      .slice(before.events.length)
+      .map((event) => omitKey(eventToInsert(event, ownerId), 'owner_id')),
+    event_exceptions: after.eventExceptions
+      .slice(before.eventExceptions.length)
+      .map((exception) => omitKey(eventExceptionToInsert(exception, ownerId), 'owner_id')),
+  };
+}
+
+function omitKey<Row extends object, Key extends keyof Row>(row: Row, key: Key): Omit<Row, Key> {
+  const copy = { ...row };
+  delete copy[key];
+  return copy;
 }
 
 /** Turns a PostgREST `{ data, error }` pair into rows or a `RemoteDataError`. */

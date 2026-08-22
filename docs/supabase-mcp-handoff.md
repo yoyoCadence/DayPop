@@ -92,7 +92,7 @@
 - Postflight 確認遠端／repo 正好 14 檔、10 張 public tables RLS 全開；`replace_daypop_data(jsonb)` 與 `append_daypop_ics(jsonb)` 都是 SECURITY INVOKER、空 `search_path`，只有 `authenticated` 可執行，`anon`／`PUBLIC` 不可執行。Security advisor 仍為 0。
 - Repo `daypop_import.test.sql` 在真實 PostgreSQL 17 執行時抓到兩個 test-only 問題：attendee fixture 把 canonical `needs_action` 誤寫為 `needs-action`，以及 `proconfig` 把空 search path 錯期望為 `search_path=` 而不是 `search_path=""`。修正後 repo 原樣 SQL 與 transaction-local 集中診斷皆為 39／39；固定假 Auth 帳號、profiles／preferences／calendar data、attachments／attendees、cleanup jobs、pgTAP／dblink extension 殘留全部為 0。
 - RPC 成功後確實持有 `event_attachments` 與 `event_attendees` 的 `ShareLock`；`authenticated` 具備取得該 lock 所需的表權限。MCP 會序列化同專案 SQL，所以兩個 MCP call 無法形成真正重疊；改試 transaction-local `dblink` 又被 Supabase 的非 superuser 連線政策要求 DB password／GSSAPI。沒有取得或輸出密碼，也不宣稱真正兩連線 interleaving 已自動化。
-- 遠端重新產生的 TypeScript types 為 LF 18,506 字元；repo 忽略 CRLF 後逐字一致，新增的只有兩支 RPC。DP-056 仍在 In Progress：下一位不需要 MCP 的 agent 應接 authenticated adapter RPC 呼叫與 cache reload／failure tests，再完成設定頁 preview 與 browser IO；不要重做 migration 或把本階段誤標成整個 DP-056 Done。
+- 遠端重新產生的 TypeScript types 為 LF 18,506 字元；repo 忽略 CRLF 後逐字一致，新增的只有兩支 RPC。後續應用層已於同一個 PR 完成：authenticated adapter 只送 allowlist payload，成功後 reload 才更新 account cache，RPC／reload 失敗不寫 cache且不重送；設定頁四個按鈕、preview 與 browser IO 亦已接上。DP-056 現可移入 Done；不需要再使用 MCP 或重做 migration。
 
 ---
 
