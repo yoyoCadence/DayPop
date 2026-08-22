@@ -123,13 +123,21 @@ select is(
   'append_daypop_ics runs as the caller'
 );
 select is(
-  (select proconfig from pg_proc where proname = 'replace_daypop_data'),
-  array['search_path='],
+  (
+    select proconfig[1]
+    from pg_proc
+    where oid = 'public.replace_daypop_data(jsonb)'::regprocedure
+  ),
+  concat('search_path=', chr(34), chr(34)),
   'replace_daypop_data pins an empty search_path'
 );
 select is(
-  (select proconfig from pg_proc where proname = 'append_daypop_ics'),
-  array['search_path='],
+  (
+    select proconfig[1]
+    from pg_proc
+    where oid = 'public.append_daypop_ics(jsonb)'::regprocedure
+  ),
+  concat('search_path=', chr(34), chr(34)),
   'append_daypop_ics pins an empty search_path'
 );
 select ok(
@@ -366,7 +374,7 @@ values (
   'aaaaaaaa-0000-4000-8000-000000000001',
   'dddddddd-0000-4000-8000-000000000001',
   'guest@example.test',
-  'needs-action'
+  'needs_action'
 );
 
 select throws_ok(

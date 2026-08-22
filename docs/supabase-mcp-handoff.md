@@ -86,6 +86,14 @@
 - 正式 postflight 為 repo／remote 正好 13 檔、10 張 public tables RLS 全開、security advisor 0、generated TypeScript types 18,354 字元一致；repo `attachment_storage.test.sql` 36／36 rollback pgTAP 通過，固定假 auth users、metadata 與 Storage objects 殘留均為 0。本機 39 files／330 tests 與五項品質命令全通過。
 - DP-028 後沒有立即需要 Supabase MCP 的任務。下一項是**不使用 MCP**的 DP-030 Playwright e2e；接著依 `tasks.md` 完成 DP-019、DP-065、DP-033、DP-032、DP-034 的 GitHub Pages／日常使用 release runway。DP-023 剩餘 Google provider 與 redirect allowlist 是專案擁有者人工設定，不是 MCP schema 工作。未來若進入 Edge Function（DP-043）或家庭群組 schema／RLS（DP-047／048），agent 才應再次提醒專案擁有者切回可使用 MCP 的階段。
 
+## 0.8 DP-056 Supabase 階段完成後更新（2026-08-22）
+
+- PR #58 的第 14 檔 migration `20260820000000_daypop_import_rpcs.sql` 已由專案擁有者依正式 CLI workflow 完成 list／dry-run／push；最後的 Docker pg-delta catalog cache warning 不影響已顯示 `Finished supabase db push.` 的成功。MCP 沒有套正式 DDL、沒有 remote reset，也沒有查改正式使用者資料。
+- Postflight 確認遠端／repo 正好 14 檔、10 張 public tables RLS 全開；`replace_daypop_data(jsonb)` 與 `append_daypop_ics(jsonb)` 都是 SECURITY INVOKER、空 `search_path`，只有 `authenticated` 可執行，`anon`／`PUBLIC` 不可執行。Security advisor 仍為 0。
+- Repo `daypop_import.test.sql` 在真實 PostgreSQL 17 執行時抓到兩個 test-only 問題：attendee fixture 把 canonical `needs_action` 誤寫為 `needs-action`，以及 `proconfig` 把空 search path 錯期望為 `search_path=` 而不是 `search_path=""`。修正後 repo 原樣 SQL 與 transaction-local 集中診斷皆為 39／39；固定假 Auth 帳號、profiles／preferences／calendar data、attachments／attendees、cleanup jobs、pgTAP／dblink extension 殘留全部為 0。
+- RPC 成功後確實持有 `event_attachments` 與 `event_attendees` 的 `ShareLock`；`authenticated` 具備取得該 lock 所需的表權限。MCP 會序列化同專案 SQL，所以兩個 MCP call 無法形成真正重疊；改試 transaction-local `dblink` 又被 Supabase 的非 superuser 連線政策要求 DB password／GSSAPI。沒有取得或輸出密碼，也不宣稱真正兩連線 interleaving 已自動化。
+- 遠端重新產生的 TypeScript types 為 LF 18,506 字元；repo 忽略 CRLF 後逐字一致，新增的只有兩支 RPC。DP-056 仍在 In Progress：下一位不需要 MCP 的 agent 應接 authenticated adapter RPC 呼叫與 cache reload／failure tests，再完成設定頁 preview 與 browser IO；不要重做 migration 或把本階段誤標成整個 DP-056 Done。
+
 ---
 
 ## 1. 交接當下已驗證的狀態

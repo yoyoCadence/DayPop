@@ -68,6 +68,14 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - 遠端 mutation 失敗時保留最後確認 snapshot 並標示「尚未同步」。不自動 replay：request 的 response 可能在 server commit 後才遺失，自動重送可能產生重複 event／todo／sticker。使用者重新載入後以 Supabase 狀態 reconcile；MVP 不加入離線 write queue、Realtime 或多裝置 conflict merge。
 - 設定頁的「已同步／同步中／尚未同步」直接來自 repository pending count 與 persistent warning，不再顯示原稿的固定假字串。遊客模式仍明講只保存於本機，登入不會自動上傳既有 guest document；一次性匯入屬 DP-025。
 
+### 決策（DP-056）— 匯入是 tagged transaction，不是泛用 whole-document setter
+
+- Repository 只接受已驗證的 tagged import command：JSON `replace` 帶 portable canonical data，ICS `appendIcs` 只帶本次 events 與 event exceptions。不得增加可任意覆寫整份文件的 setter；append 必須在 commit 當下套到最新 snapshot，不能寫回 preview 時建立的舊 `next`。
+- Guest adapter 在 commit 時重讀 versioned envelope、沿用 write barrier、完整驗證後只寫一次。Authenticated adapter 走 `replace_daypop_data(jsonb)`／`append_daypop_ics(jsonb)` 原子 RPC，成功後必須重新 load 遠端 canonical snapshot 才更新 account cache；失敗不寫 cache、不自動重送。
+- 兩支 RPC 都是 SECURITY INVOKER、空 `search_path`、只授權 `authenticated`；owner 一律取 `auth.uid()`，payload 不接受 owner 欄位，server 端重做 top-level／row allowlist、必要 key、筆數上限與 DB constraints。JSON replace 取代 portable calendar data／preferences，ICS 只 append events／exceptions。
+- 備份不攜帶 attachment binary、object path、signed URL 或 metadata row，只記略過數。JSON replace 若帳號仍有 attachment 或 attendee rows 必須 fail closed；為關閉 count 與 event delete 間的新 child insert predicate gap，RPC 以固定順序取得 `event_attachments`、`event_attendees` 的 table `SHARE` lock。這是罕見匯入期間的刻意粗粒度同步；不得改回只鎖既有 event rows，advisory lock 也只有在所有 direct DML writer 都共同參與時才成立。
+- 第 14 檔 migration 由 CLI workflow 套用；39／39 rollback pgTAP、RLS／execute grant、零測試殘留、generated types 與 advisor 0 已驗證。MCP 對同專案 SQL 會序列化，且 `dblink` 需要不可取得的 DB credentials，因此只有「RPC 實際持有 ShareLock」已自動驗證，真正兩連線 interleaving 不得宣稱已通過。
+
 ### 實作結果（DP-025）— Legacy 只在邊界轉成 canonical document，一次性寫入保持原子
 
 - `src/legacy/legacyImport.ts` 是 `calpet.v2` 唯一解析邊界。它嚴格驗證舊 calendars／events／todos／stickers／settings，將日期、timezone、recurrence、exception、reminder 與 preferences 轉成 canonical contract，再由 `parseDayPopUserData()` 對「目前帳號資料＋預計匯入資料」做第二次整體驗證；UI 與 repository 不理解 legacy shape。
