@@ -116,6 +116,59 @@ describe('EventSheet fields', () => {
     expect(chips()[1]?.getAttribute('aria-pressed')).toBe('false');
   });
 
+  /**
+   * DP-076. The原檔 never lets an event fail to save: `commitEvent()` and
+   * `scopeApply()` both commit `title:(dr.title||'').trim()||'新事件'`. DayPop
+   * had dropped that fallback and kept a silent `return`, so a quick add of
+   * `明天下午3點` — a time with no subject — opened a sheet whose 儲存 did
+   * nothing and explained nothing.
+   *
+   * 新事件 is written out here rather than imported from the component. The
+   * point of these two cases is that DayPop uses the原檔's exact word; an
+   * expectation taken from the code under test would follow it anywhere and
+   * assert nothing.
+   */
+  it('names an untitled event rather than silently refusing to save', () => {
+    const props = render();
+
+    click('.cal-cal-chip:nth-child(2)');
+    submit();
+
+    expect(props.onAddEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '新事件', calendarId: CAL_B }),
+    );
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('applies the same fallback when an existing title is cleared to whitespace', () => {
+    const props = render({ editing: timedEvent() });
+
+    type('.cal-title-input', '   ');
+    submit();
+
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ title: '新事件' }),
+    );
+  });
+
+  /**
+   * The other half of DP-076, and the asymmetry is deliberate: the原檔's
+   * `addTodo()` guards with `if(!v) return;` and invents no title, so an
+   * untitled todo is still discarded. Naming one 新事件 would be wrong twice
+   * over — it is not an event, and the原檔 never names a todo.
+   */
+  it('still discards an untitled todo instead of naming it', () => {
+    const props = render();
+
+    click('.cal-segmented button:nth-child(2)');
+    submit();
+
+    expect(props.onAddTodo).not.toHaveBeenCalled();
+    expect(props.onAddEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
+
   it('saves calendar, location and notes on a new event', () => {
     const props = render();
 

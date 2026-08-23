@@ -10,6 +10,17 @@ import type { Calendar, CalendarEvent, EventAttachment } from '../../domain/type
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
 
+/**
+ * What the原檔 names an event with no title, in `commitEvent()` and
+ * `scopeApply()` alike — DP-076.
+ *
+ * Deliberately not exported: `EventSheet.test.tsx` asserts the literal
+ * 新事件 instead. A test that imported this would re-derive its expectation
+ * from the code under test and stay green if the string were ever changed,
+ * which is the one thing it exists to catch.
+ */
+const DEFAULT_EVENT_TITLE = '新事件';
+
 /** A parsed quick-add line waiting for the user to confirm it. */
 export interface EventDraft {
   title: string;
@@ -159,14 +170,30 @@ function EventSheetForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!title.trim()) return;
+    // Events and todos diverge here, and both halves are the原檔's behaviour —
+    // DP-076.
+    //
+    // An event never fails to save: `commitEvent()` and `scopeApply()` both
+    // commit `title:(dr.title||'').trim()||'新事件'`, so an empty field becomes
+    // a named event rather than a button that does nothing. DayPop had dropped
+    // the fallback and kept a silent `return`, which is how "只給時間" quick
+    // adds — `明天下午3點` parses a time and leaves no title — ended up opening
+    // a sheet whose 儲存 was inert and unexplained.
+    //
+    // A todo with no title is still discarded, because `addTodo()` guards with
+    // `if(!v) return;` and has no fallback of its own. Naming it 新事件 would
+    // be wrong twice over: it is not an event, and the原檔 never invents a
+    // title for a todo.
+    const trimmed = title.trim();
+    if (mode !== 'event' && !editing && !trimmed) return;
+    const named = trimmed || DEFAULT_EVENT_TITLE;
     const times = { start: allDay ? '09:00' : start, end: allDay ? '10:00' : end };
     // Never send an empty id: `calendarId ?? default` would keep `''`, which is
     // not a UUID and would fail domain validation instead of falling back.
     const chosen = calendarId || undefined;
     if (editing) {
       onUpdateEvent(editing.id, {
-        title,
+        title: named,
         date,
         allDay,
         ...times,
@@ -175,9 +202,9 @@ function EventSheetForm({
         notes,
       });
     } else if (mode === 'event') {
-      onAddEvent({ title, date, allDay, ...times, calendarId: chosen, location, notes });
+      onAddEvent({ title: named, date, allDay, ...times, calendarId: chosen, location, notes });
     } else {
-      onAddTodo({ title, date, calendarId: chosen });
+      onAddTodo({ title: trimmed, date, calendarId: chosen });
     }
     onClose();
   }
