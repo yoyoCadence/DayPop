@@ -12,10 +12,14 @@ import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutat
 
 /**
  * What the原檔 names an event with no title, in `commitEvent()` and
- * `scopeApply()` alike — DP-076. Exported so the regression test asserts the
- * same string the UI uses rather than a copy that could drift from it.
+ * `scopeApply()` alike — DP-076.
+ *
+ * Deliberately not exported: `EventSheet.test.tsx` asserts the literal
+ * 新事件 instead. A test that imported this would re-derive its expectation
+ * from the code under test and stay green if the string were ever changed,
+ * which is the one thing it exists to catch.
  */
-export const DEFAULT_EVENT_TITLE = '新事件';
+const DEFAULT_EVENT_TITLE = '新事件';
 
 /** A parsed quick-add line waiting for the user to confirm it. */
 export interface EventDraft {

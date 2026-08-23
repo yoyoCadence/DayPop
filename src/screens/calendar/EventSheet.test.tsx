@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent } from '../../domain/types';
-import { DEFAULT_EVENT_TITLE, EventSheet, type EventSheetProps } from './EventSheet';
+import { EventSheet, type EventSheetProps } from './EventSheet';
 
 /**
  * The fields DP-060 added — 日曆, 地點, 備註 — plus the quick-add draft
@@ -122,6 +122,11 @@ describe('EventSheet fields', () => {
    * had dropped that fallback and kept a silent `return`, so a quick add of
    * `明天下午3點` — a time with no subject — opened a sheet whose 儲存 did
    * nothing and explained nothing.
+   *
+   * 新事件 is written out here rather than imported from the component. The
+   * point of these two cases is that DayPop uses the原檔's exact word; an
+   * expectation taken from the code under test would follow it anywhere and
+   * assert nothing.
    */
   it('names an untitled event rather than silently refusing to save', () => {
     const props = render();
@@ -130,7 +135,7 @@ describe('EventSheet fields', () => {
     submit();
 
     expect(props.onAddEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ title: DEFAULT_EVENT_TITLE, calendarId: CAL_B }),
+      expect.objectContaining({ title: '新事件', calendarId: CAL_B }),
     );
     expect(props.onClose).toHaveBeenCalled();
   });
@@ -143,7 +148,7 @@ describe('EventSheet fields', () => {
 
     expect(props.onUpdateEvent).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ title: DEFAULT_EVENT_TITLE }),
+      expect.objectContaining({ title: '新事件' }),
     );
   });
 
