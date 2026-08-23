@@ -1,6 +1,10 @@
+/* No `background` here, and none on `html` below — DP-074. Both were the
+   pre-canonical scaffold's page colour, and `:root` (0,1,0) silently outranked
+   `shell.css`'s `html` (0,0,1) rule regardless of load order, so the canvas was
+   a hardcoded #f7f3ff that no theme could change. `shell.css` owns the canvas
+   now. The rest of this block is still in use and stays. */
 :root {
   color: #2e2a3b;
-  background: #f7f3ff;
   font-family:
     Inter, ui-rounded, "SF Pro Rounded", "Noto Sans TC", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -25,10 +29,6 @@
 
 html {
   min-width: 320px;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(255, 210, 225, 0.55), transparent 32rem),
-    radial-gradient(circle at 95% 8%, rgba(202, 190, 255, 0.65), transparent 30rem),
-    #f7f3ff;
 }
 
 body {
