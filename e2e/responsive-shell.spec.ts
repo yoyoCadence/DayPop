@@ -51,3 +51,64 @@ test('手機與桌面 viewport 都不溢出，sheet 留在 App 邊界內', async
   expect(overflow.documentWidth).toBeLessThanOrEqual(overflow.viewportWidth);
   assertCleanBrowser();
 });
+
+/**
+ * DP-078. `manifest.webmanifest` asks for `portrait-primary`, but iOS ignores
+ * it and a browser tab never honours it, so landscape has to stay usable.
+ *
+ * Before the short-viewport block the chrome kept its full portrait size in
+ * landscape and left the month grid 156px of 430 — about a row and a half of
+ * dates. This pins the outcome so the compression cannot quietly be undone,
+ * and re-checks the 24×24 touch target floor from DP-032's first round in the
+ * one layout where the compression could plausibly have broken it.
+ */
+test('手機橫向：垂直的框會壓縮，月格拿回高度，觸控目標仍不小於 24×24', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile-chrome',
+    '桌面專案會啟用手機展示框，框內是固定尺寸，短視窗條件本來就不該套用',
+  );
+
+  const assertCleanBrowser = monitorBrowser(page);
+  await page.setViewportSize({ width: 932, height: 430 });
+  await openApp(page);
+
+  const heightOf = async (selector: string) => {
+    const box = await page.locator(selector).boundingBox();
+    expect(box, `${selector} 應該存在`).not.toBeNull();
+    return box!.height;
+  };
+
+  // Portrait numbers are 181 / 64; the assertions are upper bounds rather than
+  // exact values so that unrelated copy or font changes do not fail this test
+  // while a lost media block still would.
+  expect(await heightOf('.cal-header')).toBeLessThan(160);
+  expect(await heightOf('.dp-tabbar')).toBeLessThan(56);
+
+  // The point of the whole change: 156px before, and a row of dates is 58px.
+  expect(await heightOf('.cal-month-scroll')).toBeGreaterThan(190);
+
+  const tooSmall = await page.evaluate(() => {
+    const offenders: string[] = [];
+    const selector = 'button, a[href], input, select, textarea, [role="button"]';
+    for (const element of document.querySelectorAll(selector)) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) continue;
+      if (rect.width < 24 || rect.height < 24) {
+        const label = (element.getAttribute('aria-label') ?? element.textContent ?? '').trim();
+        offenders.push(`${element.className || element.tagName} "${label}" ${rect.width}×${rect.height}`);
+      }
+    }
+    return offenders;
+  });
+  expect(tooSmall).toEqual([]);
+
+  const overflow = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+  }));
+  expect(overflow.documentWidth).toBeLessThanOrEqual(overflow.viewportWidth);
+
+  assertCleanBrowser();
+});

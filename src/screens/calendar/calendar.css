@@ -1377,3 +1377,50 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---------- short viewports (phone landscape) — DP-078 ----------
+ *
+ * `manifest.webmanifest` asks for `portrait-primary`, but iOS Safari ignores
+ * the manifest's orientation and a browser tab never honours it on any
+ * platform, so landscape cannot be prevented — only made usable.
+ *
+ * Measured at 932×430 (iPhone 15 Pro Max landscape) before this block: the
+ * header stayed at its full portrait 181px and the tab bar at 64px, so 57% of
+ * the viewport was chrome and the month grid was left 156px — about a row and
+ * a half of dates.
+ *
+ * Only non-interactive space is compressed: padding, gaps and the period
+ * heading's font size. No touch target shrinks, because "no interactive
+ * element smaller than 24×24" is a WCAG 2.2 AA item that DP-032's first round
+ * already passed, and buying a few pixels by breaking it would be a bad trade.
+ *
+ * The two conditions cover the two ways the app viewport ends up being the
+ * whole short window: a touch device in landscape (any width — a large phone
+ * is 932px wide), and a narrow short window on any pointer. Neither can match
+ * the desktop preview frame, which additionally requires `min-width: 900px`
+ * with `hover: hover` and `pointer: fine`; inside that frame the phone is a
+ * fixed 404×824 box and the page scrolls, so nothing here should apply.
+ */
+@media (max-height: 500px) and (pointer: coarse),
+  (max-height: 500px) and (max-width: 899px) {
+  .cal-header {
+    padding: 4px 16px 6px;
+  }
+
+  .cal-period {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .cal-nav {
+    margin-top: 6px;
+  }
+
+  .cal-quick {
+    margin-top: 6px;
+  }
+
+  .cal-weekhead {
+    padding: 3px 0;
+  }
+}
