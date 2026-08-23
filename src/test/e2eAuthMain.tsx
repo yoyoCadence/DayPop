@@ -8,6 +8,7 @@ import { AuthContext, type AuthContextValue } from '../auth/authContext';
 import { SessionDataProvider } from '../data/SessionDataProvider';
 import { calendarToInsert, preferencesToInsert } from '../domain/databaseMapping';
 import { createEmptyUserData } from '../domain/types';
+import { AppUpdateProvider } from '../pwa/AppUpdateProvider';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { FakeSupabase } from './fakeSupabase';
 import '../theme/fonts.css';
@@ -126,11 +127,13 @@ function createSession(email: string): Session {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <E2EAuthProvider>
-    <SessionDataProvider client={fakeSupabase.asClient()} storage={window.localStorage}>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </SessionDataProvider>
-  </E2EAuthProvider>,
+  <AppUpdateProvider>
+    <E2EAuthProvider>
+      <SessionDataProvider client={fakeSupabase.asClient()} storage={window.localStorage}>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </SessionDataProvider>
+    </E2EAuthProvider>
+  </AppUpdateProvider>,
 );
