@@ -332,3 +332,23 @@ body {
   position: absolute;
   z-index: 90;
 }
+
+/* ---------- short viewports (phone landscape) — DP-078 ----------
+ *
+ * Companion to the block at the end of `calendar.css`; see that comment for
+ * why landscape cannot simply be prevented and why the media conditions are
+ * written this way.
+ *
+ * The tab bar keeps its full portrait height in landscape, where it costs 64px
+ * out of 430. Only the bar's own height comes down; `.dp-tab` stays a
+ * full-height flex child spanning a quarter of the width, so every tab target
+ * remains far larger than the 24×24 WCAG 2.2 AA floor that DP-032's first
+ * round measured. `env(safe-area-inset-bottom)` stays in the calculation —
+ * landscape is exactly where a phone still has a home indicator.
+ */
+@media (max-height: 500px) and (pointer: coarse),
+  (max-height: 500px) and (max-width: 899px) {
+  .dp-tabbar {
+    height: calc(50px + env(safe-area-inset-bottom));
+  }
+}
