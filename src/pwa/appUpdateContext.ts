@@ -8,11 +8,11 @@ import type { AppUpdateState } from './useAppUpdate';
  * `<DataProvider key={identity}>`. That key changes on every cold start, from
  * `'auth-initializing'` to `'guest'` or an account id, which unmounts and
  * remounts the entire subtree — so a hook hosted inside it runs again and
- * `version.json` is requested more than once. The observed count is not a
- * fixed number: it depends on how many times the identity resolves and on how
- * long the page is watched. The keyed remount is a deliberate safety boundary
- * (guest and two different accounts must never share state) and is not the
- * thing to change.
+ * `version.json` is requested more than once. The observed total has differed
+ * between measurements; where the extra triggers come from was not
+ * investigated. The keyed remount is a deliberate safety boundary (guest and
+ * two different accounts must never share state) and is not the thing to
+ * change.
  *
  * A version check has nothing to do with which account is signed in, so the
  * fix is to stop hosting it inside an account-scoped subtree. The provider is

@@ -12,10 +12,10 @@ import { useAppUpdate } from './useAppUpdate';
  * changes on every cold start: `'auth-initializing'` becomes `'guest'` or an
  * account id when Supabase Auth resolves. A changed key unmounts and remounts
  * the whole subtree, so a version check hosted inside it runs again. These
- * cases assert one check versus more than one rather than a specific total —
- * the real count depends on how many times the identity resolves. That
- * remount is a deliberate safety boundary and stays; the version check moved
- * out instead.
+ * cases assert one check versus more than one rather than a specific total:
+ * the observed total has differed between measurements and the extra triggers
+ * were never traced. That remount is a deliberate safety boundary and stays;
+ * the version check moved out instead.
  *
  * The key change is reproduced directly rather than by mounting
  * `SessionDataProvider`, which would need a Supabase client: what matters is
