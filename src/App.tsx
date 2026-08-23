@@ -4,7 +4,7 @@ import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
 import { useStorageMode } from './hooks/useStorageMode';
 import { UpdateDialog } from './pwa/UpdateDialog';
-import { useAppUpdate } from './pwa/useAppUpdate';
+import { useAppUpdateState } from './pwa/appUpdateContext';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
 import { DataRecoveryScreen } from './screens/DataRecoveryScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
@@ -18,8 +18,9 @@ import type { ShellTab } from './shell/tabs';
 /**
  * Routes the four canonical tabs into the App shell.
  *
- * The update checker lives here rather than in the 設定 screen so that a new
- * release is still detected while the user is on any tab.
+ * The update checker is consumed here rather than in the 設定 screen so that a
+ * new release is still detected while the user is on any tab. It is owned by
+ * `AppUpdateProvider` above the account-keyed subtree — DP-073.
  */
 export default function App() {
   const [tab, setTab] = useState<ShellTab>('cal');
@@ -28,7 +29,7 @@ export default function App() {
   // Screens unmount when the tab changes, so `CalendarScreen` reads this once as
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
-  const updater = useAppUpdate();
+  const updater = useAppUpdateState();
   const { user } = useAuth();
 
   const { state, refresh } = useDayPopDataState();

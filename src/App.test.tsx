@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DataProvider } from './data/DataProvider';
 import { LegacyImportProvider } from './legacy/LegacyImportProvider';
+import { AppUpdateProvider } from './pwa/AppUpdateProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 
 /**
@@ -57,13 +58,17 @@ async function mount() {
     // `SessionDataProvider` supplies `LegacyImportProvider` in the real tree;
     // the 設定 tab reads it, so guest mode (`accountId: null`) stands in here.
     root.render(
-      <DataProvider>
-        <LegacyImportProvider accountId={null}>
-          <ThemeProvider>
-            <App />
-          </ThemeProvider>
-        </LegacyImportProvider>
-      </DataProvider>,
+      // `AppUpdateProvider` is outermost, as in main.tsx — DP-073 moved the
+      // version check above the account-keyed subtree.
+      <AppUpdateProvider>
+        <DataProvider>
+          <LegacyImportProvider accountId={null}>
+            <ThemeProvider>
+              <App />
+            </ThemeProvider>
+          </LegacyImportProvider>
+        </DataProvider>
+      </AppUpdateProvider>,
     );
   });
 }
