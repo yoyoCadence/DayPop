@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from '../../domain/eventTime';
 import type { Calendar, CalendarEvent } from '../../domain/types';
-import { EventSheet, type EventSheetProps } from './EventSheet';
+import { DEFAULT_EVENT_TITLE, EventSheet, type EventSheetProps } from './EventSheet';
 
 /**
  * The fields DP-060 added — 日曆, 地點, 備註 — plus the quick-add draft
@@ -114,6 +114,54 @@ describe('EventSheet fields', () => {
     expect(chips().map((c) => c.textContent)).toEqual(['我的日曆', '工作']);
     expect(chips()[0]?.getAttribute('aria-pressed')).toBe('true');
     expect(chips()[1]?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  /**
+   * DP-076. The原檔 never lets an event fail to save: `commitEvent()` and
+   * `scopeApply()` both commit `title:(dr.title||'').trim()||'新事件'`. DayPop
+   * had dropped that fallback and kept a silent `return`, so a quick add of
+   * `明天下午3點` — a time with no subject — opened a sheet whose 儲存 did
+   * nothing and explained nothing.
+   */
+  it('names an untitled event rather than silently refusing to save', () => {
+    const props = render();
+
+    click('.cal-cal-chip:nth-child(2)');
+    submit();
+
+    expect(props.onAddEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ title: DEFAULT_EVENT_TITLE, calendarId: CAL_B }),
+    );
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('applies the same fallback when an existing title is cleared to whitespace', () => {
+    const props = render({ editing: timedEvent() });
+
+    type('.cal-title-input', '   ');
+    submit();
+
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ title: DEFAULT_EVENT_TITLE }),
+    );
+  });
+
+  /**
+   * The other half of DP-076, and the asymmetry is deliberate: the原檔's
+   * `addTodo()` guards with `if(!v) return;` and invents no title, so an
+   * untitled todo is still discarded. Naming one 新事件 would be wrong twice
+   * over — it is not an event, and the原檔 never names a todo.
+   */
+  it('still discards an untitled todo instead of naming it', () => {
+    const props = render();
+
+    click('.cal-segmented button:nth-child(2)');
+    submit();
+
+    expect(props.onAddTodo).not.toHaveBeenCalled();
+    expect(props.onAddEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
   });
 
   it('saves calendar, location and notes on a new event', () => {
