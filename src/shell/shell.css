@@ -23,13 +23,19 @@ html {
      to miss: on iOS the canvas also shows through in the safe-area strip above
      the App viewport, and it does not follow the theme on its own because the
      theme tokens live on `.dp-preview`, a descendant. `--canvas-bg` is
-     published on this element by `ThemeProvider` for exactly that reason; the
-     fallback covers the first paint, before React has mounted and set it.
+     published on this element by `ThemeProvider` for exactly that reason.
+     The fallback covers the first paint, before React has mounted and set the
+     property, so it MUST equal the canonical default theme's background —
+     漫畫 light, which `createEmptyUserData()` gives every new user and which
+     `index.html` already declares as the initial `theme-color`. A darker
+     fallback would flash near-black before flipping to white on the default
+     theme. `scripts/check-build-assets.mjs` fails the build if this and the
+     `theme-color` meta ever disagree.
      No desktop override is needed: with the preview frame active `.dp-preview`
      paints its own grey gradient across the whole viewport, so the canvas is
      not visible there at all — DP-074. */
   background: none;
-  background-color: var(--canvas-bg, #0a0a0c);
+  background-color: var(--canvas-bg, #ffffff);
   min-height: 100%;
 }
 

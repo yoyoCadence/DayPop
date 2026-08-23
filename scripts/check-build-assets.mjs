@@ -139,6 +139,63 @@ if (!distFiles.includes('404.html')) {
 }
 
 /**
+ * First-paint colour agreement — DP-074.
+ *
+ * Two constants in two shipped files describe the same instant: after the CSS
+ * applies but before React mounts and `ThemeProvider` publishes `--canvas-bg`.
+ * `shell.css` paints the page canvas with its `var(--canvas-bg, …)` fallback,
+ * and `index.html` hands the OS chrome its initial `theme-color`. Both must be
+ * the background a brand-new user actually gets — 漫畫 light, per
+ * `createEmptyUserData()` — or the default theme flashes the wrong colour
+ * before settling. The original DP-074 defect was this exact shape: a colour
+ * constant that silently disagreed with the theme system.
+ *
+ * Checked against the build rather than the source because a unit test cannot
+ * reach either value here — nothing under `src/` imports node built-ins (the
+ * project ships no `@types/node`), and a Vite `?raw` import of a stylesheet
+ * returns an empty string under Vitest, which would make the guard pass while
+ * asserting nothing.
+ */
+// The minifier rewrites `#ffffff` to `#fff`, so compare the colours rather
+// than the spellings — otherwise this check fails on every single build.
+const normaliseHex = (value) => {
+  const hex = value.trim().toLowerCase();
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(hex);
+  return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : hex;
+};
+
+const initialThemeColor = normaliseHex(
+  /<meta name="theme-color" content="([^"]+)"/.exec(indexHtml)?.[1] ?? '',
+) || null;
+if (!initialThemeColor) {
+  problems.push('dist/index.html has no theme-color meta — the OS chrome has no initial colour');
+} else {
+  const cssFiles = distFiles.filter((file) => file.endsWith('.css'));
+  const fallbacks = new Set();
+  for (const file of cssFiles) {
+    const css = await readFile(resolve(dist, file), 'utf8');
+    for (const [, value] of css.matchAll(/var\(\s*--canvas-bg\s*,\s*([^)]+?)\s*\)/g)) {
+      fallbacks.add(normaliseHex(value));
+    }
+  }
+  if (fallbacks.size === 0) {
+    problems.push(
+      'no `var(--canvas-bg, …)` fallback in the built CSS — the canvas would have no colour ' +
+        'until React mounts',
+    );
+  }
+  for (const fallback of fallbacks) {
+    if (fallback !== initialThemeColor) {
+      problems.push(
+        `the built CSS falls back to "${fallback}" for --canvas-bg but index.html declares ` +
+          `theme-color "${initialThemeColor}" — the page and the OS chrome would disagree on ` +
+          'the first paint, before ThemeProvider runs',
+      );
+    }
+  }
+}
+
+/**
  * Last line of defence against a privileged Supabase key reaching the public
  * bundle — DP-033.
  *
