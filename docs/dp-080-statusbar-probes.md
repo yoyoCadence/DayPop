@@ -18,18 +18,21 @@ DP-080 的症狀是：從主畫面圖示開啟（standalone）時，iOS 狀態�
 每張頁面：
 
 - 各有自己的 `.webmanifest`（`display: standalone`）與 `apple-mobile-web-app-capable`，可以各自加到主畫面、各自是一個圖示。
-- `manifest` 的 `theme_color`／`background_color` 一律沿用正式 App 的常數 `#ffffff`（**探針 D 除外**，它整個不給）。正式 App 的 manifest 在 DP-074 前後沒有變過，所以它不該進入實驗。
+- **版面結構照抄正式 App 的 `shell.css`**：畫布顏色只在 `html` 上，`body` 維持透明，`.dp-viewport` 疊上主題底色並帶 `padding-top: env(safe-area-inset-top)`。探針要有意義，前提就是它畫螢幕頂端的方式與 App 一致；若哪天 `shell.css` 改了而這裡沒跟上，探針的結果就不再能說明 App 的事。
+- `manifest` 的 `theme_color` 與 `background_color` 一律沿用正式 App 的常數 `#ffffff`。正式 App 的 manifest 在 DP-074 前後沒有變過，所以它不該進入實驗。**探針 D 只少掉 `theme_color`**，`background_color` 照留 —— 兩個一起拿掉的話，D 就與 B 差了兩件事，結果無法單獨歸因。
 - 完全沒有 JavaScript，並帶 `script-src 'none'` 的 CSP。這些頁在 staging 上是公開可達的，必須是惰性的。
 - 用 CSS 自己報告兩件事：**目前是不是 standalone**（`@media (display-mode: standalone)`；在 Safari 分頁裡看到的結果不算數），以及 **`env(safe-area-inset-top)` 有多高**（頁面上那個虛線框的高度就是）。
 
-| | 畫布 `html` 底色 | `theme-color` | `status-bar-style` | 這張在問什麼 |
-| --- | --- | --- | --- | --- |
-| **A** 舊畫布 | `#f7f3ff` | `#ffffff` | 未宣告 | DP-074 之前 |
-| **B** 新畫布 | `#ffffff` | `#ffffff` | 未宣告 | DP-074 之後（與 A 只差這一個顏色） |
-| **C** 深色畫布 | `#121212` | `#121212` | 未宣告 | 深色那一半重不重現 |
-| **D** 無 theme-color | `#ffffff` | **完全不給** | 未宣告 | theme-color 有沒有份 |
-| **E** bar=default | `#ffffff` | `#ffffff` | `default` | 補 meta 有沒有用 |
-| **F** bar=black | `#ffffff` | `#ffffff` | `black` | 同上，另一個值 |
+| | 畫布 `html` 底色 | App viewport 底色 | `theme-color` | `status-bar-style` | 這張在問什麼 |
+| --- | --- | --- | --- | --- | --- |
+| **A** 舊畫布 | `#f7f3ff` | `#ffffff` | `#ffffff` | 未宣告 | DP-074 之前 |
+| **B** 新畫布 | `#ffffff` | `#ffffff` | `#ffffff` | 未宣告 | DP-074 之後（與 A 只差畫布這一個顏色） |
+| **C** 深色畫布 | `#121212` | `#121212` | `#121212` | 未宣告 | 深色那一半重不重現 |
+| **D** 無 theme-color | `#ffffff` | `#ffffff` | **完全不給** | 未宣告 | theme-color 有沒有份 |
+| **E** bar=default | `#ffffff` | `#ffffff` | `#ffffff` | `default` | 補 meta 有沒有用 |
+| **F** bar=black | `#ffffff` | `#ffffff` | `#ffffff` | `black` | 同上，另一個值 |
+
+**A 的兩欄不同色是刻意的**，不是筆誤：DP-074 之前的正式 App 就是 `#f7f3ff` 畫布配 `#ffffff` viewport，那個落差正是專案擁有者當初看到的淡紫色帶。把 A 的兩欄一起改成 `#f7f3ff`，反而會讓「之前」那張沒有色帶。
 
 E、F 是**待測項，不是結論**。§2.7 明講「不要直接加一個 meta 就宣稱修好」——它們放在這裡是為了讓那個假設可以被否證，不是為了直接採用。刻意沒有放 `black-translucent`：它會讓內容頂到狀態列底下，而症狀明確記載版面沒有位移，改版面的候選會換掉待答的問題。
 
@@ -64,13 +67,14 @@ E、F 是**待測項，不是結論**。§2.7 明講「不要直接加一個 met
 
 ## 4. 已經驗過與沒驗過的
 
-**已驗（Chromium 390×844，production build，`vite preview`）**：六張探針＋清單頁 HTTP 200、`html` 與 `body` 的計算底色與表格一致、`probe.css` 確實套用（CSP 沒擋掉）、`theme-color` 與 `status-bar-style` 兩個 meta 與表格一致、`.webmanifest` 可取得且 `display`／`start_url` 正確、水平溢出 0、console error／warning 與 page error 皆為 0。反向測試（把 A 的預期底色改成 B 的）會紅兩項，所以這個檢查不是空的。`npm run check:build` 通過，六張探針沒有帶進任何遠端資源。
+**已驗（Chromium 390×844，production build，`vite preview`，每一頁一個全新 context）**：六張探針＋清單頁 HTTP 200、`html` 的計算底色與表格一致、**`body` 維持透明**、`.dp-preview`／`.dp-viewport` 的底色是該探針的 App viewport 顏色、`probe.css` 確實套用（CSP 沒擋掉）、`theme-color` 與 `status-bar-style` 兩個 meta 與表格一致、每張都宣告了 `rel=icon` 且該檔真的取得得到、`.webmanifest` 可取得且 `display`／`start_url`／`background_color`／`theme_color` 正確、`.inset-bar` 在 inset 為 0 時量到 0px、水平溢出 0、沒有任何 4xx 或失敗請求、console error／warning 與 page error 皆為 0。另外會回頭讀正式 App 的 `body` 與 viewport 計算值，確認探針抄的那組前提還成立。反向測試（把 `body` 塗色、拿掉 D 的 `background_color`、把 `.inset-bar` 換回 `border`、刪掉 `rel=icon`）會紅九項，所以這個檢查不是空的。`npm run check:build` 通過，六張探針沒有帶進任何遠端資源。
 
 **沒驗，也不宣稱**：
 
 - **iOS 上會發生什麼，一項都沒有。** 這裡只有 Chromium。
 - **`@media (display-mode: standalone)` 那一段沒有被實際觸發過。** Chromium 在這台機器上無法被切到 standalone：Playwright 沒有這個 API，`Emulation.setEmulatedMedia` 不吃這個 feature（導覽前後都試過），`--app=` 開的視窗 Playwright 也拿不到。驗到的是**那條規則存在、可解析、文字正確**，不是它會在 iOS 上生效。
 - **這些探針會不會重現症狀本身，未知。** 靜態頁少了 App 執行期做的事（`ThemeProvider` 改寫 meta、service worker、React 掛載）。第一輪「兩張都看得見」是一個有意義的結果，不是測試失敗。
+- **`/favicon.ico` 的 404 沒有在這裡被重現過。** 複審在真實 Chrome session 觀察到它；Playwright 的 Chromium **完全不會**去要 favicon —— headless 與 headed、有無 `rel=icon` 四種組合都試過，一次請求都沒發出。所以修法（每張都宣告 `rel=icon`）驗到的是「連結存在，而且它指的檔案真的取得得到」，不是「那個 404 已被觀察到消失」。
 
 ## 5. 清理
 

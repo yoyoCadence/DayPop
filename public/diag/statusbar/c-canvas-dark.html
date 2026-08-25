@@ -10,28 +10,34 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="C 深色畫布" />
     <link rel="manifest" href="./c-canvas-dark.webmanifest" />
+    <link rel="icon" href="../../icons/daypop.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="../../icons/apple-touch-icon-180.png" />
     <link rel="stylesheet" href="./probe.css" />
     <title>DP-080 探針 C 深色畫布</title>
   </head>
   <body>
-    <main class="sheet">
-      <p class="letter">C</p>
-      <h1>C 深色畫布</h1>
-      <p class="summary">漫畫深色</p>
-      <p class="mode-flag">此頁<strong class="mode-word"></strong></p>
-      <div class="inset-block">
-        <div class="inset-bar"></div>
-        <p class="inset-label">上面那一格的高度就是 env(safe-area-inset-top)。高度為 0 代表這台裝置或這個模式沒有給安全區。</p>
+    <div class="dp-preview">
+      <div class="dp-viewport">
+        <main class="sheet">
+          <p class="letter">C</p>
+          <h1>C 深色畫布</h1>
+          <p class="summary">漫畫深色</p>
+          <p class="mode-flag">此頁<strong class="mode-word"></strong></p>
+          <div class="inset-block">
+            <div class="inset-bar"></div>
+            <p class="inset-label">上面那一格的高度就是 env(safe-area-inset-top)。空的一條代表這台裝置或這個模式沒有給安全區。</p>
+          </div>
+          <ul class="declared">
+            <li>theme-color：#121212</li>
+            <li>status-bar-style：（未宣告，與正式 App 相同）</li>
+            <li>畫布 html background-color：#121212</li>
+            <li>App viewport 背景：#121212</li>
+            <li>color-scheme：dark</li>
+          </ul>
+          <p class="detail">畫布與 theme-color 都是漫畫深色 #121212。症狀在深色主題下也會出現，這張確認靜態頁是否重現得了那一半。</p>
+          <p class="back"><a href="./">回到探針清單</a></p>
+        </main>
       </div>
-      <ul class="declared">
-        <li>theme-color：#121212</li>
-        <li>status-bar-style：（未宣告，與正式 App 相同）</li>
-        <li>畫布 html background-color：#121212</li>
-        <li>color-scheme：dark</li>
-      </ul>
-      <p class="detail">畫布與 theme-color 都是漫畫深色 #121212。症狀在深色主題下也會出現，這張確認靜態頁是否重現得了那一半。</p>
-      <p class="back"><a href="./">回到探針清單</a></p>
-    </main>
+    </div>
   </body>
 </html>

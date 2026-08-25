@@ -37,25 +37,38 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputDir = resolve(root, 'public/diag/statusbar');
 
 /**
- * The controlled variables. Everything not named here is identical across all
- * six pages, so a difference in behaviour can only come from these.
- *
- * `canvas` is the `html` background colour, i.e. what shows through the iOS
- * safe-area strip. `fg` only has to stay readable on it; it is not part of the
- * experiment. `themeColor: null` means the page declares no theme colour from
- * any source — neither the meta nor the manifest.
- */
-/**
  * The shipped `public/manifest.webmanifest` declares these two and never
  * changes them — `ThemeProvider` only rewrites the `theme-color` *meta*. They
  * are copied here as constants rather than derived from each probe so that
- * they stay out of the experiment: A and B must differ in the canvas colour
- * and nothing else, and in the real app the manifest was identical before and
- * after DP-074. Probe D is the one page that withholds both.
+ * they stay out of the experiment: in the real app the manifest was identical
+ * before and after DP-074.
+ *
+ * `background_color` is a constant on *every* probe, D included. Only
+ * `theme_color` is withheld there. An earlier revision put both behind the
+ * same condition, which made D differ from B in two ways and would have made
+ * a difference in D's result unattributable.
  */
 const APP_MANIFEST_THEME_COLOR = '#ffffff';
 const APP_MANIFEST_BACKGROUND_COLOR = '#ffffff';
 
+/**
+ * The controlled variables. Everything not named here is identical across all
+ * six pages, so a difference in behaviour can only come from these.
+ *
+ * `canvas` is the `html` background colour, i.e. the one DP-074 changed.
+ * `viewportBg` is what the App viewport paints on top of it — the theme
+ * background, which DP-074 did **not** touch. Keeping them separate is what
+ * makes A an honest "before": the real pre-DP-074 app had a #f7f3ff canvas
+ * under a #ffffff viewport, and that mismatch is the lavender band the owner
+ * reported. Collapsing the two onto A would have removed the band from the
+ * page that is supposed to have it.
+ *
+ * `fg` only has to stay readable; it is not part of the experiment.
+ * `themeColor: null` means the page declares no theme colour from any source —
+ * neither the meta nor the manifest `theme_color`. It does NOT mean the
+ * manifest loses `background_color`: that one stays at the app's constant on
+ * every probe, or D would differ from B in two ways at once.
+ */
 const PROBES = [
   {
     slug: 'a-canvas-pre-074',
@@ -64,6 +77,7 @@ const PROBES = [
     name: 'A 舊畫布',
     canvas: '#f7f3ff',
     fg: '#2e2a3b',
+    viewportBg: '#ffffff',
     themeColor: '#ffffff',
     colorScheme: 'light',
     statusBarStyle: null,
@@ -79,6 +93,7 @@ const PROBES = [
     name: 'B 新畫布',
     canvas: '#ffffff',
     fg: '#2e2a3b',
+    viewportBg: '#ffffff',
     themeColor: '#ffffff',
     colorScheme: 'light',
     statusBarStyle: null,
@@ -94,6 +109,7 @@ const PROBES = [
     name: 'C 深色畫布',
     canvas: '#121212',
     fg: '#f2f2f2',
+    viewportBg: '#121212',
     themeColor: '#121212',
     colorScheme: 'dark',
     statusBarStyle: null,
@@ -109,6 +125,7 @@ const PROBES = [
     name: 'D 無 theme-color',
     canvas: '#ffffff',
     fg: '#2e2a3b',
+    viewportBg: '#ffffff',
     themeColor: null,
     colorScheme: 'light',
     statusBarStyle: null,
@@ -124,6 +141,7 @@ const PROBES = [
     name: 'E bar=default',
     canvas: '#ffffff',
     fg: '#2e2a3b',
+    viewportBg: '#ffffff',
     themeColor: '#ffffff',
     colorScheme: 'light',
     statusBarStyle: 'default',
@@ -139,6 +157,7 @@ const PROBES = [
     name: 'F bar=black',
     canvas: '#ffffff',
     fg: '#2e2a3b',
+    viewportBg: '#ffffff',
     themeColor: '#ffffff',
     colorScheme: 'light',
     statusBarStyle: 'black',
@@ -181,6 +200,10 @@ function probeHtml(probe) {
       : null,
     `<meta name="apple-mobile-web-app-title" content="${escapeHtml(probe.name)}" />`,
     `<link rel="manifest" href="./${probe.slug}.webmanifest" />`,
+    // Without this the browser asks for /favicon.ico and logs a 404, which
+    // would put an error in the console of a page whose whole job is to be
+    // read cleanly. Same file on every probe, so it is not a variable.
+    '<link rel="icon" href="../../icons/daypop.svg" type="image/svg+xml" />',
     '<link rel="apple-touch-icon" sizes="180x180" href="../../icons/apple-touch-icon-180.png" />',
     '<link rel="stylesheet" href="./probe.css" />',
     `<title>DP-080 探針 ${escapeHtml(probe.name)}</title>`,
@@ -193,9 +216,13 @@ function probeHtml(probe) {
     `theme-color：${probe.themeColor ?? '（未宣告）'}`,
     `status-bar-style：${probe.statusBarStyle ?? '（未宣告，與正式 App 相同）'}`,
     `畫布 html background-color：${probe.canvas}`,
+    // Spelled out because A is the one probe where the two differ, and that
+    // mismatch IS the lavender band DP-074 removed. Seeing it on the page is
+    // how the owner confirms A really is the "before".
+    `App viewport 背景：${probe.viewportBg}`,
     `color-scheme：${probe.colorScheme}`,
   ]
-    .map((line) => `        <li>${escapeHtml(line)}</li>`)
+    .map((line) => `            <li>${escapeHtml(line)}</li>`)
     .join('\n');
 
   return `<!doctype html>
@@ -204,21 +231,25 @@ function probeHtml(probe) {
 ${head}
   </head>
   <body>
-    <main class="sheet">
-      <p class="letter">${probe.letter}</p>
-      <h1>${escapeHtml(probe.name)}</h1>
-      <p class="summary">${escapeHtml(probe.summary)}</p>
-      <p class="mode-flag">此頁<strong class="mode-word"></strong></p>
-      <div class="inset-block">
-        <div class="inset-bar"></div>
-        <p class="inset-label">上面那一格的高度就是 env(safe-area-inset-top)。高度為 0 代表這台裝置或這個模式沒有給安全區。</p>
-      </div>
-      <ul class="declared">
+    <div class="dp-preview">
+      <div class="dp-viewport">
+        <main class="sheet">
+          <p class="letter">${probe.letter}</p>
+          <h1>${escapeHtml(probe.name)}</h1>
+          <p class="summary">${escapeHtml(probe.summary)}</p>
+          <p class="mode-flag">此頁<strong class="mode-word"></strong></p>
+          <div class="inset-block">
+            <div class="inset-bar"></div>
+            <p class="inset-label">上面那一格的高度就是 env(safe-area-inset-top)。空的一條代表這台裝置或這個模式沒有給安全區。</p>
+          </div>
+          <ul class="declared">
 ${declared}
-      </ul>
-      <p class="detail">${escapeHtml(probe.detail)}</p>
-      <p class="back"><a href="./">回到探針清單</a></p>
-    </main>
+          </ul>
+          <p class="detail">${escapeHtml(probe.detail)}</p>
+          <p class="back"><a href="./">回到探針清單</a></p>
+        </main>
+      </div>
+    </div>
   </body>
 </html>
 `;
@@ -233,6 +264,7 @@ function probeManifest(probe) {
     scope: './',
     display: 'standalone',
     orientation: 'portrait-primary',
+    background_color: APP_MANIFEST_BACKGROUND_COLOR,
     icons: [
       {
         src: '../../icons/icon-192.png',
@@ -249,34 +281,44 @@ function probeManifest(probe) {
     ],
   };
   // Probe D withholds the theme colour from *every* source, so the manifest
-  // must not quietly hand one back. Every other probe gets the app's own
-  // constants — including C, where the real app also leaves the manifest light
-  // while the meta goes dark.
-  if (probe.themeColor) {
-    manifest.theme_color = APP_MANIFEST_THEME_COLOR;
-    manifest.background_color = APP_MANIFEST_BACKGROUND_COLOR;
-  }
+  // must not quietly hand one back. `background_color` above is untouched by
+  // that — it is not the variable, and dropping it too would give D a second
+  // difference from B. C keeps the light manifest colour on purpose: the real
+  // app also leaves the manifest light while the meta goes dark.
+  if (probe.themeColor) manifest.theme_color = APP_MANIFEST_THEME_COLOR;
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 function probeCss() {
+  // `html` gets the canvas; `.dp-preview` / `.dp-viewport` get the theme
+  // background. `body` is never named here — it stays transparent, exactly as
+  // `shell.css` leaves it. An earlier revision painted the canvas colour onto
+  // `body` as well, which meant A and B differed on two elements instead of
+  // one; if iOS reads `body`, that version could not have attributed anything.
   const perProbe = PROBES.map(
     (probe) => `
-html.probe-${probe.slug},
-html.probe-${probe.slug} body {
+html.probe-${probe.slug} {
   background-color: ${probe.canvas};
-  color: ${probe.fg};
   color-scheme: ${probe.colorScheme};
+}
+
+html.probe-${probe.slug} .dp-preview,
+html.probe-${probe.slug} .dp-viewport {
+  background: ${probe.viewportBg};
+  color: ${probe.fg};
 }`,
   ).join('\n');
 
   return `/*
  * Generated by scripts/generate-statusbar-probes.mjs — DP-080. Do not edit.
  *
- * Mirrors how the real App paints the top of the screen: the canvas colour is
- * on \`html\`, and the viewport below it uses the same colour with
- * \`padding-top: env(safe-area-inset-top)\`, so the safe-area strip shows the
- * canvas exactly as \`shell.css\` lets it.
+ * The four page-level rules below are copied from \`src/shell/shell.css\` on
+ * purpose, down to \`body\` staying transparent: the whole experiment rests on
+ * the probes painting the top of the screen the way the real App does. The
+ * canvas colour is on \`html\` alone; \`.dp-viewport\` paints the theme
+ * background over it and carries \`padding-top: env(safe-area-inset-top)\`.
+ * If a probe ever stops matching \`shell.css\` here, its result stops meaning
+ * anything about the App.
  */
 
 * {
@@ -290,15 +332,34 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
+  background: none;
+  overscroll-behavior: none;
+  font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
+  line-height: 1.6;
+}
+
+.dp-preview {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dp-viewport {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
   padding-left: env(safe-area-inset-left);
-  font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
-  line-height: 1.6;
-  overscroll-behavior: none;
 }
 
 .sheet {
+  flex: 1;
+  overflow-y: auto;
   padding: 1.25rem 1.25rem 3rem;
 }
 
@@ -344,10 +405,13 @@ h1 {
   margin: 0 0 1.25rem;
 }
 
+/* outline rather than border: an outline is drawn outside the box and does not
+   add to its height, so the box really is env(safe-area-inset-top) tall. With
+   a border the zero case measured 4px, which contradicted the label telling
+   the owner that an empty box means no inset. */
 .inset-bar {
   height: env(safe-area-inset-top);
-  border: 2px dashed currentColor;
-  border-radius: 0.25rem;
+  outline: 2px dashed currentColor;
 }
 
 .inset-label,
@@ -409,11 +473,15 @@ ol.protocol {
   font-size: 0.875rem;
 }
 
-html.probe-index,
-html.probe-index body {
+html.probe-index {
   background-color: #ffffff;
-  color: #2e2a3b;
   color-scheme: light;
+}
+
+html.probe-index .dp-preview,
+html.probe-index .dp-viewport {
+  background: #ffffff;
+  color: #2e2a3b;
 }
 ${perProbe}
 `;
@@ -423,10 +491,10 @@ function indexHtml() {
   const group = (round) =>
     PROBES.filter((probe) => probe.round === round)
       .map(
-        (probe) => `        <li>
-          <a href="./${probe.slug}.html">${probe.letter} — ${escapeHtml(probe.name)}</a>
-          <p>${escapeHtml(probe.summary)}</p>
-        </li>`,
+        (probe) => `            <li>
+              <a href="./${probe.slug}.html">${probe.letter} — ${escapeHtml(probe.name)}</a>
+              <p>${escapeHtml(probe.summary)}</p>
+            </li>`,
       )
       .join('\n');
 
@@ -437,38 +505,43 @@ function indexHtml() {
     <meta http-equiv="Content-Security-Policy" content="${CSP}" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex" />
+    <link rel="icon" href="../../icons/daypop.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./probe.css" />
     <title>DP-080 狀態列探針</title>
   </head>
   <body>
-    <main class="sheet">
-      <h1>DP-080 狀態列探針</h1>
-      <p class="summary">
-        每一張都要「加到主畫面」再從主畫面圖示開啟才算數。在 Safari 分頁裡看到的結果不算 ——
-        頁面本身會告訴你目前是哪一種。
-      </p>
+    <div class="dp-preview">
+      <div class="dp-viewport">
+        <main class="sheet">
+          <h1>DP-080 狀態列探針</h1>
+          <p class="summary">
+            每一張都要「加到主畫面」再從主畫面圖示開啟才算數。在 Safari 分頁裡看到的結果不算 ——
+            頁面本身會告訴你目前是哪一種。
+          </p>
 
-      <h2 class="round-heading">第一輪：因果對照（先做這兩張）</h2>
-      <ol class="protocol">
-        <li>把 A 與 B 都加到主畫面。</li>
-        <li>各自從主畫面圖示開啟，記下狀態列的時間／訊號／電量看不看得見。</li>
-        <li>A 看得見、B 看不見 ⇒ 畫布顏色就是成因，而且差別只有 #f7f3ff 與 #ffffff。</li>
-        <li>兩張都看得見 ⇒ 靜態頁沒有重現症狀。這不代表沒問題，代表成因不在靜態的畫布顏色，要往 App 執行期做的事去找。</li>
-      </ol>
-      <ul class="index-list">
+          <h2 class="round-heading">第一輪：因果對照（先做這兩張）</h2>
+          <ol class="protocol">
+            <li>把 A 與 B 都加到主畫面。</li>
+            <li>各自從主畫面圖示開啟，記下狀態列的時間／訊號／電量看不看得見。</li>
+            <li>A 看得見、B 看不見 ⇒ 畫布顏色就是成因，而且差別只有 #f7f3ff 與 #ffffff。</li>
+            <li>兩張都看得見 ⇒ 靜態頁沒有重現症狀。這不代表沒問題，代表成因不在靜態的畫布顏色，要往 App 執行期做的事去找。</li>
+          </ol>
+          <ul class="index-list">
 ${group(1)}
-      </ul>
+          </ul>
 
-      <h2 class="round-heading">第二輪：縮小機制（第一輪有結果再做）</h2>
-      <ul class="index-list">
+          <h2 class="round-heading">第二輪：縮小機制（第一輪有結果再做）</h2>
+          <ul class="index-list">
 ${group(2)}
-      </ul>
+          </ul>
 
-      <p class="detail">
-        這些頁面是暫時的診斷素材，沒有任何 JavaScript，也不碰帳號或資料。DP-080 結案時整個
-        public/diag/ 一併刪除。
-      </p>
-    </main>
+          <p class="detail">
+            這些頁面是暫時的診斷素材，沒有任何 JavaScript，也不碰帳號或資料。DP-080 結案時整個
+            public/diag/ 一併刪除。
+          </p>
+        </main>
+      </div>
+    </div>
   </body>
 </html>
 `;
