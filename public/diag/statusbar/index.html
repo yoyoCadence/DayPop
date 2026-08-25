@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant" class="probe probe-index">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./probe.css" />
+    <title>DP-080 狀態列探針</title>
+  </head>
+  <body>
+    <main class="sheet">
+      <h1>DP-080 狀態列探針</h1>
+      <p class="summary">
+        每一張都要「加到主畫面」再從主畫面圖示開啟才算數。在 Safari 分頁裡看到的結果不算 ——
+        頁面本身會告訴你目前是哪一種。
+      </p>
+
+      <h2 class="round-heading">第一輪：因果對照（先做這兩張）</h2>
+      <ol class="protocol">
+        <li>把 A 與 B 都加到主畫面。</li>
+        <li>各自從主畫面圖示開啟，記下狀態列的時間／訊號／電量看不看得見。</li>
+        <li>A 看得見、B 看不見 ⇒ 畫布顏色就是成因，而且差別只有 #f7f3ff 與 #ffffff。</li>
+        <li>兩張都看得見 ⇒ 靜態頁沒有重現症狀。這不代表沒問題，代表成因不在靜態的畫布顏色，要往 App 執行期做的事去找。</li>
+      </ol>
+      <ul class="index-list">
+        <li>
+          <a href="./a-canvas-pre-074.html">A — A 舊畫布</a>
+          <p>DP-074 之前的畫布顏色</p>
+        </li>
+        <li>
+          <a href="./b-canvas-post-074.html">B — B 新畫布</a>
+          <p>DP-074 之後的畫布顏色（漫畫淺色）</p>
+        </li>
+      </ul>
+
+      <h2 class="round-heading">第二輪：縮小機制（第一輪有結果再做）</h2>
+      <ul class="index-list">
+        <li>
+          <a href="./c-canvas-dark.html">C — C 深色畫布</a>
+          <p>漫畫深色</p>
+        </li>
+        <li>
+          <a href="./d-no-theme-color.html">D — D 無 theme-color</a>
+          <p>與 B 相同，但完全不宣告 theme-color</p>
+        </li>
+        <li>
+          <a href="./e-bar-style-default.html">E — E bar=default</a>
+          <p>與 B 相同，另外宣告 status-bar-style=default</p>
+        </li>
+        <li>
+          <a href="./f-bar-style-black.html">F — F bar=black</a>
+          <p>與 B 相同，另外宣告 status-bar-style=black</p>
+        </li>
+      </ul>
+
+      <p class="detail">
+        這些頁面是暫時的診斷素材，沒有任何 JavaScript，也不碰帳號或資料。DP-080 結案時整個
+        public/diag/ 一併刪除。
+      </p>
+    </main>
+  </body>
+</html>
