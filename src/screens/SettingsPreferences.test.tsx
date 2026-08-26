@@ -2,11 +2,14 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataProvider } from '../data/DataProvider';
+import type { DayPopRepository } from '../data/repository';
+import { LocalDayPopRepository } from '../storage/localRepository';
 import { LegacyImportProvider } from '../legacy/LegacyImportProvider';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { createEmptyUserData } from '../domain/types';
 import { readUserData, writeUserData } from '../storage/versionedStorage';
 import { SettingsScaffoldScreen } from './SettingsScaffoldScreen';
+import { zoneOffsetLabel } from './timezoneOptions';
 
 /**
  * 設定的「桌寵」與「一般」兩張卡片（DP-014 這一段的搬移）。
@@ -45,10 +48,10 @@ afterEach(() => {
   container.remove();
 });
 
-async function render() {
+async function render(repository?: DayPopRepository) {
   await act(async () => {
     root.render(
-      <DataProvider>
+      <DataProvider repository={repository}>
         <LegacyImportProvider accountId={null}>
           <ThemeProvider>
             <SettingsScaffoldScreen updater={updater} onOpenAuth={vi.fn()} />
@@ -121,29 +124,103 @@ describe('設定 桌寵', () => {
     expect(savedPreferences().petEnabled).toBe(false);
   });
 
-  it('寵物名字帶入已保存的值並寫回 trim 後的名字', async () => {
+  it('寵物名字帶入已保存的值，離開欄位時寫回 trim 後的名字', async () => {
     await render();
     expect(petNameInput().value).toBe('摩卡');
 
     await type(petNameInput(), '  小黑  ');
 
-    // 畫面保留未 trim 的草稿，保存的是 trim 後的值。
+    // 打字期間只更新草稿，還沒送出。
     expect(petNameInput().value).toBe('  小黑  ');
+    expect(savedPreferences().petName).toBe('摩卡');
+
+    await blur(petNameInput());
+
     expect(savedPreferences().petName).toBe('小黑');
+    expect(petNameInput().value).toBe('小黑');
   });
 
   it('清空名字不會保存空字串，離開欄位後還原成已保存的值', async () => {
     await render();
     await type(petNameInput(), '小黑');
+    await blur(petNameInput());
     expect(savedPreferences().petName).toBe('小黑');
 
     await type(petNameInput(), '   ');
-
-    // domain 的 petName 不接受空字串，所以這一步不能寫入。
-    expect(savedPreferences().petName).toBe('小黑');
-
     await blur(petNameInput());
+
+    // domain 的 petName 不接受空字串，所以整個草稿放棄，欄位還原。
+    expect(savedPreferences().petName).toBe('小黑');
     expect(petNameInput().value).toBe('小黑');
+  });
+});
+
+/**
+ * `DataProvider` 沒有樂觀更新，`data.preferences` 會落後尚未回應的寫入。
+ * 這個 adapter 把 `updatePreferences` 卡住不回應，重現遠端帳號的情況：
+ * 打字期間畫面拿到的 `preferences.petName` 還是送出前的舊值。
+ */
+class PendingPreferencesRepository extends LocalDayPopRepository {
+  readonly sent: string[] = [];
+  #release: (() => void)[] = [];
+
+  override updatePreferences(patch: Parameters<LocalDayPopRepository['updatePreferences']>[0]) {
+    if (typeof patch.petName === 'string') this.sent.push(patch.petName);
+    return new Promise<Awaited<ReturnType<LocalDayPopRepository['updatePreferences']>>>((resolve) => {
+      this.#release.push(() => resolve(super.updatePreferences(patch)));
+    });
+  }
+
+  /**
+   * 依序放行。DP-062 的佇列是序列化的：前一筆回應之前，下一筆根本不會呼叫到
+   * repository，所以每放行一筆就要讓 microtask 跑完，下一筆才會出現。
+   */
+  async flush() {
+    for (let guard = 0; this.#release.length > 0 && guard < 20; guard += 1) {
+      this.#release.shift()?.();
+      await act(async () => {});
+    }
+  }
+}
+
+describe('設定 桌寵（寫入尚未回應時）', () => {
+  it('同一次編輯裡的中間值不會被送出，只送最終值', async () => {
+    const repository = new PendingPreferencesRepository();
+    await render(repository);
+
+    // 「摩卡」→ 刪成「摩」→ 立刻補回「摩卡」，中途不離開欄位。
+    await type(petNameInput(), '摩');
+    await type(petNameInput(), '摩卡');
+    await blur(petNameInput());
+
+    // 中間值「摩」不會進到佇列，所以不可能變成最後保存的值。
+    expect(repository.sent).toEqual(['摩卡']);
+
+    await repository.flush();
+    expect(savedPreferences().petName).toBe('摩卡');
+  });
+
+  it('前一次寫入還沒回應時，下一次編輯照樣送出且最後一次獲勝', async () => {
+    const repository = new PendingPreferencesRepository();
+    await render(repository);
+
+    await type(petNameInput(), '小黑');
+    await blur(petNameInput());
+
+    // 第一次寫入還卡著，所以 preferences.petName 仍是送出前的「摩卡」，
+    // 欄位顯示的也是它。若拿這個舊值去比對就會漏送第二次編輯。
+    expect(repository.sent).toEqual(['小黑']);
+    expect(savedPreferences().petName).toBe('摩卡');
+    expect(petNameInput().value).toBe('摩卡');
+
+    await type(petNameInput(), '小白');
+    await blur(petNameInput());
+
+    await repository.flush();
+
+    // 兩次編輯都送到了 repository，順序與呼叫順序一致，最後一次獲勝。
+    expect(repository.sent).toEqual(['小黑', '小白']);
+    expect(savedPreferences().petName).toBe('小白');
   });
 });
 
@@ -176,6 +253,41 @@ describe('設定 一般', () => {
     await selectOption(timezoneSelect(), 'Europe/London');
 
     expect(savedPreferences().timezone).toBe('Europe/London');
+  });
+
+  it('有夏令時間的時區依當下日期顯示 offset，不是寫死的那個', () => {
+    const summer = new Date('2026-08-26T12:00:00Z');
+    const winter = new Date('2026-01-15T12:00:00Z');
+
+    // 原稿把這四個寫死成 -8／-5／+0／+11，一年裡有一半是錯的。
+    expect(zoneOffsetLabel('America/Los_Angeles', summer)).toBe('GMT-7');
+    expect(zoneOffsetLabel('America/Los_Angeles', winter)).toBe('GMT-8');
+    expect(zoneOffsetLabel('America/New_York', summer)).toBe('GMT-4');
+    expect(zoneOffsetLabel('Europe/London', summer)).toBe('GMT+1');
+    expect(zoneOffsetLabel('Europe/London', winter)).toBe('GMT+0');
+    expect(zoneOffsetLabel('Australia/Sydney', summer)).toBe('GMT+10');
+    expect(zoneOffsetLabel('Australia/Sydney', winter)).toBe('GMT+11');
+
+    // 沒有 DST 的六個，兩個季節都與原稿逐字相同。
+    for (const at of [summer, winter]) {
+      expect(zoneOffsetLabel('Asia/Taipei', at)).toBe('GMT+8');
+      expect(zoneOffsetLabel('Asia/Tokyo', at)).toBe('GMT+9');
+      expect(zoneOffsetLabel('Asia/Seoul', at)).toBe('GMT+9');
+    }
+
+    // 半小時時區保留分鐘；認不得的字串回 null 讓呼叫端只顯示城市名。
+    expect(zoneOffsetLabel('Asia/Kolkata', summer)).toBe('GMT+5:30');
+    expect(zoneOffsetLabel('Not/AZone', summer)).toBeNull();
+  });
+
+  it('時區選項的標籤用的是動態 offset', async () => {
+    await render();
+    const labels = [...timezoneSelect().options].map((option) => option.textContent);
+
+    expect(labels).toContain('台北 (GMT+8)');
+    expect(labels).toContain('UTC');
+    const losAngeles = labels.find((label) => label?.startsWith('洛杉矶'));
+    expect(losAngeles).toBe(`洛杉矶 (${zoneOffsetLabel('America/Los_Angeles', new Date())})`);
   });
 
   it('清單外的已保存時區會被補進選項，不會顯示空白', async () => {

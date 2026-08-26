@@ -158,6 +158,15 @@
   line-height: 1.5;
 }
 
+/* 原稿描述了 DP-040 才會有的能力；這一行把還沒有的部分明講成尚未提供。 */
+.set-pref-pending {
+  display: inline-block;
+  margin-top: 4px;
+  border-left: 2px solid var(--border);
+  padding-left: 7px;
+  color: var(--muted);
+}
+
 /* `.dp-screen button:focus-visible` 只涵蓋 button；input 與 select 要自己宣告。 */
 .set-pref-input:focus-visible,
 .set-pref-select:focus-visible {

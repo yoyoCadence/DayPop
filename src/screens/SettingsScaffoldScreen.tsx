@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
 import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
@@ -19,6 +19,7 @@ import { LegacyImportCard } from '../legacy/LegacyImportCard';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
+import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
 import './screens.css';
 import './calendarManage.css';
@@ -45,31 +46,6 @@ const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
   { value: 0, label: '日' },
   { value: 1, label: '一' },
 ];
-
-/**
- * 原稿 :332 的 11 個時區選項，逐字搬移（含「洛杉矶」的簡體字）。
- * 使用者實際保存的值可以是任何 IANA 時區 —— legacy 匯入與 .ics 匯入都可能
- * 帶進清單外的值 —— 所以 `timezoneOptions()` 會把當前值補進清單，
- * 避免 select 顯示空白並在下一次變更時把它默默改掉。
- */
-const TIMEZONE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'Asia/Taipei', label: '台北 (GMT+8)' },
-  { value: 'Asia/Tokyo', label: '東京 (GMT+9)' },
-  { value: 'Asia/Shanghai', label: '上海 (GMT+8)' },
-  { value: 'Asia/Hong_Kong', label: '香港 (GMT+8)' },
-  { value: 'Asia/Singapore', label: '新加坡 (GMT+8)' },
-  { value: 'Asia/Seoul', label: '首爾 (GMT+9)' },
-  { value: 'America/Los_Angeles', label: '洛杉矶 (GMT-8)' },
-  { value: 'America/New_York', label: '紐約 (GMT-5)' },
-  { value: 'Europe/London', label: '倫敦 (GMT+0)' },
-  { value: 'Australia/Sydney', label: '雪梨 (GMT+11)' },
-  { value: 'UTC', label: 'UTC' },
-];
-
-function timezoneOptions(current: string): { value: string; label: string }[] {
-  if (TIMEZONE_OPTIONS.some((option) => option.value === current)) return TIMEZONE_OPTIONS;
-  return [...TIMEZONE_OPTIONS, { value: current, label: current }];
-}
 
 /**
  * 設定 tab.
@@ -110,7 +86,13 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
    * 原稿 :994 的 `onPetName` 每按一鍵就把原始字串寫進 state，但 DayPop 的
    * `petName` 在 domain 是「非空且已 trim」的字串（`validation.ts:433`），
    * 空字串會在 repository 邊界被擋下。衝突時以 DayPop 的 validation 為準：
-   * 草稿讓打字（含中途的空白）不被卡住，只有 trim 後非空才真的寫入。
+   * 草稿讓打字（含中途的空白）不被卡住，離開欄位時才單次送出。
+   *
+   * **不可以在每次輸入時比對 `preferences.petName` 決定要不要送出。**
+   * `DataProvider` 沒有樂觀更新 —— `setState` 只在 repository 回應後才跑
+   * （`DataProvider.tsx` 的 `enqueue()`）—— 所以打字期間 `preferences` 還是
+   * 送出前的舊值。用它比對會讓「摩卡 → 摩 → 摩卡」的第二次判定成不用寫，
+   * 佇列最後保存的反而是中途的「摩」，使用者打的最終值被靜默丟掉。
    */
   const [petNameDraft, setPetNameDraft] = useState<string | null>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -136,19 +118,27 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
 
   const preferences = data.preferences;
   const petNameValue = petNameDraft ?? preferences.petName;
+  // 時區 offset 依「現在」解析。固定成一個值，重繪時標籤才不會跳動。
+  const now = useMemo(() => new Date(), []);
 
   function changePetName(value: string) {
     setPetNameDraft(value);
-    const trimmed = value.trim();
-    if (trimmed && trimmed !== preferences.petName) updatePreferences({ petName: trimmed });
   }
 
   /**
-   * 放開草稿，讓欄位回到已保存的值。清空後離開欄位會還原成原本的名字，
-   * 而不是留下一個看起來已改、實際沒保存的畫面（DP-076 的教訓）。
+   * 離開欄位時把草稿送出一次，然後放開草稿讓欄位回到已保存的值。
+   *
+   * 這裡刻意不跟 `preferences.petName` 比對（理由見 `petNameDraft` 的說明）：
+   * 重複送出同一個名字是 idempotent 的，代價遠小於漏送使用者的最終值。
+   * 清空後離開欄位則是放棄草稿、還原成原本的名字，而不是留下一個
+   * 看起來已改、實際沒保存的畫面（DP-076 的教訓）。
    */
-  function releasePetNameDraft() {
+  function commitPetName() {
+    const draft = petNameDraft;
     setPetNameDraft(null);
+    if (draft === null) return;
+    const trimmed = draft.trim();
+    if (trimmed) updatePreferences({ petName: trimmed });
   }
 
   function togglePet() {
@@ -430,10 +420,21 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             placeholder="幫牠取名"
             maxLength={40}
             onChange={(event) => changePetName(event.target.value)}
-            onBlur={releasePetNameDraft}
+            onBlur={commitPetName}
           />
+          {/*
+            原稿 :323 的說明描述的是四個 DP-040 才會有的能力（走動、對話泡泡、
+            透過牠新增待辦、行程建議）。現在的寵物層只有固定位置與待辦數 badge
+            （見 `PetLayer.tsx` 的說明），所以照搬那句話會變成宣告不存在的功能。
+            依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
+            但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
+          */}
           <p className="set-pref-help">
-            牠會在角落走動，用漫畫對話框提醒你今日與明日的待辦，也能直接透過牠新增待辦或請牠給行程建議。
+            目前牠會待在日曆右下角，顯示未完成待辦的數量。
+            <br />
+            <span className="set-pref-pending">
+              尚未提供（DP-040）：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
+            </span>
           </p>
         </div>
 
@@ -488,7 +489,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               value={preferences.timezone}
               onChange={(event) => updatePreferences({ timezone: event.target.value })}
             >
-              {timezoneOptions(preferences.timezone).map((option) => (
+              {timezoneOptions(preferences.timezone, now).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
