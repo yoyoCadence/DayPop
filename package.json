@@ -17,6 +17,7 @@
     "check:build": "node scripts/check-build-assets.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "probes:statusbar": "node scripts/generate-statusbar-probes.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",

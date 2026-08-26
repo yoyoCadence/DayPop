@@ -1,0 +1,25 @@
+{
+  "name": "DP-080 F bar=black",
+  "short_name": "F bar=black",
+  "lang": "zh-TW",
+  "start_url": "./f-bar-style-black.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "../../icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../../icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#ffffff"
+}
