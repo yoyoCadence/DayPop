@@ -340,7 +340,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         )}
       </div>
 
-      <PetLayer badge={openTodoCount} petName={data.preferences.petName} />
+      {/* 設定的「顯示桌寵」開關（原稿 :320）永久關閉整個寵物層。 */}
+      {data.preferences.petEnabled && (
+        <PetLayer badge={openTodoCount} petName={data.preferences.petName} />
+      )}
 
       <button className="cal-fab" type="button" onClick={() => setSheetOpen(true)} aria-label="新增">
         <svg
