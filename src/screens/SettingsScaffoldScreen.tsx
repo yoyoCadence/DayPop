@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
 import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
@@ -19,10 +19,12 @@ import { LegacyImportCard } from '../legacy/LegacyImportCard';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
+import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
 import './screens.css';
 import './calendarManage.css';
 import './dataTransfer.css';
+import './settingsPreferences.css';
 
 export interface SettingsScaffoldScreenProps {
   updater: AppUpdateState;
@@ -40,13 +42,23 @@ const GRID_OPTIONS: { mode: CalendarGridMode; label: string }[] = [
   { mode: 'fixed-six', label: '固定 6 列' },
 ];
 
+const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
+  { value: 0, label: '日' },
+  { value: 1, label: '一' },
+];
+
 /**
  * 設定 tab.
  *
- * The 外觀主題 and 我的日曆 sections are ported from the原檔 設定 screen.
- * Account and version blocks are the DP-010/DP-011/DP-023 capabilities kept
- * working inside the canonical shell; they still carry scaffold styling and
- * are redesigned in a later DP-014 segment.
+ * The 外觀主題、我的日曆、桌寵 and 一般 sections are ported from the原檔 設定
+ * screen. Account and version blocks are the DP-010/DP-011/DP-023 capabilities
+ * kept working inside the canonical shell; they still carry scaffold styling
+ * and are redesigned in a later DP-014 segment.
+ *
+ * 桌寵與一般只搬移現有偏好模型撐得起的控制項。原稿的「選擇夥伴」與
+ * 「左右滑動翻頁」需要新的偏好欄位與 migration，等級／XP 需要 DP-041 的規則，
+ * 預設提醒與通知提醒屬 DP-042 —— 這些一律留在下方的「尚未搬移」清單，
+ * 不以停用或假的成功狀態充數。
  */
 export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffoldScreenProps) {
   const { themeId, mode, selectTheme, selectMode } = useTheme();
@@ -68,6 +80,21 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   const [transferMessage, setTransferMessage] = useState<string | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  /**
+   * 寵物名字的未送出草稿；`null` 代表畫面直接顯示已保存的值。
+   *
+   * 原稿 :994 的 `onPetName` 每按一鍵就把原始字串寫進 state，但 DayPop 的
+   * `petName` 在 domain 是「非空且已 trim」的字串（`validation.ts:433`），
+   * 空字串會在 repository 邊界被擋下。衝突時以 DayPop 的 validation 為準：
+   * 草稿讓打字（含中途的空白）不被卡住，離開欄位時才單次送出。
+   *
+   * **不可以在每次輸入時比對 `preferences.petName` 決定要不要送出。**
+   * `DataProvider` 沒有樂觀更新 —— `setState` 只在 repository 回應後才跑
+   * （`DataProvider.tsx` 的 `enqueue()`）—— 所以打字期間 `preferences` 還是
+   * 送出前的舊值。用它比對會讓「摩卡 → 摩 → 摩卡」的第二次判定成不用寫，
+   * 佇列最後保存的反而是中途的「摩」，使用者打的最終值被靜默丟掉。
+   */
+  const [petNameDraft, setPetNameDraft] = useState<string | null>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const icsInputRef = useRef<HTMLInputElement>(null);
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
@@ -88,6 +115,36 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
         : dataState.saving
           ? '同步中…'
           : '已同步';
+
+  const preferences = data.preferences;
+  const petNameValue = petNameDraft ?? preferences.petName;
+  // 時區 offset 依「現在」解析。固定成一個值，重繪時標籤才不會跳動。
+  const now = useMemo(() => new Date(), []);
+
+  function changePetName(value: string) {
+    setPetNameDraft(value);
+  }
+
+  /**
+   * 離開欄位時把草稿送出一次，然後放開草稿讓欄位回到已保存的值。
+   *
+   * 這裡刻意不跟 `preferences.petName` 比對（理由見 `petNameDraft` 的說明）：
+   * 重複送出同一個名字是 idempotent 的，代價遠小於漏送使用者的最終值。
+   * 清空後離開欄位則是放棄草稿、還原成原本的名字，而不是留下一個
+   * 看起來已改、實際沒保存的畫面（DP-076 的教訓）。
+   */
+  function commitPetName() {
+    const draft = petNameDraft;
+    setPetNameDraft(null);
+    if (draft === null) return;
+    const trimmed = draft.trim();
+    if (trimmed) updatePreferences({ petName: trimmed });
+  }
+
+  function togglePet() {
+    // 原稿 :995 同時關掉寵物對話泡泡；DayPop 的泡泡屬 DP-040，目前還沒有。
+    updatePreferences({ petEnabled: !preferences.petEnabled });
+  }
 
   function itemsOn(calendar: Calendar | null): number {
     if (!calendar) return 0;
@@ -246,21 +303,6 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           ))}
         </div>
 
-        <div className="dp-section-label">月曆列數</div>
-        <div className="dp-mode-toggle" role="group" aria-label="月曆列數">
-          {GRID_OPTIONS.map((option) => (
-            <button
-              key={option.mode}
-              className="dp-mode-button"
-              type="button"
-              aria-pressed={data.preferences.calendarGridMode === option.mode}
-              onClick={() => updatePreferences({ calendarGridMode: option.mode })}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
         <div className="dp-section-label" style={{ marginTop: 18 }}>
           我的日曆
         </div>
@@ -348,6 +390,112 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             )}
           </section>
           <LegacyImportCard />
+        </div>
+
+        {/* 原稿 :317-326。等級／XP 區塊屬 DP-041、選擇夥伴屬 DP-040，都還沒搬。 */}
+        <div className="dp-section-label">桌寵</div>
+        <div className="set-pref-card">
+          <div className="set-pref-toggle-row">
+            <span className="set-pref-toggle-label" id="pet-enabled-label">
+              顯示桌寵
+            </span>
+            <button
+              className="set-pref-toggle"
+              type="button"
+              aria-pressed={preferences.petEnabled}
+              aria-labelledby="pet-enabled-label"
+              onClick={togglePet}
+            >
+              <span className="set-pref-knob" aria-hidden="true" />
+            </button>
+          </div>
+          <label className="set-pref-field-label" htmlFor="pet-name">
+            寵物名字
+          </label>
+          <input
+            id="pet-name"
+            className="set-pref-input"
+            type="text"
+            value={petNameValue}
+            placeholder="幫牠取名"
+            maxLength={40}
+            onChange={(event) => changePetName(event.target.value)}
+            onBlur={commitPetName}
+          />
+          {/*
+            原稿 :323 的說明描述的是四個 DP-040 才會有的能力（走動、對話泡泡、
+            透過牠新增待辦、行程建議）。現在的寵物層只有固定位置與待辦數 badge
+            （見 `PetLayer.tsx` 的說明），所以照搬那句話會變成宣告不存在的功能。
+            依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
+            但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
+          */}
+          <p className="set-pref-help">
+            目前牠會待在日曆右下角，顯示未完成待辦的數量。
+            <br />
+            <span className="set-pref-pending">
+              尚未提供（DP-040）：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
+            </span>
+          </p>
+        </div>
+
+        {/* 原稿 :329-337。預設提醒與通知提醒屬 DP-042，雲端同步已在上面的帳號區塊。 */}
+        <div className="dp-section-label">一般</div>
+        <div className="set-pref-rows">
+          <div className="set-pref-row">
+            {/* 原稿這一列是「月檢視週數 4／5／6」。DP-018 已定案 DayPop 改用
+                自動／固定兩種列數模式，所以沿用該模型，只把它放回原稿的位置。 */}
+            <span className="set-pref-row-label" id="grid-mode-label">
+              月曆列數
+            </span>
+            <div className="set-pref-segment" role="group" aria-labelledby="grid-mode-label">
+              {GRID_OPTIONS.map((option) => (
+                <button
+                  key={option.mode}
+                  className="set-pref-segment-button"
+                  type="button"
+                  aria-pressed={preferences.calendarGridMode === option.mode}
+                  onClick={() => updatePreferences({ calendarGridMode: option.mode })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="set-pref-row">
+            <span className="set-pref-row-label" id="week-start-label">
+              每週起始日
+            </span>
+            <div className="set-pref-segment" role="group" aria-labelledby="week-start-label">
+              {WEEK_START_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  className="set-pref-segment-button"
+                  type="button"
+                  aria-pressed={preferences.weekStartsOn === option.value}
+                  onClick={() => updatePreferences({ weekStartsOn: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="set-pref-row">
+            <label className="set-pref-row-label" htmlFor="default-timezone">
+              預設時區
+            </label>
+            <select
+              id="default-timezone"
+              className="set-pref-select"
+              value={preferences.timezone}
+              onChange={(event) => updatePreferences({ timezone: event.target.value })}
+            >
+              {timezoneOptions(preferences.timezone, now).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="dp-section-label">資料備份</div>
@@ -468,9 +616,10 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           <p>這些區塊會依原稿逐段搬移，不會被合併或改成別的版面：</p>
           <ul>
             <li>AI 助理區塊（安全代理方案見 DP-043）</li>
-            <li>寵物：命名、品種與開關</li>
-            <li>一般偏好：週起始日、時區、滑動方向</li>
-            <li>通知與預設提醒</li>
+            <li>桌寵的等級與已完成待辦數（DP-041 才定義 XP 規則）</li>
+            <li>桌寵的「選擇夥伴」品種（DP-040 的素材，且偏好還沒有這個欄位）</li>
+            <li>一般偏好的「左右滑動翻頁」（偏好還沒有這個欄位）</li>
+            <li>通知提醒與預設提醒（DP-042）</li>
             <li>開發／示範資料控制</li>
           </ul>
         </div>
