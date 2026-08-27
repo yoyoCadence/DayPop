@@ -1329,17 +1329,63 @@
   font-weight: 700;
 }
 
+/* 全天 列，值搬自原稿 `日曆桌寵 Calendar Pet.dc.html` :586。
+   原稿是一條有上分隔線、左右對齊的列，不是有外框的欄位。 */
 .cal-allday {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: var(--bd) solid var(--border);
-  border-radius: calc(var(--radius) - 2px);
-  background: var(--bg);
-  padding: 9px 11px;
+  border-top: 1px solid var(--line);
+  padding: 11px 0;
+}
+
+.cal-allday-label {
   color: var(--fg);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 44×25 軌道與 21px 旋鈕，同原稿 :586。
+   設定的「顯示桌寵」是同一個尺寸但在 `settingsPreferences.css` 各自宣告 ——
+   原稿本來就在不同區塊各寫一份 inline style，且兩個區塊的 CSS 互相獨立。
+   若日後要抽成共用開關元件，那是獨立的整理，不在這一段搬移的範圍。 */
+.cal-allday-toggle {
+  position: relative;
+  width: 44px;
+  height: 25px;
+  flex: none;
+  border: 0;
+  padding: 0;
+  border-radius: 20px;
+  background: var(--surface-2);
+  transition: background 0.2s;
+}
+
+.cal-allday-toggle[aria-pressed='true'] {
+  background: var(--accent);
+}
+
+.cal-allday-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.2s;
+}
+
+.cal-allday-toggle[aria-pressed='true'] .cal-allday-knob {
+  left: 21px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-allday-toggle,
+  .cal-allday-knob {
+    transition: none;
+  }
 }
 
 .cal-delete-button {
