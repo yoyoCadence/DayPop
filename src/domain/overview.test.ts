@@ -8,7 +8,20 @@ import {
   stepOverviewCursor,
   type BuildOverviewInput,
 } from './overview';
+import { resolveEventOccurrences, type ResolvedEventOccurrence } from './recurrence';
 import type { CalendarEvent, Sticker, TodoItem } from './types';
+
+/**
+ * Expands events the way `OverviewScreen` does before calling in — DP-081.
+ * The window is wide enough for every date these tests use; production passes
+ * exactly the browsed period.
+ */
+function occurrencesOf(events: CalendarEvent[]): ResolvedEventOccurrence[] {
+  return resolveEventOccurrences(
+    { events, eventExceptions: [] },
+    { startDate: '2025-01-01', endDate: '2029-12-31' },
+  );
+}
 
 const CURSOR = new Date(2026, 7, 6); // Thursday 2026-08-06
 
@@ -92,7 +105,7 @@ describe('display timezone', () => {
 
   function dayOf(displayTimezone: string) {
     const groups = buildOverviewGroups(
-      input({ events: [crossZone], displayTimezone, cursor: new Date(2026, 7, 1) }),
+      input({ occurrences: occurrencesOf([crossZone]), displayTimezone, cursor: new Date(2026, 7, 1) }),
     );
     return groups
       .flatMap((group) => group.days)
@@ -129,7 +142,7 @@ describe('cross-midnight events', () => {
   );
 
   it('appears on both days, the second marked as a continuation', () => {
-    const groups = buildOverviewGroups(input({ events: [overnight] }));
+    const groups = buildOverviewGroups(input({ occurrences: occurrencesOf([overnight]) }));
     const rows = groups.flatMap((group) =>
       group.days.map((day) => ({ dateKey: day.dateKey, time: day.items[0]?.time })),
     );
@@ -141,7 +154,7 @@ describe('cross-midnight events', () => {
   });
 
   it('counts as one occurrence, not two rows', () => {
-    const groups = buildOverviewGroups(input({ period: 'year', events: [overnight] }));
+    const groups = buildOverviewGroups(input({ period: 'year', occurrences: occurrencesOf([overnight]) }));
     const august = groups.find((group) => group.title === '8月');
 
     // Two day rows, one event.
@@ -152,7 +165,7 @@ describe('cross-midnight events', () => {
   it('counts as one across the whole period, not once per day group', () => {
     // Outside the year view each day is its own group, so summing group counts
     // reported the same event twice — what 綜覽 actually showed before this.
-    const groups = buildOverviewGroups(input({ events: [overnight] }));
+    const groups = buildOverviewGroups(input({ occurrences: occurrencesOf([overnight]) }));
 
     expect(groups).toHaveLength(2);
     expect(groups.reduce((sum, group) => sum + group.count, 0)).toBe(2);
@@ -161,7 +174,7 @@ describe('cross-midnight events', () => {
 
   it('still counts two different events on the same day as two', () => {
     const groups = buildOverviewGroups(
-      input({ events: [overnight, event('b', '2026-08-06', '09:00')] }),
+      input({ occurrences: occurrencesOf([overnight, event('b', '2026-08-06', '09:00')]) }),
     );
     const sixth = groups.find((group) => group.key === '2026-08-06');
 
@@ -171,7 +184,7 @@ describe('cross-midnight events', () => {
 
 function input(overrides: Partial<BuildOverviewInput> = {}): BuildOverviewInput {
   return {
-    events: [],
+    occurrences: occurrencesOf([]),
     todos: [],
     stickers: [],
     // The fixtures are built in Taipei; grouping reads the same zone (DP-064).
@@ -232,7 +245,7 @@ describe('stepOverviewCursor', () => {
 describe('buildOverviewGroups', () => {
   it('drops days with nothing on them', () => {
     const groups = buildOverviewGroups(
-      input({ events: [event('a', '2026-08-06', '09:00')] }),
+      input({ occurrences: occurrencesOf([event('a', '2026-08-06', '09:00')]) }),
     );
     expect(groups).toHaveLength(1);
     expect(groups[0]).toMatchObject({ key: '2026-08-06', title: '8/6', sub: '週四', count: 1 });
@@ -242,7 +255,7 @@ describe('buildOverviewGroups', () => {
     const groups = buildOverviewGroups(
       input({
         period: 'year',
-        events: [event('a', '2026-03-02', '09:00'), event('b', '2026-08-06', '10:00')],
+        occurrences: occurrencesOf([event('a', '2026-03-02', '09:00'), event('b', '2026-08-06', '10:00')]),
       }),
     );
     expect(groups.map((group) => group.title)).toEqual(['3月', '8月']);
@@ -272,7 +285,7 @@ describe('buildOverviewGroups', () => {
       timezone: 'Asia/Taipei',
     };
 
-    const groups = buildOverviewGroups(input({ events: [long] }));
+    const groups = buildOverviewGroups(input({ occurrences: occurrencesOf([long]) }));
 
     // Every day of August, each a continuation, and still one occurrence.
     expect(groups).toHaveLength(31);
@@ -283,11 +296,11 @@ describe('buildOverviewGroups', () => {
   it('puts all-day events first and sorts the rest by start', () => {
     const groups = buildOverviewGroups(
       input({
-        events: [
+        occurrences: occurrencesOf([
           event('late', '2026-08-06', '15:00'),
           event('early', '2026-08-06', '09:00'),
           event('allday', '2026-08-06', '09:00', true),
-        ],
+        ]),
       }),
     );
     expect(groups[0]?.days[0]?.items.map((item) => item.time)).toEqual(['全天', '09:00', '15:00']);
@@ -312,8 +325,9 @@ describe('buildOverviewGroups', () => {
 
     const items = groups.flatMap((group) => group.days.flatMap((day) => day.items));
     expect(items).toEqual([
-      { kind: 'sticker', id: 'a', time: '', title: '貼圖', sub: '', done: false, glyph: '🎂' },
-      { kind: 'sticker', id: 'b', time: '', title: '貼圖', sub: '', done: false, glyph: '✈️' },
+      // `key` is the dedup identity (DP-081); for a sticker it is its own id.
+      { kind: 'sticker', key: 'a', id: 'a', time: '', title: '貼圖', sub: '', done: false, glyph: '🎂' },
+      { kind: 'sticker', key: 'b', id: 'b', time: '', title: '貼圖', sub: '', done: false, glyph: '✈️' },
     ]);
     expect(groups[0]?.count).toBe(2);
   });
@@ -332,8 +346,45 @@ describe('buildOverviewGroups', () => {
 
   it('ignores data outside the selected period', () => {
     const groups = buildOverviewGroups(
-      input({ period: 'week', events: [event('a', '2026-08-20', '09:00')] }),
+      input({ period: 'week', occurrences: occurrencesOf([event('a', '2026-08-20', '09:00')]) }),
     );
     expect(groups).toEqual([]);
+  });
+});
+
+describe('綜覽 的重複事件計數（DP-081）', () => {
+  function weekly(): CalendarEvent {
+    const base = event('r1', '2026-08-03', '09:00');
+    return { ...base, recurrence: { rule: 'FREQ=WEEKLY;COUNT=6' } };
+  }
+
+  it('一個系列在該期間內每一次都算一筆，不是整個系列算一筆', () => {
+    const groups = buildOverviewGroups(
+      input({
+        occurrences: occurrencesOf([weekly()]),
+        type: 'events',
+        period: 'month',
+        cursor: new Date(2026, 7, 6),
+      }),
+    );
+
+    // 8 月內是 8/3、8/10、8/17、8/24、8/31 共五次。
+    expect(countOverviewOccurrences(groups)).toBe(5);
+  });
+
+  it('跨午夜的同一次仍然只算一筆，兩天各列一列', () => {
+    const overnight = event('n1', '2026-08-06', '23:00');
+    const groups = buildOverviewGroups(
+      input({
+        occurrences: occurrencesOf([
+          { ...overnight, endsAt: '2026-08-07T00:30:00.000Z' } as CalendarEvent,
+        ]),
+        type: 'events',
+        period: 'month',
+        cursor: new Date(2026, 7, 6),
+      }),
+    );
+
+    expect(countOverviewOccurrences(groups)).toBe(1);
   });
 });

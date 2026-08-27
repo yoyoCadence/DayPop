@@ -152,3 +152,18 @@ describe('searchEntries', () => {
     expect(searchEntries('不存在', EVENTS, TODOS)).toEqual([]);
   });
 });
+
+describe('重複事件在搜尋只給一筆（DP-081）', () => {
+  const weekly: CalendarEvent = {
+    ...(EVENTS[0] as CalendarEvent),
+    id: 'r1',
+    title: '每週站會',
+    recurrence: { rule: 'FREQ=WEEKLY;COUNT=52' },
+  };
+
+  it('一個系列只回一列，而不是每一次都列出來', () => {
+    // 這是刻意的：DP-081 讓四個檢視展開 occurrence，但搜尋維持
+    // 「一個系列一筆結果」，否則一個每週例會會把搜尋結果洗版。
+    expect(searchEntries('站會', [weekly], [])).toHaveLength(1);
+  });
+});

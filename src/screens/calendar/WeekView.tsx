@@ -23,7 +23,8 @@ import {
   type DragRange,
 } from '../../domain/timeGrid';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
-import type { Calendar, CalendarEvent } from '../../domain/types';
+import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
+import type { Calendar } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -41,7 +42,11 @@ export interface WeekViewProps {
   /** Any date inside the week to show. */
   cursor: string;
   todayKey: string;
-  events: CalendarEvent[];
+  /**
+   * Expands the visible calendars into occurrences for one window — DP-081.
+   * This grid asks for exactly the week it draws.
+   */
+  resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   calendars: Calendar[];
   onUpdateEvent(id: string, patch: EventPatch): void;
   /** A press that did not turn into a drag opens the event, as in the原檔. */
@@ -49,6 +54,9 @@ export interface WeekViewProps {
 }
 
 interface DragState {
+  /** Occurrence key — what the preview lights up. */
+  key: string;
+  /** Base event id — what the patch and 開啟事件 address. */
   id: string;
   dateKey: string;
   mode: 'move' | 'resize';
@@ -66,23 +74,29 @@ interface DragState {
  * bottom edge, snapping to 15 minutes. All-day events are not drawn on the grid
  * in the原檔 either; the 全天 row is part of DP-014's remaining work.
  *
- * DP-027 provides occurrence splitting and DST-safe domain mutations. Wiring
- * a generated block to the canonical single/all scope dialog remains DP-014,
- * so this view still receives base events and a drag updates the base for now.
+ * DP-081 draws every occurrence of a recurring series, but those blocks are
+ * **not draggable or resizable**: a drag sends an `EventPatch` for the base
+ * event, so dragging the third occurrence of a weekly series would silently
+ * move the whole series. The single/all scope dialog that makes that choice
+ * explicit is DP-082; until then a recurring block only opens on tap. Blocks
+ * of non-recurring events drag and resize exactly as before.
  */
 export function WeekView({
   weekStartsOn,
   displayTimezone,
   cursor,
   todayKey,
-  events,
+  resolveOccurrences,
   calendars,
   onUpdateEvent,
   onOpenEvent,
 }: WeekViewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
-  const [preview, setPreview] = useState<{ id: string } & DragRange | null>(null);
+  // Keyed by occurrence, not by event id — DP-081. Every occurrence of one
+  // series shares an event id, so an id-keyed preview would drag all of them at
+  // once on screen.
+  const [preview, setPreview] = useState<{ key: string } & DragRange | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   // The current-time line only needs minute resolution.
@@ -102,12 +116,19 @@ export function WeekView({
   // Cut once for the whole week, not once per column — DP-064. The window is
   // the week itself, so a multi-month event walks seven days rather than its
   // own length.
+  const occurrences = useMemo(
+    () => resolveOccurrences({ startDate: weekStartKey, endDate: weekEndKey }),
+    [resolveOccurrences, weekStartKey, weekEndKey],
+  );
+
   const segmentsByDate = useMemo(() => {
     const byDate = new Map<string, DisplaySegment[]>();
-    for (const event of events) {
+    for (const { key: occurrenceKey, event } of occurrences) {
       // All-day events are not drawn on the grid in the原檔 either (DP-015).
       if (event.allDay) continue;
-      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, {
+      // The occurrence key, not the event id — DP-081. Two occurrences of one
+      // series in the same week need separate blocks.
+      for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, {
         startDateKey: weekStartKey,
         endDateKey: weekEndKey,
       })) {
@@ -117,7 +138,7 @@ export function WeekView({
       }
     }
     return byDate;
-  }, [displayTimezone, events, weekEndKey, weekStartKey]);
+  }, [displayTimezone, occurrences, weekEndKey, weekStartKey]);
 
   // The rail is derived from what this week actually contains, so a 23:00 event
   // is drawn at 23:00 instead of being clamped onto the 22:00 line — DP-064 §9.
@@ -137,7 +158,7 @@ export function WeekView({
         .slice()
         .sort((left, right) => left.startMinutes - right.startMinutes)
         .map((segment) => {
-          const dragging = preview?.id === segment.event.id;
+          const dragging = preview?.key === segment.key;
           const startMinutes = dragging ? preview.startMinutes : segment.startMinutes;
           const endMinutes = dragging ? preview.endMinutes : segment.endMinutes;
           return {
@@ -152,7 +173,16 @@ export function WeekView({
             // A drag rewrites one wall-clock range on one day, which cannot
             // express an occurrence that spans several — see the ADR §6 note on
             // 跨午夜拖曳 and DP-072. Those blocks open the event instead.
-            draggable: !segment.isContinuation && !segment.continuesNextDay,
+            //
+            // A recurring occurrence is excluded for a different reason: the
+            // patch addresses the base event, so dragging one occurrence would
+            // move the entire series with nothing on screen saying so. DP-082
+            // adds the 單次／全部 choice; until it exists these blocks only
+            // open on tap (DP-081).
+            draggable:
+              !segment.isContinuation &&
+              !segment.continuesNextDay &&
+              segment.event.recurrence === null,
             ...blockGeometry(startMinutes, endMinutes, range),
           };
         });
@@ -176,6 +206,7 @@ export function WeekView({
     domEvent.preventDefault();
     if (mode === 'resize') domEvent.stopPropagation();
     dragRef.current = {
+      key: segment.key,
       id: segment.event.id,
       dateKey: segment.dateKey,
       mode,
@@ -210,14 +241,14 @@ export function WeekView({
       const delta = snapMinutes((domEvent.clientY - drag.startY) / factor);
       const range =
         drag.mode === 'move' ? moveRange(drag.origin, delta) : resizeRange(drag.origin, delta);
-      setPreview({ id: drag.id, ...range });
+      setPreview({ key: drag.key, ...range });
     }
 
     function onUp(domEvent: PointerEvent) {
       const drag = dragRef.current;
       if (!drag) return;
       dragRef.current = null;
-      const range = preview?.id === drag.id ? preview : null;
+      const range = preview?.key === drag.key ? preview : null;
       setPreview(null);
 
       if (!drag.moved) {

@@ -3,8 +3,21 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { timedEventFromWallTime } from '../../domain/eventTime';
+import {
+  resolveEventOccurrences,
+  type OccurrenceWindow,
+} from '../../domain/recurrence';
 import type { CalendarEvent } from '../../domain/types';
 import { AgendaView } from './AgendaView';
+/**
+ * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
+ * filtering happens upstream in production, so this expands the given events
+ * exactly as the real pipeline does.
+ */
+function occurrenceResolver(events: CalendarEvent[]) {
+  return (window: OccurrenceWindow) =>
+    resolveEventOccurrences({ events, eventExceptions: [] }, window);
+}
 
 /**
  * 列表檢視 showed nothing on the second day of a cross-midnight event while the
@@ -54,7 +67,7 @@ function render(events: CalendarEvent[], todayKey: string) {
   act(() =>
     root.render(
       <AgendaView
-        events={events}
+        resolveOccurrences={occurrenceResolver(events)}
         displayTimezone={ZONE}
         todayKey={todayKey}
         todos={[]}

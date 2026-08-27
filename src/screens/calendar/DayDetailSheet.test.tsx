@@ -3,8 +3,21 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from '../../domain/eventTime';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
+import {
+  resolveEventOccurrences,
+  type OccurrenceWindow,
+} from '../../domain/recurrence';
 import type { CalendarEvent, Sticker } from '../../domain/types';
 import { DayDetailSheet, type DayDetailSheetProps } from './DayDetailSheet';
+/**
+ * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
+ * filtering happens upstream in production, so this expands the given events
+ * exactly as the real pipeline does.
+ */
+function occurrenceResolver(events: CalendarEvent[]) {
+  return (window: OccurrenceWindow) =>
+    resolveEventOccurrences({ events, eventExceptions: [] }, window);
+}
 
 /**
  * The sticker row and picker are the DP-055 UI, so they are exercised through
@@ -63,7 +76,7 @@ function sticker(id: string, glyph: string, date = DATE): Sticker {
 function render(overrides: Partial<DayDetailSheetProps> = {}) {
   const props: DayDetailSheetProps = {
     dateKey: DATE,
-    events: [],
+    resolveOccurrences: occurrenceResolver([]),
     displayTimezone: 'Asia/Taipei',
     todayKey: DATE,
     todos: [],
@@ -124,7 +137,7 @@ describe('DayDetailSheet cross-midnight events', () => {
   }
 
   it('lists the first day with the segment that actually falls on it', () => {
-    render({ dateKey: DATE, events: [overnight] });
+    render({ dateKey: DATE, resolveOccurrences: occurrenceResolver([overnight]) });
 
     // 23:00–24:00, not 23:00–00:30: the sheet shows this day's part.
     expect(rows().join(' | ')).toContain('23:00–24:00');
@@ -132,7 +145,7 @@ describe('DayDetailSheet cross-midnight events', () => {
   });
 
   it('lists the second day as a continuation instead of showing nothing', () => {
-    render({ dateKey: '2026-08-07', events: [overnight] });
+    render({ dateKey: '2026-08-07', resolveOccurrences: occurrenceResolver([overnight]) });
 
     const text = rows().join(' | ');
     expect(text).toContain('夜班');
@@ -142,7 +155,7 @@ describe('DayDetailSheet cross-midnight events', () => {
   });
 
   it('leaves an unrelated day empty', () => {
-    render({ dateKey: '2026-08-09', events: [overnight] });
+    render({ dateKey: '2026-08-09', resolveOccurrences: occurrenceResolver([overnight]) });
 
     expect(rows()).toEqual([]);
     expect(container.textContent).toContain('這天沒有行程');
@@ -199,14 +212,14 @@ describe('DayDetailSheet event rows', () => {
   // The原檔 puts the location on a second line under the title. DP-058 had no
   // location to show; DP-060 stored one, so the line belongs back here.
   it('shows the location under the title when the event has one', () => {
-    render({ events: [event('e1', '客戶會議', '會議室A')] });
+    render({ resolveOccurrences: occurrenceResolver([event('e1', '客戶會議', '會議室A')]) });
 
     expect(container.querySelector('.cal-day-event-title')?.textContent).toBe('客戶會議');
     expect(container.querySelector('.cal-day-event-loc')?.textContent).toBe('會議室A');
   });
 
   it('leaves the second line out entirely when there is no location', () => {
-    render({ events: [event('e1', '客戶會議', null)] });
+    render({ resolveOccurrences: occurrenceResolver([event('e1', '客戶會議', null)]) });
 
     expect(container.querySelector('.cal-day-event-title')?.textContent).toBe('客戶會議');
     expect(container.querySelector('.cal-day-event-loc')).toBeNull();

@@ -1,6 +1,7 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
 import { eventDisplaySegments, type DisplaySegmentWindow } from './displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
+import type { ResolvedEventOccurrence } from './recurrence';
 import type { CalendarEvent, Sticker, TodoItem } from './types';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
@@ -9,6 +10,8 @@ const CONTINUATION_LABEL = '續';
 /** One listed row before it becomes an `OverviewItem`; sorted on these fields. */
 interface EventRow {
   event: CalendarEvent;
+  /** Occurrence key — DP-081. */
+  key: string;
   time: string;
   isContinuation: boolean;
 }
@@ -26,6 +29,14 @@ export type OverviewPeriod = 'year' | 'month' | 'week';
 
 export interface OverviewItem {
   kind: 'event' | 'todo' | 'sticker';
+  /**
+   * Dedup and React identity — DP-081. For an event this is the **occurrence**
+   * key, so two occurrences of one weekly series count as two, while
+   * `countDistinctItems()` still folds the two halves of one cross-midnight
+   * occurrence back into one.
+   */
+  key: string;
+  /** What a tap addresses: the base event id, or the todo/sticker id. */
   id: string;
   /** Left column: 全天／HH:MM for events, 待辦／完成 for todos, empty for stickers. */
   time: string;
@@ -109,7 +120,8 @@ export function stepOverviewCursor(
 }
 
 export interface BuildOverviewInput {
-  events: CalendarEvent[];
+  /** Occurrences for the period this call covers — DP-081. */
+  occurrences: ResolvedEventOccurrence[];
   todos: TodoItem[];
   stickers: Sticker[];
   type: OverviewType;
@@ -179,13 +191,14 @@ export function buildOverviewGroups(input: BuildOverviewInput): OverviewGroup[] 
  * Counts occurrences, not rows — DP-064.
  *
  * A cross-midnight event is listed on both days it occupies; counting rows
- * would report it twice. The id is the occurrence identity here (recurring
- * occurrences reach these views as base events until DP-014).
+ * would report it twice. DP-081 made `key` the real occurrence identity, so a
+ * weekly series now contributes one count per occurrence in the period rather
+ * than one for the whole series.
  */
 function countDistinctItems(days: { items: OverviewItem[] }[]): number {
   const seen = new Set<string>();
   for (const day of days) {
-    for (const item of day.items) seen.add(item.id);
+    for (const item of day.items) seen.add(item.key);
   }
   return seen.size;
 }
@@ -237,10 +250,11 @@ function collectItemsByDate(
       else rowsByDate.set(dateKey, [row]);
     };
 
-    for (const event of input.events) {
+    for (const { key: occurrenceKey, event } of input.occurrences) {
       if (event.allDay) {
         pushRow(eventDateInZone(event, input.displayTimezone), {
           event,
+          key: occurrenceKey,
           time: '全天',
           isContinuation: false,
         });
@@ -248,14 +262,16 @@ function collectItemsByDate(
       }
       // Windowed to the period: an event longer than the range is clipped to it
       // rather than cut into hundreds of segments this screen cannot show.
+      // Keyed by occurrence, not by event id — DP-081.
       for (const segment of eventDisplaySegments(
         event,
-        event.id,
+        occurrenceKey,
         input.displayTimezone,
         window,
       )) {
         pushRow(segment.dateKey, {
           event,
+          key: segment.key,
           time: segment.isContinuation
             ? CONTINUATION_LABEL
             : eventStartTimeInZone(event, input.displayTimezone),
@@ -274,6 +290,7 @@ function collectItemsByDate(
         dateKey,
         rows.map((row) => ({
           kind: 'event' as const,
+          key: row.key,
           id: row.event.id,
           time: row.time,
           title: row.event.title,
@@ -294,6 +311,7 @@ function collectItemsByDate(
       const due = fromDateKey(todo.dueDate);
       push(todo.dueDate, {
         kind: 'todo' as const,
+        key: todo.id,
         id: todo.id,
         time: done ? '完成' : '待辦',
         title: todo.title,
@@ -309,6 +327,7 @@ function collectItemsByDate(
   for (const sticker of input.stickers) {
     push(sticker.date, {
       kind: 'sticker' as const,
+      key: sticker.id,
       id: sticker.id,
       time: '',
       title: '貼圖',

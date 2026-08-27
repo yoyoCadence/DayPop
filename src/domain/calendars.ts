@@ -1,3 +1,8 @@
+import {
+  resolveEventOccurrences,
+  type OccurrenceWindow,
+  type ResolvedEventOccurrence,
+} from './recurrence';
 import type { Calendar, CalendarEvent, DayPopUserData } from './types';
 
 /**
@@ -59,10 +64,43 @@ export function visibleCalendarIds(calendars: Calendar[]): Set<string> {
   return new Set(calendars.filter((calendar) => calendar.isVisible).map((calendar) => calendar.id));
 }
 
-/** The visibility half of the原檔's `dayEvents()`, without the date filter. */
+/**
+ * The visibility half of the原檔's `dayEvents()`, without the date filter.
+ *
+ * Returns **base** events, one row per series. Use it where a recurring event
+ * should count once — 搜尋 is the case DayPop keeps that way on purpose. Every
+ * view that draws events on days wants `visibleOccurrences()` instead, or a
+ * weekly event is drawn only on its first date (DP-081).
+ */
 export function visibleEvents(data: DayPopUserData): CalendarEvent[] {
   const visible = visibleCalendarIds(data.calendars);
   return data.events.filter((event) => visible.has(event.calendarId));
+}
+
+/**
+ * Every occurrence that falls inside `window`, on a visible calendar — DP-081.
+ *
+ * `resolveEventOccurrences()` hands back a **materialised** `CalendarEvent` per
+ * occurrence: the base event with that occurrence's own instants, so everything
+ * downstream (segments, conflicts, time labels) keeps working unchanged. What
+ * callers must carry alongside it is `key`, which is the only thing that tells
+ * two occurrences of one series apart.
+ *
+ * The window is required rather than optional: an unbounded expansion of a
+ * `FREQ=DAILY` rule with no UNTIL has no natural end. Each view passes the range
+ * it actually draws.
+ *
+ * Visibility is applied **after** expansion so that an exception whose
+ * replacement lives on another calendar still resolves correctly.
+ */
+export function visibleOccurrences(
+  data: DayPopUserData,
+  window: OccurrenceWindow,
+): ResolvedEventOccurrence[] {
+  const visible = visibleCalendarIds(data.calendars);
+  return resolveEventOccurrences(data, window).filter((resolved) =>
+    visible.has(resolved.event.calendarId),
+  );
 }
 
 /** Calendars in the order the settings list and the filter chips show them. */
