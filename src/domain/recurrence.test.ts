@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
 import {
-  isDrawableRecurrence,
+  isExpandableEvent,
   isRecurrenceRule,
   parseRecurrenceRule,
   RecurrenceRuleError,
@@ -237,21 +237,22 @@ describe('occurrence expansion', () => {
   });
 });
 
-describe('isDrawableRecurrence（DP-081 覆驗修正）', () => {
-  it('sub-daily 的頻率畫不出來', () => {
-    for (const freq of ['SECONDLY', 'MINUTELY', 'HOURLY']) {
-      expect(isDrawableRecurrence(`FREQ=${freq};COUNT=20000`, false)).toBe(false);
-    }
+describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
+  const hourly = (rule: string) =>
+    timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', rule);
+
+  it('依實際展開量判斷，不是整類封鎖 sub-daily', () => {
+    // 兩次的 HOURLY 畫得出來；兩萬次的 SECONDLY 畫不出來。
+    expect(isExpandableEvent(hourly('FREQ=HOURLY;COUNT=2'))).toBe(true);
+    expect(isExpandableEvent(hourly('FREQ=MINUTELY;COUNT=10'))).toBe(true);
+    expect(isExpandableEvent(hourly('FREQ=SECONDLY;COUNT=20000'))).toBe(false);
   });
 
-  it('DAILY 以上都畫得出來', () => {
+  it('一般頻率與不重複的事件都可展開', () => {
     for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
-      expect(isDrawableRecurrence(`FREQ=${freq}`, false)).toBe(true);
+      expect(isExpandableEvent(hourly(`FREQ=${freq}`))).toBe(true);
     }
-  });
-
-  it('語法本身就壞掉的規則也算畫不出來', () => {
-    expect(isDrawableRecurrence('NOT-A-RULE', false)).toBe(false);
+    expect(isExpandableEvent({ ...hourly('FREQ=DAILY'), recurrence: null })).toBe(true);
   });
 
   it('**不會**讓既有文件失效：validation 仍然接受 sub-daily', () => {

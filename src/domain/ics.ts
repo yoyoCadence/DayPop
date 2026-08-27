@@ -4,7 +4,7 @@ import {
   instantTimeInZone,
   wallTimeToInstant,
 } from './eventTime';
-import { isDrawableRecurrence, parseRecurrenceRule } from './recurrence';
+import { isExpandableEvent, parseRecurrenceRule } from './recurrence';
 import {
   createDomainId,
   type CalendarEvent,
@@ -310,17 +310,6 @@ function parseEventComponent(
   const locationValue = property(component, 'LOCATION');
   const notesValue = property(component, 'DESCRIPTION');
   const recurrenceValue = options.ignoreRecurrence ? undefined : property(component, 'RRULE');
-  if (recurrenceValue) {
-    // The import boundary is where an undrawable rule is refused — DP-081.
-    // A sub-daily FREQ has nothing to draw on a grid of day cells and blows the
-    // occurrence cap at render time, so it must not get into storage.
-    const rule = recurrenceValue.value.trim().toUpperCase();
-    if (!isDrawableRecurrence(rule, isDateProperty(start))) {
-      throw new IcsFormatError(
-        `VEVENT 的 RRULE「${rule}」無法在日曆上顯示：DayPop 以「天」為單位排版，最小的重複間隔是每天。`,
-      );
-    }
-  }
   const common = {
     id: options.id,
     calendarId: options.calendarId,
@@ -345,7 +334,9 @@ function parseEventComponent(
       const startDate = expandDate(start.value);
       const exclusiveEnd = expandDate(end.value);
       const endDate = toDateKey(addDays(fromDateKey(exclusiveEnd), -1));
-      return parseCalendarEvent({ ...common, allDay: true, startDate, endDate });
+      return refuseUnexpandable(
+        parseCalendarEvent({ ...common, allDay: true, startDate, endDate }),
+      );
     }
     if (isDateProperty(end)) {
       throw new IcsFormatError('timed DTSTART and DTEND must both use DATE-TIME');
@@ -355,13 +346,15 @@ function parseEventComponent(
     if (endTimezone !== timezone) {
       throw new IcsFormatError('DTSTART and DTEND must use the same timezone');
     }
-    return parseCalendarEvent({
-      ...common,
-      allDay: false,
-      startsAt: parseDateTime(start.value, timezone),
-      endsAt: parseDateTime(end.value, timezone),
-      timezone,
-    });
+    return refuseUnexpandable(
+      parseCalendarEvent({
+        ...common,
+        allDay: false,
+        startsAt: parseDateTime(start.value, timezone),
+        endsAt: parseDateTime(end.value, timezone),
+        timezone,
+      }),
+    );
   } catch (error) {
     if (error instanceof IcsFormatError) throw error;
     if (error instanceof DomainValidationError) {
@@ -369,6 +362,18 @@ function parseEventComponent(
     }
     throw error;
   }
+}
+
+/**
+ * The import boundary is where a rule the calendar cannot expand is refused —
+ * DP-081. Judged by how much the rule actually generates on its own first day,
+ * not by which FREQ it uses: a small `FREQ=HOURLY;COUNT=2` imports fine.
+ */
+function refuseUnexpandable(event: CalendarEvent): CalendarEvent {
+  if (isExpandableEvent(event)) return event;
+  throw new IcsFormatError(
+    `VEVENT 的 RRULE「${event.recurrence?.rule ?? ''}」在單一天內產生的次數超過上限，無法顯示`,
+  );
 }
 
 function parseOccurrenceProperty(

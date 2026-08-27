@@ -15,6 +15,7 @@ import {
   type Calendar,
   type CalendarEvent,
   type DayPopUserData,
+  type EventException,
 } from './types';
 
 const NOW = '2026-08-08T00:00:00.000Z';
@@ -204,8 +205,8 @@ describe('visibleOccurrences（DP-081 覆驗修正）', () => {
   });
 
   it('已存的密集規則不會讓畫面丟例外，該事件仍然看得到一次', () => {
-    // `parseRecurrenceRule()` 現在會在寫入邊界擋掉 sub-daily，但既有文件
-    // 可能已經存著一筆；畫面是在 render 時展開的，丟例外就是整頁白畫面。
+    // .ics 匯入邊界會擋掉單日展開量爆掉的規則，但既有文件可能已經存著
+    // 一筆；畫面是在 render 時展開的，丟例外就是整頁白畫面。
     const data = withEvents([
       daily({ recurrence: { rule: 'FREQ=SECONDLY;COUNT=20000' }, timezone: 'Asia/Taipei' }),
     ]);
@@ -238,5 +239,138 @@ describe('visibleOccurrences（DP-081 覆驗修正）', () => {
     );
 
     expect(resolved.map((r) => r.event.id).sort()).toEqual(['bad', 'good']);
+  });
+});
+
+describe('visibleOccurrences（DP-081 第二輪覆驗修正）', () => {
+  const COMMON = {
+    title: 'x',
+    location: null,
+    notes: null,
+    reminderMinutes: [],
+    sharingScope: 'inherit' as const,
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-07-01T00:00:00.000Z',
+  };
+
+  function doc(events: CalendarEvent[], eventExceptions: EventException[] = []): DayPopUserData {
+    const base = createEmptyUserData();
+    const calendarId = base.calendars[0]!.id;
+    return {
+      ...base,
+      events: events.map((event) => ({ ...event, calendarId })),
+      eventExceptions,
+    };
+  }
+
+  it('相差兩個日期的極端時區也不會漏掉（UTC−11 ↔ UTC+14）', () => {
+    // Pago Pago 2026-08-01 23:30 = 2026-08-02 10:30Z = Kiritimati 2026-08-03 00:30。
+    // 補一天的舊做法在這裡會回空陣列。
+    const event = {
+      ...COMMON,
+      id: 'r1',
+      calendarId: 'x',
+      recurrence: { rule: 'FREQ=DAILY;COUNT=5' },
+      allDay: false as const,
+      startsAt: '2026-08-02T10:30:00.000Z',
+      endsAt: '2026-08-02T10:45:00.000Z',
+      timezone: 'Pacific/Pago_Pago',
+    } as CalendarEvent;
+
+    expect(
+      visibleOccurrences(
+        doc([event]),
+        { startDate: '2026-08-03', endDate: '2026-08-03' },
+        'Pacific/Kiritimati',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('反方向同樣不漏（UTC+14 事件、UTC−11 顯示）', () => {
+    // Kiritimati 2026-08-03 00:30 = 2026-08-02 10:30Z = Pago Pago 2026-08-01 23:30。
+    const event = {
+      ...COMMON,
+      id: 'r2',
+      calendarId: 'x',
+      recurrence: { rule: 'FREQ=DAILY;COUNT=5' },
+      allDay: false as const,
+      startsAt: '2026-08-02T10:30:00.000Z',
+      endsAt: '2026-08-02T10:45:00.000Z',
+      timezone: 'Pacific/Kiritimati',
+    } as CalendarEvent;
+
+    expect(
+      visibleOccurrences(
+        doc([event]),
+        { startDate: '2026-08-01', endDate: '2026-08-01' },
+        'Pacific/Pago_Pago',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('壞規則的 fallback 不會弄丟其他系列的取消與改期', () => {
+    const dense = {
+      ...COMMON,
+      id: 'dense',
+      calendarId: 'x',
+      recurrence: { rule: 'FREQ=SECONDLY;COUNT=20000' },
+      allDay: true as const,
+      startDate: '2026-08-01',
+      endDate: '2026-08-01',
+    } as CalendarEvent;
+    const series = {
+      ...COMMON,
+      id: 'series',
+      calendarId: 'x',
+      recurrence: { rule: 'FREQ=DAILY;COUNT=3' },
+      allDay: true as const,
+      startDate: '2026-08-01',
+      endDate: '2026-08-01',
+    } as CalendarEvent;
+    const moved = {
+      ...COMMON,
+      id: 'moved',
+      calendarId: 'x',
+      recurrence: null,
+      allDay: true as const,
+      startDate: '2026-08-05',
+      endDate: '2026-08-05',
+    } as CalendarEvent;
+    const exceptions: EventException[] = [
+      {
+        id: 'x1',
+        eventId: 'series',
+        occurrence: { kind: 'all-day', date: '2026-08-02' },
+        isCancelled: true,
+        replacementEventId: null,
+        createdAt: COMMON.createdAt,
+        updatedAt: COMMON.updatedAt,
+      },
+      {
+        id: 'x2',
+        eventId: 'series',
+        occurrence: { kind: 'all-day', date: '2026-08-03' },
+        isCancelled: false,
+        replacementEventId: 'moved',
+        createdAt: COMMON.createdAt,
+        updatedAt: COMMON.updatedAt,
+      },
+    ];
+
+    const resolved = visibleOccurrences(
+      doc([dense, series, moved], exceptions),
+      { startDate: '2026-08-01', endDate: '2026-08-06' },
+      'Asia/Taipei',
+    );
+
+    const rows = resolved
+      .filter((r) => r.event.id !== 'dense')
+      .map((r) => `${r.event.id}@${r.event.allDay ? r.event.startDate : ''}`)
+      .sort();
+
+    // 8/2 已取消、8/3 由 moved 取代，所以只剩這兩列。
+    expect(rows).toEqual(['moved@2026-08-05', 'series@2026-08-01']);
+    // 壞的那一筆仍然看得到一次。
+    expect(resolved.filter((r) => r.event.id === 'dense')).toHaveLength(1);
   });
 });

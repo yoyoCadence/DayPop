@@ -218,7 +218,7 @@ describe('匯入拒絕畫不出來的 RRULE（DP-081 覆驗修正）', () => {
       'END:VCALENDAR',
     ].join(String.fromCharCode(13, 10));
 
-  it('sub-daily 的 RRULE 會被擋在匯入邊界，不會進到儲存', () => {
+  it('單日內展開量爆掉的 RRULE 會被擋在匯入邊界', () => {
     expect(() =>
       importCalendarFromIcs(ics('FREQ=SECONDLY;COUNT=20000'), {
         calendarId: '11111111-1111-4111-8111-111111111111',
@@ -233,5 +233,13 @@ describe('匯入拒絕畫不出來的 RRULE（DP-081 覆驗修正）', () => {
       defaultTimezone: 'Asia/Taipei',
     });
     expect(result.events[0]?.recurrence).toEqual({ rule: 'FREQ=DAILY;COUNT=5' });
+  });
+
+  it('小量的 sub-daily RRULE 照常匯入（依展開量判斷，不是整類封鎖）', () => {
+    const result = importCalendarFromIcs(ics('FREQ=HOURLY;COUNT=2'), {
+      calendarId: '11111111-1111-4111-8111-111111111111',
+      defaultTimezone: 'Asia/Taipei',
+    });
+    expect(result.events[0]?.recurrence).toEqual({ rule: 'FREQ=HOURLY;COUNT=2' });
   });
 });

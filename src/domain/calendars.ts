@@ -1,4 +1,13 @@
 import { addDays, fromDateKey, toDateKey } from './date';
+
+/**
+ * Days a local date can differ between two zones for the same instant.
+ *
+ * IANA offsets span UTC−12 … UTC+14, which is 26 hours, so two zones can read
+ * the same instant as dates two apart. Anything less silently drops the far
+ * edge of a window — see `visibleOccurrences()`.
+ */
+const ZONE_SPREAD_DAYS = 2;
 import { instantDateInZone } from './eventTime';
 import {
   resolveEventOccurrences,
@@ -93,8 +102,12 @@ export function visibleEvents(data: DayPopUserData): CalendarEvent[] {
  * so handing it a display-zone window drops occurrences at the edges: a daily
  * 00:30 Asia/Tokyo event asked for the LA day 2026-08-01 expanded only Tokyo
  * 08-01, which is 07-31 in LA, and the LA day came back empty. Expansion is
- * therefore padded by a day on each side — no two zones are more than a
- * calendar day apart — and the result is clipped back in the display zone.
+ * therefore padded, and the result clipped back in the display zone.
+ *
+ * The pad is **two** days, not one. IANA offsets run from UTC−12 to UTC+14, a
+ * spread of 26 hours, so one instant can carry two different local dates that
+ * differ by two: Pacific/Pago_Pago 2026-08-01 23:30 is 2026-08-03 00:30 in
+ * Pacific/Kiritimati. A one-day pad covered Tokyo↔LA and missed that pair.
  *
  * The window is required rather than optional: an unbounded expansion of a
  * `FREQ=DAILY` rule with no UNTIL has no natural end. Each view passes the
@@ -113,8 +126,8 @@ export function visibleOccurrences(
 ): ResolvedEventOccurrence[] {
   const visible = visibleCalendarIds(data.calendars);
   const padded = {
-    startDate: toDateKey(addDays(fromDateKey(window.startDate), -1)),
-    endDate: toDateKey(addDays(fromDateKey(window.endDate), 1)),
+    startDate: toDateKey(addDays(fromDateKey(window.startDate), -ZONE_SPREAD_DAYS)),
+    endDate: toDateKey(addDays(fromDateKey(window.endDate), ZONE_SPREAD_DAYS)),
   };
   return expandSafely(data, padded).filter(
     (resolved) =>
@@ -137,17 +150,26 @@ function overlapsDisplayWindow(
 }
 
 /**
- * `resolveEventOccurrences()` per event, so one bad rule cannot blank the App.
+ * `resolveEventOccurrences()`, retried series by series so one bad rule cannot
+ * blank the App.
  *
  * A rule that generates more than the resolver's cap throws. That is the right
  * answer for a domain call, but these views resolve **during render**: an
  * uncaught throw there unmounts the whole tree and leaves a white screen with
- * one console error. `parseRecurrenceRule()` now refuses sub-daily frequencies
- * at the write boundary, so new data cannot get into that state; this guard is
- * for a document that already holds one.
+ * one console error. The .ics boundary refuses rules it cannot expand, so new
+ * data cannot get into that state; this guard is for a document that already
+ * holds one.
  *
- * The fallback keeps the event visible as a single occurrence rather than
- * hiding it, so the user can still open and delete the row that is misbehaving.
+ * **The retry keeps each series whole.** Re-expanding bare events would drop
+ * every exception: a cancelled occurrence would come back, and a replacement
+ * row would be drawn both as itself and as the occurrence it replaces. So each
+ * base event is retried together with its own exceptions and the replacement
+ * events those exceptions point at — the same unit `resolveEventOccurrences()`
+ * reasons about — and replacement rows are not expanded again on their own.
+ *
+ * Only the series that actually fails degrades, and it degrades to its start
+ * occurrence rather than disappearing, so the user can still open and delete
+ * the row that is misbehaving.
  */
 function expandSafely(
   data: DayPopUserData,
@@ -156,10 +178,30 @@ function expandSafely(
   try {
     return resolveEventOccurrences(data, window);
   } catch {
+    const byId = new Map(data.events.map((event) => [event.id, event]));
+    const replacementIds = new Set(
+      data.eventExceptions
+        .map((exception) => exception.replacementEventId)
+        .filter((id): id is string => id !== null),
+    );
+
     const resolved: ResolvedEventOccurrence[] = [];
     for (const event of data.events) {
+      // Pulled in below by the series that replaces one of its occurrences.
+      if (replacementIds.has(event.id)) continue;
+
+      const exceptions = data.eventExceptions.filter(
+        (exception) => exception.eventId === event.id,
+      );
+      const replacements = exceptions
+        .map((exception) => exception.replacementEventId)
+        .filter((id): id is string => id !== null)
+        .map((id) => byId.get(id))
+        .filter((row): row is CalendarEvent => row !== undefined);
+      const series = { events: [event, ...replacements], eventExceptions: exceptions };
+
       try {
-        resolved.push(...resolveEventOccurrences({ events: [event], eventExceptions: [] }, window));
+        resolved.push(...resolveEventOccurrences(series, window));
       } catch {
         // Draw the series start alone. Losing the repeats is visible and
         // recoverable; losing the calendar is not.

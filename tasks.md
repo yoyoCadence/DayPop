@@ -168,7 +168,12 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-08-27 覆驗開出三項 blocker，均已修正並補上回歸測試**：
   > 1. **點單次 occurrence 會無提示刪掉整個系列。**事件 sheet 現在對重複事件顯示「這是重複事件……會套用到整個系列」，刪除鈕改為「刪除整個系列」且需按兩次確認；非重複事件維持原稿的一次點擊刪除。
   > 2. **事件時區與顯示時區不同時，範圍邊界的 occurrence 會消失。**`resolveEventOccurrences()` 是用**事件自己的時區**解讀 window 的，而畫面傳的是**顯示時區**的 date key。修法是把展開視窗前後各補一天（沒有兩個時區差距超過一個日曆日），再於顯示時區裁切；`visibleOccurrences()` 因此多收一個 `displayTimezone` 參數。正反兩個方向都補了測試。
-  > 3. **密集規則會讓畫面白屏。**檢視是在 render 時展開的，`RecurrenceRuleError` 沒人接就整棵樹卸載。修法分兩層：`isDrawableRecurrence()` 在 **.ics 匯入邊界**拒絕 sub-daily 的 FREQ（DayPop 以「天」排版，畫不出來），而**不放進 validation** —— 放進去會讓已經存著這種事件的文件整份讀不出來，一列壞資料就把整個日曆推進復原畫面；另外 `visibleOccurrences()` 改為永不丟例外，單一壞事件退回成單次顯示，使用者還刪得掉。綜覽在顯示待辦／貼圖時也不再展開事件。
+  > 3. **密集規則會讓畫面白屏。**檢視是在 render 時展開的，`RecurrenceRuleError` 沒人接就整棵樹卸載。修法分兩層：在 **.ics 匯入邊界**拒絕展不開的規則，而**不放進 validation** —— 放進去會讓已經存著這種事件的文件整份讀不出來，一列壞資料就把整個日曆推進復原畫面；另外 `visibleOccurrences()` 改為永不丟例外，單一壞事件退回成單次顯示，使用者還刪得掉。綜覽在顯示待辦／貼圖時也不再展開事件。
+  > **2026-08-27 第二輪覆驗再開三項，均已修正並補上回歸測試**：
+  > 1. **補一天不夠。**IANA offset 從 UTC−12 到 UTC+14 共 26 小時，同一個 instant 在兩個時區可以差**兩個**日期（Pacific/Pago_Pago 8/1 23:30 = Pacific/Kiritimati 8/3 00:30），所以極端時區組合仍會漏。展開視窗改補兩天（`ZONE_SPREAD_DAYS`），並補上 UTC−11 ↔ UTC+14 正反兩向的測試。原本的東京↔洛杉磯測試只有 16 小時差，抓不到。
+  > 2. **壞規則的 fallback 會弄丟其他系列的取消／改期。**`expandSafely()` 原本逐事件用 `eventExceptions: []` 重跑，等於把所有 exception 關聯丟掉：已取消的 occurrence 會回來，replacement row 還會被當成獨立事件再畫一次。改為以「來源系列＋該系列的 exceptions＋它指到的 replacement rows」為隔離單位重試，replacement 不再單獨展開。
+  > 3. **整類封鎖 sub-daily 是匯入回歸。**`FREQ=HOURLY;COUNT=2` 只有兩次、完全畫得出來，卻被擋掉；那等於在一個白屏修正裡偷改匯入能力。改為 `isExpandableEvent()` **依實際展開量**判斷：以事件自己的第一天為探測視窗（一天最密的情況），展得開就收。
+
   > **原始調查紀錄保留在下方**，因為它記錄了成因與量到的數字。
   > **DP-081 — 重複事件在所有檢視都只顯示一次（資料是對的，畫面沒展開）：** 2026-08-27 於 DP-014 的 `全天` 那一段順帶查出，**不是那一段造成的**。`visibleEvents()`（[`calendars.ts:63`](src/domain/calendars.ts#L63)）回傳的是 `data.events` 原始列，只依日曆可見性過濾；四個檢視拿到的就是這個陣列，各自把事件放在它自己的 `startDate` 上。DP-027 早就做好了 `resolveEventOccurrences()`（[`recurrence.ts:147`](src/domain/recurrence.ts#L147)），但**除了 `mutations.ts` 裡同樣沒有呼叫者的 `replaceEventOccurrence()` 之外，沒有任何地方呼叫它**。`MonthView.tsx:519` 的註記（`Identity is the event id until DP-014 wires recurring occurrences`）就是在講這件事。
   > **已用實際資料量測確認，不是讀程式碼的推論**：拿一段 `RRULE:FREQ=WEEKLY;COUNT=6`、`DTSTART;TZID=Asia/Taipei:20260803T090000` 的 .ics 走真正的 `planIcsImport()`，存下 **1** 筆事件、`recurrence` 是 `{"rule":"FREQ=WEEKLY;COUNT=6"}`；同一份資料 `resolveEventOccurrences()` 在 2026-08-01～09-30 展開出 **6** 筆（8/3、8/10、8/17、8/24、8/31、9/7），但 `visibleEvents()` 交給檢視的是 **1** 筆。也就是使用者從 Google 日曆匯出一個每週會議匯入 DayPop，只會在 8/3 看到它，其餘五次存著卻畫不出來。

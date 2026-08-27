@@ -18,17 +18,18 @@ const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ALL_DAY_TIME_PARTS = new Set(['BYHOUR', 'BYMINUTE', 'BYSECOND']);
 const MAX_OCCURRENCES_PER_WINDOW = 10_000;
 
-/** RFC 5545 allows these; a day-cell calendar has nowhere to draw them. */
-const SUB_DAILY_FREQUENCIES = new Set(['SECONDLY', 'MINUTELY', 'HOURLY']);
-
 /**
- * True for a rule DayPop can actually draw — DP-081.
+ * True when this event's rule can be expanded without blowing the cap — DP-081.
  *
- * `FREQ=SECONDLY;COUNT=20000` is 20,000 rows inside one day; a grid of day
- * cells has nowhere to put them, and expanding it blows the resolver's cap.
- * DayPop never produces one (`recurrenceRuleForPreset()` emits DAILY and
- * coarser), so the only way in is a hand-written .ics — which is exactly where
- * this is enforced.
+ * Judged by **how much it actually generates**, not by which FREQ it uses.
+ * `FREQ=HOURLY;COUNT=2` is two rows and draws fine; `FREQ=SECONDLY;COUNT=20000`
+ * is twenty thousand inside one day and cannot. Banning the sub-daily
+ * frequencies outright was the first attempt and it was wrong: it rejected
+ * perfectly drawable .ics files and quietly narrowed what DayPop imports, which
+ * is a product decision rather than a crash fix.
+ *
+ * The probe window is the event's own first day, which is the densest any day
+ * can be — a rule that fits there fits everywhere the calendar draws.
  *
  * Deliberately **not** part of `parseRecurrenceRule()`, and therefore not part
  * of document validation: making it a validation rule would turn a document
@@ -36,15 +37,20 @@ const SUB_DAILY_FREQUENCIES = new Set(['SECONDLY', 'MINUTELY', 'HOURLY']);
  * calendar to the recovery screen over a single row. New data is refused at the
  * boundary; data already stored stays readable and degrades in the view.
  */
-export function isDrawableRecurrence(rule: string, allDay: boolean): boolean {
-  let parsed;
+export function isExpandableEvent(event: CalendarEvent): boolean {
+  if (event.recurrence === null) return true;
+  const startDate = event.allDay
+    ? event.startDate
+    : instantDateInZone(event.startsAt, event.timezone);
   try {
-    parsed = parseRecurrenceRule(rule, allDay);
+    resolveEventOccurrences(
+      { events: [event], eventExceptions: [] },
+      { startDate, endDate: startDate },
+    );
+    return true;
   } catch {
     return false;
   }
-  const freq = /(?:^|;)FREQ=([A-Z]+)/.exec(parsed.canonical)?.[1];
-  return freq !== undefined && !SUB_DAILY_FREQUENCIES.has(freq);
 }
 
 export class RecurrenceRuleError extends Error {
