@@ -4,7 +4,7 @@ import {
   instantTimeInZone,
   wallTimeToInstant,
 } from './eventTime';
-import { parseRecurrenceRule } from './recurrence';
+import { isDrawableRecurrence, parseRecurrenceRule } from './recurrence';
 import {
   createDomainId,
   type CalendarEvent,
@@ -310,6 +310,17 @@ function parseEventComponent(
   const locationValue = property(component, 'LOCATION');
   const notesValue = property(component, 'DESCRIPTION');
   const recurrenceValue = options.ignoreRecurrence ? undefined : property(component, 'RRULE');
+  if (recurrenceValue) {
+    // The import boundary is where an undrawable rule is refused — DP-081.
+    // A sub-daily FREQ has nothing to draw on a grid of day cells and blows the
+    // occurrence cap at render time, so it must not get into storage.
+    const rule = recurrenceValue.value.trim().toUpperCase();
+    if (!isDrawableRecurrence(rule, isDateProperty(start))) {
+      throw new IcsFormatError(
+        `VEVENT 的 RRULE「${rule}」無法在日曆上顯示：DayPop 以「天」為單位排版，最小的重複間隔是每天。`,
+      );
+    }
+  }
   const common = {
     id: options.id,
     calendarId: options.calendarId,

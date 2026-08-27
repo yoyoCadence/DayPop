@@ -1,3 +1,5 @@
+import { addDays, fromDateKey, toDateKey } from './date';
+import { instantDateInZone } from './eventTime';
 import {
   resolveEventOccurrences,
   type OccurrenceWindow,
@@ -78,7 +80,7 @@ export function visibleEvents(data: DayPopUserData): CalendarEvent[] {
 }
 
 /**
- * Every occurrence that falls inside `window`, on a visible calendar — DP-081.
+ * Every occurrence a view drawing `window` in `displayTimezone` can show — DP-081.
  *
  * `resolveEventOccurrences()` hands back a **materialised** `CalendarEvent` per
  * occurrence: the base event with that occurrence's own instants, so everything
@@ -86,21 +88,91 @@ export function visibleEvents(data: DayPopUserData): CalendarEvent[] {
  * callers must carry alongside it is `key`, which is the only thing that tells
  * two occurrences of one series apart.
  *
+ * **`window` is in display date keys, the resolver's is not.** The resolver
+ * reads its window in each event's *own* timezone (`eventOverlapsWindow()`),
+ * so handing it a display-zone window drops occurrences at the edges: a daily
+ * 00:30 Asia/Tokyo event asked for the LA day 2026-08-01 expanded only Tokyo
+ * 08-01, which is 07-31 in LA, and the LA day came back empty. Expansion is
+ * therefore padded by a day on each side — no two zones are more than a
+ * calendar day apart — and the result is clipped back in the display zone.
+ *
  * The window is required rather than optional: an unbounded expansion of a
- * `FREQ=DAILY` rule with no UNTIL has no natural end. Each view passes the range
- * it actually draws.
+ * `FREQ=DAILY` rule with no UNTIL has no natural end. Each view passes the
+ * range it actually draws.
  *
  * Visibility is applied **after** expansion so that an exception whose
  * replacement lives on another calendar still resolves correctly.
+ *
+ * **Never throws.** Views call this during render, so an unexpandable rule
+ * must not take the screen down — see `expandSafely()`.
  */
 export function visibleOccurrences(
   data: DayPopUserData,
   window: OccurrenceWindow,
+  displayTimezone: string,
 ): ResolvedEventOccurrence[] {
   const visible = visibleCalendarIds(data.calendars);
-  return resolveEventOccurrences(data, window).filter((resolved) =>
-    visible.has(resolved.event.calendarId),
+  const padded = {
+    startDate: toDateKey(addDays(fromDateKey(window.startDate), -1)),
+    endDate: toDateKey(addDays(fromDateKey(window.endDate), 1)),
+  };
+  return expandSafely(data, padded).filter(
+    (resolved) =>
+      visible.has(resolved.event.calendarId) &&
+      overlapsDisplayWindow(resolved.event, window, displayTimezone),
   );
+}
+
+/** The occupied day range read in the zone the grid is actually drawn in. */
+function overlapsDisplayWindow(
+  event: CalendarEvent,
+  window: OccurrenceWindow,
+  displayTimezone: string,
+): boolean {
+  const start = event.allDay
+    ? event.startDate
+    : instantDateInZone(event.startsAt, displayTimezone);
+  const end = event.allDay ? event.endDate : instantDateInZone(event.endsAt, displayTimezone);
+  return start <= window.endDate && end >= window.startDate;
+}
+
+/**
+ * `resolveEventOccurrences()` per event, so one bad rule cannot blank the App.
+ *
+ * A rule that generates more than the resolver's cap throws. That is the right
+ * answer for a domain call, but these views resolve **during render**: an
+ * uncaught throw there unmounts the whole tree and leaves a white screen with
+ * one console error. `parseRecurrenceRule()` now refuses sub-daily frequencies
+ * at the write boundary, so new data cannot get into that state; this guard is
+ * for a document that already holds one.
+ *
+ * The fallback keeps the event visible as a single occurrence rather than
+ * hiding it, so the user can still open and delete the row that is misbehaving.
+ */
+function expandSafely(
+  data: DayPopUserData,
+  window: OccurrenceWindow,
+): ResolvedEventOccurrence[] {
+  try {
+    return resolveEventOccurrences(data, window);
+  } catch {
+    const resolved: ResolvedEventOccurrence[] = [];
+    for (const event of data.events) {
+      try {
+        resolved.push(...resolveEventOccurrences({ events: [event], eventExceptions: [] }, window));
+      } catch {
+        // Draw the series start alone. Losing the repeats is visible and
+        // recoverable; losing the calendar is not.
+        resolved.push(
+          ...resolveEventOccurrences(
+            { events: [{ ...event, recurrence: null }], eventExceptions: [] },
+            window,
+          ),
+        );
+      }
+    }
+    return resolved;
+  }
 }
 
 /** Calendars in the order the settings list and the filter chips show them. */

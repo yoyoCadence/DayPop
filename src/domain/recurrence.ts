@@ -18,6 +18,35 @@ const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ALL_DAY_TIME_PARTS = new Set(['BYHOUR', 'BYMINUTE', 'BYSECOND']);
 const MAX_OCCURRENCES_PER_WINDOW = 10_000;
 
+/** RFC 5545 allows these; a day-cell calendar has nowhere to draw them. */
+const SUB_DAILY_FREQUENCIES = new Set(['SECONDLY', 'MINUTELY', 'HOURLY']);
+
+/**
+ * True for a rule DayPop can actually draw — DP-081.
+ *
+ * `FREQ=SECONDLY;COUNT=20000` is 20,000 rows inside one day; a grid of day
+ * cells has nowhere to put them, and expanding it blows the resolver's cap.
+ * DayPop never produces one (`recurrenceRuleForPreset()` emits DAILY and
+ * coarser), so the only way in is a hand-written .ics — which is exactly where
+ * this is enforced.
+ *
+ * Deliberately **not** part of `parseRecurrenceRule()`, and therefore not part
+ * of document validation: making it a validation rule would turn a document
+ * that already holds such an event into an unreadable one, sending the whole
+ * calendar to the recovery screen over a single row. New data is refused at the
+ * boundary; data already stored stays readable and degrades in the view.
+ */
+export function isDrawableRecurrence(rule: string, allDay: boolean): boolean {
+  let parsed;
+  try {
+    parsed = parseRecurrenceRule(rule, allDay);
+  } catch {
+    return false;
+  }
+  const freq = /(?:^|;)FREQ=([A-Z]+)/.exec(parsed.canonical)?.[1];
+  return freq !== undefined && !SUB_DAILY_FREQUENCIES.has(freq);
+}
+
 export class RecurrenceRuleError extends Error {
   constructor(message: string) {
     super(message);

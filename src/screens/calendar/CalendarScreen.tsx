@@ -76,7 +76,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
    * the原檔's `dayEvents()` does.
    */
   const resolveOccurrences = useCallback(
-    (window: OccurrenceWindow) => visibleOccurrences(data, window),
+    (window: OccurrenceWindow) => visibleOccurrences(data, window, data.preferences.timezone),
     [data],
   );
 

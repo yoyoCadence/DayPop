@@ -70,7 +70,14 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
         // Expanded over exactly the period being browsed — DP-081. 年／月／週
         // all have an explicit range, so the window stays bounded even in the
         // year view, and a weekly series now counts once per occurrence.
-        occurrences: visibleOccurrences(data, occurrenceWindow),
+        //
+        // Only when events are the type being shown: 待辦 and 貼圖 never read
+        // this list, and expanding a year of occurrences to throw the result
+        // away made those two tabs pay for data they do not display.
+        occurrences:
+          type === 'events'
+            ? visibleOccurrences(data, occurrenceWindow, data.preferences.timezone)
+            : [],
         todos: data.todos,
         stickers: data.stickers,
         type,

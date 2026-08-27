@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
 import {
+  isDrawableRecurrence,
   isRecurrenceRule,
   parseRecurrenceRule,
   RecurrenceRuleError,
@@ -233,5 +234,29 @@ describe('occurrence expansion', () => {
       ['2026-08-05', '改期站會', REPLACEMENT],
       ['2026-08-05', '站會', null],
     ]);
+  });
+});
+
+describe('isDrawableRecurrence（DP-081 覆驗修正）', () => {
+  it('sub-daily 的頻率畫不出來', () => {
+    for (const freq of ['SECONDLY', 'MINUTELY', 'HOURLY']) {
+      expect(isDrawableRecurrence(`FREQ=${freq};COUNT=20000`, false)).toBe(false);
+    }
+  });
+
+  it('DAILY 以上都畫得出來', () => {
+    for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
+      expect(isDrawableRecurrence(`FREQ=${freq}`, false)).toBe(true);
+    }
+  });
+
+  it('語法本身就壞掉的規則也算畫不出來', () => {
+    expect(isDrawableRecurrence('NOT-A-RULE', false)).toBe(false);
+  });
+
+  it('**不會**讓既有文件失效：validation 仍然接受 sub-daily', () => {
+    // 這是刻意的。把它變成 validation 規則，會讓已經存著這種事件的文件
+    // 整份讀不出來，一列壞資料就把整個日曆推進復原畫面。
+    expect(isRecurrenceRule('FREQ=SECONDLY;COUNT=20000', false)).toBe(true);
   });
 });

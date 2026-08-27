@@ -1390,6 +1390,23 @@
   }
 }
 
+/* 重複事件的範圍提示 —— DP-081。DP-082 補上單次／全部的選擇後，
+   這段會被那個選擇取代。 */
+.cal-series-notice {
+  margin-bottom: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cal-series-notice strong {
+  font-weight: 800;
+}
+
 .cal-delete-button {
   width: 100%;
   border: var(--bd) solid var(--border);

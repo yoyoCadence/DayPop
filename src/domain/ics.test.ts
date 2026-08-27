@@ -200,3 +200,38 @@ describe('ICS date boundary', () => {
     ).toThrow(IcsFormatError);
   });
 });
+
+describe('匯入拒絕畫不出來的 RRULE（DP-081 覆驗修正）', () => {
+  const ics = (rule: string) =>
+    [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//test//EN',
+      'BEGIN:VEVENT',
+      'UID:dense@test',
+      'DTSTAMP:20260801T000000Z',
+      'DTSTART;TZID=Asia/Taipei:20260803T090000',
+      'DTEND;TZID=Asia/Taipei:20260803T093000',
+      `RRULE:${rule}`,
+      'SUMMARY:密集',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join(String.fromCharCode(13, 10));
+
+  it('sub-daily 的 RRULE 會被擋在匯入邊界，不會進到儲存', () => {
+    expect(() =>
+      importCalendarFromIcs(ics('FREQ=SECONDLY;COUNT=20000'), {
+        calendarId: '11111111-1111-4111-8111-111111111111',
+        defaultTimezone: 'Asia/Taipei',
+      }),
+    ).toThrow(IcsFormatError);
+  });
+
+  it('每天的 RRULE 照常匯入', () => {
+    const result = importCalendarFromIcs(ics('FREQ=DAILY;COUNT=5'), {
+      calendarId: '11111111-1111-4111-8111-111111111111',
+      defaultTimezone: 'Asia/Taipei',
+    });
+    expect(result.events[0]?.recurrence).toEqual({ rule: 'FREQ=DAILY;COUNT=5' });
+  });
+});
