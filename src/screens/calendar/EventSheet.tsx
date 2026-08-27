@@ -287,16 +287,23 @@ function EventSheetForm({
               </>
             )}
 
-            {/* The原檔 puts 全天 above 日期; 待辦 mode has no 全天 at all. */}
+            {/* The原檔 puts 全天 above 日期; 待辦 mode has no 全天 at all.
+                原稿 :586 用的是 44×25 開關，不是 checkbox。 */}
             {mode === 'event' && (
-              <label className="cal-allday">
-                全天
-                <input
-                  type="checkbox"
-                  checked={allDay}
-                  onChange={(event) => setAllDay(event.target.checked)}
-                />
-              </label>
+              <div className="cal-allday">
+                <span className="cal-allday-label" id="event-allday-label">
+                  全天
+                </span>
+                <button
+                  className="cal-allday-toggle"
+                  type="button"
+                  aria-pressed={allDay}
+                  aria-labelledby="event-allday-label"
+                  onClick={() => setAllDay(!allDay)}
+                >
+                  <span className="cal-allday-knob" aria-hidden="true" />
+                </button>
+              </div>
             )}
 
             <div className="cal-field" style={{ marginTop: 11 }}>

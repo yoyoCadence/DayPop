@@ -188,6 +188,38 @@ describe('EventSheet fields', () => {
     );
   });
 
+  it('全天 是原稿的開關，按下後隱藏時間欄位並存成全天', () => {
+    const props = render();
+    const toggle = () => container.querySelector('.cal-allday-toggle');
+
+    // 原稿 :586 是 44×25 開關，不是 checkbox。
+    expect(container.querySelector('.cal-allday input[type="checkbox"]')).toBeNull();
+    expect(toggle()?.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('[aria-label="開始"]')).not.toBeNull();
+
+    type('.cal-title-input', '出差');
+    click('.cal-allday-toggle');
+
+    expect(toggle()?.getAttribute('aria-pressed')).toBe('true');
+    // 原稿在全天時收起開始／結束。
+    expect(container.querySelector('[aria-label="開始"]')).toBeNull();
+
+    submit();
+    expect(props.onAddEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '出差', allDay: true }),
+    );
+  });
+
+  it('全天 開關可以再按一次關掉，時間欄位會回來', () => {
+    render();
+
+    click('.cal-allday-toggle');
+    click('.cal-allday-toggle');
+
+    expect(container.querySelector('.cal-allday-toggle')?.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('[aria-label="開始"]')).not.toBeNull();
+  });
+
   it('prefills an existing event and keeps its calendar selected', () => {
     const props = render({ editing: timedEvent() });
 
