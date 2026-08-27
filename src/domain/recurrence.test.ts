@@ -248,6 +248,19 @@ describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
     expect(isExpandableEvent(hourly('FREQ=SECONDLY;COUNT=20000'))).toBe(false);
   });
 
+  it('密集的那一天不是 DTSTART 當天時也要抓到（BYDAY）', () => {
+    // 2026-08-03 是週一，規則只命中週二，每個週二 3 小時 × 60 分 × 60 秒
+    // = 10,800 次。只探 DTSTART 當天會放行，因為那天一次都沒有。
+    const byDay = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;BYDAY=TU;BYHOUR=9,10,11');
+    expect(isExpandableEvent(byDay)).toBe(false);
+  });
+
+  it('BYDAY 但不密集的規則不受影響', () => {
+    const weekly = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=WEEKLY;BYDAY=TU');
+    expect(isExpandableEvent(weekly)).toBe(true);
+    const monthly = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=MONTHLY;BYDAY=-1MO');
+    expect(isExpandableEvent(monthly)).toBe(true);
+  });
   it('一般頻率與不重複的事件都可展開', () => {
     for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
       expect(isExpandableEvent(hourly(`FREQ=${freq}`))).toBe(true);

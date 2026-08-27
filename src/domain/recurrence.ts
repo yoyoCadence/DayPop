@@ -17,6 +17,8 @@ const UTC_DATE_TIME_UNTIL = /^\d{8}T\d{6}Z$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ALL_DAY_TIME_PARTS = new Set(['BYHOUR', 'BYMINUTE', 'BYSECOND']);
 const MAX_OCCURRENCES_PER_WINDOW = 10_000;
+/** A leap year — the widest window any DayPop pane asks for (綜覽's 年 view). */
+const PROBE_WINDOW_DAYS = 366;
 
 /**
  * True when this event's rule can be expanded without blowing the cap — DP-081.
@@ -28,8 +30,15 @@ const MAX_OCCURRENCES_PER_WINDOW = 10_000;
  * perfectly drawable .ics files and quietly narrowed what DayPop imports, which
  * is a product decision rather than a crash fix.
  *
- * The probe window is the event's own first day, which is the densest any day
- * can be — a rule that fits there fits everywhere the calendar draws.
+ * The probe window is a **full year** from DTSTART, not DTSTART's own day.
+ * "DTSTART's day is the densest" is false as soon as `BYDAY` is involved: a
+ * rule starting on a Monday but limited to `BYDAY=TU` generates nothing at all
+ * on its first day, so a one-day probe waved through
+ * `FREQ=SECONDLY;BYDAY=TU;BYHOUR=9,10,11` — 10,800 rows on every Tuesday.
+ * A year is the widest window DayPop asks for by design (綜覽's 年 view), and
+ * occurrence counts only grow with the window, so a rule that fits in a year
+ * fits in every pane. `expandSafely()` stays the backstop for a month buffer
+ * the user has scrolled wider than that.
  *
  * Deliberately **not** part of `parseRecurrenceRule()`, and therefore not part
  * of document validation: making it a validation rule would turn a document
@@ -42,11 +51,15 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
   const startDate = event.allDay
     ? event.startDate
     : instantDateInZone(event.startsAt, event.timezone);
+  const endDate = toDateKey(addDays(fromDateKey(startDate), PROBE_WINDOW_DAYS - 1));
   try {
-    resolveEventOccurrences(
-      { events: [event], eventExceptions: [] },
-      { startDate, endDate: startDate },
-    );
+    // Counts candidates only. Materialising a year of occurrences per event
+    // made a 200-event import take 27 seconds; the candidate dates alone are
+    // pure calendar arithmetic.
+    recurrenceCandidates(event as CalendarEvent & { recurrence: { rule: string } }, {
+      startDate,
+      endDate,
+    });
     return true;
   } catch {
     return false;
@@ -246,6 +259,52 @@ export function resolveEventOccurrences(
   return resolved.sort(compareOccurrences);
 }
 
+/**
+ * The floating calendar dates a rule generates inside `window`.
+ *
+ * Split out of `expandBaseEvent()` so the import probe can count what a rule
+ * produces without paying for `shiftEvent()` on every candidate — resolving
+ * wall times is what made a year-wide probe take tens of seconds.
+ */
+function recurrenceCandidates(
+  event: CalendarEvent & { recurrence: { rule: string } },
+  window: OccurrenceWindow,
+): Date[] {
+  const startDate = event.allDay
+    ? event.startDate
+    : instantDateInZone(event.startsAt, event.timezone);
+  const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone);
+  const endDate = event.allDay
+    ? event.endDate
+    : instantDateInZone(event.endsAt, event.timezone);
+  const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
+  const parsed = parseRecurrenceRule(event.recurrence.rule, event.allDay);
+  const options = {
+    ...parsed.options,
+    dtstart: floatingDate(startDate, startTime),
+    // A timed UNTIL is a real UTC instant. RRule is operating on floating
+    // calendar fields here, so filter it after wall-time resolution instead.
+    until: event.allDay ? parsed.options.until : null,
+  };
+  const rule = new RRule(options);
+  const after = floatingDate(
+    toDateKey(addDays(fromDateKey(window.startDate), -Math.max(0, spanDays))),
+    '00:00',
+  );
+  const before = floatingDate(toDateKey(addDays(fromDateKey(window.endDate), 1)), '00:00');
+
+  const candidates = rule.between(
+    after,
+    before,
+    true,
+    (_candidate, length) => length <= MAX_OCCURRENCES_PER_WINDOW,
+  );
+  if (candidates.length > MAX_OCCURRENCES_PER_WINDOW) {
+    throw new RecurrenceRuleError('recurrence rule produces too many occurrences in this window');
+  }
+  return candidates;
+}
+
 function expandBaseEvent(event: CalendarEvent, window: OccurrenceWindow): CalendarEvent[] {
   if (event.recurrence === null) return [event];
   const startDate = event.allDay
@@ -258,35 +317,13 @@ function expandBaseEvent(event: CalendarEvent, window: OccurrenceWindow): Calend
   const endTime = event.allDay ? '00:00' : instantTimeInZone(event.endsAt, event.timezone);
   const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
   const parsed = parseRecurrenceRule(event.recurrence.rule, event.allDay);
-  const dtstart = floatingDate(startDate, startTime);
-  const options = {
-    ...parsed.options,
-    dtstart,
-    // A timed UNTIL is a real UTC instant. RRule is operating on floating
-    // calendar fields here, so filter it after wall-time resolution instead.
-    until: event.allDay ? parsed.options.until : null,
-  };
-  const rule = new RRule(options);
-  const after = floatingDate(
-    toDateKey(addDays(fromDateKey(window.startDate), -Math.max(0, spanDays))),
-    '00:00',
-  );
-  const before = floatingDate(
-    toDateKey(addDays(fromDateKey(window.endDate), 1)),
-    '00:00',
-  );
   const actualUntil =
     !event.allDay && parsed.until ? parseBasicUtcDateTime(parsed.until).getTime() : null;
 
-  const candidates = rule.between(
-    after,
-    before,
-    true,
-    (_candidate, length) => length <= MAX_OCCURRENCES_PER_WINDOW,
+  const candidates = recurrenceCandidates(
+    event as CalendarEvent & { recurrence: { rule: string } },
+    window,
   );
-  if (candidates.length > MAX_OCCURRENCES_PER_WINDOW) {
-    throw new RecurrenceRuleError('recurrence rule produces too many occurrences in this window');
-  }
 
   return candidates
     .map((candidate) => floatingDateKey(candidate))

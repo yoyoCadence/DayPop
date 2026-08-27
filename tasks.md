@@ -173,6 +173,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 1. **補一天不夠。**IANA offset 從 UTC−12 到 UTC+14 共 26 小時，同一個 instant 在兩個時區可以差**兩個**日期（Pacific/Pago_Pago 8/1 23:30 = Pacific/Kiritimati 8/3 00:30），所以極端時區組合仍會漏。展開視窗改補兩天（`ZONE_SPREAD_DAYS`），並補上 UTC−11 ↔ UTC+14 正反兩向的測試。原本的東京↔洛杉磯測試只有 16 小時差，抓不到。
   > 2. **壞規則的 fallback 會弄丟其他系列的取消／改期。**`expandSafely()` 原本逐事件用 `eventExceptions: []` 重跑，等於把所有 exception 關聯丟掉：已取消的 occurrence 會回來，replacement row 還會被當成獨立事件再畫一次。改為以「來源系列＋該系列的 exceptions＋它指到的 replacement rows」為隔離單位重試，replacement 不再單獨展開。
   > 3. **整類封鎖 sub-daily 是匯入回歸。**`FREQ=HOURLY;COUNT=2` 只有兩次、完全畫得出來，卻被擋掉；那等於在一個白屏修正裡偷改匯入能力。改為 `isExpandableEvent()` **依實際展開量**判斷：以事件自己的第一天為探測視窗（一天最密的情況），展得開就收。
+  > **2026-08-27 第三輪覆驗再開一項，已修正**：`isExpandableEvent()` 原本只探 DTSTART 當天，等於假設「事件首日一定最密集」。有 `BYDAY` 時這句就不成立 —— 週一開始但只命中週二的規則，首日一次都沒有，於是 `FREQ=SECONDLY;BYDAY=TU;BYHOUR=9,10,11`（每個週二 10,800 次）被放行。探測視窗改為 **DTSTART 起算一整年**，也就是 DayPop 自己會要求的最寬視窗（綜覽的年檢視）；occurrence 數量隨視窗單調遞增，所以一年裝得下就每個面板都裝得下。
+  > **順帶修掉一年探測帶來的效能問題**：整年探測若沿用 `resolveEventOccurrences()`，會對每個候選跑 `shiftEvent()` 的時區換算，實測 200 筆每日重複事件匯入要 **27.5 秒**。抽出 `recurrenceCandidates()` 只算候選日期、不做時區換算後降到 **335 毫秒**（每週重複則是 4.5 秒 → 195 毫秒）。
 
   > **原始調查紀錄保留在下方**，因為它記錄了成因與量到的數字。
   > **DP-081 — 重複事件在所有檢視都只顯示一次（資料是對的，畫面沒展開）：** 2026-08-27 於 DP-014 的 `全天` 那一段順帶查出，**不是那一段造成的**。`visibleEvents()`（[`calendars.ts:63`](src/domain/calendars.ts#L63)）回傳的是 `data.events` 原始列，只依日曆可見性過濾；四個檢視拿到的就是這個陣列，各自把事件放在它自己的 `startDate` 上。DP-027 早就做好了 `resolveEventOccurrences()`（[`recurrence.ts:147`](src/domain/recurrence.ts#L147)），但**除了 `mutations.ts` 裡同樣沒有呼叫者的 `replaceEventOccurrence()` 之外，沒有任何地方呼叫它**。`MonthView.tsx:519` 的註記（`Identity is the event id until DP-014 wires recurring occurrences`）就是在講這件事。
