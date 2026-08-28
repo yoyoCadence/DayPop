@@ -261,6 +261,23 @@ describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
     const monthly = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=MONTHLY;BYDAY=-1MO');
     expect(isExpandableEvent(monthly)).toBe(true);
   });
+  it('命中日遠在任何取樣視窗之外的密集規則也要擋下', () => {
+    // DTSTART 2025-03-01，下一個 2/29 是 2028 —— 探 DTSTART 當天或探一整年
+    // 都看不到它，但那一天會有 3 × 60 × 60 = 10,800 次。
+    const leapDay = timed('2025-03-01', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;BYMONTH=2;BYMONTHDAY=29;BYHOUR=9,10,11');
+    expect(isExpandableEvent(leapDay)).toBe(false);
+  });
+
+  it('timed UNTIL 讓規則其實很短時，要照實算而不是誤擋', () => {
+    // DTSTART 09:00 Asia/Taipei = 01:00:00Z，UNTIL 01:00:05Z，實際只有 6 次。
+    const short = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;UNTIL=20260803T010005Z');
+    expect(isExpandableEvent(short)).toBe(true);
+  });
+
+  it('UNTIL 拉長到整天的同一個 FREQ 仍然擋下', () => {
+    const long = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;UNTIL=20260804T010000Z');
+    expect(isExpandableEvent(long)).toBe(false);
+  });
   it('一般頻率與不重複的事件都可展開', () => {
     for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
       expect(isExpandableEvent(hourly(`FREQ=${freq}`))).toBe(true);
