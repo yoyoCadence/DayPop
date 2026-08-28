@@ -278,6 +278,23 @@ describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
     const long = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;UNTIL=20260804T010000Z');
     expect(isExpandableEvent(long)).toBe(false);
   });
+  it('INTERVAL 不能在 BY* 已經對齊候選之後再除一次', () => {
+    // 12 個偶數小時 × 3 分鐘 = 每天 36 次，全年超過上限。
+    const aligned = timed('2026-08-03', '00:00', '00:30', 'Asia/Taipei', 'FREQ=HOURLY;INTERVAL=2;BYHOUR=0,2,4,6,8,10,12,14,16,18,20,22;BYMINUTE=0,1,2');
+    expect(isExpandableEvent(aligned)).toBe(false);
+  });
+
+  it('有 COUNT 的規則比的是單一視窗，不是整個生命週期', () => {
+    // 兩萬次分散在五十幾年，任何一年最多 366 次。
+    const many = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=DAILY;COUNT=20000');
+    expect(isExpandableEvent(many)).toBe(true);
+  });
+
+  it('每週規則的單日峰值不會被當成天天發生', () => {
+    // 每週一天 48 次，全年約 2,500 次，遠低於上限。
+    const weekly = timed('2026-08-03', '00:00', '00:30', 'Asia/Taipei', 'FREQ=WEEKLY;BYHOUR=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23;BYMINUTE=0,30');
+    expect(isExpandableEvent(weekly)).toBe(true);
+  });
   it('一般頻率與不重複的事件都可展開', () => {
     for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
       expect(isExpandableEvent(hourly(`FREQ=${freq}`))).toBe(true);

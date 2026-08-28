@@ -36,15 +36,21 @@ const WIDEST_WINDOW_DAYS = 366;
  * `BYMONTH=2;BYMONTHDAY=29` starting in March, whose next hit is three years
  * out. Where the dense days *land* is exactly what a sampled window cannot see.
  *
- * So the rule is judged on what it can produce, not on where it lands:
+ * So the rule is judged on what it can produce, not on where it lands. What
+ * matters is the most it can put in **one window**, and two independent things
+ * bound that:
  *
- * - **Bounded rules** (COUNT or UNTIL) are counted exactly. They terminate, so
- *   this is cheap, and it is the only way to see that
+ * - **The whole lifetime.** A rule with COUNT or UNTIL ends, and no window can
+ *   hold more than the rule ever produces. Counting stops at the cap, so this
+ *   stays cheap, and it is the only way to see that
  *   `FREQ=SECONDLY;UNTIL=…T010005Z` is six occurrences rather than a wall.
- * - **Unbounded rules** repeat forever at a fixed density, so the densest
- *   possible day is computed from FREQ and the BY* time parts and weighed
- *   against the widest window DayPop draws (綜覽's 年 view). Occurrence counts
- *   only grow with the window, so fitting a year means fitting every pane.
+ * - **The density.** Firing days in the widest window DayPop draws (綜覽's 年
+ *   view) times the most one firing day can hold. This is what catches a rule
+ *   whose dense days are decades away.
+ *
+ * Neither alone is right. Lifetime alone rejects `FREQ=DAILY;COUNT=20000`,
+ * which is only 366 rows in any one year; density alone rejects a five-second
+ * `UNTIL`. The smaller of the two is the real bound, so that is what is used.
  *
  * `expandSafely()` stays the backstop for a month buffer scrolled wider still.
  *
@@ -63,15 +69,17 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
     return false;
   }
 
+  let lifetime = Number.POSITIVE_INFINITY;
   const hasCount = parsed.options.count !== undefined && parsed.options.count !== null;
   if (hasCount || parsed.until !== undefined) {
     try {
-      return countBoundedOccurrences(event, parsed) <= MAX_OCCURRENCES_PER_WINDOW;
+      lifetime = countBoundedOccurrences(event, parsed);
     } catch {
       return false;
     }
   }
-  return maxOccurrencesPerDay(parsed.options) * WIDEST_WINDOW_DAYS <= MAX_OCCURRENCES_PER_WINDOW;
+  const density = maxHitDaysInWindow(parsed.options) * maxOccurrencesPerHitDay(parsed.options);
+  return Math.min(lifetime, density) <= MAX_OCCURRENCES_PER_WINDOW;
 }
 
 /**
@@ -114,30 +122,85 @@ function countBoundedOccurrences(
   return rule.all((_candidate, length) => length <= MAX_OCCURRENCES_PER_WINDOW).length;
 }
 
+type RuleOptions = ReturnType<typeof parseRecurrenceRule>['options'];
+
+/** How many values a BY* part names, or `null` when it is absent. */
+function listSize(part: unknown): number | null {
+  if (Array.isArray(part)) return Math.max(1, part.length);
+  if (part === undefined || part === null) return null;
+  return 1;
+}
+
+/** `parseRecurrenceRule()` refuses a rule without FREQ; the densest is the safe default. */
+function frequencyOf(options: RuleOptions): number {
+  return options.freq ?? RRule.SECONDLY;
+}
+
 /**
- * The most occurrences an unbounded rule can put on one day.
+ * The most occurrences one firing day can hold.
  *
  * RFC 5545 §3.3.10 decides whether a BY* part limits or expands from FREQ: for
- * a sub-daily FREQ the time parts narrow an otherwise full day, and for DAILY
- * and coarser they multiply a single DTSTART time. This reads that table, which
- * is why it does not care where the rule's days actually fall.
+ * a sub-daily FREQ the time parts narrow an otherwise full day; for DAILY and
+ * coarser they multiply a single DTSTART time.
+ *
+ * INTERVAL only thins the unit FREQ itself counts in, and a BY* part on that
+ * same unit *limits* the thinned sequence rather than being thinned again —
+ * `FREQ=HOURLY;INTERVAL=2;BYHOUR=<the twelve even hours>` really does fire on
+ * all twelve. Taking the smaller of the two is what keeps that honest.
  */
-function maxOccurrencesPerDay(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
-  // `parseRecurrenceRule()` has already refused a rule without FREQ; defaulting
-  // to the densest frequency keeps this conservative rather than optimistic if
-  // that ever stops being true.
-  const freq = options.freq ?? RRule.SECONDLY;
-  const size = (part: unknown, fallback: number) =>
-    Array.isArray(part) ? Math.max(1, part.length) : part === undefined || part === null ? fallback : 1;
-
-  const hours = size(options.byhour, freq >= RRule.HOURLY ? 24 : 1);
-  const minutes = size(options.byminute, freq >= RRule.MINUTELY ? 60 : 1);
-  const seconds = size(options.bysecond, freq >= RRule.SECONDLY ? 60 : 1);
-  const perDay = hours * minutes * seconds;
-  // An INTERVAL only thins a sub-daily rule; on DAILY and coarser it skips whole
-  // days, which this per-day figure already treats as the busiest one.
+function maxOccurrencesPerHitDay(options: RuleOptions): number {
+  const freq = frequencyOf(options);
   const interval = Math.max(1, options.interval ?? 1);
-  return freq >= RRule.HOURLY ? Math.ceil(perDay / interval) : perDay;
+  const byHour = listSize(options.byhour);
+  const byMinute = listSize(options.byminute);
+  const bySecond = listSize(options.bysecond);
+
+  if (freq === RRule.SECONDLY) {
+    return (byHour ?? 24) * (byMinute ?? 60) * Math.min(bySecond ?? 60, Math.ceil(60 / interval));
+  }
+  if (freq === RRule.MINUTELY) {
+    return (byHour ?? 24) * Math.min(byMinute ?? 60, Math.ceil(60 / interval)) * (bySecond ?? 1);
+  }
+  if (freq === RRule.HOURLY) {
+    return Math.min(byHour ?? 24, Math.ceil(24 / interval)) * (byMinute ?? 1) * (bySecond ?? 1);
+  }
+  return (byHour ?? 1) * (byMinute ?? 1) * (bySecond ?? 1);
+}
+
+/**
+ * Days inside the widest window on which the rule can fire at all.
+ *
+ * Without this a weekly rule was charged its busiest day 366 times over:
+ * `FREQ=WEEKLY` with every hour and two minutes is 48 rows on one day a week,
+ * about 2,500 a year, not the 17,568 that multiplying by every day suggested.
+ */
+function maxHitDaysInWindow(options: RuleOptions): number {
+  const freq = frequencyOf(options);
+  const interval = Math.max(1, options.interval ?? 1);
+  const byMonth = listSize(options.bymonth);
+  const byMonthDay = listSize(options.bymonthday);
+  const byYearDay = listSize(options.byyearday);
+  const byWeekday = listSize(options.byweekday);
+
+  let days: number;
+  if (freq === RRule.YEARLY) {
+    // A 366-day window can straddle two anchor years.
+    days = 2 * (byYearDay ?? (byMonth ?? 1) * (byMonthDay ?? byWeekday ?? 1));
+  } else if (freq === RRule.MONTHLY) {
+    days = (Math.ceil(12 / interval) + 1) * (byMonthDay ?? byWeekday ?? 1);
+  } else if (freq === RRule.WEEKLY) {
+    days = (Math.ceil(WIDEST_WINDOW_DAYS / (7 * interval)) + 1) * (byWeekday ?? 1);
+  } else if (freq === RRule.DAILY) {
+    days = Math.ceil(WIDEST_WINDOW_DAYS / interval);
+  } else {
+    // A sub-daily rule fires every day unless a BY* part below rules one out.
+    days = WIDEST_WINDOW_DAYS;
+  }
+
+  // BYMONTH and BYMONTHDAY limit which days can fire whatever the frequency is.
+  if (byMonth !== null) days = Math.min(days, byMonth * 31);
+  if (byMonthDay !== null) days = Math.min(days, (byMonth ?? 12) * byMonthDay);
+  return Math.max(1, Math.min(days, WIDEST_WINDOW_DAYS));
 }
 
 export class RecurrenceRuleError extends Error {

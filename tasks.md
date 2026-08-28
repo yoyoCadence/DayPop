@@ -179,6 +179,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 1. **固定探測一年仍會被繞過。**`FREQ=SECONDLY;BYMONTH=2;BYMONTHDAY=29;BYHOUR=9,10,11` 從 2025-03-01 開始，下一個 2/29 是 2028 年，一年的視窗根本看不到；到那一年才爆量、系列降級。**取樣視窗看不到「密集的日子落在哪裡」，這條路本質上就是錯的**，所以改為判斷規則「能產生多少」而不是「落在哪」：有 COUNT／UNTIL 的規則會終止，直接精確計數；無界的規則密度固定，依 FREQ 與 BY* 時間部分（RFC 5545 §3.3.10 的 limit／expand 表）算出「單日最多幾次」，再對最寬視窗（綜覽年檢視）比對上限。
   > 2. **timed `UNTIL` 在計數前被清成 null，短規則被誤擋。**`FREQ=SECONDLY;UNTIL=20260803T010005Z` 實際只有 6 次卻被拒絕。精確計數時會先把 UTC 的 UNTIL 換算成事件自己的牆上時間再交給 RRule（IANA offset 都是整分鐘，秒數原樣保留）。
   > **附帶效果**：無界規則現在完全不需要展開，200 筆每日重複事件的匯入從 335 毫秒再降到 **79 毫秒**。
+  > **2026-08-28 第五輪覆驗再開三項，均已修正**：密度公式本身有三個算錯的地方 —— (1) `INTERVAL` 在 BY* 已經對齊候選之後又被除一次，`FREQ=HOURLY;INTERVAL=2;BYHOUR=<12 個偶數小時>;BYMINUTE=0,1,2` 實際每天 36 次卻被算成 18；(2) 有 COUNT／UNTIL 的規則拿**整個生命週期**的總數去比「每個視窗 10,000」的上限，`FREQ=DAILY;COUNT=20000` 任何一年最多 366 次卻被誤擋；(3) 每週／每月規則把單日峰值當成天天發生，`FREQ=WEEKLY` 配滿 24 小時 × 2 分鐘實際全年約 2,500 次卻被算成 17,568。改成 **`min(生命週期總數, 視窗內命中天數 × 單日最多次數)`**：兩個上界各自都不夠，取小的才是真正的上界。
+  > **同時補上 `recurrenceExpandability.test.ts`**：拿 18 條規則交叉比對「判斷結果」與「實際展開一整年」，釘住「判斷不得比實際寬鬆」這個方向。前面五輪之所以一直有漏網，就是因為模型從來沒有對照真實展開驗證過。
+  > **這個交叉比對順帶挖出一個效能問題**：`eventTime.ts` 的 `zonedParts()` 每次呼叫都新建一個 `Intl.DateTimeFormat`。DP-081 讓「展開 occurrence」變成內迴圈之後，這件事就從無關緊要變成主要成本 —— 一整年的每小時重複事件要 **20 秒**。改成每個時區共用一個 formatter 後降到 **262 毫秒**（整份交叉比對從 52 秒降到 1.7 秒）。這不只是測試變快：在此之前，帳號裡有一個每小時重複事件就足以讓綜覽的年檢視卡住好幾秒。
 
   > **原始調查紀錄保留在下方**，因為它記錄了成因與量到的數字。
   > **DP-081 — 重複事件在所有檢視都只顯示一次（資料是對的，畫面沒展開）：** 2026-08-27 於 DP-014 的 `全天` 那一段順帶查出，**不是那一段造成的**。`visibleEvents()`（[`calendars.ts:63`](src/domain/calendars.ts#L63)）回傳的是 `data.events` 原始列，只依日曆可見性過濾；四個檢視拿到的就是這個陣列，各自把事件放在它自己的 `startDate` 上。DP-027 早就做好了 `resolveEventOccurrences()`（[`recurrence.ts:147`](src/domain/recurrence.ts#L147)），但**除了 `mutations.ts` 裡同樣沒有呼叫者的 `replaceEventOccurrence()` 之外，沒有任何地方呼叫它**。`MonthView.tsx:519` 的註記（`Identity is the event id until DP-014 wires recurring occurrences`）就是在講這件事。

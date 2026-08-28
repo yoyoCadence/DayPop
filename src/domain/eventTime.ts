@@ -108,9 +108,21 @@ export function instantTimeInZone(instant: string, timezone: string): string {
   return `${pad(parts.hour)}:${pad(parts.minute)}`;
 }
 
-function zonedParts(date: Date, timezone: string) {
-  const result: Record<string, number> = {};
-  const parts = new Intl.DateTimeFormat('en-CA', {
+/**
+ * One formatter per zone.
+ *
+ * Constructing an `Intl.DateTimeFormat` is orders of magnitude more expensive
+ * than using one, and DP-081 made this the inner loop: every occurrence of a
+ * recurring event resolves its wall time through here, so a year of an hourly
+ * series built thousands of formatters and took seconds. The formatters are
+ * immutable and depend only on the zone, so they are shared.
+ */
+const zoneFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function zoneFormatter(timezone: string): Intl.DateTimeFormat {
+  const cached = zoneFormatters.get(timezone);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
@@ -118,7 +130,14 @@ function zonedParts(date: Date, timezone: string) {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-  }).formatToParts(date);
+  });
+  zoneFormatters.set(timezone, formatter);
+  return formatter;
+}
+
+function zonedParts(date: Date, timezone: string) {
+  const result: Record<string, number> = {};
+  const parts = zoneFormatter(timezone).formatToParts(date);
   for (const part of parts) {
     if (part.type !== 'literal') result[part.type] = Number(part.value);
   }
