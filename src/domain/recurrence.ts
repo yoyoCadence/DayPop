@@ -19,6 +19,9 @@ const ALL_DAY_TIME_PARTS = new Set(['BYHOUR', 'BYMINUTE', 'BYSECOND']);
 const MAX_OCCURRENCES_PER_WINDOW = 10_000;
 /** A leap year — the widest window any DayPop pane asks for (綜覽's 年 view). */
 const WIDEST_WINDOW_DAYS = 366;
+const WIDEST_WINDOW_MS = WIDEST_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+/** How far ahead an unbounded rule is walked looking for its densest stretch. */
+const HORIZON_YEARS = 8;
 
 /**
  * True when this event's rule can be expanded without blowing the cap — DP-081.
@@ -30,27 +33,27 @@ const WIDEST_WINDOW_DAYS = 366;
  * perfectly drawable .ics files and quietly narrowed what DayPop imports, which
  * is a product decision rather than a crash fix.
  *
- * **No probe window is used, because none is safe.** Both earlier attempts
- * sampled a calendar range and both were dodgeable: DTSTART's own day misses
- * `BYDAY=TU` when DTSTART is a Monday, and a year from DTSTART misses
- * `BYMONTH=2;BYMONTHDAY=29` starting in March, whose next hit is three years
- * out. Where the dense days *land* is exactly what a sampled window cannot see.
+ * The question is whether any window DayPop draws — at widest, 綜覽's 年 view —
+ * can hold more occurrences than the resolver's cap. That is measured by
+ * **walking the rule's own occurrences with a sliding window**, in
+ * `exceedsWindowCap()`.
  *
- * So the rule is judged on what it can produce, not on where it lands. What
- * matters is the most it can put in **one window**, and two independent things
- * bound that:
+ * Earlier versions tried to answer it without walking, and every one of them
+ * was wrong in a way that took another round to find:
  *
- * - **The whole lifetime.** A rule with COUNT or UNTIL ends, and no window can
- *   hold more than the rule ever produces. Counting stops at the cap, so this
- *   stays cheap, and it is the only way to see that
- *   `FREQ=SECONDLY;UNTIL=…T010005Z` is six occurrences rather than a wall.
- * - **The density.** Firing days in the widest window DayPop draws (綜覽's 年
- *   view) times the most one firing day can hold. This is what catches a rule
- *   whose dense days are decades away.
+ * - Sampling DTSTART's own day missed `BYDAY=TU` when DTSTART is a Monday.
+ * - Sampling a year from DTSTART missed `BYMONTH=2;BYMONTHDAY=29` starting in
+ *   March, whose next hit is three years out.
+ * - Computing density arithmetically kept mis-reading RFC 5545 §3.3.10: it
+ *   divided by INTERVAL where a BY* part had already aligned the candidates,
+ *   compared a whole lifetime against a per-window cap, charged a weekly rule
+ *   its busiest day 366 times over, read a bare `BYDAY=MO` under MONTHLY as one
+ *   day a month rather than every Monday, and ignored BYSETPOS entirely.
  *
- * Neither alone is right. Lifetime alone rejects `FREQ=DAILY;COUNT=20000`,
- * which is only 366 rows in any one year; density alone rejects a five-second
- * `UNTIL`. The smaller of the two is the real bound, so that is what is used.
+ * The pattern is clear enough to name: re-deriving recurrence semantics beside
+ * the library that already implements them keeps producing subtly different
+ * answers. Walking rrule's output asks rrule for the semantics instead, so
+ * ordinals, expand/limit and BYSETPOS need no second opinion.
  *
  * `expandSafely()` stays the backstop for a month buffer scrolled wider still.
  *
@@ -69,38 +72,22 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
     return false;
   }
 
-  let lifetime = Number.POSITIVE_INFINITY;
-  const hasCount = parsed.options.count !== undefined && parsed.options.count !== null;
-  if (hasCount || parsed.until !== undefined) {
-    try {
-      lifetime = countBoundedOccurrences(event, parsed);
-    } catch {
-      return false;
-    }
-  }
-  const density = maxHitDaysInWindow(parsed.options) * maxOccurrencesPerHitDay(parsed.options);
-  return Math.min(lifetime, density) <= MAX_OCCURRENCES_PER_WINDOW;
-}
+  // Walking is exact but costs an iteration per occurrence, and the common
+  // rules are nowhere near the cap. This bound only ever *over*-counts, so
+  // clearing it is proof on its own and the walk can be skipped — which is
+  // every ordinary calendar rule, DAILY and WEEKLY and HOURLY included.
+  if (ceilingPerWindow(parsed.options) <= MAX_OCCURRENCES_PER_WINDOW) return true;
 
-/**
- * Exact occurrence count for a rule that ends by itself.
- *
- * Counting stops once the cap is passed, so a `COUNT=20000` rule costs 10,001
- * candidate dates rather than twenty thousand, and no wall time is resolved.
- */
-function countBoundedOccurrences(
-  event: CalendarEvent,
-  parsed: ReturnType<typeof parseRecurrenceRule>,
-): number {
   const startDate = event.allDay
     ? event.startDate
     : instantDateInZone(event.startsAt, event.timezone);
   const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone);
+  const dtstart = floatingDate(startDate, startTime);
 
-  // RRule is working in floating calendar fields here, so a timed UNTIL — which
-  // is a real UTC instant — has to be read as the event's own wall clock first,
-  // or a five-second rule is counted as if it ran for a whole day. Every IANA
-  // offset is a whole number of minutes, so the seconds carry across unchanged.
+  // RRule works in floating calendar fields here, so a timed UNTIL — a real
+  // UTC instant — has to be read as the event’s own wall clock first, or a
+  // five-second rule counts as if it ran all day. Every IANA offset is a whole
+  // number of minutes, so the seconds carry across unchanged.
   let until = parsed.options.until ?? null;
   if (!event.allDay && parsed.until !== undefined) {
     const instant = parseBasicUtcDateTime(parsed.until);
@@ -114,93 +101,70 @@ function countBoundedOccurrences(
     );
   }
 
-  const rule = new RRule({
-    ...parsed.options,
-    dtstart: floatingDate(startDate, startTime),
-    until,
+  let rule;
+  try {
+    rule = new RRule({ ...parsed.options, dtstart, until });
+  } catch {
+    return false;
+  }
+
+  const horizonEnd = new Date(dtstart.getTime());
+  horizonEnd.setUTCFullYear(horizonEnd.getUTCFullYear() + HORIZON_YEARS);
+  return !exceedsWindowCap(rule, dtstart, horizonEnd);
+}
+
+/**
+ * An upper bound on occurrences per window, cheap enough to compute for free.
+ *
+ * Every unknown is resolved the expensive way round, so the result can be too
+ * large but never too small — which is what makes it safe to accept on. It
+ * assumes every day in the window fires, ignores INTERVAL, and ignores
+ * BYSETPOS; those can only ever remove occurrences. Reading them as reductions
+ * is precisely what made the previous arithmetic version accept rules it
+ * should not have.
+ */
+function ceilingPerWindow(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
+  const size = (part: unknown, fallback: number) =>
+    Array.isArray(part) ? Math.max(1, part.length) : part === undefined || part === null ? fallback : 1;
+  const freq = options.freq ?? RRule.SECONDLY;
+  const perDay =
+    size(options.byhour, freq >= RRule.HOURLY ? 24 : 1) *
+    size(options.byminute, freq >= RRule.MINUTELY ? 60 : 1) *
+    size(options.bysecond, freq >= RRule.SECONDLY ? 60 : 1);
+  return perDay * WIDEST_WINDOW_DAYS;
+}
+
+/**
+ * True when some 366-day stretch holds more occurrences than the cap.
+ *
+ * Occurrences are walked in order with a sliding window, so this measures the
+ * densest run rather than a total: `FREQ=DAILY;COUNT=20000` is twenty thousand
+ * rows but only 366 in any one year, and a rule whose busy days are years out
+ * is still caught when the walk reaches them.
+ *
+ * Two bounds keep the walk finite. It stops once more occurrences have been
+ * seen than any single window could hold, and once it passes the horizon.
+ * A rule that stays sparse for its first ten thousand occurrences and only
+ * then bunches up is therefore accepted; `expandSafely()` catches that at
+ * render time by degrading the one series rather than the screen.
+ */
+function exceedsWindowCap(rule: RRule, from: Date, to: Date): boolean {
+  const seen: number[] = [];
+  let oldest = 0;
+  let exceeded = false;
+
+  rule.between(from, to, true, (date, length) => {
+    const at = date.getTime();
+    seen.push(at);
+    while (seen[oldest]! <= at - WIDEST_WINDOW_MS) oldest += 1;
+    if (seen.length - oldest > MAX_OCCURRENCES_PER_WINDOW) {
+      exceeded = true;
+      return false;
+    }
+    return length <= MAX_OCCURRENCES_PER_WINDOW;
   });
-  return rule.all((_candidate, length) => length <= MAX_OCCURRENCES_PER_WINDOW).length;
-}
 
-type RuleOptions = ReturnType<typeof parseRecurrenceRule>['options'];
-
-/** How many values a BY* part names, or `null` when it is absent. */
-function listSize(part: unknown): number | null {
-  if (Array.isArray(part)) return Math.max(1, part.length);
-  if (part === undefined || part === null) return null;
-  return 1;
-}
-
-/** `parseRecurrenceRule()` refuses a rule without FREQ; the densest is the safe default. */
-function frequencyOf(options: RuleOptions): number {
-  return options.freq ?? RRule.SECONDLY;
-}
-
-/**
- * The most occurrences one firing day can hold.
- *
- * RFC 5545 §3.3.10 decides whether a BY* part limits or expands from FREQ: for
- * a sub-daily FREQ the time parts narrow an otherwise full day; for DAILY and
- * coarser they multiply a single DTSTART time.
- *
- * INTERVAL only thins the unit FREQ itself counts in, and a BY* part on that
- * same unit *limits* the thinned sequence rather than being thinned again —
- * `FREQ=HOURLY;INTERVAL=2;BYHOUR=<the twelve even hours>` really does fire on
- * all twelve. Taking the smaller of the two is what keeps that honest.
- */
-function maxOccurrencesPerHitDay(options: RuleOptions): number {
-  const freq = frequencyOf(options);
-  const interval = Math.max(1, options.interval ?? 1);
-  const byHour = listSize(options.byhour);
-  const byMinute = listSize(options.byminute);
-  const bySecond = listSize(options.bysecond);
-
-  if (freq === RRule.SECONDLY) {
-    return (byHour ?? 24) * (byMinute ?? 60) * Math.min(bySecond ?? 60, Math.ceil(60 / interval));
-  }
-  if (freq === RRule.MINUTELY) {
-    return (byHour ?? 24) * Math.min(byMinute ?? 60, Math.ceil(60 / interval)) * (bySecond ?? 1);
-  }
-  if (freq === RRule.HOURLY) {
-    return Math.min(byHour ?? 24, Math.ceil(24 / interval)) * (byMinute ?? 1) * (bySecond ?? 1);
-  }
-  return (byHour ?? 1) * (byMinute ?? 1) * (bySecond ?? 1);
-}
-
-/**
- * Days inside the widest window on which the rule can fire at all.
- *
- * Without this a weekly rule was charged its busiest day 366 times over:
- * `FREQ=WEEKLY` with every hour and two minutes is 48 rows on one day a week,
- * about 2,500 a year, not the 17,568 that multiplying by every day suggested.
- */
-function maxHitDaysInWindow(options: RuleOptions): number {
-  const freq = frequencyOf(options);
-  const interval = Math.max(1, options.interval ?? 1);
-  const byMonth = listSize(options.bymonth);
-  const byMonthDay = listSize(options.bymonthday);
-  const byYearDay = listSize(options.byyearday);
-  const byWeekday = listSize(options.byweekday);
-
-  let days: number;
-  if (freq === RRule.YEARLY) {
-    // A 366-day window can straddle two anchor years.
-    days = 2 * (byYearDay ?? (byMonth ?? 1) * (byMonthDay ?? byWeekday ?? 1));
-  } else if (freq === RRule.MONTHLY) {
-    days = (Math.ceil(12 / interval) + 1) * (byMonthDay ?? byWeekday ?? 1);
-  } else if (freq === RRule.WEEKLY) {
-    days = (Math.ceil(WIDEST_WINDOW_DAYS / (7 * interval)) + 1) * (byWeekday ?? 1);
-  } else if (freq === RRule.DAILY) {
-    days = Math.ceil(WIDEST_WINDOW_DAYS / interval);
-  } else {
-    // A sub-daily rule fires every day unless a BY* part below rules one out.
-    days = WIDEST_WINDOW_DAYS;
-  }
-
-  // BYMONTH and BYMONTHDAY limit which days can fire whatever the frequency is.
-  if (byMonth !== null) days = Math.min(days, byMonth * 31);
-  if (byMonthDay !== null) days = Math.min(days, (byMonth ?? 12) * byMonthDay);
-  return Math.max(1, Math.min(days, WIDEST_WINDOW_DAYS));
+  return exceeded;
 }
 
 export class RecurrenceRuleError extends Error {

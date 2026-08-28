@@ -44,6 +44,10 @@ const RULES: string[] = [
   'FREQ=MINUTELY',
   'FREQ=SECONDLY',
   `FREQ=MONTHLY;${HOURS(24)};${MINUTES(60)}`,
+  // 非 ordinal 的 BYDAY 在 MONTHLY 下是「每個月的所有星期一」，不是一天。
+  `FREQ=MONTHLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
+  `FREQ=YEARLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
+  `FREQ=MONTHLY;${HOURS(24)};${MINUTES(60)};BYSETPOS=1`,
 ];
 
 /**
@@ -66,6 +70,45 @@ describe('isExpandableEvent 不得比實際展開寬鬆', () => {
         expandable = false;
       }
       if (accepted) expect(expandable, `${rule} 被接受但實際展不開`).toBe(true);
+    });
+  }
+});
+
+/**
+ * 反方向：實際展開得了的規則不能被誤擋。
+ *
+ * 只驗「接受的必須展得開」抓不到匯入能力的退步 —— BYSETPOS 那一條就是這樣
+ * 溜過去的：它被誤擋，但因為誤擋是被允許的方向，測試不會亮紅燈。
+ */
+const MUST_ACCEPT: string[] = [
+  'FREQ=DAILY',
+  'FREQ=DAILY;COUNT=20000',
+  'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+  'FREQ=MONTHLY;BYDAY=-1MO',
+  'FREQ=YEARLY',
+  'FREQ=HOURLY',
+  'FREQ=HOURLY;COUNT=2',
+  'FREQ=MINUTELY;COUNT=10',
+  // BYSETPOS 只會把候選變少，不能被當成完整的候選集拒絕。
+  `FREQ=MONTHLY;BYDAY=MO;${HOURS(24)};${MINUTES(60)};BYSETPOS=1`,
+  // 每週一天 48 次，全年約 2,500 次。
+  `FREQ=WEEKLY;${HOURS(24)};BYMINUTE=0,30`,
+  // 12 個偶數小時已經對齊 INTERVAL，實際仍是 12 個小時。
+  'FREQ=HOURLY;INTERVAL=2;BYHOUR=0,2,4,6,8,10,12,14,16,18,20,22',
+];
+
+describe('isExpandableEvent 不得誤擋展得開的規則', () => {
+  for (const rule of MUST_ACCEPT) {
+    it(rule, () => {
+      const event = ev('2026-01-05', rule, '00:00');
+      // 先確認這條規則真的展得開，測試本身才有意義。
+      expect(() =>
+        resolveEventOccurrences(
+          { events: [event], eventExceptions: [] },
+          { startDate: '2026-01-01', endDate: '2026-12-31' },
+        ),
+      ).not.toThrow();
+      expect(isExpandableEvent(event), `${rule} 展得開卻被擋下`).toBe(true);
     });
   }
 });
