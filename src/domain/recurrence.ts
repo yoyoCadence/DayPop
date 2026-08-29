@@ -20,8 +20,8 @@ const MAX_OCCURRENCES_PER_WINDOW = 10_000;
 /** A leap year — the widest window any DayPop pane asks for (綜覽's 年 view). */
 const WIDEST_WINDOW_DAYS = 366;
 const WIDEST_WINDOW_MS = WIDEST_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-/** How far ahead an unbounded rule is walked looking for its densest stretch. */
-const HORIZON_YEARS = 8;
+/** Floor for the look-ahead; see horizonYears(). */
+const MIN_HORIZON_YEARS = 8;
 
 /**
  * True when this event's rule can be expanded without blowing the cap — DP-081.
@@ -36,7 +36,8 @@ const HORIZON_YEARS = 8;
  * The question is whether any window DayPop draws — at widest, 綜覽's 年 view —
  * can hold more occurrences than the resolver's cap. That is measured by
  * **walking the rule's own occurrences with a sliding window**, in
- * `exceedsWindowCap()`.
+ * `walkIsSafe()`, behind a cheap upper bound that clears the common rules
+ * without walking at all.
  *
  * Earlier versions tried to answer it without walking, and every one of them
  * was wrong in a way that took another round to find:
@@ -109,8 +110,28 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
   }
 
   const horizonEnd = new Date(dtstart.getTime());
-  horizonEnd.setUTCFullYear(horizonEnd.getUTCFullYear() + HORIZON_YEARS);
-  return !exceedsWindowCap(rule, dtstart, horizonEnd);
+  horizonEnd.setUTCFullYear(horizonEnd.getUTCFullYear() + horizonYears(parsed.options));
+  return walkIsSafe(rule, dtstart, horizonEnd);
+}
+
+/**
+ * How far ahead the walk has to go before silence means anything.
+ *
+ * An unbounded rule repeats with a period, and nothing can be concluded until
+ * at least one whole period has been watched. `FREQ=YEARLY;INTERVAL=9` with a
+ * leap-day restriction only lands every lcm(9, 4) = 36 years, so a fixed
+ * eight-year look-ahead saw nothing at all and called it safe. Four times the
+ * interval covers that alignment for any interval, since lcm(n, 4) ≤ 4n.
+ */
+function horizonYears(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
+  const freq = options.freq ?? RRule.SECONDLY;
+  const interval = Math.max(1, options.interval ?? 1);
+  let years = 0;
+  if (freq === RRule.YEARLY) years = interval;
+  else if (freq === RRule.MONTHLY) years = interval / 12;
+  else if (freq === RRule.WEEKLY) years = (interval * 7) / 365;
+  else if (freq === RRule.DAILY) years = interval / 365;
+  return Math.min(400, Math.max(MIN_HORIZON_YEARS, Math.ceil(4 * years) + MIN_HORIZON_YEARS));
 }
 
 /**
@@ -135,20 +156,26 @@ function ceilingPerWindow(options: ReturnType<typeof parseRecurrenceRule>['optio
 }
 
 /**
- * True when some 366-day stretch holds more occurrences than the cap.
+ * Walks the rule's own occurrences and reports whether it is safe to store.
  *
- * Occurrences are walked in order with a sliding window, so this measures the
- * densest run rather than a total: `FREQ=DAILY;COUNT=20000` is twenty thousand
- * rows but only 366 in any one year, and a rule whose busy days are years out
- * is still caught when the walk reaches them.
+ * A sliding window measures the densest run rather than a total, so
+ * `FREQ=DAILY;COUNT=20000` is twenty thousand rows but only 366 in any one
+ * year, and a rule whose busy days are decades out is still caught once the
+ * walk reaches them.
  *
- * Two bounds keep the walk finite. It stops once more occurrences have been
- * seen than any single window could hold, and once it passes the horizon.
- * A rule that stays sparse for its first ten thousand occurrences and only
- * then bunches up is therefore accepted; `expandSafely()` catches that at
- * render time by degrading the one series rather than the screen.
+ * **Reaching the horizon is not by itself an answer.** Treating it as one was
+ * the previous bug: a rule whose first occurrence was 27 years out produced
+ * nothing inside the look-ahead, and "nothing seen" was read as "nothing to
+ * worry about" — so 86,400 rows in a single day were accepted at import and
+ * only failed years later, on screen. Silence is only meaningful once enough
+ * of the rule has actually been observed, so accepting needs one of:
+ *
+ * - the rule stopped producing before the horizon — it has run out, and what
+ *   was counted is everything there will ever be; or
+ * - what was seen spans at least two whole windows, so a full window has been
+ *   watched sliding across real output rather than guessed at.
  */
-function exceedsWindowCap(rule: RRule, from: Date, to: Date): boolean {
+function walkIsSafe(rule: RRule, from: Date, to: Date): boolean {
   const seen: number[] = [];
   let oldest = 0;
   let exceeded = false;
@@ -164,7 +191,15 @@ function exceedsWindowCap(rule: RRule, from: Date, to: Date): boolean {
     return length <= MAX_OCCURRENCES_PER_WINDOW;
   });
 
-  return exceeded;
+  if (exceeded) return false;
+  // Nothing at all inside a horizon built to cover a whole period: there is
+  // nothing to draw, so nothing to refuse.
+  if (seen.length === 0) return true;
+
+  const first = seen[0]!;
+  const last = seen[seen.length - 1]!;
+  const stoppedEarly = to.getTime() - last > WIDEST_WINDOW_MS;
+  return stoppedEarly || last - first >= 2 * WIDEST_WINDOW_MS;
 }
 
 export class RecurrenceRuleError extends Error {

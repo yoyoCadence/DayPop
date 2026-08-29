@@ -24,6 +24,7 @@ function ev(date: string, rule: string, start: string): CalendarEvent {
 
 const HOURS = (n: number) => `BYHOUR=${Array.from({ length: n }, (_, i) => i).join(',')}`;
 const MINUTES = (n: number) => `BYMINUTE=${Array.from({ length: n }, (_, i) => i).join(',')}`;
+const SECONDS = (n: number) => `BYSECOND=${Array.from({ length: n }, (_, i) => i).join(',')}`;
 
 const RULES: string[] = [
   'FREQ=DAILY',
@@ -48,6 +49,8 @@ const RULES: string[] = [
   `FREQ=MONTHLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
   `FREQ=YEARLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
   `FREQ=MONTHLY;${HOURS(24)};${MINUTES(60)};BYSETPOS=1`,
+  // 第一次在 27 年後才發生，且當天 86,400 次；有限的 look-ahead 看不到它。
+  `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
 ];
 
 /**
@@ -95,6 +98,8 @@ const MUST_ACCEPT: string[] = [
   `FREQ=WEEKLY;${HOURS(24)};BYMINUTE=0,30`,
   // 12 個偶數小時已經對齊 INTERVAL，實際仍是 12 個小時。
   'FREQ=HOURLY;INTERVAL=2;BYHOUR=0,2,4,6,8,10,12,14,16,18,20,22',
+  // 每 9 年一次、當天 1,440 次 —— 稀疏但安全，不能因為看起來密就擋掉。
+  `FREQ=YEARLY;INTERVAL=9;${HOURS(24)};${MINUTES(60)}`,
 ];
 
 describe('isExpandableEvent 不得誤擋展得開的規則', () => {
