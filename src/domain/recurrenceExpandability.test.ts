@@ -59,8 +59,8 @@ const RULES: string[] = [
   `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
   // INTERVAL 超過 look-ahead 的上限，同樣不能因為沒看到就放行。
   `FREQ=YEARLY;INTERVAL=401;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
-  // 第一次在 27 年後才發生，且當天 86,400 次；有限的 look-ahead 看不到它。
-  `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
+  // 稀疏年份只有 2/28，閏年才 2/28+2/29。
+  `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=28,29;${HOURS(24)};${MINUTES(50)};BYSECOND=0,1,2,3,4`,
 ];
 
 /**
@@ -170,4 +170,56 @@ describe('look-ahead 內沒有輸出時必須擋下', () => {
       expect(isExpandableEvent(event), `${rule} 未來會爆量卻被放行`).toBe(false);
     });
   }
+});
+
+/**
+ * 事件自身的跨日長度也要算進去。
+ *
+ * `expandBaseEvent()` 會從「視窗起點 − 事件長度」開始展開，好讓更早開始、
+ * 但仍延伸進這個視窗的 occurrence 不被漏掉；所以一個很長的事件，光是畫一年
+ * 就得產生好幾十年的候選。
+ */
+function spanning(startDate: string, endDate: string, rule: string): CalendarEvent {
+  return {
+    id: 'r1',
+    calendarId: '11111111-1111-4111-8111-111111111111',
+    title: 'x',
+    location: null,
+    notes: null,
+    reminderMinutes: [],
+    recurrence: { rule },
+    sharingScope: 'inherit',
+    createdAt: '2000-01-01T00:00:00.000Z',
+    updatedAt: '2000-01-01T00:00:00.000Z',
+    allDay: true,
+    startDate,
+    endDate,
+  };
+}
+
+describe('事件跨日長度會拉長展開範圍', () => {
+  it('2000→2028 的全天事件配 FREQ=DAILY 必須擋下', { timeout: SLOW }, () => {
+    const event = spanning('2000-01-01', '2028-01-01', 'FREQ=DAILY');
+    // 先證明 resolver 真的展不開那一年。
+    expect(() =>
+      resolveEventOccurrences(
+        { events: [event], eventExceptions: [] },
+        { startDate: '2028-01-01', endDate: '2028-12-31' },
+      ),
+    ).toThrow();
+    expect(isExpandableEvent(event)).toBe(false);
+  });
+
+  it('短的重複事件不受影響', { timeout: SLOW }, () => {
+    for (const [from, to] of [['2026-01-01', '2026-01-01'], ['2026-01-01', '2026-01-03']]) {
+      const event = spanning(from!, to!, 'FREQ=DAILY');
+      expect(() =>
+        resolveEventOccurrences(
+          { events: [event], eventExceptions: [] },
+          { startDate: '2026-01-01', endDate: '2026-12-31' },
+        ),
+      ).not.toThrow();
+      expect(isExpandableEvent(event), `${from}→${to}`).toBe(true);
+    }
+  });
 });

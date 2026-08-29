@@ -43,8 +43,12 @@ const WIDEST_WINDOW_DAYS = 366;
  *   window can hold more than the whole of it. Counting stops at the cap, so a
  *   runaway COUNT is cheap to reject, and this is what lets a five-second
  *   `FREQ=SECONDLY;UNTIL=…` through as the six rows it really is.
- * - **What one window can ever hold** — `windowCeiling()`, an upper bound with
- *   no calendar arithmetic that could drift.
+ * - **What one expansion can ever produce** — `windowCeiling()`, an upper bound
+ *   with no calendar arithmetic that could drift. It is charged against the
+ *   span the resolver really walks, not the window width: `expandBaseEvent()`
+ *   looks back by the event's own length so a long occurrence that reaches
+ *   into the window is not missed, which is why a 2000–2028 all-day event on a
+ *   plain `FREQ=DAILY` costs twenty-eight years of candidates to draw one year.
  *
  * The smaller of the two decides. Neither can be dodged by a rule that behaves
  * differently in some year nobody looked at.
@@ -65,7 +69,9 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
     return false;
   }
 
-  if (windowCeiling(parsed.options) <= MAX_OCCURRENCES_PER_WINDOW) return true;
+  if (windowCeiling(parsed.options, expansionDays(event)) <= MAX_OCCURRENCES_PER_WINDOW) {
+    return true;
+  }
 
   // Only a rule that ends can be cleared by counting it.
   const bounded =
@@ -127,23 +133,48 @@ function listSize(part: unknown): number | null {
 }
 
 /**
- * The most occurrences one window could ever hold, for any year.
+ * Days `expandBaseEvent()` actually generates candidates across for one window.
+ *
+ * It starts the expansion at `window.startDate - spanDays` so an occurrence
+ * that began earlier but still reaches into the window is not missed. A long
+ * event therefore costs far more candidates than the window is wide: a
+ * 2000–2028 all-day event drawn in 2028 makes a plain `FREQ=DAILY` look back
+ * twenty-eight years, which is over ten thousand candidates even though only
+ * 366 of them start inside the window.
+ */
+function expansionDays(event: CalendarEvent): number {
+  const startDate = event.allDay
+    ? event.startDate
+    : instantDateInZone(event.startsAt, event.timezone);
+  const endDate = event.allDay ? event.endDate : instantDateInZone(event.endsAt, event.timezone);
+  const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
+  return WIDEST_WINDOW_DAYS + Math.max(0, spanDays);
+}
+
+/**
+ * The most occurrences one expansion could ever produce, for any year.
  *
  * Every unknown resolves the expensive way round, so this can be far too large
  * but never too small — which is the only property that makes it safe to accept
  * on. INTERVAL is ignored and BYSETPOS is only ever allowed to reduce, because
  * reading either as a reduction is what made earlier versions accept rules they
  * should not have.
+ *
+ * `days` is the expansion span rather than the window width, so the event's own
+ * length is charged for; see `expansionDays()`.
  */
-function windowCeiling(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
+function windowCeiling(
+  options: ReturnType<typeof parseRecurrenceRule>['options'],
+  days: number,
+): number {
   const perDay = maxPerFiringDay(options);
-  let ceiling = perDay * maxFiringDays(options);
+  let ceiling = perDay * maxFiringDays(options, days);
 
   // BYSETPOS keeps at most this many occurrences out of each period, whatever
   // the rest of the rule generated.
   const bySetPos = listSize(options.bysetpos);
   if (bySetPos !== null) {
-    ceiling = Math.min(ceiling, bySetPos * maxPeriodsPerWindow(options));
+    ceiling = Math.min(ceiling, bySetPos * maxPeriods(options, days));
   }
   return ceiling;
 }
@@ -171,41 +202,50 @@ function maxPerFiringDay(options: ReturnType<typeof parseRecurrenceRule>['option
  * under MONTHLY — every Monday of the month, not one day — is never mistaken
  * for a single day again. A window straddles two years, hence the doubling.
  */
-function maxFiringDays(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
+function maxFiringDays(
+  options: ReturnType<typeof parseRecurrenceRule>['options'],
+  days: number,
+): number {
   const freq = options.freq ?? RRule.SECONDLY;
   const byMonth = listSize(options.bymonth);
   const byMonthDay = listSize(options.bymonthday);
   const byYearDay = listSize(options.byyearday);
   const byWeekday = listSize(options.byweekday);
   const byWeekNo = listSize(options.byweekno);
-  const capped = (value: number) => Math.min(WIDEST_WINDOW_DAYS, Math.max(1, value));
+  const capped = (value: number) => Math.min(days, Math.max(1, value));
+  // Calendar units the span can touch. Each is rounded up and given one more,
+  // so a span that straddles a boundary is never charged too little.
+  const years = Math.ceil(days / 365) + 1;
+  const months = Math.ceil(days / 28) + 1;
+  const weeks = Math.ceil(days / 7) + 1;
 
-  if (byYearDay !== null) return capped(2 * byYearDay);
-  if (byMonthDay !== null) return capped(2 * byMonthDay * (byMonth ?? 12));
+  if (byYearDay !== null) return capped(years * byYearDay);
+  if (byMonthDay !== null) return capped(years * byMonthDay * (byMonth ?? 12));
   // A non-ordinal BYDAY selects every matching weekday in its period; only the
   // weekly case has a bound worth computing, and the rest stay at every day.
-  if (byWeekday !== null) {
-    return freq === RRule.WEEKLY ? capped(53 * byWeekday) : WIDEST_WINDOW_DAYS;
-  }
-  if (byWeekNo !== null) return WIDEST_WINDOW_DAYS;
-  if (byMonth !== null) return capped(byMonth * 31 + 31);
+  if (byWeekday !== null) return freq === RRule.WEEKLY ? capped(weeks * byWeekday) : days;
+  if (byWeekNo !== null) return days;
+  if (byMonth !== null) return capped(years * byMonth * 31);
 
-  if (freq === RRule.YEARLY) return 2;
-  if (freq === RRule.MONTHLY) return 13;
-  if (freq === RRule.WEEKLY) return 53;
-  return WIDEST_WINDOW_DAYS;
+  if (freq === RRule.YEARLY) return capped(years);
+  if (freq === RRule.MONTHLY) return capped(months);
+  if (freq === RRule.WEEKLY) return capped(weeks);
+  return days;
 }
 
-/** FREQ periods that can start inside one window, ignoring INTERVAL. */
-function maxPeriodsPerWindow(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
+/** FREQ periods that can start inside the expansion span, ignoring INTERVAL. */
+function maxPeriods(
+  options: ReturnType<typeof parseRecurrenceRule>['options'],
+  days: number,
+): number {
   const freq = options.freq ?? RRule.SECONDLY;
-  if (freq === RRule.YEARLY) return 2;
-  if (freq === RRule.MONTHLY) return 13;
-  if (freq === RRule.WEEKLY) return 53;
-  if (freq === RRule.DAILY) return WIDEST_WINDOW_DAYS;
-  if (freq === RRule.HOURLY) return WIDEST_WINDOW_DAYS * 24;
-  if (freq === RRule.MINUTELY) return WIDEST_WINDOW_DAYS * 24 * 60;
-  return WIDEST_WINDOW_DAYS * 24 * 60 * 60;
+  if (freq === RRule.YEARLY) return Math.ceil(days / 365) + 1;
+  if (freq === RRule.MONTHLY) return Math.ceil(days / 28) + 1;
+  if (freq === RRule.WEEKLY) return Math.ceil(days / 7) + 1;
+  if (freq === RRule.DAILY) return days;
+  if (freq === RRule.HOURLY) return days * 24;
+  if (freq === RRule.MINUTELY) return days * 24 * 60;
+  return days * 24 * 60 * 60;
 }
 
 export class RecurrenceRuleError extends Error {
