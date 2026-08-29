@@ -49,6 +49,10 @@ const RULES: string[] = [
   `FREQ=MONTHLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
   `FREQ=YEARLY;BYDAY=MO;${HOURS(20)};${MINUTES(20)}`,
   `FREQ=MONTHLY;${HOURS(24)};${MINUTES(60)};BYSETPOS=1`,
+  // 2100 是世紀年、不是閏年，所以 2064 起算的下一次要到 2136 —— look-ahead 內完全沒有輸出。
+  `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
+  // INTERVAL 超過 look-ahead 的上限，同樣不能因為沒看到就放行。
+  `FREQ=YEARLY;INTERVAL=401;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
   // 第一次在 27 年後才發生，且當天 86,400 次；有限的 look-ahead 看不到它。
   `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
 ];
@@ -114,6 +118,43 @@ describe('isExpandableEvent 不得誤擋展得開的規則', () => {
         ),
       ).not.toThrow();
       expect(isExpandableEvent(event), `${rule} 展得開卻被擋下`).toBe(true);
+    });
+  }
+});
+
+/**
+ * 未來才爆量的規則：look-ahead 內看不到輸出時必須 fail closed。
+ *
+ * 每一條都先證明它真的會爆 —— 展開那個真正命中的年份會拋例外 —— 測試才不是
+ * 只在釘住現況。
+ */
+const MUST_REJECT: { rule: string; start: string; densYear: string }[] = [
+  {
+    // 2064 起算每 9 年：2100 是世紀年不閏，所以真正命中的是 2136。
+    rule: `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
+    start: '2064-03-01',
+    densYear: '2136',
+  },
+  {
+    // INTERVAL 比 look-ahead 的上限還長。
+    rule: `FREQ=YEARLY;INTERVAL=401;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
+    start: '2064-03-01',
+    densYear: '3668',
+  },
+];
+
+describe('look-ahead 內沒有輸出時必須擋下', () => {
+  for (const { rule, start, densYear } of MUST_REJECT) {
+    it(`${start} ${rule}`, () => {
+      const event = ev(start, rule, '00:00');
+      // 先證明它真的展不開，這個測試才有意義。
+      expect(() =>
+        resolveEventOccurrences(
+          { events: [event], eventExceptions: [] },
+          { startDate: `${densYear}-01-01`, endDate: `${densYear}-12-31` },
+        ),
+      ).toThrow();
+      expect(isExpandableEvent(event), `${rule} 未來會爆量卻被放行`).toBe(false);
     });
   }
 });

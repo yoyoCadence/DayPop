@@ -117,11 +117,16 @@ export function isExpandableEvent(event: CalendarEvent): boolean {
 /**
  * How far ahead the walk has to go before silence means anything.
  *
- * An unbounded rule repeats with a period, and nothing can be concluded until
- * at least one whole period has been watched. `FREQ=YEARLY;INTERVAL=9` with a
- * leap-day restriction only lands every lcm(9, 4) = 36 years, so a fixed
- * eight-year look-ahead saw nothing at all and called it safe. Four times the
- * interval covers that alignment for any interval, since lcm(n, 4) ≤ 4n.
+ * A sparse rule needs a long look-ahead before it produces anything at all:
+ * `FREQ=YEARLY;INTERVAL=9` restricted to a leap day lands only where the
+ * interval and the leap cycle agree, which a fixed eight-year window missed
+ * entirely. Scaling with the interval gives such a rule a fair chance.
+ *
+ * **This is a budget, not a proof of periodicity.** The Gregorian calendar's
+ * century rule means the true cycle can be 400 years — 2100 is divisible by
+ * four and still not a leap year — and the clamp below gives up before that in
+ * any case. So reaching the end of this look-ahead never means "safe" on its
+ * own; `walkIsSafe()` requires positive evidence, and refuses when it has none.
  */
 function horizonYears(options: ReturnType<typeof parseRecurrenceRule>['options']): number {
   const freq = options.freq ?? RRule.SECONDLY;
@@ -192,9 +197,12 @@ function walkIsSafe(rule: RRule, from: Date, to: Date): boolean {
   });
 
   if (exceeded) return false;
-  // Nothing at all inside a horizon built to cover a whole period: there is
-  // nothing to draw, so nothing to refuse.
-  if (seen.length === 0) return true;
+  // Seeing nothing is the weakest possible evidence, so it cannot be an accept.
+  // This is the same mistake as reading the end of the look-ahead as an answer,
+  // and it survived one round longer: `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;
+  // BYMONTHDAY=29` from 2064 skips 2100 — a century year is not a leap year —
+  // so its next hit is 2136, and the walk came back empty.
+  if (seen.length === 0) return false;
 
   const first = seen[0]!;
   const last = seen[seen.length - 1]!;
