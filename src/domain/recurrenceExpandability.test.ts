@@ -22,6 +22,12 @@ function ev(date: string, rule: string, start: string): CalendarEvent {
   );
 }
 
+/**
+ * 這裡的每一條都真的展開一整年的 occurrence 來對照，屬於整個測試套件裡最吃
+ * CPU 的部分。機器同時在跑別的東西時，預設的 5 秒會變成偽陽性，所以放寬。
+ */
+const SLOW = 30_000;
+
 const HOURS = (n: number) => `BYHOUR=${Array.from({ length: n }, (_, i) => i).join(',')}`;
 const MINUTES = (n: number) => `BYMINUTE=${Array.from({ length: n }, (_, i) => i).join(',')}`;
 const SECONDS = (n: number) => `BYSECOND=${Array.from({ length: n }, (_, i) => i).join(',')}`;
@@ -64,7 +70,7 @@ const RULES: string[] = [
  */
 describe('isExpandableEvent 不得比實際展開寬鬆', () => {
   for (const rule of RULES) {
-    it(rule, () => {
+    it(rule, { timeout: SLOW }, () => {
       const event = ev('2026-01-01', rule, '00:00');
       const accepted = isExpandableEvent(event);
       let expandable = true;
@@ -108,7 +114,7 @@ const MUST_ACCEPT: string[] = [
 
 describe('isExpandableEvent 不得誤擋展得開的規則', () => {
   for (const rule of MUST_ACCEPT) {
-    it(rule, () => {
+    it(rule, { timeout: SLOW }, () => {
       const event = ev('2026-01-05', rule, '00:00');
       // 先確認這條規則真的展得開，測試本身才有意義。
       expect(() =>
@@ -136,6 +142,13 @@ const MUST_REJECT: { rule: string; start: string; densYear: string }[] = [
     densYear: '2136',
   },
   {
+    // 稀疏年份只有 2/28（6,000 筆），閏年才 2/28+2/29（12,000 筆）——
+    // 先看到稀疏的那幾次就早判安全是不夠的。
+    rule: `FREQ=YEARLY;INTERVAL=9;BYMONTH=2;BYMONTHDAY=28,29;${HOURS(24)};${MINUTES(50)};BYSECOND=0,1,2,3,4`,
+    start: '2064-03-01',
+    densYear: '2136',
+  },
+  {
     // INTERVAL 比 look-ahead 的上限還長。
     rule: `FREQ=YEARLY;INTERVAL=401;BYMONTH=2;BYMONTHDAY=29;${HOURS(24)};${MINUTES(60)};${SECONDS(60)}`,
     start: '2064-03-01',
@@ -145,7 +158,7 @@ const MUST_REJECT: { rule: string; start: string; densYear: string }[] = [
 
 describe('look-ahead 內沒有輸出時必須擋下', () => {
   for (const { rule, start, densYear } of MUST_REJECT) {
-    it(`${start} ${rule}`, () => {
+    it(`${start} ${rule}`, { timeout: SLOW }, () => {
       const event = ev(start, rule, '00:00');
       // 先證明它真的展不開，這個測試才有意義。
       expect(() =>
