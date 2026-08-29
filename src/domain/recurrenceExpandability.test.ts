@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isExpandableEvent, resolveEventOccurrences } from './recurrence';
+import { addDays, fromDateKey, toDateKey } from './date';
 import { timedEventFromWallTime } from './eventTime';
 import type { CalendarEvent } from './types';
 
@@ -221,5 +222,39 @@ describe('事件跨日長度會拉長展開範圍', () => {
       ).not.toThrow();
       expect(isExpandableEvent(event), `${from}→${to}`).toBe(true);
     }
+  });
+});
+
+/**
+ * 上界與實際展開必須在**邊界上**吻合，不是差不多就好。
+ *
+ * 少算一天就足以放行一筆會爆的資料：resolver 的範圍結束在
+ * `window.endDate + 1`，而 `rule.between(..., true)` 兩端都包含，所以每日規則
+ * 實際會產生 `視窗 + 跨日數 + 1` 個候選。逐一掃過門檻附近的長度，兩個方向都
+ * 不允許有落差。
+ */
+describe('上界在 10,000／10,001 邊界上與實際一致', () => {
+  const END = '2028-01-01';
+
+  it('掃過門檻附近的事件長度', { timeout: SLOW }, () => {
+    const mismatched: string[] = [];
+    for (let span = 9630; span <= 9640; span += 1) {
+      const startDate = toDateKey(addDays(fromDateKey(END), -span));
+      const event = spanning(startDate, END, 'FREQ=DAILY');
+      const accepted = isExpandableEvent(event);
+      let expandable = true;
+      try {
+        resolveEventOccurrences(
+          { events: [event], eventExceptions: [] },
+          { startDate: '2028-01-01', endDate: '2028-12-31' },
+        );
+      } catch {
+        expandable = false;
+      }
+      if (accepted !== expandable) {
+        mismatched.push(`span=${span} accepted=${accepted} expandable=${expandable}`);
+      }
+    }
+    expect(mismatched).toEqual([]);
   });
 });

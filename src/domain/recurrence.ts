@@ -141,6 +141,13 @@ function listSize(part: unknown): number | null {
  * 2000–2028 all-day event drawn in 2028 makes a plain `FREQ=DAILY` look back
  * twenty-eight years, which is over ten thousand candidates even though only
  * 366 of them start inside the window.
+ *
+ * The `+ 1` is not slack. `expandBaseEvent()` ends the range at
+ * `window.endDate + 1` and asks `rule.between(after, before, true)`, which
+ * includes both ends, so a daily rule yields `window + span + 1` candidates.
+ * Charging only `window + span` left exactly one unaccounted for, which is
+ * enough: a 2001-08-16 → 2028-01-01 event measured 10,000 here and produced
+ * 10,001 in the resolver.
  */
 function expansionDays(event: CalendarEvent): number {
   const startDate = event.allDay
@@ -148,7 +155,7 @@ function expansionDays(event: CalendarEvent): number {
     : instantDateInZone(event.startsAt, event.timezone);
   const endDate = event.allDay ? event.endDate : instantDateInZone(event.endsAt, event.timezone);
   const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
-  return WIDEST_WINDOW_DAYS + Math.max(0, spanDays);
+  return WIDEST_WINDOW_DAYS + Math.max(0, spanDays) + 1;
 }
 
 /**
