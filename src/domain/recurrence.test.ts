@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
 import {
+  isExpandableEvent,
   isRecurrenceRule,
   parseRecurrenceRule,
   RecurrenceRuleError,
@@ -233,5 +234,77 @@ describe('occurrence expansion', () => {
       ['2026-08-05', '改期站會', REPLACEMENT],
       ['2026-08-05', '站會', null],
     ]);
+  });
+});
+
+describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
+  const hourly = (rule: string) =>
+    timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', rule);
+
+  it('依實際展開量判斷，不是整類封鎖 sub-daily', () => {
+    // 兩次的 HOURLY 畫得出來；兩萬次的 SECONDLY 畫不出來。
+    expect(isExpandableEvent(hourly('FREQ=HOURLY;COUNT=2'))).toBe(true);
+    expect(isExpandableEvent(hourly('FREQ=MINUTELY;COUNT=10'))).toBe(true);
+    expect(isExpandableEvent(hourly('FREQ=SECONDLY;COUNT=20000'))).toBe(false);
+  });
+
+  it('密集的那一天不是 DTSTART 當天時也要抓到（BYDAY）', () => {
+    // 2026-08-03 是週一，規則只命中週二，每個週二 3 小時 × 60 分 × 60 秒
+    // = 10,800 次。只探 DTSTART 當天會放行，因為那天一次都沒有。
+    const byDay = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;BYDAY=TU;BYHOUR=9,10,11');
+    expect(isExpandableEvent(byDay)).toBe(false);
+  });
+
+  it('BYDAY 但不密集的規則不受影響', () => {
+    const weekly = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=WEEKLY;BYDAY=TU');
+    expect(isExpandableEvent(weekly)).toBe(true);
+    const monthly = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=MONTHLY;BYDAY=-1MO');
+    expect(isExpandableEvent(monthly)).toBe(true);
+  });
+  it('命中日遠在任何取樣視窗之外的密集規則也要擋下', () => {
+    // DTSTART 2025-03-01，下一個 2/29 是 2028 —— 探 DTSTART 當天或探一整年
+    // 都看不到它，但那一天會有 3 × 60 × 60 = 10,800 次。
+    const leapDay = timed('2025-03-01', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;BYMONTH=2;BYMONTHDAY=29;BYHOUR=9,10,11');
+    expect(isExpandableEvent(leapDay)).toBe(false);
+  });
+
+  it('timed UNTIL 讓規則其實很短時，要照實算而不是誤擋', () => {
+    // DTSTART 09:00 Asia/Taipei = 01:00:00Z，UNTIL 01:00:05Z，實際只有 6 次。
+    const short = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;UNTIL=20260803T010005Z');
+    expect(isExpandableEvent(short)).toBe(true);
+  });
+
+  it('UNTIL 拉長到整天的同一個 FREQ 仍然擋下', () => {
+    const long = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=SECONDLY;UNTIL=20260804T010000Z');
+    expect(isExpandableEvent(long)).toBe(false);
+  });
+  it('INTERVAL 不能在 BY* 已經對齊候選之後再除一次', () => {
+    // 12 個偶數小時 × 3 分鐘 = 每天 36 次，全年超過上限。
+    const aligned = timed('2026-08-03', '00:00', '00:30', 'Asia/Taipei', 'FREQ=HOURLY;INTERVAL=2;BYHOUR=0,2,4,6,8,10,12,14,16,18,20,22;BYMINUTE=0,1,2');
+    expect(isExpandableEvent(aligned)).toBe(false);
+  });
+
+  it('有 COUNT 的規則比的是單一視窗，不是整個生命週期', () => {
+    // 兩萬次分散在五十幾年，任何一年最多 366 次。
+    const many = timed('2026-08-03', '09:00', '09:30', 'Asia/Taipei', 'FREQ=DAILY;COUNT=20000');
+    expect(isExpandableEvent(many)).toBe(true);
+  });
+
+  it('每週規則的單日峰值不會被當成天天發生', () => {
+    // 每週一天 48 次，全年約 2,500 次，遠低於上限。
+    const weekly = timed('2026-08-03', '00:00', '00:30', 'Asia/Taipei', 'FREQ=WEEKLY;BYHOUR=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23;BYMINUTE=0,30');
+    expect(isExpandableEvent(weekly)).toBe(true);
+  });
+  it('一般頻率與不重複的事件都可展開', () => {
+    for (const freq of ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']) {
+      expect(isExpandableEvent(hourly(`FREQ=${freq}`))).toBe(true);
+    }
+    expect(isExpandableEvent({ ...hourly('FREQ=DAILY'), recurrence: null })).toBe(true);
+  });
+
+  it('**不會**讓既有文件失效：validation 仍然接受 sub-daily', () => {
+    // 這是刻意的。把它變成 validation 規則，會讓已經存著這種事件的文件
+    // 整份讀不出來，一列壞資料就把整個日曆推進復原畫面。
+    expect(isRecurrenceRule('FREQ=SECONDLY;COUNT=20000', false)).toBe(true);
   });
 });

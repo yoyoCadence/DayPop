@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { calendarColor, visibleEvents } from '../domain/calendars';
-import { fromDateKey } from '../domain/date';
+import { calendarColor, visibleOccurrences } from '../domain/calendars';
+import { fromDateKey, toDateKey } from '../domain/date';
 import { instantDateInZone } from '../domain/eventTime';
 import {
   buildOverviewGroups,
   countOverviewOccurrences,
   overviewLabel,
+  overviewRange,
   stepOverviewCursor,
   type OverviewPeriod,
   type OverviewType,
@@ -53,13 +54,30 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
   const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
   const [cursor, setCursor] = useState(() => fromDateKey(todayKey));
   const [collapsed, setCollapsed] = useState<string[]>([]);
+  // The same range `buildOverviewGroups` walks, so nothing outside the browsed
+  // period is expanded — DP-081.
+  const occurrenceWindow = useMemo(() => {
+    const { start, end } = overviewRange(cursor, period, weekStartsOn);
+    return { startDate: toDateKey(start), endDate: toDateKey(end) };
+  }, [cursor, period, weekStartsOn]);
   const groups = useMemo(
     () =>
       buildOverviewGroups({
         // The原檔 builds its event rows from `dayEvents()`, which drops hidden
         // calendars. Todos and stickers are not filtered there, so they are
         // not filtered here either.
-        events: visibleEvents(data),
+        //
+        // Expanded over exactly the period being browsed — DP-081. 年／月／週
+        // all have an explicit range, so the window stays bounded even in the
+        // year view, and a weekly series now counts once per occurrence.
+        //
+        // Only when events are the type being shown: 待辦 and 貼圖 never read
+        // this list, and expanding a year of occurrences to throw the result
+        // away made those two tabs pay for data they do not display.
+        occurrences:
+          type === 'events'
+            ? visibleOccurrences(data, occurrenceWindow, data.preferences.timezone)
+            : [],
         todos: data.todos,
         stickers: data.stickers,
         type,
@@ -71,7 +89,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
         displayTimezone: data.preferences.timezone,
         todayKey,
       }),
-    [data, type, period, cursor, weekStartsOn, todayKey],
+    [data, occurrenceWindow, type, period, cursor, weekStartsOn, todayKey],
   );
   // Not a sum of `group.count`: outside the year view every day is its own
   // group, so a cross-midnight event would be counted once per group — DP-064.
@@ -193,7 +211,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
                       {day.items.map((item) => (
                         <button
                           className="overview-item"
-                          key={`${item.kind}-${item.id}`}
+                          key={`${item.kind}-${item.key}`}
                           type="button"
                           onClick={() => {
                             if (item.kind === 'event') onOpenEvent(item.id);

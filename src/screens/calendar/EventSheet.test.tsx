@@ -377,3 +377,41 @@ describe('EventSheet fields', () => {
     );
   });
 });
+
+describe('EventSheet 重複事件的範圍提示（DP-081 覆驗修正）', () => {
+  function recurring(): CalendarEvent {
+    return { ...timedEvent(), recurrence: { rule: "FREQ=WEEKLY" } };
+  }
+
+  const notice = () => container.querySelector('.cal-series-notice');
+  const deleteButton = () => container.querySelector('.cal-delete-button') as HTMLButtonElement;
+
+  it('編輯重複事件時說明修改會套用到整個系列', () => {
+    render({ editing: recurring() });
+
+    expect(notice()?.textContent).toContain('整個系列');
+    expect(deleteButton().textContent).toBe('刪除整個系列');
+  });
+
+  it('非重複事件沒有這個提示，刪除仍是一次就送出', () => {
+    const props = render({ editing: timedEvent() });
+
+    expect(notice()).toBeNull();
+    expect(deleteButton().textContent).toBe('刪除事件');
+
+    click('.cal-delete-button');
+    expect(props.onDeleteEvent).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333');
+  });
+
+  it('刪除整個系列要按兩次才會真的刪', () => {
+    const props = render({ editing: recurring() });
+
+    click('.cal-delete-button');
+    // 第一次只換成確認文案，還沒送出。
+    expect(props.onDeleteEvent).not.toHaveBeenCalled();
+    expect(deleteButton().textContent).toContain('再按一次');
+
+    click('.cal-delete-button');
+    expect(props.onDeleteEvent).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333');
+  });
+});

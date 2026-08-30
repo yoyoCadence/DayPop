@@ -2,8 +2,21 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from '../../domain/eventTime';
+import {
+  resolveEventOccurrences,
+  type OccurrenceWindow,
+} from '../../domain/recurrence';
 import type { CalendarEvent, TimedCalendarEvent } from '../../domain/types';
 import { WeekView } from './WeekView';
+/**
+ * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
+ * filtering happens upstream in production, so this expands the given events
+ * exactly as the real pipeline does.
+ */
+function occurrenceResolver(events: CalendarEvent[]) {
+  return (window: OccurrenceWindow) =>
+    resolveEventOccurrences({ events, eventExceptions: [] }, window);
+}
 
 /**
  * 週檢視 was the last view still drawing cross-midnight events on a fixed
@@ -79,7 +92,7 @@ function render(events: CalendarEvent[]) {
         displayTimezone={ZONE}
         cursor={CURSOR}
         todayKey={CURSOR}
-        events={events}
+        resolveOccurrences={occurrenceResolver(events)}
         calendars={[]}
         onUpdateEvent={vi.fn()}
         onOpenEvent={onOpenEvent}
@@ -211,5 +224,73 @@ describe('WeekView cross-midnight segments', () => {
     // A middle day is a full 24 hours and still says 「續」.
     expect(columns[3]![0]!.label).toBe('續 00:00–24:00 出差');
     expect(columns[5]![0]!.label).toBe('續 00:00–02:00 出差');
+  });
+});
+
+describe('WeekView 重複事件（DP-081）', () => {
+  /** 每週三 09:00–10:00，涵蓋游標所在的那一週。 */
+  function weekly(): TimedCalendarEvent {
+    const base = timed('r1', '週會', { date: '2026-07-29', start: '09:00', end: '10:00' });
+    return { ...base, recurrence: { rule: 'FREQ=WEEKLY;COUNT=8' } };
+  }
+
+  it('把落在這一週的那一次畫出來，而不是只畫系列的第一天', () => {
+    render([weekly()]);
+
+    const columns = blocksByColumn();
+    // 這一週是 08-09～08-15，系列第一次在 07-29，所以畫出來的是 08-12 那一次。
+    const withBlocks = columns.filter((column) => column.length > 0);
+    expect(withBlocks).toHaveLength(1);
+    expect(columns[3]![0]!.label).toBe('09:00–10:00 週會');
+  });
+
+  it('重複事件的色塊不可拖曳也沒有縮放把手，但仍可點開（DP-082 之前）', () => {
+    render([weekly()]);
+
+    const block = blocksByColumn()[3]![0]!;
+    // 沒有縮放把手 = 這個色塊不是 draggable 的。
+    expect(block.hasResizeHandle).toBe(false);
+
+    act(() => block.element.click());
+    expect(onOpenEvent).toHaveBeenCalledWith('r1');
+  });
+
+  it('非重複事件仍然可拖曳，這條限制只針對重複', () => {
+    render([timed('s1', '單次會議', { date: CURSOR, start: '09:00', end: '10:00' })]);
+
+    expect(blocksByColumn()[3]![0]!.hasResizeHandle).toBe(true);
+  });
+
+  it('同一週出現兩次的系列會畫成兩個色塊', () => {
+    const base = timed('r2', '雙週', { date: '2026-08-10', start: '09:00', end: '10:00' });
+    render([{ ...base, recurrence: { rule: 'FREQ=DAILY;INTERVAL=3;COUNT=4' } }]);
+
+    const columns = blocksByColumn();
+    // 08-10、08-13 都在這一週內。
+    expect(columns[1]![0]!.label).toBe('09:00–10:00 雙週');
+    expect(columns[4]![0]!.label).toBe('09:00–10:00 雙週');
+  });
+
+  it('只展開這一週，不會把整個系列都算出來', () => {
+    const windows: { startDate: string; endDate: string }[] = [];
+    act(() =>
+      root.render(
+        <WeekView
+          weekStartsOn={0}
+          displayTimezone={ZONE}
+          cursor={CURSOR}
+          todayKey={CURSOR}
+          resolveOccurrences={(window) => {
+            windows.push(window);
+            return [];
+          }}
+          calendars={[]}
+          onUpdateEvent={vi.fn()}
+          onOpenEvent={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(windows).toEqual([{ startDate: '2026-08-09', endDate: '2026-08-15' }]);
   });
 });

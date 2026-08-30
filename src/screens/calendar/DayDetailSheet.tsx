@@ -11,6 +11,7 @@ import { eventDateInZone } from '../../domain/eventTime';
 const CONTINUATION_LABEL = '續';
 import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
+import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
@@ -20,7 +21,11 @@ const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五
 export interface DayDetailSheetProps {
   /** `YYYY-MM-DD`, or null when the sheet is closed. */
   dateKey: string | null;
-  events: CalendarEvent[];
+  /**
+   * Expands the visible calendars into occurrences for one window — DP-081.
+   * This sheet asks for the single day it shows.
+   */
+  resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   /** The one timezone this sheet is drawn in — DP-064. */
   displayTimezone: string;
   /**
@@ -58,7 +63,7 @@ export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
 
 function DayDetailSheetBody({
   dateKey,
-  events,
+  resolveOccurrences,
   displayTimezone,
   todayKey,
   todos,
@@ -86,18 +91,21 @@ function DayDetailSheetBody({
     // the second day of an overnight event says 「續」; opening it used to show
     // 「這天沒有行程」.
     const window = { startDateKey: dateKey, endDateKey: dateKey };
-    const rows: { event: CalendarEvent; time: string; isContinuation: boolean }[] = [];
+    const rows: { event: CalendarEvent; key: string; time: string; isContinuation: boolean }[] = [];
+    // One day is the whole window — DP-081.
+    const occurrences = resolveOccurrences({ startDate: dateKey, endDate: dateKey });
 
-    for (const event of events) {
+    for (const { key: occurrenceKey, event } of occurrences) {
       if (event.allDay) {
         if (eventDateInZone(event, displayTimezone) === dateKey) {
-          rows.push({ event, time: '全天', isContinuation: false });
+          rows.push({ event, key: occurrenceKey, time: '全天', isContinuation: false });
         }
         continue;
       }
-      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, window)) {
+      for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, window)) {
         rows.push({
           event,
+          key: segment.key,
           // The segment's own span: 23:00–24:00 on the first day, 00:00–00:30
           // on the second, rather than the whole event's clock on both.
           time: segmentTimeRange(segment),
@@ -112,17 +120,19 @@ function DayDetailSheetBody({
       return left.time.localeCompare(right.time);
     });
 
-    // Identity is the event id here: this list is one day of single events, so
-    // there is no recurring occurrence to tell apart yet (DP-014 wires those).
+    // Identity is the occurrence key — DP-081. Two occurrences of one series on
+    // the same day are separate rows and can genuinely conflict with each other;
+    // the two halves of one cross-midnight occurrence share a key and cannot.
     const conflicting = conflictingOccurrenceKeys(
-      rows.map((row) => ({ key: row.event.id, event: row.event })),
+      rows.map((row) => ({ key: row.key, event: row.event })),
     );
     return rows.map((row) => ({
       event: row.event,
+      key: row.key,
       time: row.isContinuation ? `${CONTINUATION_LABEL} ${row.time}` : row.time,
-      conflict: conflicting.has(row.event.id),
+      conflict: conflicting.has(row.key),
     }));
-  }, [dateKey, displayTimezone, events]);
+  }, [dateKey, displayTimezone, resolveOccurrences]);
 
   const dayStickers = useMemo(
     () => stickers.filter((sticker) => sticker.date === dateKey),
@@ -209,7 +219,7 @@ function DayDetailSheetBody({
           {dayEvents.map((row) => (
             <button
               className="cal-day-event"
-              key={row.event.id}
+              key={row.key}
               type="button"
               onClick={() => onOpenEvent(row.event.id)}
             >

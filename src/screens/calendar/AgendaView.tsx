@@ -3,6 +3,7 @@ import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
 import { eventDisplaySegments } from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
+import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
@@ -13,7 +14,11 @@ const LOOKAHEAD_DAYS = 16;
 const WEEKDAY_LABELS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
 export interface AgendaViewProps {
-  events: CalendarEvent[];
+  /**
+   * Expands the visible calendars into occurrences for one window — DP-081.
+   * This list asks for exactly the 16 days it looks ahead.
+   */
+  resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   /** The one timezone this list is drawn in — DP-064. */
   displayTimezone: string;
   /** Today in that zone, computed once by the screen. */
@@ -39,7 +44,7 @@ export interface AgendaViewProps {
  * the day they are actually due.
  */
 export function AgendaView({
-  events,
+  resolveOccurrences,
   displayTimezone,
   todayKey,
   todos,
@@ -56,27 +61,39 @@ export function AgendaView({
     // cutting every event 16 times and keeping one slice is what made 綜覽 take
     // 16 seconds before it was bucketed (DP-064).
     const lastKey = toDateKey(addDays(today, LOOKAHEAD_DAYS - 1));
-    const segmentsByDate = new Map<string, { event: CalendarEvent; time: string; isContinuation: boolean }[]>();
-    const bucket = (dateKey: string, row: { event: CalendarEvent; time: string; isContinuation: boolean }) => {
+    // The look-ahead is also the occurrence window — DP-081. Nothing outside
+    // the 16 days this list can draw is expanded.
+    const occurrences = resolveOccurrences({ startDate: todayKey, endDate: lastKey });
+    type AgendaRow = {
+      event: CalendarEvent;
+      /** Occurrence key — DP-081, see `AgendaItem.rowKey`. */
+      key: string;
+      time: string;
+      isContinuation: boolean;
+    };
+    const segmentsByDate = new Map<string, AgendaRow[]>();
+    const bucket = (dateKey: string, row: AgendaRow) => {
       const list = segmentsByDate.get(dateKey);
       if (list) list.push(row);
       else segmentsByDate.set(dateKey, [row]);
     };
 
-    for (const event of events) {
+    for (const { key: occurrenceKey, event } of occurrences) {
       if (event.allDay) {
         const dateKey = eventDateInZone(event, displayTimezone);
         if (dateKey >= todayKey && dateKey <= lastKey) {
-          bucket(dateKey, { event, time: '全天', isContinuation: false });
+          bucket(dateKey, { event, key: occurrenceKey, time: '全天', isContinuation: false });
         }
         continue;
       }
-      for (const segment of eventDisplaySegments(event, event.id, displayTimezone, {
+      // The occurrence key, not the event id — DP-081.
+      for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, {
         startDateKey: todayKey,
         endDateKey: lastKey,
       })) {
         bucket(segment.dateKey, {
           event,
+          key: segment.key,
           // A continuation day says so instead of repeating the start clock.
           time: segment.isContinuation
             ? CONTINUATION_LABEL
@@ -107,6 +124,7 @@ export function AgendaView({
         })
         .map((row) => ({
           kind: 'event',
+          rowKey: row.key,
           id: row.event.id,
           time: row.time,
           title: row.event.title,
@@ -118,6 +136,7 @@ export function AgendaView({
         .filter((todo) => todo.dueDate === key)
         .map((todo) => ({
           kind: 'todo',
+          rowKey: todo.id,
           id: todo.id,
           time: '待辦',
           title: todo.title,
@@ -139,7 +158,7 @@ export function AgendaView({
     }
 
     return result;
-  }, [calendars, displayTimezone, events, todayKey, todos]);
+  }, [calendars, displayTimezone, resolveOccurrences, todayKey, todos]);
 
   return (
     <div className="cal-view-pane cal-agenda">
@@ -159,7 +178,7 @@ export function AgendaView({
           {day.items.map((item) => (
             <button
               className="cal-agenda-item"
-              key={`${item.kind}-${item.id}`}
+              key={`${item.kind}-${item.rowKey}`}
               type="button"
               onClick={() => (item.kind === 'event' ? onOpenEvent(item.id) : onToggleTodo(item.id))}
             >
@@ -194,6 +213,9 @@ export function AgendaView({
 
 interface AgendaItem {
   kind: 'event' | 'todo';
+  /** React key: the occurrence key for events, the id for todos — DP-081. */
+  rowKey: string;
+  /** What a tap addresses — the base event id, or the todo id. */
   id: string;
   time: string;
   title: string;

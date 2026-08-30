@@ -1346,9 +1346,11 @@
 }
 
 /* 44×25 軌道與 21px 旋鈕，同原稿 :586。
-   設定的「顯示桌寵」是同一個尺寸但在 `settingsPreferences.css` 各自宣告 ——
-   原稿本來就在不同區塊各寫一份 inline style，且兩個區塊的 CSS 互相獨立。
-   若日後要抽成共用開關元件，那是獨立的整理，不在這一段搬移的範圍。 */
+   設定的「顯示桌寵」是同一個尺寸但在 `settingsPreferences.css` 各自宣告。
+   2026-08-27 專案擁有者定案：**暫時不抽共用元件**，因為目前只有兩處，
+   而且兩邊「整列」的排版語意不同（這裡是 sheet 內的分隔線列，那裡是卡片內的列）。
+   等 DP-042 的通知開關、或第三個同尺寸開關出現時，再抽成 `ToggleSwitch`，
+   且**只共用開關本體，列的版面仍留在各自畫面**。 */
 .cal-allday-toggle {
   position: relative;
   width: 44px;
@@ -1386,6 +1388,23 @@
   .cal-allday-knob {
     transition: none;
   }
+}
+
+/* 重複事件的範圍提示 —— DP-081。DP-082 補上單次／全部的選擇後，
+   這段會被那個選擇取代。 */
+.cal-series-notice {
+  margin-bottom: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cal-series-notice strong {
+  font-weight: 800;
 }
 
 .cal-delete-button {

@@ -4,7 +4,7 @@ import {
   instantTimeInZone,
   wallTimeToInstant,
 } from './eventTime';
-import { parseRecurrenceRule } from './recurrence';
+import { isExpandableEvent, parseRecurrenceRule } from './recurrence';
 import {
   createDomainId,
   type CalendarEvent,
@@ -334,7 +334,9 @@ function parseEventComponent(
       const startDate = expandDate(start.value);
       const exclusiveEnd = expandDate(end.value);
       const endDate = toDateKey(addDays(fromDateKey(exclusiveEnd), -1));
-      return parseCalendarEvent({ ...common, allDay: true, startDate, endDate });
+      return refuseUnexpandable(
+        parseCalendarEvent({ ...common, allDay: true, startDate, endDate }),
+      );
     }
     if (isDateProperty(end)) {
       throw new IcsFormatError('timed DTSTART and DTEND must both use DATE-TIME');
@@ -344,13 +346,15 @@ function parseEventComponent(
     if (endTimezone !== timezone) {
       throw new IcsFormatError('DTSTART and DTEND must use the same timezone');
     }
-    return parseCalendarEvent({
-      ...common,
-      allDay: false,
-      startsAt: parseDateTime(start.value, timezone),
-      endsAt: parseDateTime(end.value, timezone),
-      timezone,
-    });
+    return refuseUnexpandable(
+      parseCalendarEvent({
+        ...common,
+        allDay: false,
+        startsAt: parseDateTime(start.value, timezone),
+        endsAt: parseDateTime(end.value, timezone),
+        timezone,
+      }),
+    );
   } catch (error) {
     if (error instanceof IcsFormatError) throw error;
     if (error instanceof DomainValidationError) {
@@ -358,6 +362,18 @@ function parseEventComponent(
     }
     throw error;
   }
+}
+
+/**
+ * The import boundary is where a rule the calendar cannot expand is refused —
+ * DP-081. Judged by how much the rule actually generates on its own first day,
+ * not by which FREQ it uses: a small `FREQ=HOURLY;COUNT=2` imports fine.
+ */
+function refuseUnexpandable(event: CalendarEvent): CalendarEvent {
+  if (isExpandableEvent(event)) return event;
+  throw new IcsFormatError(
+    `VEVENT 的 RRULE「${event.recurrence?.rule ?? ''}」在單一天內產生的次數超過上限，無法顯示`,
+  );
 }
 
 function parseOccurrenceProperty(

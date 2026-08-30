@@ -3,8 +3,21 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fromDateKey, toDateKey } from '../../domain/date';
 import { lunarCell } from '../../domain/lunar';
+import {
+  resolveEventOccurrences,
+  type OccurrenceWindow,
+} from '../../domain/recurrence';
 import type { CalendarEvent, Sticker } from '../../domain/types';
 import { MonthView } from './MonthView';
+/**
+ * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
+ * filtering happens upstream in production, so this expands the given events
+ * exactly as the real pipeline does.
+ */
+function occurrenceResolver(events: CalendarEvent[]) {
+  return (window: OccurrenceWindow) =>
+    resolveEventOccurrences({ events, eventExceptions: [] }, window);
+}
 
 /**
  * The month cell is where the sticker sizing rule lives, and it is the one
@@ -47,7 +60,7 @@ function render(stickers: Sticker[], weekStartsOn: 0 | 1 = 0) {
         weekStartsOn={weekStartsOn}
         displayTimezone="Asia/Taipei"
         calendarGridMode="fixed-six"
-        events={[]}
+        resolveOccurrences={occurrenceResolver([])}
         stickers={stickers}
         calendars={[]}
         selectedDate={TODAY}
@@ -153,7 +166,7 @@ describe('MonthView display timezone', () => {
           weekStartsOn={0}
           displayTimezone={displayTimezone}
           calendarGridMode="fixed-six"
-          events={[crossZoneEvent()]}
+          resolveOccurrences={occurrenceResolver([crossZoneEvent()])}
           stickers={[]}
           calendars={[]}
           selectedDate="2026-08-06"
@@ -199,7 +212,7 @@ describe('MonthView display timezone', () => {
           weekStartsOn={0}
           displayTimezone="Asia/Taipei"
           calendarGridMode="fixed-six"
-          events={[long]}
+          resolveOccurrences={occurrenceResolver([long])}
           stickers={[]}
           calendars={[]}
           selectedDate="2026-08-06"
@@ -232,7 +245,7 @@ describe('MonthView display timezone', () => {
           weekStartsOn={0}
           displayTimezone="Asia/Taipei"
           calendarGridMode="fixed-six"
-          events={[overnight]}
+          resolveOccurrences={occurrenceResolver([overnight])}
           stickers={[]}
           calendars={[]}
           selectedDate="2026-08-06"
@@ -331,7 +344,7 @@ describe('MonthView keyboard navigation', () => {
           weekStartsOn={0}
           displayTimezone="Asia/Taipei"
           calendarGridMode="fixed-six"
-          events={[]}
+          resolveOccurrences={occurrenceResolver([])}
           stickers={[]}
           calendars={[]}
           selectedDate="2026-08-13"
@@ -414,5 +427,69 @@ describe('MonthView keyboard navigation', () => {
     pressOn(TODAY, 'a');
     expect(document.activeElement).toBe(cell(TODAY));
     expect(before).not.toBeUndefined();
+  });
+});
+
+describe('MonthView 重複事件（DP-081）', () => {
+  function weekly(rule: string): CalendarEvent {
+    return {
+      id: 'r1',
+      calendarId: '44444444-4444-4444-8444-444444444444',
+      title: '每週站會',
+      location: null,
+      notes: null,
+      reminderMinutes: [],
+      recurrence: { rule },
+      sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: false,
+      startsAt: '2026-08-03T01:00:00.000Z',
+      endsAt: '2026-08-03T01:30:00.000Z',
+      timezone: 'Asia/Taipei',
+    };
+  }
+
+  function renderEvents(events: CalendarEvent[]) {
+    act(() =>
+      root.render(
+        <MonthView
+          weekStartsOn={0}
+          displayTimezone="Asia/Taipei"
+          calendarGridMode="fixed-six"
+          resolveOccurrences={occurrenceResolver(events)}
+          stickers={[]}
+          calendars={[]}
+          selectedDate="2026-08-06"
+          todayKey="2026-08-06"
+          flashToday={false}
+          onSelectDate={vi.fn()}
+          onPeriodLabelChange={vi.fn()}
+        />,
+      ),
+    );
+  }
+
+  const cellText = (dateKey: string) =>
+    container.querySelector(`[data-date-key="${dateKey}"]`)?.textContent ?? '';
+
+  it('每一次都畫在自己的格子裡，不是只畫第一次', () => {
+    renderEvents([weekly('FREQ=WEEKLY;COUNT=6')]);
+
+    // 8/3 是系列第一次；8/10、8/17、8/24 是後續。修正前只有 8/3 畫得出來。
+    for (const dateKey of ['2026-08-03', '2026-08-10', '2026-08-17', '2026-08-24']) {
+      expect(cellText(dateKey)).toContain('每週站會');
+    }
+    // COUNT=6 到 9/7 為止；9/14 已經超出，不該出現。
+    expect(cellText('2026-09-14')).not.toContain('每週站會');
+  });
+
+  it('同一系列的兩次不會被當成互相衝突', () => {
+    // 同一天連兩次的規則：兩個 entry 的 key 不同，但時間不重疊，
+    // 所以不該有衝突標記；重點是它們也沒有被當成「自己跟自己衝突」。
+    renderEvents([weekly('FREQ=DAILY;COUNT=3')]);
+
+    expect(cellText('2026-08-04')).toContain('每週站會');
+    expect(container.querySelector('.cal-cell-conflict')).toBeNull();
   });
 });

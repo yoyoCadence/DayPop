@@ -1,7 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { instantDateInZone } from '../../domain/eventTime';
-import { visibleEvents } from '../../domain/calendars';
+import { visibleOccurrences } from '../../domain/calendars';
+import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
@@ -62,9 +63,22 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
-  // Hiding a calendar is a display filter — the events stay in storage. Doing
-  // it once here keeps every pane consistent, as the原檔's `dayEvents()` does.
-  const events = useMemo(() => visibleEvents(data), [data]);
+  /**
+   * Expand the visible calendars' events into occurrences for one window — DP-081.
+   *
+   * Passed down rather than resolved once here because the window is a property
+   * of each pane, not of the screen: 月 keeps a scrolling buffer that grows as
+   * the user pans, 週 draws exactly one week and 列表 looks 16 days ahead.
+   * Resolving one window wide enough for all of them would expand rows nobody
+   * draws, and a `FREQ=DAILY` rule with no UNTIL has no natural end at all.
+   *
+   * Hiding a calendar stays a display filter — the events stay in storage, as
+   * the原檔's `dayEvents()` does.
+   */
+  const resolveOccurrences = useCallback(
+    (window: OccurrenceWindow) => visibleOccurrences(data, window, data.preferences.timezone),
+    [data],
+  );
 
   // "Today" is a day on this grid, so every one of its uses has to be read in
   // the grid's zone — DP-064. This is the screen's only source: the highlight,
@@ -303,7 +317,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
             weekStartsOn={weekStartsOn}
             displayTimezone={displayTimezone}
             calendarGridMode={data.preferences.calendarGridMode}
-            events={events}
+            resolveOccurrences={resolveOccurrences}
             stickers={data.stickers}
             calendars={data.calendars}
             selectedDate={selected}
@@ -320,7 +334,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
             displayTimezone={displayTimezone}
             cursor={cursor}
             todayKey={todayKey}
-            events={events}
+            resolveOccurrences={resolveOccurrences}
             calendars={data.calendars}
             onUpdateEvent={updateEvent}
             onOpenEvent={openEvent}
@@ -329,7 +343,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
         {view === 'agenda' && (
           <AgendaView
-            events={events}
+            resolveOccurrences={resolveOccurrences}
             displayTimezone={displayTimezone}
             todayKey={todayKey}
             todos={data.todos}
@@ -363,7 +377,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
 
       <DayDetailSheet
         dateKey={dayDetailKey}
-        events={events}
+        resolveOccurrences={resolveOccurrences}
         displayTimezone={displayTimezone}
         todayKey={todayKey}
         todos={data.todos}

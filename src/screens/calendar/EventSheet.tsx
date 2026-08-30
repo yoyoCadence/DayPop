@@ -102,6 +102,8 @@ function EventSheetForm({
   const [title, setTitle] = useState(editing?.title ?? seed?.title ?? '');
   const [date, setDate] = useState(editingWallTime?.date ?? seed?.date ?? defaultDate);
   const [allDay, setAllDay] = useState(editing?.allDay ?? seed?.allDay ?? false);
+  /** Deleting a whole series asks once before it goes through — DP-081. */
+  const [confirmSeriesDelete, setConfirmSeriesDelete] = useState(false);
   const [start, setStart] = useState(editingWallTime?.start || seed?.start || '09:00');
   const [end, setEnd] = useState(editingWallTime?.end || seed?.end || '10:00');
   const [location, setLocation] = useState(editing?.location ?? seed?.location ?? '');
@@ -416,16 +418,40 @@ function EventSheetForm({
                   {attachmentMessage && <p role="status">{attachmentMessage}</p>}
                 </section>
 
+                {/*
+                  DP-081 draws every occurrence of a series, but this sheet still
+                  edits the base event, so every change here applies to the whole
+                  series. Saying so is the DP-081 half of the promise; the
+                  單次／全部 choice that makes it selectable is DP-082.
+                */}
+                {editing?.recurrence !== null && editing !== null && (
+                  <p className="cal-series-notice" role="note">
+                    <strong>這是重複事件</strong>
+                    在這裡的修改與刪除都會套用到<strong>整個系列</strong>，不只你點開的那一次。
+                    只改其中一次的選項還沒有做好（DP-082）。
+                  </p>
+                )}
+
                 {editing && (
                   <button
                     className="cal-delete-button"
                     type="button"
+                    // A recurring delete removes every occurrence, so it asks
+                    // first. A single event keeps the原檔's one-tap delete.
                     onClick={() => {
+                      if (editing.recurrence !== null && !confirmSeriesDelete) {
+                        setConfirmSeriesDelete(true);
+                        return;
+                      }
                       onDeleteEvent(editing.id);
                       onClose();
                     }}
                   >
-                    刪除事件
+                    {editing.recurrence === null
+                      ? '刪除事件'
+                      : confirmSeriesDelete
+                        ? '確定刪除整個系列？再按一次'
+                        : '刪除整個系列'}
                   </button>
                 )}
 

@@ -26,6 +26,7 @@ import {
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
+import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
 import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../domain/types';
 
@@ -65,7 +66,11 @@ export interface MonthViewProps {
   /** The one timezone this grid is drawn in — DP-064. */
   displayTimezone: string;
   calendarGridMode: CalendarGridMode;
-  events: CalendarEvent[];
+  /**
+   * Expands the visible calendars into occurrences for one window — DP-081.
+   * The grid asks for exactly its rendered buffer, which grows as the user pans.
+   */
+  resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   stickers: Sticker[];
   calendars: Calendar[];
   selectedDate: string;
@@ -81,7 +86,7 @@ export function MonthView({
   weekStartsOn,
   displayTimezone,
   calendarGridMode,
-  events,
+  resolveOccurrences,
   stickers,
   calendars,
   selectedDate,
@@ -117,12 +122,23 @@ export function MonthView({
     [firstKey, lastKey],
   );
 
+  // The same buffer bounds the occurrence expansion and the segment window:
+  // the grid never asks for an occurrence it cannot draw — DP-081.
+  const occurrences = useMemo(
+    () => resolveOccurrences({ startDate: firstKey, endDate: lastKey }),
+    [resolveOccurrences, firstKey, lastKey],
+  );
+
   const eventsByDate = useMemo(
     // Windowed to the rendered buffer: an event longer than it is clipped to
     // what this grid can draw rather than cut into every day it spans, and a
     // span past `MAX_SEGMENT_DAYS` stays a drawable event instead of throwing.
-    () => groupEventsByDate(events, displayTimezone, { startDateKey: firstKey, endDateKey: lastKey }),
-    [displayTimezone, events, firstKey, lastKey],
+    () =>
+      groupEventsByDate(occurrences, displayTimezone, {
+        startDateKey: firstKey,
+        endDateKey: lastKey,
+      }),
+    [displayTimezone, occurrences, firstKey, lastKey],
   );
   const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
 
@@ -493,7 +509,7 @@ export interface MonthCellEntry {
  * deduplicate on.
  */
 function groupEventsByDate(
-  events: CalendarEvent[],
+  occurrences: ResolvedEventOccurrence[],
   displayTimezone: string,
   window: DisplaySegmentWindow,
 ): Map<string, MonthCellEntry[]> {
@@ -504,22 +520,23 @@ function groupEventsByDate(
     else map.set(dateKey, [entry]);
   };
 
-  for (const event of events) {
+  for (const { key: occurrenceKey, event } of occurrences) {
     if (event.allDay) {
       // All-day placement is unchanged by DP-064; it has no instants to cut.
       push(eventDateInZone(event, displayTimezone), {
         event,
-        key: event.id,
+        key: occurrenceKey,
         isContinuation: false,
         time: '',
       });
       continue;
     }
 
-    // Identity is the event id until DP-014 wires recurring occurrences into
-    // these views; both halves of one event still share it, which is the
-    // property the conflict check and the counts rely on.
-    for (const segment of eventDisplaySegments(event, event.id, displayTimezone, window)) {
+    // Identity is the **occurrence** key, not the event id — DP-081. Two
+    // occurrences of one weekly series must not be read as the same row, and
+    // both halves of one cross-midnight occurrence must be. That is the exact
+    // property the conflict check and the counts below deduplicate on.
+    for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, window)) {
       push(segment.dateKey, {
         event,
         key: segment.key,
@@ -563,6 +580,12 @@ function groupStickersByDate(stickers: Sticker[]): Map<string, Sticker[]> {
  *
  * Entries are compared, not segments: the same occurrence appearing twice in a
  * cell would otherwise be read as conflicting with itself.
+ *
+ * DP-081: `key` is now the occurrence key, so two occurrences of one weekly
+ * series landing in the same cell are compared like any other pair, while the
+ * two halves of one cross-midnight occurrence still share a key and are skipped.
+ * Each entry's `event` carries that occurrence's own instants, so the overlap
+ * test reads the times actually drawn rather than the first occurrence's.
  */
 function hasOverlap(entries: MonthCellEntry[]): boolean {
   for (let i = 0; i < entries.length; i += 1) {
