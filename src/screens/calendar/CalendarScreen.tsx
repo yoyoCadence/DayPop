@@ -222,15 +222,17 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       start: parsed.start,
       end: parsed.end,
       location: parsed.location,
+      repeat: parsed.repeat,
     });
     setEditingId(null);
     setSheetOpen(true);
     setQuick('');
 
-    // 重複 and 提醒 are recognised but still have nowhere honest to go — the
-    // sheet's recurrence controls remain DP-014 UI work, and reminder delivery
-    // remains DP-042.
-    const dropped = unsupportedQuickAddParts(parsed).filter((part) => part !== '地點');
+    // 地點 and, since DP-082, 重複 do reach the sheet, so neither is dropped.
+    // 提醒 still has nowhere honest to go until DP-042 can actually deliver one.
+    const dropped = unsupportedQuickAddParts(parsed).filter(
+      (part) => part !== '地點' && part !== '重複',
+    );
     setQuickNote(
       dropped.length > 0
         ? `已讀到${dropped.join('、')}，但這些欄位還不能保存，請先確認其餘內容。`

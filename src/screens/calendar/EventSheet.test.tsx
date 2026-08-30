@@ -247,6 +247,7 @@ describe('EventSheet fields', () => {
         start: '14:00',
         end: '15:00',
         location: '會議室A',
+        repeat: 'weekly',
       },
     });
 
@@ -254,12 +255,19 @@ describe('EventSheet fields', () => {
     expect((container.querySelector('[aria-label="日期"]') as HTMLInputElement).value).toBe('2026-08-09');
     expect((container.querySelector('[aria-label="開始"]') as HTMLInputElement).value).toBe('14:00');
     expect((container.querySelector('[aria-label="地點"]') as HTMLInputElement).value).toBe('會議室A');
+    // 重複 travels the same way — quick add parses 每週 and the sheet shows it.
+    expect((container.querySelector('[aria-label="重複"]') as HTMLSelectElement).value).toBe('weekly');
     // Nothing is stored until the user confirms.
     expect(props.onAddEvent).not.toHaveBeenCalled();
 
     submit();
     expect(props.onAddEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '專案驗收', date: '2026-08-09', location: '會議室A' }),
+      expect.objectContaining({
+        title: '專案驗收',
+        date: '2026-08-09',
+        location: '會議室A',
+        recurrenceRule: 'FREQ=WEEKLY',
+      }),
     );
   });
 
@@ -273,10 +281,12 @@ describe('EventSheet fields', () => {
         start: '14:00',
         end: '15:00',
         location: '',
+        repeat: 'daily',
       },
     });
 
     expect((container.querySelector('.cal-title-input') as HTMLInputElement).value).toBe('既有會議');
+    expect((container.querySelector('[aria-label="重複"]') as HTMLSelectElement).value).toBe('none');
   });
 
   it('shows the private attachment controls only for an existing signed-in event', () => {
@@ -413,5 +423,125 @@ describe('EventSheet 重複事件的範圍提示（DP-081 覆驗修正）', () =
 
     click('.cal-delete-button');
     expect(props.onDeleteEvent).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333');
+  });
+});
+
+describe('EventSheet 的「重複」控制項（DP-082）', () => {
+  const repeatSelect = () => container.querySelector('[aria-label="重複"]') as HTMLSelectElement;
+
+  function choose(value: string) {
+    const field = repeatSelect();
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(field, value);
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  const optionValues = () => [...repeatSelect().options].map((option) => option.value);
+
+  it('六個選項與順序逐字照原稿，預設是不重複', () => {
+    render();
+
+    expect(optionValues()).toEqual(['none', 'daily', 'weekday', 'weekly', 'monthly', 'yearly']);
+    expect([...repeatSelect().options].map((option) => option.textContent)).toEqual([
+      '不重複',
+      '每日',
+      '每個工作日',
+      '每週',
+      '每月',
+      '每年',
+    ]);
+    expect(repeatSelect().value).toBe('none');
+  });
+
+  it('新事件選了重複，就送出對應的 RRULE', () => {
+    const props = render();
+    type('.cal-title-input', '每日站會');
+    choose('weekday');
+    submit();
+
+    expect(props.onAddEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '每日站會',
+        recurrenceRule: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR',
+      }),
+    );
+  });
+
+  it('不重複的新事件送出的是 null，不是漏掉這個欄位', () => {
+    const props = render();
+    type('.cal-title-input', '單次會議');
+    submit();
+
+    expect(props.onAddEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ recurrenceRule: null }),
+    );
+  });
+
+  it('編輯既有的重複事件時，選單顯示的是它現在的規則', () => {
+    render({ editing: { ...timedEvent(), recurrence: { rule: 'FREQ=MONTHLY' } } });
+
+    expect(repeatSelect().value).toBe('monthly');
+    // 這裡的自訂選項只在真的是自訂規則時才出現。
+    expect(optionValues()).not.toContain('custom');
+  });
+
+  it('把重複事件改回不重複，會清掉規則而不是留著', () => {
+    const props = render({ editing: { ...timedEvent(), recurrence: { rule: 'FREQ=DAILY' } } });
+    choose('none');
+    submit();
+
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      '33333333-3333-4333-8333-333333333333',
+      expect.objectContaining({ recurrenceRule: null }),
+    );
+  });
+
+  it('BYDAY 的寫法順序不同仍然認得出是「每個工作日」', () => {
+    render({
+      editing: {
+        ...timedEvent(),
+        recurrence: { rule: 'FREQ=WEEKLY;BYDAY=FR,MO,TU,WE,TH;INTERVAL=1' },
+      },
+    });
+
+    expect(repeatSelect().value).toBe('weekday');
+  });
+
+  it('六個選項以外的規則維持原樣，不會被靜默改寫', () => {
+    const props = render({
+      editing: { ...timedEvent(), recurrence: { rule: 'FREQ=DAILY;INTERVAL=3' } },
+    });
+
+    expect(repeatSelect().value).toBe('custom');
+    expect(container.querySelector('.cal-field-note')?.textContent).toContain('FREQ=DAILY;INTERVAL=3');
+
+    submit();
+    // 沒有 recurrenceRule 這個 key，`applyEventPatch()` 才會保留原本的規則；
+    // 送出 null 會清掉它，送出 preset 會覆蓋它，兩者都是資料損失。
+    const patch = vi.mocked(props.onUpdateEvent).mock.calls[0]?.[1];
+    expect(patch && 'recurrenceRule' in patch).toBe(false);
+  });
+
+  it('自訂規則的行程一旦改選六個選項之一，會明說原規則將被取代', () => {
+    const props = render({
+      editing: { ...timedEvent(), recurrence: { rule: 'FREQ=DAILY;INTERVAL=3' } },
+    });
+    choose('daily');
+
+    expect(container.querySelector('.cal-field-note')?.textContent).toContain('會被取代');
+
+    submit();
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      '33333333-3333-4333-8333-333333333333',
+      expect.objectContaining({ recurrenceRule: 'FREQ=DAILY' }),
+    );
+  });
+
+  it('待辦模式沒有重複選單', () => {
+    render();
+    click('.cal-segmented button:last-child');
+
+    expect(repeatSelect()).toBeNull();
   });
 });

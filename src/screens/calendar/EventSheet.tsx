@@ -6,6 +6,11 @@ import {
 } from '../../domain/attachments';
 import { sortedCalendars } from '../../domain/calendars';
 import { eventWallTime } from '../../domain/eventTime';
+import {
+  recurrencePresetForRule,
+  recurrenceRuleForPreset,
+  type RecurrencePreset,
+} from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, EventAttachment } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
@@ -21,6 +26,26 @@ import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutat
  */
 const DEFAULT_EVENT_TITLE = '新事件';
 
+/** 原稿 :599 的六個選項，逐字照原順序。 */
+const REPEAT_OPTIONS: { value: RecurrencePreset; label: string }[] = [
+  { value: 'none', label: '不重複' },
+  { value: 'daily', label: '每日' },
+  { value: 'weekday', label: '每個工作日' },
+  { value: 'weekly', label: '每週' },
+  { value: 'monthly', label: '每月' },
+  { value: 'yearly', label: '每年' },
+];
+
+/**
+ * The select value standing for “this event's rule is not one of the six”.
+ *
+ * Not a repeat choice and never written anywhere: picking anything else
+ * replaces the rule, and leaving this selected omits `recurrenceRule` from the
+ * patch entirely, so `applyEventPatch()` keeps what is stored. See
+ * `recurrencePresetForRule()` for why DayPop can hold such a rule at all.
+ */
+const CUSTOM_RULE_VALUE = 'custom';
+
 /** A parsed quick-add line waiting for the user to confirm it. */
 export interface EventDraft {
   title: string;
@@ -29,6 +54,7 @@ export interface EventDraft {
   start: string;
   end: string;
   location: string;
+  repeat: RecurrencePreset;
 }
 
 export interface EventSheetProps {
@@ -60,9 +86,12 @@ type SheetMode = 'event' | 'todo';
  * Carries the原檔's fields that DayPop can actually store today: 標題, 日曆,
  * 全天, 日期, 開始／結束, 地點 and 備註.
  *
+ * DP-082 adds 重複 on top: the原檔's six presets, writing the RRULE that DP-027
+ * already knew how to expand and DP-081 already draws in all four views.
+ *
  * The rest stay listed but unbuilt on purpose. DP-027 completed recurrence,
- * exception, timezone and DST domain behaviour; their controls and the
- * single/all scope dialog remain canonical UI work in DP-014. 提醒 needs a
+ * exception, timezone and DST domain behaviour; the timezone control and the
+ * single/all scope dialog remain canonical UI work. 提醒 needs a
  * delivery mechanism (DP-042) or it is a reminder that never fires, and
  * 邀請對象 has no domain type at all yet. DP-028 supplies real private
  * attachment upload/download/delete only after the event exists.
@@ -107,6 +136,14 @@ function EventSheetForm({
   const [start, setStart] = useState(editingWallTime?.start || seed?.start || '09:00');
   const [end, setEnd] = useState(editingWallTime?.end || seed?.end || '10:00');
   const [location, setLocation] = useState(editing?.location ?? seed?.location ?? '');
+  // `null` while editing an event whose stored rule is none of the six presets;
+  // the select then shows CUSTOM_RULE_VALUE and the rule is left alone on save.
+  const editingPreset = editing?.recurrence
+    ? recurrencePresetForRule(editing.recurrence.rule, editing.allDay)
+    : 'none';
+  const [repeat, setRepeat] = useState<RecurrencePreset | null>(
+    editing ? editingPreset : (seed?.repeat ?? 'none'),
+  );
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [calendarId, setCalendarId] = useState(
     editing?.calendarId ??
@@ -193,6 +230,12 @@ function EventSheetForm({
     // Never send an empty id: `calendarId ?? default` would keep `''`, which is
     // not a UUID and would fail domain validation instead of falling back.
     const chosen = calendarId || undefined;
+    // Omitting the field is what keeps a non-preset rule: `applyEventPatch()`
+    // reads `undefined` as “leave the recurrence alone”, and only `null` clears
+    // it. `NewEventInput` never needs the custom branch — a new event has no
+    // rule to preserve.
+    const recurrence =
+      repeat === null ? {} : { recurrenceRule: recurrenceRuleForPreset(repeat) };
     if (editing) {
       onUpdateEvent(editing.id, {
         title: named,
@@ -202,9 +245,19 @@ function EventSheetForm({
         ...(chosen ? { calendarId: chosen } : {}),
         location,
         notes,
+        ...recurrence,
       });
     } else if (mode === 'event') {
-      onAddEvent({ title: named, date, allDay, ...times, calendarId: chosen, location, notes });
+      onAddEvent({
+        title: named,
+        date,
+        allDay,
+        ...times,
+        calendarId: chosen,
+        location,
+        notes,
+        recurrenceRule: repeat === null ? null : recurrenceRuleForPreset(repeat),
+      });
     } else {
       onAddTodo({ title: trimmed, date, calendarId: chosen });
     }
@@ -343,6 +396,39 @@ function EventSheetForm({
                   </div>
                 )}
 
+                {/* 原稿 :598 把 重複 與 提醒 並排成兩欄。提醒 要等 DP-042 才送得出
+                    通知，所以這裡先只放 重複；DP-042 接回時它會補回右半欄。 */}
+                <div className="cal-field" style={{ marginTop: 11 }}>
+                  <div className="cal-field-label">重複</div>
+                  <select
+                    value={repeat ?? CUSTOM_RULE_VALUE}
+                    onChange={(event) =>
+                      setRepeat(
+                        event.target.value === CUSTOM_RULE_VALUE
+                          ? null
+                          : (event.target.value as RecurrencePreset),
+                      )
+                    }
+                    aria-label="重複"
+                  >
+                    {REPEAT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                    {editingPreset === null && (
+                      <option value={CUSTOM_RULE_VALUE}>自訂規則（維持原樣）</option>
+                    )}
+                  </select>
+                  {editingPreset === null && (
+                    <small className="cal-field-note">
+                      {repeat === null
+                        ? `這個行程的重複規則（${editing?.recurrence?.rule}）不是上面六個選項，維持原樣不會被動到。`
+                        : '改成上面的選項後，原本的自訂重複規則會被取代。'}
+                    </small>
+                  )}
+                </div>
+
                 <div className="cal-field" style={{ marginTop: 11 }}>
                   <div className="cal-field-label">地點</div>
                   <input
@@ -457,8 +543,8 @@ function EventSheetForm({
 
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
-                  重複、單次／全部範圍與時區的底層行為已由 DP-027 完成，控制項仍待
-                  DP-014 依原稿接回；提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
+                  單次／全部範圍（DP-082 剩下的一半）與時區的底層行為已由 DP-027 完成，
+                  控制項仍待依原稿接回；提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
                   邀請對象目前連 domain 型別都還沒有。
                 </div>
               </>
