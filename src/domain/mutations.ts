@@ -382,11 +382,23 @@ export function cancelEventOccurrence(
     createdAt: existing?.createdAt ?? context.now,
     updatedAt: context.now,
   };
-  const events =
-    existing?.replacementEventId === null || existing?.replacementEventId === undefined
-      ? data.events
-      : data.events.filter((event) => event.id !== existing.replacementEventId);
-  return withEventException({ ...data, events }, exception);
+  const supersededId = existing?.replacementEventId ?? null;
+  if (supersededId === null) return withEventException(data, exception);
+  // The replacement is a real event, so it can own attachments — DP-082 review.
+  // Dropping the event but keeping its rows leaves `eventAttachments[].eventId
+  // references a missing event`, which `parseDayPopUserData()` refuses, so the
+  // whole cancel would fail validation rather than the document being wrong.
+  // `withoutEvent()` has always cleared both together; this is the same rule.
+  return withEventException(
+    {
+      ...data,
+      events: data.events.filter((event) => event.id !== supersededId),
+      eventAttachments: data.eventAttachments.filter(
+        (attachment) => attachment.eventId !== supersededId,
+      ),
+    },
+    exception,
+  );
 }
 
 /**

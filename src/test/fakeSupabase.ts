@@ -38,15 +38,20 @@ export class FakeSupabase {
   }
 
   /**
-   * Emulates the two `on delete cascade` foreign keys `event_exceptions`
-   * declares on `events` — DP-082.
+   * Emulates the `on delete cascade` foreign keys `event_exceptions` and
+   * `event_attachments` declare on `events` — DP-082.
    *
    * Without this the fake keeps an exception row pointing at an event that no
    * longer exists, so a `load()` after deleting a series would hand the domain
    * a document Postgres could never have produced. See
-   * `event_exceptions_event_owner_fk` and
-   * `event_exceptions_replacement_owner_fk` in
+   * `event_exceptions_event_owner_fk`,
+   * `event_exceptions_replacement_owner_fk` and
+   * `event_attachments_event_owner_fk` in
    * `20260801092905_daypop_core_schema.sql`.
+   *
+   * The attachment half matters as much as the exception half: it is precisely
+   * *because* the metadata disappears on its own that the Storage object has to
+   * be queued first, and a fake that kept the metadata would have hidden that.
    */
   cascadeDeletedEvents(deletedIds: Set<string>) {
     if (deletedIds.size === 0) return;
@@ -57,6 +62,10 @@ export class FakeSupabase {
           !deletedIds.has(String(row.event_id)) &&
           !(row.replacement_event_id != null && deletedIds.has(String(row.replacement_event_id))),
       ),
+    );
+    this.tables.set(
+      'event_attachments',
+      this.rows('event_attachments').filter((row) => !deletedIds.has(String(row.event_id))),
     );
   }
 
@@ -74,6 +83,9 @@ export class FakeSupabase {
     if (failure) return { data: null, error: { message: failure } };
     if (name === 'replace_daypop_data' || name === 'append_daypop_ics') {
       return this.#importData(name, args.p_payload);
+    }
+    if (name === 'cancel_event_occurrence' || name === 'replace_event_occurrence') {
+      return this.#occurrenceChange(name, args);
     }
     if (name === 'finalize_event_attachment_upload') {
       const metadataFailure = this.failures.get('event_attachments');
@@ -136,6 +148,116 @@ export class FakeSupabase {
       return { data: true, error: null };
     }
     return { data: null, error: { message: `unsupported rpc ${name}` } };
+  }
+
+  /**
+   * The DP-082 occurrence RPCs — `20260830000000_event_occurrence_rpcs.sql`.
+   *
+   * Modelled rather than stubbed, because the two faults review found in the
+   * client-side version are only visible if the fake reproduces the parts of
+   * Postgres that caught them: the partial unique index on (event, occurrence),
+   * which is why a retry with a fresh id must not insert a second row, and the
+   * cleanup queue, which is why a deleted replacement's Storage objects have to
+   * be enqueued rather than dropped with the cascade.
+   */
+  #occurrenceChange(
+    name: 'cancel_event_occurrence' | 'replace_event_occurrence',
+    args: Record<string, unknown>,
+  ): QueryResult {
+    const failure = this.failures.get('event_exceptions');
+    if (failure) return { data: null, error: { message: failure } };
+
+    const eventId = String(args.p_event_id);
+    const owner = this.rows('events').find((row) => row.id === eventId);
+    if (!owner || owner.recurrence_rule == null) {
+      return { data: null, error: { message: 'event is not a recurring event owned by the caller' } };
+    }
+    const ownerId = String(owner.owner_id);
+    const date = args.p_occurrence_date ?? null;
+    const startsAt = args.p_occurrence_starts_at ?? null;
+    if ((date === null) === (startsAt === null)) {
+      return { data: null, error: { message: 'exactly one occurrence key is required' } };
+    }
+
+    // The server reconciles against the stored row, never the proposed id.
+    const exceptions = this.rows('event_exceptions');
+    const existing = exceptions.find(
+      (row) =>
+        row.event_id === eventId &&
+        (row.occurrence_date ?? null) === date &&
+        (row.occurrence_starts_at ?? null) === startsAt,
+    );
+
+    let replacementId: string | null = null;
+    let storedEvent: FakeRow | null = null;
+    if (name === 'replace_event_occurrence') {
+      const payload = isFakeRow(args.p_replacement) ? args.p_replacement : {};
+      replacementId =
+        (existing?.replacement_event_id as string | undefined) ??
+        (payload.id as string | undefined) ??
+        `${eventId}-replacement`;
+      const events = this.rows('events');
+      const previous = events.find((row) => row.id === replacementId);
+      storedEvent = {
+        ...payload,
+        id: replacementId,
+        owner_id: ownerId,
+        recurrence_rule: null,
+        created_at: previous?.created_at ?? this.serverTime,
+        updated_at: this.serverTime,
+      };
+      this.tables.set(
+        'events',
+        previous
+          ? events.map((row) => (row.id === replacementId ? storedEvent! : row))
+          : [...events, storedEvent],
+      );
+    }
+
+    const stored: FakeRow = {
+      id: existing?.id ?? args.p_exception_id ?? `${eventId}-exception`,
+      owner_id: ownerId,
+      event_id: eventId,
+      occurrence_date: date,
+      occurrence_starts_at: startsAt,
+      is_cancelled: name === 'cancel_event_occurrence',
+      replacement_event_id: replacementId,
+      created_at: existing?.created_at ?? this.serverTime,
+      updated_at: this.serverTime,
+    };
+    this.tables.set(
+      'event_exceptions',
+      existing
+        ? this.rows('event_exceptions').map((row) => (row.id === existing.id ? stored : row))
+        : [...this.rows('event_exceptions'), stored],
+    );
+    this.writes.push({ table: 'event_exceptions', row: stored });
+
+    let enqueued = 0;
+    if (name === 'cancel_event_occurrence' && existing?.replacement_event_id != null) {
+      const superseded = String(existing.replacement_event_id);
+      const attachments = this.rows('event_attachments').filter(
+        (row) => row.event_id === superseded,
+      );
+      // The whole point of the RPC: the objects outlive the cascade only if
+      // something queued them first.
+      attachments.forEach((row) => this.#queueObject(row));
+      enqueued = attachments.length;
+      this.tables.set(
+        'events',
+        this.rows('events').filter((row) => row.id !== superseded),
+      );
+      this.cascadeDeletedEvents(new Set([superseded]));
+    }
+
+    return {
+      data: {
+        exception: stored,
+        event: storedEvent,
+        enqueued_cleanup: enqueued,
+      } as unknown as FakeRow,
+      error: null,
+    };
   }
 
   #importData(name: 'replace_daypop_data' | 'append_daypop_ics', value: unknown): QueryResult {
@@ -368,6 +490,33 @@ class FakeQuery implements PromiseLike<QueryResult> {
       const value = payload[column];
       if (value != null && !eventIds.has(String(value))) {
         return `insert or update on table "event_exceptions" violates foreign key constraint on ${column}`;
+      }
+    }
+
+    /*
+     * `event_exceptions_event_date_unique_idx` and `..._time_unique_idx` — the
+     * two **partial** unique indexes, and the reason DP-082's occurrence writes
+     * had to move into an RPC.
+     *
+     * A PostgREST `upsert` infers its conflict target from the primary key, so
+     * a retry that proposes a fresh exception id lands here as a second row for
+     * an occurrence that already has one. Without this rule the fake accepted
+     * it and the bug was invisible; with it, any return to a direct
+     * `.from('event_exceptions').upsert()` fails instead of shipping.
+     */
+    for (const column of ['occurrence_date', 'occurrence_starts_at'] as const) {
+      const value = payload[column];
+      if (value == null) continue;
+      const clash = this.db
+        .rows('event_exceptions')
+        .some(
+          (row) =>
+            row.id !== payload.id &&
+            row.event_id === payload.event_id &&
+            row[column] === value,
+        );
+      if (clash) {
+        return `duplicate key value violates unique constraint on (event_id, ${column})`;
       }
     }
     return null;

@@ -64,7 +64,7 @@ import {
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
-import type { Database, Json } from '../lib/database.types';
+import type { Database, Json, Tables } from '../lib/database.types';
 import {
   canEditOccurrencesOf,
   occurrenceWriteContext,
@@ -187,25 +187,19 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   }
 
   /**
-   * DP-082. Up to two row writes, and only when the occurrence already had a
-   * replacement is there a second one.
+   * DP-082, reworked after review. One RPC, therefore one transaction.
    *
-   * The exception is rewritten **before** the superseded replacement event is
-   * deleted. Unlike `replaceEventOccurrence()`, this order is not forced by a
-   * constraint — measured, not assumed: reversing the two still ends in the
-   * right state, because `event_exceptions_replacement_owner_fk` cascades the
-   * exception away and the upsert then puts it straight back. What the order
-   * buys is the **partial failure**. Exception first, then a failed delete,
-   * leaves the cancellation durable and one orphan standalone event the user
-   * can see and remove. Delete first, then a failed upsert, leaves neither the
-   * exception nor the replacement — the occurrence the user just cancelled
-   * quietly comes back.
+   * The first version wrote the exception and then deleted the superseded
+   * replacement as two PostgREST calls. Review found two faults that no
+   * ordering of those calls fixes, and both are why this is an RPC now:
    *
-   * There is no transaction, matching `deleteCalendar()`'s existing five
-   * ordered writes: a throw means `#commit()` never runs, the UI keeps its
-   * last confirmed snapshot with 尚未同步, and the next `load()` reconciles
-   * from the database. The exception row is keyed on (event, occurrence), so
-   * redoing the edit repairs rather than duplicates.
+   * - The plain `delete` skipped `attachment_cleanup_jobs`, so a replacement
+   *   that owned attachments lost its metadata to the FK cascade while its
+   *   Storage objects were left with nothing pointing at them.
+   * - A retry after a lost response proposed a **new** exception id, and an
+   *   `upsert` keyed on the primary key inserted a second row for the same
+   *   occurrence — straight into `event_exceptions_event_date_unique_idx`.
+   *   The server now reconciles against the stored row instead.
    */
   async cancelEventOccurrence(
     eventId: string,
@@ -214,28 +208,30 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const data = this.#requireSnapshot();
     if (!canEditOccurrencesOf(data, eventId)) return data;
 
-    // Read before the mutation: this is the only place the replacement row
-    // that is about to be dropped is still visible.
-    const supersededEventId = findEventException(data, eventId, occurrence)?.replacementEventId;
     const next = cancelEventOccurrence(data, eventId, occurrence, occurrenceWriteContext());
-    const stored = await this.#upsertEventException(
-      requireException(next, eventId, occurrence),
+    const result = await this.#callOccurrenceRpc('cancel_event_occurrence', {
+      p_event_id: eventId,
+      p_exception_id: requireException(next, eventId, occurrence).id,
+      ...occurrenceKeyArgs(occurrence),
+    });
+    const committed = this.#commit(
+      withStoredException(next, eventExceptionFromRow(result.exception)),
     );
-    if (supersededEventId) await this.#delete('events', supersededEventId);
-    return this.#commit(withStoredException(next, stored));
+    // Same follow-up as `deleteEvent()`: the rows are already durable, and the
+    // Storage objects the RPC queued are removed on a best-effort pass that
+    // retries from the queue on the next load if it fails now.
+    if (result.enqueued_cleanup > 0) await this.#flushAttachmentCleanup();
+    return committed;
   }
 
   /**
-   * DP-082. The replacement event is written first, and here the order **is**
-   * forced: `event_exceptions_replacement_owner_fk` refuses an exception that
-   * points at a row the database does not have yet. `FakeSupabase` enforces
-   * that constraint too, so swapping these two lines fails the contract test
-   * rather than passing on a fake that is more permissive than Postgres.
+   * DP-082, reworked after review. One RPC, therefore one transaction.
    *
-   * The failure window is therefore an orphan standalone event with no
-   * exception hiding the original occurrence — visible to the user as a
-   * duplicate on that day, not as lost data, and removable like any event.
-   * See `cancelEventOccurrence()` for why this is not wrapped in a transaction.
+   * The replacement event and the exception used to be two calls, ordered so
+   * the foreign key would accept them. A failure between the two left an
+   * orphan standalone event, and a retry minted a fresh replacement id and
+   * added another. The server now reuses whatever replacement the stored
+   * exception already names, so redoing this is a repair rather than a copy.
    */
   async replaceEventOccurrence(
     eventId: string,
@@ -256,10 +252,27 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const replacement = next.events.find((item) => item.id === exception.replacementEventId);
     if (!replacement) throw new Error('替換事件在領域結果中不存在。');
 
-    const storedEvent = await this.#upsertEvent(replacement);
-    const storedException = await this.#upsertEventException(exception);
+    const result = await this.#callOccurrenceRpc('replace_event_occurrence', {
+      p_event_id: eventId,
+      p_exception_id: exception.id,
+      ...occurrenceKeyArgs(occurrence),
+      p_replacement: omitKey(eventToInsert(replacement, this.userId), 'owner_id') as Json,
+    });
+    if (!result.event) throw new RemoteDataError('寫入單次修改', '缺少替換事件');
+
+    // The server decides both ids. A retry whose first attempt did commit gets
+    // back the *stored* replacement, so the locally computed one is dropped
+    // rather than left in the snapshot as a second copy.
+    const storedEvent = eventFromRow(result.event);
+    const withoutLocalDraft = {
+      ...next,
+      events: next.events.filter((item) => item.id !== replacement.id),
+    };
     return this.#commit(
-      withStoredException(withEvent(next, storedEvent), storedException),
+      withStoredException(
+        withEvent(withoutLocalDraft, storedEvent),
+        eventExceptionFromRow(result.exception),
+      ),
     );
   }
 
@@ -547,17 +560,30 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     return eventFromRow(data);
   }
 
-  async #upsertEventException(exception: EventException) {
+  /**
+   * Calls one of the DP-082 occurrence RPCs and unwraps its jsonb reply.
+   *
+   * `.rpc()` is used rather than table writes because both operations span
+   * several rows and must commit together — see the migration header for the
+   * two faults that made a client-side sequence unworkable.
+   */
+  async #callOccurrenceRpc(
+    name: 'cancel_event_occurrence' | 'replace_event_occurrence',
+    args: Record<string, Json>,
+  ): Promise<OccurrenceRpcResult> {
+    const operation = name === 'cancel_event_occurrence' ? '取消單次發生' : '寫入單次修改';
     const { data, error } = await requestRemote(
-      '寫入重複例外',
-      this.client
-        .from('event_exceptions')
-        .upsert(eventExceptionToInsert(exception, this.userId))
-        .select('*')
-        .single(),
+      operation,
+      this.client.rpc(name, args as never),
     );
-    if (error || !data) throw new RemoteDataError('寫入重複例外', error);
-    return eventExceptionFromRow(data);
+    if (error || !data) throw new RemoteDataError(operation, error);
+    const result = data as unknown as Partial<OccurrenceRpcResult>;
+    if (!result.exception) throw new RemoteDataError(operation, '缺少例外資料');
+    return {
+      exception: result.exception,
+      event: result.event ?? null,
+      enqueued_cleanup: result.enqueued_cleanup ?? 0,
+    };
   }
 
   async #upsertTodo(todo: TodoItem) {
@@ -619,6 +645,24 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   }
 }
 
+/** What both DP-082 RPCs return, once the jsonb envelope is opened. */
+interface OccurrenceRpcResult {
+  exception: Tables<'event_exceptions'>;
+  event: Tables<'events'> | null;
+  /** Storage objects the RPC queued for deletion, so cleanup only runs when needed. */
+  enqueued_cleanup: number;
+}
+
+/**
+ * The occurrence key as the RPCs take it: exactly one of the two is non-null,
+ * matching `event_exceptions_occurrence_shape`.
+ */
+function occurrenceKeyArgs(occurrence: EventOccurrence): Record<string, Json> {
+  return occurrence.kind === 'all-day'
+    ? { p_occurrence_date: occurrence.date, p_occurrence_starts_at: null }
+    : { p_occurrence_date: null, p_occurrence_starts_at: occurrence.startsAt };
+}
+
 /**
  * The exception row the domain mutation just produced for this occurrence.
  *
@@ -641,6 +685,13 @@ function requireException(
  * maps its response back: `created_at`/`updated_at` are set by a trigger the
  * client is not allowed to write, so the locally computed row would put a
  * timestamp in the snapshot that no row anywhere actually has.
+ *
+ * Matched on the **occurrence**, not on the id. The RPC reconciles against
+ * whatever row the database already holds, so a retry gets back an exception
+ * whose id is not the one this attempt proposed. Keying on the id left the
+ * locally computed row in place next to the stored one, still pointing at a
+ * replacement event that had just been dropped from the snapshot — which
+ * `parseDayPopUserData()` then rejected. Found by the retry regression test.
  */
 function withStoredException(
   data: DayPopUserData,
@@ -648,10 +699,25 @@ function withStoredException(
 ): DayPopUserData {
   return {
     ...data,
-    eventExceptions: data.eventExceptions.map((candidate) =>
-      candidate.id === stored.id ? stored : candidate,
-    ),
+    eventExceptions: [
+      ...data.eventExceptions.filter(
+        (candidate) =>
+          candidate.id !== stored.id &&
+          !sameOccurrenceRow(candidate, stored),
+      ),
+      stored,
+    ],
   };
+}
+
+function sameOccurrenceRow(left: EventException, right: EventException): boolean {
+  if (left.eventId !== right.eventId) return false;
+  if (left.occurrence.kind !== right.occurrence.kind) return false;
+  return left.occurrence.kind === 'all-day' && right.occurrence.kind === 'all-day'
+    ? left.occurrence.date === right.occurrence.date
+    : left.occurrence.kind === 'timed' && right.occurrence.kind === 'timed'
+      ? left.occurrence.startsAt === right.occurrence.startsAt
+      : false;
 }
 
 /** Maps canonical values to the exact snake_case allowlist accepted by the RPC. */

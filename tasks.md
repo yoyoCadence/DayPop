@@ -109,11 +109,17 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   >
   > **剩下的（原條目照留在下面）**：`:430-439` 的範圍選擇對話框，以及它需要的 repository 契約方法。DP-081 留下的兩個接點也還在：週檢視重複 occurrence 的 `draggable` 仍是 false，事件 sheet 的修改與刪除仍一律套用到整個系列（畫面上以提示明講）。
   >
-  > **2026-08-30 第二段：repository 契約與三個 adapter 已完成（PR #72），但畫面還沒有任何地方呼叫它，所以本項仍未結案。** 條目原本要求「動手前先確認是否需要 Supabase MCP 驗證」，**確認結果是不需要**，依據全在 repo 裡：`event_exceptions` 表、`enable row level security`、`grant select/insert/update/delete ... to authenticated` 與四條 `(select auth.uid()) = owner_id` policy 都在 `20260801092905_daypop_core_schema.sql` 與 `20260801092922_daypop_owner_rls.sql`；`event_id` 與 `replacement_event_id` 都是 `(id, owner_id)` 複合外鍵，跨帳號寫入在 DB 層就被擋掉，不只靠 RLS。**沒有新 migration，也沒有連線到正式或 staging 資料庫。**
+  > **2026-08-30 第二段：repository 契約與三個 adapter 已完成（PR #72），但畫面還沒有任何地方呼叫它，所以本項仍未結案。**
   > - 契約新增 `cancelEventOccurrence()` 與 `replaceEventOccurrence()`，local／supabase／cached 三個 adapter 都實作，`DataProvider` 走既有的序列化 mutation queue。
-  > - **遠端沒有 transaction**，比照 `deleteCalendar()` 既有的五次有序寫入。`replaceEventOccurrence()` 必須先寫替換事件再寫例外（外鍵要求），失敗窗是「多一個孤兒事件」而不是資料遺失；`cancelEventOccurrence()` 先寫例外再刪舊替換事件，**這個順序不是外鍵強制的**（反過來也會停在正確狀態），差別在部分失敗：先寫例外能讓取消存活下來，反過來會讓使用者剛取消的那一次悄悄跑回來。
-  > - `FakeSupabase` 補上 `event_exceptions` 的兩條外鍵與 `on delete cascade`，否則 fake 比 Postgres 寬鬆、寫入順序寫反了測試也不會紅。replace 的順序已用「把兩行對調 → 測試變紅」實測過；cancel 的順序實測**不會**變紅，因此上面照實寫成部分失敗的理由，不是外鍵理由。
   > - 契約測試以 `describe.each` 對兩個 adapter 各跑 7 個 occurrence 案例，斷言在 `load()` 之後 —— 兩個 adapter 的回傳值都由純 domain 結果組出來，只看回傳值的話「其實沒寫進去」也會過。
+  >
+  > **2026-08-30 覆驗改了結論：這一段最後還是新增了 migration。** 第一版把兩次寫入放在 client 端，並宣稱「不需要 migration」；覆驗指出兩個 blocking 問題，兩個都不是換寫入順序能解的：
+  > - **取消已被替換的 occurrence 會漏掉附件清理。** 舊版用 `.from('events').delete()` 繞過 `delete_event_with_attachment_cleanup`，附件 metadata 被 FK cascade 帶走，Storage 檔案卻沒進 `attachment_cleanup_jobs`，變成再也找不到的孤兒。**而且純 domain 的 `cancelEventOccurrence()` 也沒有一起丟掉替換事件的附件**，`parseDayPopUserData()` 會因為「附件指向不存在的事件」讓整個 commit 失敗 —— 也就是「DB 已經取消成功、UI 卻顯示失敗」。domain 與遠端兩邊都修了。
+  > - **重試不具 idempotency。** 每次重試會產生新的 exception UUID，而 PostgREST 的 `upsert` 以 primary key 推斷衝突目標，於是同一個 occurrence 被插進第二列，撞上 `event_exceptions_event_date_unique_idx`；replace 更糟，替換事件已經先寫進去了，每重試一次就多一個孤兒。**PostgREST 表達不出這個修法**，因為那兩個 unique index 是 partial，`ON CONFLICT` 要推斷 partial index 必須重述 `WHERE` 述詞。
+  > - 解法是 `20260830000000_event_occurrence_rpcs.sql` 的兩個 RPC（`cancel_event_occurrence`、`replace_event_occurrence`），`security invoker`＋空 `search_path`＋`authenticated` grant，比照 `delete_event_with_attachment_cleanup` 與 import RPC。一個 function 就是一個 transaction，順帶消掉舊版只能寫在註解裡的部分失敗窗；id 一律以資料庫既有的列為準，caller 提出的 UUID 只在該列還不存在時才用。
+  > - `FakeSupabase` 為此補上兩條 FK 的 `on delete cascade`（含 `event_attachments`）、**兩個 partial unique index**與這兩個 RPC 的行為。沒有這些，fake 比 Postgres 寬鬆，上面兩個問題在測試裡都是綠的。兩個修正都用「把修正還原 → 測試變紅」確認過。
+  > - **`supabase/tests/database/event_occurrence_rpcs.test.sql` 已寫好但沒有執行過**：這台電腦沒有 Docker，`supabase db reset` 與 `supabase test db --local` 都跑不了，本 session 也沒有 Supabase MCP。**migration 與 pgTAP 都尚未在真的 Postgres 上驗證**，合併前需要專案擁有者跑一次。
+  > - 因此條目原本「預期不需要新 migration」這句**不再成立**；既有的表、RLS、grant 與複合外鍵確實都夠用（都在 `20260801092905` 與 `20260801092922`），不夠的是原子性與 partial unique index 的衝突處理。
   >
   > **下一段（尚未開始）**：把 occurrence 身分接進畫面。四個檢視的 `onOpenEvent(id)` 目前只給 base event id，要改成同時帶 `EventOccurrence`，才有辦法讓 `:430-439` 的範圍對話框知道使用者點的是哪一次；接著才是週檢視 `draggable` 解鎖。
   >
