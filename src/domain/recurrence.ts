@@ -354,10 +354,17 @@ export function isRecurrenceRule(rule: unknown, allDay: boolean): rule is string
   }
 }
 
+/** The 重複 choices offered by the canonical prototype's `select`（原稿 :599）。 */
+export type RecurrencePreset =
+  | 'none'
+  | 'daily'
+  | 'weekday'
+  | 'weekly'
+  | 'monthly'
+  | 'yearly';
+
 /** The five repeat choices in the canonical prototype, expressed as RRULEs. */
-export function recurrenceRuleForPreset(
-  preset: 'none' | 'daily' | 'weekday' | 'weekly' | 'monthly' | 'yearly',
-): string | null {
+export function recurrenceRuleForPreset(preset: RecurrencePreset): string | null {
   switch (preset) {
     case 'none':
       return null;
@@ -372,6 +379,73 @@ export function recurrenceRuleForPreset(
     case 'yearly':
       return 'FREQ=YEARLY';
   }
+}
+
+const REPEATING_PRESETS = ['daily', 'weekday', 'weekly', 'monthly', 'yearly'] as const;
+
+/**
+ * Which preset a stored rule is, or `null` when it is none of them — DP-082.
+ *
+ * The原檔 only ever holds one of its own six `repeat` strings, so it never
+ * needed this. DayPop stores the full RECUR value instead, and ICS import
+ * (DP-056) can legitimately bring in rules the六個選項 cannot express —
+ * `FREQ=DAILY;INTERVAL=3`, `FREQ=MONTHLY;BYDAY=-1MO;COUNT=4`. The sheet asks
+ * this so it can leave such a rule alone rather than mis-render it as 不重複
+ * and overwrite it on the next save.
+ *
+ * Deliberately strict: a rule is a preset only when nothing beyond FREQ and
+ * BYDAY carries meaning. Guessing wrong in the other direction is the
+ * expensive one — it would rewrite `FREQ=WEEKLY;WKST=SU` as `FREQ=WEEKLY`
+ * and silently change which days the series lands on. Failing to recognise a
+ * preset only costs the user the dropdown for that one event, and the rule
+ * survives untouched.
+ */
+export function recurrencePresetForRule(
+  rule: string,
+  allDay: boolean,
+): RecurrencePreset | null {
+  let options;
+  try {
+    options = parseRecurrenceRule(rule, allDay).options;
+  } catch {
+    return null;
+  }
+  // `INTERVAL=1` is exactly the RFC default, and real exporters emit it, so it
+  // is the one extra part that can be present without changing the meaning.
+  for (const [name, value] of Object.entries(options)) {
+    if (name === 'freq' || name === 'byweekday') continue;
+    if (name === 'interval' && value === 1) continue;
+    if (value === undefined || value === null) continue;
+    return null;
+  }
+  return (
+    REPEATING_PRESETS.find((preset) => {
+      const target = RRule.parseString(recurrenceRuleForPreset(preset) as string);
+      return (
+        target.freq === options.freq &&
+        weekdayKey(target.byweekday) === weekdayKey(options.byweekday)
+      );
+    }) ?? null
+  );
+}
+
+/**
+ * BYDAY as one comparable string, so its written order cannot matter.
+ *
+ * The ordinal prefix is part of the key on purpose: `BYDAY=1MO` is not `BYDAY=MO`,
+ * and collapsing them would let the 每個工作日 preset claim a rule it does not mean.
+ */
+function weekdayKey(byweekday: ReturnType<typeof RRule.parseString>['byweekday']): string {
+  if (byweekday === undefined || byweekday === null) return '';
+  const days = Array.isArray(byweekday) ? byweekday : [byweekday];
+  return days
+    .map((day) => {
+      if (typeof day === 'number') return `0:${day}`;
+      if (typeof day === 'string') return `0:${day}`;
+      return `${day.n ?? 0}:${day.weekday}`;
+    })
+    .sort()
+    .join(',');
 }
 
 /**

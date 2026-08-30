@@ -5,6 +5,7 @@ import {
   isRecurrenceRule,
   parseRecurrenceRule,
   RecurrenceRuleError,
+  recurrencePresetForRule,
   recurrenceRuleForPreset,
   resolveEventOccurrences,
 } from './recurrence';
@@ -306,5 +307,44 @@ describe('isExpandableEvent（DP-081 兩輪覆驗修正）', () => {
     // 這是刻意的。把它變成 validation 規則，會讓已經存著這種事件的文件
     // 整份讀不出來，一列壞資料就把整個日曆推進復原畫面。
     expect(isRecurrenceRule('FREQ=SECONDLY;COUNT=20000', false)).toBe(true);
+  });
+});
+
+describe('recurrencePresetForRule（DP-082）', () => {
+  it('認得出每一個 preset，含 BYDAY 順序不同與明寫的 INTERVAL=1', () => {
+    for (const preset of ['daily', 'weekday', 'weekly', 'monthly', 'yearly'] as const) {
+      const rule = recurrenceRuleForPreset(preset) as string;
+      expect(recurrencePresetForRule(rule, false), preset).toBe(preset);
+      expect(recurrencePresetForRule(rule, true), `${preset} all-day`).toBe(preset);
+    }
+    expect(recurrencePresetForRule('FREQ=WEEKLY;BYDAY=FR,MO,TU,WE,TH', false)).toBe('weekday');
+    expect(recurrencePresetForRule('FREQ=DAILY;INTERVAL=1', false)).toBe('daily');
+  });
+
+  /**
+   * 這些規則 ICS 匯入（DP-056）帶得進來，而六個選項表達不出。事件 sheet 靠這裡
+   * 回 `null` 才知道要維持原樣；認錯成 preset 會在下一次儲存時把規則改掉。
+   */
+  it('六個選項以外的規則一律回 null，寧可少認也不誤認', () => {
+    for (const rule of [
+      'FREQ=DAILY;INTERVAL=3',
+      'FREQ=DAILY;COUNT=5',
+      'FREQ=DAILY;UNTIL=20261231T000000Z',
+      'FREQ=WEEKLY;WKST=SU',
+      'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+      'FREQ=WEEKLY;BYDAY=1MO,TU,WE,TH,FR',
+      'FREQ=MONTHLY;BYDAY=-1MO',
+      'FREQ=MONTHLY;BYMONTHDAY=15',
+      'FREQ=HOURLY',
+    ]) {
+      expect(recurrencePresetForRule(rule, false), rule).toBeNull();
+    }
+  });
+
+  it('規則本身無效時回 null，而不是丟例外到畫面上', () => {
+    expect(recurrencePresetForRule('NOPE=DAILY', false)).toBeNull();
+    expect(recurrencePresetForRule('', false)).toBeNull();
+    // 全天事件不接受 BYHOUR，同一段字串在 timed 下才是合法的。
+    expect(recurrencePresetForRule('FREQ=DAILY;BYHOUR=9', true)).toBeNull();
   });
 });

@@ -1172,7 +1172,8 @@
 
 .cal-field input[type="text"],
 .cal-field input[type="date"],
-.cal-field input[type="time"] {
+.cal-field input[type="time"],
+.cal-field select {
   width: 100%;
   border: var(--bd) solid var(--border);
   border-radius: calc(var(--radius) - 2px);
@@ -1180,6 +1181,15 @@
   padding: 9px 10px;
   color: var(--fg);
   font-size: 13px;
+}
+
+/* 只在編輯自訂重複規則的行程時出現 —— DP-082。 */
+.cal-field-note {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .cal-textarea {
@@ -1438,7 +1448,9 @@
 .cal-screen button:focus-visible,
 .cal-screen input:focus-visible,
 .cal-sheet-backdrop button:focus-visible,
-.cal-sheet-backdrop input:focus-visible {
+.cal-sheet-backdrop input:focus-visible,
+/* `input` 不涵蓋 select，重複下拉要自己宣告，否則 DP-032 量到的 2px 焦點框會漏掉它。 */
+.cal-sheet-backdrop select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
