@@ -37,6 +37,29 @@ export class FakeSupabase {
     return this.tables.get(table) ?? [];
   }
 
+  /**
+   * Emulates the two `on delete cascade` foreign keys `event_exceptions`
+   * declares on `events` — DP-082.
+   *
+   * Without this the fake keeps an exception row pointing at an event that no
+   * longer exists, so a `load()` after deleting a series would hand the domain
+   * a document Postgres could never have produced. See
+   * `event_exceptions_event_owner_fk` and
+   * `event_exceptions_replacement_owner_fk` in
+   * `20260801092905_daypop_core_schema.sql`.
+   */
+  cascadeDeletedEvents(deletedIds: Set<string>) {
+    if (deletedIds.size === 0) return;
+    this.tables.set(
+      'event_exceptions',
+      this.rows('event_exceptions').filter(
+        (row) =>
+          !deletedIds.has(String(row.event_id)) &&
+          !(row.replacement_event_id != null && deletedIds.has(String(row.replacement_event_id))),
+      ),
+    );
+  }
+
   from(table: string) {
     return new FakeQuery(this, table);
   }
@@ -109,6 +132,7 @@ export class FakeSupabase {
         'events',
         events.filter((row) => row.id !== args.p_event_id),
       );
+      this.cascadeDeletedEvents(new Set([String(args.p_event_id)]));
       return { data: true, error: null };
     }
     return { data: null, error: { message: `unsupported rpc ${name}` } };
@@ -272,6 +296,8 @@ class FakeQuery implements PromiseLike<QueryResult> {
 
     const rows = this.db.rows(this.table);
     if (this.#mode === 'insert' || this.#mode === 'upsert') {
+      const violation = this.#foreignKeyViolation();
+      if (violation) return { data: null, error: { message: violation } };
       const row = this.#store(rows);
       return { data: row, error: null };
     }
@@ -292,10 +318,14 @@ class FakeQuery implements PromiseLike<QueryResult> {
     }
 
     if (this.#mode === 'delete') {
+      const removed = rows.filter((row) => this.#matches(row));
       this.db.tables.set(
         this.table,
         rows.filter((row) => !this.#matches(row)),
       );
+      if (this.table === 'events') {
+        this.db.cascadeDeletedEvents(new Set(removed.map((row) => String(row.id))));
+      }
       return { data: null, error: null };
     }
 
@@ -319,6 +349,28 @@ class FakeQuery implements PromiseLike<QueryResult> {
       existing ? rows.map((row) => (row.id === stored.id ? stored : row)) : [...rows, stored],
     );
     return stored;
+  }
+
+  /**
+   * The `event_exceptions` → `events` foreign keys, refused at write time as
+   * Postgres would — DP-082.
+   *
+   * Without this the fake accepts an exception pointing at an event that does
+   * not exist yet, which is exactly the mistake
+   * `replaceEventOccurrence()`'s write order avoids. Verified by swapping its
+   * two writes and watching the contract test fail.
+   */
+  #foreignKeyViolation(): string | null {
+    if (this.table !== 'event_exceptions') return null;
+    const payload = this.#payload ?? {};
+    const eventIds = new Set(this.db.rows('events').map((row) => String(row.id)));
+    for (const column of ['event_id', 'replacement_event_id'] as const) {
+      const value = payload[column];
+      if (value != null && !eventIds.has(String(value))) {
+        return `insert or update on table "event_exceptions" violates foreign key constraint on ${column}`;
+      }
+    }
+    return null;
   }
 
   #matches(row: FakeRow): boolean {

@@ -26,6 +26,7 @@ import {
   applyEventPatch,
   applyPreferencesPatch,
   calendarDeletionPlan,
+  cancelEventOccurrence,
   createCalendarFromInput,
   createEventFromInput,
   findCalendarById,
@@ -36,7 +37,9 @@ import {
   createStickerFromInput,
   createTodoFromInput,
   findEvent,
+  findEventException,
   findTodo,
+  replaceEventOccurrence,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
@@ -55,12 +58,19 @@ import {
   type CalendarEvent,
   type DayPopUserData,
   type EventAttachment,
+  type EventException,
+  type EventOccurrence,
   type TodoItem,
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
 import type { Database, Json } from '../lib/database.types';
-import type { DayPopRepository, EventAttachmentRepository } from './repository';
+import {
+  canEditOccurrencesOf,
+  occurrenceWriteContext,
+  type DayPopRepository,
+  type EventAttachmentRepository,
+} from './repository';
 
 /**
  * Thrown when Supabase itself refused or failed the request.
@@ -174,6 +184,83 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       new Date().toISOString(),
     );
     return this.#commit(withEvent(data, await this.#upsertEvent(draft)));
+  }
+
+  /**
+   * DP-082. Up to two row writes, and only when the occurrence already had a
+   * replacement is there a second one.
+   *
+   * The exception is rewritten **before** the superseded replacement event is
+   * deleted. Unlike `replaceEventOccurrence()`, this order is not forced by a
+   * constraint — measured, not assumed: reversing the two still ends in the
+   * right state, because `event_exceptions_replacement_owner_fk` cascades the
+   * exception away and the upsert then puts it straight back. What the order
+   * buys is the **partial failure**. Exception first, then a failed delete,
+   * leaves the cancellation durable and one orphan standalone event the user
+   * can see and remove. Delete first, then a failed upsert, leaves neither the
+   * exception nor the replacement — the occurrence the user just cancelled
+   * quietly comes back.
+   *
+   * There is no transaction, matching `deleteCalendar()`'s existing five
+   * ordered writes: a throw means `#commit()` never runs, the UI keeps its
+   * last confirmed snapshot with 尚未同步, and the next `load()` reconciles
+   * from the database. The exception row is keyed on (event, occurrence), so
+   * redoing the edit repairs rather than duplicates.
+   */
+  async cancelEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+  ): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    if (!canEditOccurrencesOf(data, eventId)) return data;
+
+    // Read before the mutation: this is the only place the replacement row
+    // that is about to be dropped is still visible.
+    const supersededEventId = findEventException(data, eventId, occurrence)?.replacementEventId;
+    const next = cancelEventOccurrence(data, eventId, occurrence, occurrenceWriteContext());
+    const stored = await this.#upsertEventException(
+      requireException(next, eventId, occurrence),
+    );
+    if (supersededEventId) await this.#delete('events', supersededEventId);
+    return this.#commit(withStoredException(next, stored));
+  }
+
+  /**
+   * DP-082. The replacement event is written first, and here the order **is**
+   * forced: `event_exceptions_replacement_owner_fk` refuses an exception that
+   * points at a row the database does not have yet. `FakeSupabase` enforces
+   * that constraint too, so swapping these two lines fails the contract test
+   * rather than passing on a fake that is more permissive than Postgres.
+   *
+   * The failure window is therefore an orphan standalone event with no
+   * exception hiding the original occurrence — visible to the user as a
+   * duplicate on that day, not as lost data, and removable like any event.
+   * See `cancelEventOccurrence()` for why this is not wrapped in a transaction.
+   */
+  async replaceEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    if (!canEditOccurrencesOf(data, eventId)) return data;
+
+    const next = replaceEventOccurrence(
+      data,
+      eventId,
+      occurrence,
+      patch,
+      occurrenceWriteContext(),
+    );
+    const exception = requireException(next, eventId, occurrence);
+    const replacement = next.events.find((item) => item.id === exception.replacementEventId);
+    if (!replacement) throw new Error('替換事件在領域結果中不存在。');
+
+    const storedEvent = await this.#upsertEvent(replacement);
+    const storedException = await this.#upsertEventException(exception);
+    return this.#commit(
+      withStoredException(withEvent(next, storedEvent), storedException),
+    );
   }
 
   async deleteEvent(id: string): Promise<DayPopUserData> {
@@ -460,6 +547,19 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     return eventFromRow(data);
   }
 
+  async #upsertEventException(exception: EventException) {
+    const { data, error } = await requestRemote(
+      '寫入重複例外',
+      this.client
+        .from('event_exceptions')
+        .upsert(eventExceptionToInsert(exception, this.userId))
+        .select('*')
+        .single(),
+    );
+    if (error || !data) throw new RemoteDataError('寫入重複例外', error);
+    return eventExceptionFromRow(data);
+  }
+
   async #upsertTodo(todo: TodoItem) {
     const { data, error } = await requestRemote(
       '寫入待辦',
@@ -517,6 +617,41 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     if (!this.#snapshot) throw new Error('請先呼叫 load() 再進行編輯。');
     return this.#snapshot;
   }
+}
+
+/**
+ * The exception row the domain mutation just produced for this occurrence.
+ *
+ * The mutations return a whole document, so the adapter has to find the one
+ * row it is meant to write. Looking it up by (event, occurrence) rather than
+ * by diffing keeps this correct whether the row was created or updated.
+ */
+function requireException(
+  data: DayPopUserData,
+  eventId: string,
+  occurrence: EventOccurrence,
+): EventException {
+  const exception = findEventException(data, eventId, occurrence);
+  if (!exception) throw new Error('重複例外在領域結果中不存在。');
+  return exception;
+}
+
+/**
+ * Swaps in what the database actually stored, the same reason `#upsertEvent()`
+ * maps its response back: `created_at`/`updated_at` are set by a trigger the
+ * client is not allowed to write, so the locally computed row would put a
+ * timestamp in the snapshot that no row anywhere actually has.
+ */
+function withStoredException(
+  data: DayPopUserData,
+  stored: EventException,
+): DayPopUserData {
+  return {
+    ...data,
+    eventExceptions: data.eventExceptions.map((candidate) =>
+      candidate.id === stored.id ? stored : candidate,
+    ),
+  };
 }
 
 /** Maps canonical values to the exact snake_case allowlist accepted by the RPC. */

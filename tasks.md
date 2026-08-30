@@ -109,6 +109,14 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   >
   > **剩下的（原條目照留在下面）**：`:430-439` 的範圍選擇對話框，以及它需要的 repository 契約方法。DP-081 留下的兩個接點也還在：週檢視重複 occurrence 的 `draggable` 仍是 false，事件 sheet 的修改與刪除仍一律套用到整個系列（畫面上以提示明講）。
   >
+  > **2026-08-30 第二段：repository 契約與三個 adapter 已完成（PR #72），但畫面還沒有任何地方呼叫它，所以本項仍未結案。** 條目原本要求「動手前先確認是否需要 Supabase MCP 驗證」，**確認結果是不需要**，依據全在 repo 裡：`event_exceptions` 表、`enable row level security`、`grant select/insert/update/delete ... to authenticated` 與四條 `(select auth.uid()) = owner_id` policy 都在 `20260801092905_daypop_core_schema.sql` 與 `20260801092922_daypop_owner_rls.sql`；`event_id` 與 `replacement_event_id` 都是 `(id, owner_id)` 複合外鍵，跨帳號寫入在 DB 層就被擋掉，不只靠 RLS。**沒有新 migration，也沒有連線到正式或 staging 資料庫。**
+  > - 契約新增 `cancelEventOccurrence()` 與 `replaceEventOccurrence()`，local／supabase／cached 三個 adapter 都實作，`DataProvider` 走既有的序列化 mutation queue。
+  > - **遠端沒有 transaction**，比照 `deleteCalendar()` 既有的五次有序寫入。`replaceEventOccurrence()` 必須先寫替換事件再寫例外（外鍵要求），失敗窗是「多一個孤兒事件」而不是資料遺失；`cancelEventOccurrence()` 先寫例外再刪舊替換事件，**這個順序不是外鍵強制的**（反過來也會停在正確狀態），差別在部分失敗：先寫例外能讓取消存活下來，反過來會讓使用者剛取消的那一次悄悄跑回來。
+  > - `FakeSupabase` 補上 `event_exceptions` 的兩條外鍵與 `on delete cascade`，否則 fake 比 Postgres 寬鬆、寫入順序寫反了測試也不會紅。replace 的順序已用「把兩行對調 → 測試變紅」實測過；cancel 的順序實測**不會**變紅，因此上面照實寫成部分失敗的理由，不是外鍵理由。
+  > - 契約測試以 `describe.each` 對兩個 adapter 各跑 7 個 occurrence 案例，斷言在 `load()` 之後 —— 兩個 adapter 的回傳值都由純 domain 結果組出來，只看回傳值的話「其實沒寫進去」也會過。
+  >
+  > **下一段（尚未開始）**：把 occurrence 身分接進畫面。四個檢視的 `onOpenEvent(id)` 目前只給 base event id，要改成同時帶 `EventOccurrence`，才有辦法讓 `:430-439` 的範圍對話框知道使用者點的是哪一次；接著才是週檢視 `draggable` 解鎖。
+  >
   > **原條目：** 原稿 `:598` 的「重複」select 與 `:430-439` 的範圍選擇對話框（`scopeThis`／`scopeAll`／`scopeCancel`，標題與說明依情境變動）。**原本卡在兩件事**：(1) ~~DP-081 必須先完成~~ —— **已於 2026-08-27 完成**，重複事件現在四個檢視都畫得出來，這一項不再阻塞；(2) `cancelEventOccurrence()` 與 `replaceEventOccurrence()`（[`mutations.ts:368`](src/domain/mutations.ts#L368)、[`:398`](src/domain/mutations.ts#L398)）雖然 DP-027 已經寫好且有測試，但**`DayPopRepository` 契約上完全沒有 occurrence／exception 方法**，所以要新增契約方法並在 local、supabase 與 cached 三個 adapter 都實作。DB 的 `event_exceptions` 表 DP-027 已建好，預期不需要新 migration，但要確認 RLS 與既有 policy 涵蓋新的寫入路徑 —— 這一段會動到資料邊界，屬高風險區，應獨立成一個 PR 並在動手前先確認是否需要 Supabase MCP 驗證。
   > **DP-081 留給這一段的兩個接點**：(1) 週檢視的重複 occurrence 目前 `draggable` 為 false，範圍對話框做好後才解開（`WeekView.tsx` 的 `draggable` 判斷）；(2) 點一次 occurrence 開啟事件 sheet 時，目前編輯的是**整個系列**，畫面上還沒有任何說明 —— 這一段必須同時補上單次／全部的選擇，或至少講清楚修改的範圍。
 - [ ] **DP-072 — 讓跨午夜事件在週格也能拖曳：** DP-064 把週格改成畫 display segments 後，跨午夜事件在每一個它經過的欄位都有一個色塊，但**這些色塊不提供拖曳與拉長度**（點擊改為開啟事件；單日事件的拖曳完全不變）。原因是拖曳送出的 `EventPatch` 是「單一天的 `date` ＋ `start`／`end` 牆上時間」，而 `moveRange()`／`resizeRange()` 依 ADR §6 只處理 0–1440 的日內邊界 —— 把它套到 23:00–00:30 的第一段，patch 會把事件截成 60 分鐘，等於靜默刪掉使用者的資料，所以現階段寧可不提供。要真的支援需要新的 patch 形狀（以 instant delta 表示位移，或讓起訖各自帶日期），連帶要定義跨欄拖曳對多日事件的語意（移動整段？只改起點？），屬新的產品決策。決策背景記在 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6 落點的實作註記。

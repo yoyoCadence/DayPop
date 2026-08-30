@@ -2,9 +2,11 @@ import {
   applyCalendarPatch,
   applyEventPatch,
   applyPreferencesPatch,
+  cancelEventOccurrence,
   createCalendarFromInput,
   createEventFromInput,
   findCalendarById,
+  replaceEventOccurrence,
   withCalendar,
   withoutCalendar,
   type CalendarPatch,
@@ -26,10 +28,19 @@ import {
   type NewTodoInput,
   type PreferencesPatch,
 } from '../domain/mutations';
-import { createDomainId, type DayPopUserData } from '../domain/types';
+import {
+  createDomainId,
+  type DayPopUserData,
+  type EventOccurrence,
+} from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
-import type { DayPopRepository, SyncLoadCapable } from '../data/repository';
+import {
+  canEditOccurrencesOf,
+  occurrenceWriteContext,
+  type DayPopRepository,
+  type SyncLoadCapable,
+} from '../data/repository';
 import { getAppStorage, type StorageLike } from './browserStorage';
 import { readUserData, writeUserData, type StorageReadResult } from './versionedStorage';
 
@@ -110,6 +121,32 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   deleteEvent(id: string): Promise<DayPopUserData> {
     return this.#mutate((data) => withoutEvent(data, id));
+  }
+
+  // DP-082. Guest storage writes the whole document at once, so both of these
+  // are exactly the pure domain mutation — there is no partial write to guard
+  // against here, unlike the remote adapter's two ordered row writes.
+  cancelEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+  ): Promise<DayPopUserData> {
+    return this.#mutate((data) =>
+      canEditOccurrencesOf(data, eventId)
+        ? cancelEventOccurrence(data, eventId, occurrence, occurrenceWriteContext())
+        : data,
+    );
+  }
+
+  replaceEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): Promise<DayPopUserData> {
+    return this.#mutate((data) =>
+      canEditOccurrencesOf(data, eventId)
+        ? replaceEventOccurrence(data, eventId, occurrence, patch, occurrenceWriteContext())
+        : data,
+    );
   }
 
   addTodo(input: NewTodoInput): Promise<DayPopUserData> {

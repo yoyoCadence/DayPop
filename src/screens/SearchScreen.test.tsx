@@ -70,6 +70,8 @@ function fixedRepository(data: DayPopUserData): DayPopRepository & SyncLoadCapab
     addEvent: respond,
     updateEvent: respond,
     deleteEvent: respond,
+    cancelEventOccurrence: respond,
+    replaceEventOccurrence: respond,
     addTodo: respond,
     toggleTodo: respond,
     deleteTodo: respond,

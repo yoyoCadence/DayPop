@@ -362,3 +362,169 @@ describe.each(adapters)('%s adapter honours the shared contract', (_name, create
     expect(data.calendars).toHaveLength(1);
   });
 });
+
+/**
+ * DP-082. The occurrence half of the contract, run against both adapters for
+ * the same reason as everything above: the guest adapter rewrites one document
+ * while the Supabase adapter writes two rows in a required order, and the
+ * screens must not be able to tell which one they are talking to.
+ */
+describe.each(adapters)('%s adapter honours the occurrence contract', (_name, create) => {
+  let repository: DayPopRepository;
+
+  beforeEach(async () => {
+    repository = await create();
+  });
+
+  /** A daily all-day series, so occurrences are plain date keys. */
+  async function series(): Promise<string> {
+    const created = await repository.addEvent({
+      title: '站會',
+      date: '2026-08-03',
+      allDay: true,
+      start: '',
+      end: '',
+      recurrenceRule: 'FREQ=DAILY;COUNT=5',
+    });
+    return created.events[0]!.id;
+  }
+
+  const dayOf = (data: DayPopUserData, title: string) =>
+    data.events.filter((event) => event.title === title).map((event) =>
+      event.allDay ? event.startDate : event.startsAt,
+    );
+
+  it('cancels one occurrence without touching the series', async () => {
+    const id = await series();
+
+    const data = await repository.cancelEventOccurrence(id, {
+      kind: 'all-day',
+      date: '2026-08-05',
+    });
+
+    expect(data.events).toHaveLength(1);
+    expect(data.events[0]!.recurrence).toEqual({ rule: 'FREQ=DAILY;COUNT=5' });
+    expect(data.eventExceptions).toEqual([
+      expect.objectContaining({
+        eventId: id,
+        occurrence: { kind: 'all-day', date: '2026-08-05' },
+        isCancelled: true,
+        replacementEventId: null,
+      }),
+    ]);
+  });
+
+  it('cancelling the same occurrence twice reuses the one row', async () => {
+    const id = await series();
+    const occurrence = { kind: 'all-day' as const, date: '2026-08-05' };
+
+    const first = await repository.cancelEventOccurrence(id, occurrence);
+    const second = await repository.cancelEventOccurrence(id, occurrence);
+
+    expect(second.eventExceptions).toHaveLength(1);
+    expect(second.eventExceptions[0]!.id).toBe(first.eventExceptions[0]!.id);
+  });
+
+  it('replaces one occurrence with a standalone non-recurring event', async () => {
+    const id = await series();
+
+    const data = await repository.replaceEventOccurrence(
+      id,
+      { kind: 'all-day', date: '2026-08-05' },
+      { title: '改期的站會', date: '2026-08-06' },
+    );
+
+    const replacementId = data.eventExceptions[0]!.replacementEventId;
+    const replacement = data.events.find((event) => event.id === replacementId);
+    expect(replacement).toMatchObject({ title: '改期的站會', recurrence: null });
+    expect(dayOf(data, '改期的站會')).toEqual(['2026-08-06']);
+    // The series itself keeps its rule and its own date.
+    expect(data.events.find((event) => event.id === id)).toMatchObject({
+      recurrence: { rule: 'FREQ=DAILY;COUNT=5' },
+      startDate: '2026-08-03',
+    });
+    expect(data.eventExceptions[0]).toMatchObject({
+      isCancelled: false,
+      occurrence: { kind: 'all-day', date: '2026-08-05' },
+    });
+  });
+
+  it('re-editing the same occurrence updates its replacement instead of adding one', async () => {
+    const id = await series();
+    const occurrence = { kind: 'all-day' as const, date: '2026-08-05' };
+
+    const first = await repository.replaceEventOccurrence(id, occurrence, { title: '第一次' });
+    const second = await repository.replaceEventOccurrence(id, occurrence, { title: '第二次' });
+
+    expect(second.eventExceptions).toHaveLength(1);
+    expect(second.eventExceptions[0]!.replacementEventId).toBe(
+      first.eventExceptions[0]!.replacementEventId,
+    );
+    // One series + one replacement, not one series + two replacements.
+    expect(second.events).toHaveLength(2);
+    expect(dayOf(second, '第一次')).toEqual([]);
+    expect(dayOf(second, '第二次')).toEqual(['2026-08-05']);
+  });
+
+  /**
+   * Cancelling an occurrence that currently has a replacement has to drop that
+   * replacement event, or the standalone copy outlives the cancellation.
+   *
+   * Asserted **after a reload**, not on the returned document, and that is not
+   * belt-and-braces: both adapters build their reply from the pure domain
+   * result, so every one of these cases would pass on a snapshot that the
+   * durable store never actually received. Only a reload proves the rows
+   * landed. (It does not, however, pin the Supabase adapter's write *order*
+   * for this case — reversing those two still ends in the right state; see the
+   * adapter's own comment for the partial-failure reason it keeps the order.)
+   */
+  it('cancelling an occurrence that was replaced drops the replacement event', async () => {
+    const id = await series();
+    const occurrence = { kind: 'all-day' as const, date: '2026-08-05' };
+    await repository.replaceEventOccurrence(id, occurrence, { title: '改期的站會' });
+    await repository.cancelEventOccurrence(id, occurrence);
+
+    const data = await repository.load();
+
+    expect(dayOf(data, '改期的站會')).toEqual([]);
+    expect(data.events).toHaveLength(1);
+    expect(data.eventExceptions).toEqual([
+      expect.objectContaining({ isCancelled: true, replacementEventId: null }),
+    ]);
+  });
+
+  it('treats an unknown or non-recurring event as a no-op, not an error', async () => {
+    const plain = await repository.addEvent({
+      title: '單次會議',
+      date: '2026-08-06',
+      allDay: true,
+      start: '',
+      end: '',
+    });
+    const plainId = plain.events[0]!.id;
+    const occurrence = { kind: 'all-day' as const, date: '2026-08-06' };
+
+    const afterUnknown = await repository.cancelEventOccurrence(CALENDAR, occurrence);
+    const afterPlain = await repository.cancelEventOccurrence(plainId, occurrence);
+    const afterReplace = await repository.replaceEventOccurrence(plainId, occurrence, {
+      title: '不該套用',
+    });
+
+    for (const data of [afterUnknown, afterPlain, afterReplace]) {
+      expect(data.eventExceptions).toEqual([]);
+      expect(shape(data).events).toEqual(shape(plain).events);
+    }
+  });
+
+  it('refuses an occurrence whose shape disagrees with the event', async () => {
+    const id = await series();
+
+    // The series is all-day, so a timed occurrence can only be a caller bug.
+    await expect(
+      repository.cancelEventOccurrence(id, {
+        kind: 'timed',
+        startsAt: '2026-08-05T01:00:00.000Z',
+      }),
+    ).rejects.toThrow();
+  });
+});

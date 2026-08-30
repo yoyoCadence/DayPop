@@ -548,7 +548,15 @@ export function withoutEvent(data: DayPopUserData, id: string): DayPopUserData {
   };
 }
 
-function findEventException(
+/**
+ * The exception row already registered for this occurrence, if any — DP-082.
+ *
+ * Exported for the repository adapters rather than the screens. The Supabase
+ * adapter has to know the *previous* row before the mutation runs: cancelling
+ * an occurrence that currently has a replacement drops that replacement event,
+ * and the row id it needs to delete is only visible here.
+ */
+export function findEventException(
   data: DayPopUserData,
   eventId: string,
   occurrence: EventOccurrence,
