@@ -60,6 +60,8 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
     addEvent: respond,
     updateEvent: respond,
     deleteEvent: respond,
+    cancelEventOccurrence: respond,
+    replaceEventOccurrence: respond,
     addTodo: respond,
     toggleTodo: respond,
     deleteTodo: respond,

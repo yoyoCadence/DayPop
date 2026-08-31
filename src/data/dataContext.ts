@@ -9,7 +9,7 @@ import type {
   NewTodoInput,
   PreferencesPatch,
 } from '../domain/mutations';
-import type { DayPopUserData } from '../domain/types';
+import type { DayPopUserData, EventOccurrence } from '../domain/types';
 import type { StorageReadResult } from '../storage/versionedStorage';
 
 /** The non-`ready` half of a local read — what the recovery screen works on. */
@@ -42,6 +42,19 @@ export interface DataActions {
   addEvent(input: NewEventInput): void;
   updateEvent(id: string, patch: EventPatch): void;
   deleteEvent(id: string): void;
+  /**
+   * The 只有這一次 half of the原檔's scope dialog — DP-082.
+   *
+   * `updateEvent`/`deleteEvent` remain 整個系列. Both go through the same
+   * serialized mutation queue, so choosing 單次 cannot interleave with an edit
+   * the user issued a moment earlier.
+   */
+  cancelEventOccurrence(eventId: string, occurrence: EventOccurrence): void;
+  replaceEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): void;
   addTodo(input: NewTodoInput): void;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;

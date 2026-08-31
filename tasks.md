@@ -109,6 +109,23 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   >
   > **剩下的（原條目照留在下面）**：`:430-439` 的範圍選擇對話框，以及它需要的 repository 契約方法。DP-081 留下的兩個接點也還在：週檢視重複 occurrence 的 `draggable` 仍是 false，事件 sheet 的修改與刪除仍一律套用到整個系列（畫面上以提示明講）。
   >
+  > **2026-08-30 第二段：repository 契約與三個 adapter 已完成（PR #72），但畫面還沒有任何地方呼叫它，所以本項仍未結案。**
+  > - 契約新增 `cancelEventOccurrence()` 與 `replaceEventOccurrence()`，local／supabase／cached 三個 adapter 都實作，`DataProvider` 走既有的序列化 mutation queue。
+  > - 契約測試以 `describe.each` 對兩個 adapter 各跑 7 個 occurrence 案例，斷言在 `load()` 之後 —— 兩個 adapter 的回傳值都由純 domain 結果組出來，只看回傳值的話「其實沒寫進去」也會過。
+  >
+  > **2026-08-30 覆驗改了結論：這一段最後還是新增了 migration。** 第一版把兩次寫入放在 client 端，並宣稱「不需要 migration」；覆驗指出兩個 blocking 問題，兩個都不是換寫入順序能解的：
+  > - **取消已被替換的 occurrence 會漏掉附件清理。** 舊版用 `.from('events').delete()` 繞過 `delete_event_with_attachment_cleanup`，附件 metadata 被 FK cascade 帶走，Storage 檔案卻沒進 `attachment_cleanup_jobs`，變成再也找不到的孤兒。**而且純 domain 的 `cancelEventOccurrence()` 也沒有一起丟掉替換事件的附件**，`parseDayPopUserData()` 會因為「附件指向不存在的事件」讓整個 commit 失敗 —— 也就是「DB 已經取消成功、UI 卻顯示失敗」。domain 與遠端兩邊都修了。
+  > - **重試不具 idempotency。** 每次重試會產生新的 exception UUID，而 PostgREST 的 `upsert` 以 primary key 推斷衝突目標，於是同一個 occurrence 被插進第二列，撞上 `event_exceptions_event_date_unique_idx`；replace 更糟，替換事件已經先寫進去了，每重試一次就多一個孤兒。**PostgREST 表達不出這個修法**，因為那兩個 unique index 是 partial，`ON CONFLICT` 要推斷 partial index 必須重述 `WHERE` 述詞。
+  > - 解法是 `20260830000000_event_occurrence_rpcs.sql` 的兩個 RPC（`cancel_event_occurrence`、`replace_event_occurrence`），`security invoker`＋空 `search_path`＋`authenticated` grant，比照 `delete_event_with_attachment_cleanup` 與 import RPC。一個 function 就是一個 transaction，順帶消掉舊版只能寫在註解裡的部分失敗窗；id 一律以資料庫既有的列為準，caller 提出的 UUID 只在該列還不存在時才用。
+  > - `FakeSupabase` 為此補上兩條 FK 的 `on delete cascade`（含 `event_attachments`）、**兩個 partial unique index**與這兩個 RPC 的行為。沒有這些，fake 比 Postgres 寬鬆，上面兩個問題在測試裡都是綠的。兩個修正都用「把修正還原 → 測試變紅」確認過。
+  > - **2026-08-31 已在真實本機 Postgres 驗證**（先前寫的「這台電腦沒有 Docker、pgTAP 未執行」**是錯的**：Docker Desktop 有裝，只是 CLI 不在 PATH（`C:\Program Files\Docker\Docker\resources\bin`）且 daemon 沒啟動。啟動後 `supabase start` → `supabase db reset` 15 檔 migration 全部套用成功）。覆驗抓到一個真實缺陷：`cancel_event_occurrence()` 的 cleanup enqueue 帶了 `on conflict (owner_id, object_path) do nothing`，實跑得到 `new row violates row-level security policy for table attachment_cleanup_jobs`，15 個斷言只跑到 10 個。
+  >   **成因**：`attachment_cleanup_jobs_select_orphan_own` 只在「沒有任何 `event_attachments` 還持有該 `object_path`」時才讓佇列列可見；enqueue 當下 metadata 還在（cascade 要到下一句才發生），所以剛插入的列是看不見的，而 `ON CONFLICT` 必須讀到衝突列才能決定行為。這正是 `20260809085514_fix_attachment_cleanup_enqueue.sql` 當初把該子句從兩個 delete RPC 拿掉的原因 —— 這次是從 `20260809060200` 那份**已被取代**的舊定義複製過來才又長回去。**已移除**，並在 migration 兩處註解寫明不可再加回來。
+  >   **實測結果**：拿掉後 `event_occurrence_rpcs.test.sql` **15/15**、`npm run supabase:test` 五個檔 **150/150** 全過，且是 repo 原樣、沒有任何本機臨時修補；把該子句加回去可穩定重現 10/15 失敗。pgTAP 的 `rollback` 之後 `auth.users`／`events`／`event_exceptions`／`event_attachments`／`attachment_cleanup_jobs` 全部歸 0。
+  >   **順帶修一個會擋住這個流程的東西**：`supabase/.temp` 有 gitignore 但沒有 eslint ignore，所以只要跑過 `supabase start`，`npm run lint` 就會被 CLI 產生的 bundled edge-runtime 檔噴 99 個錯。CI 因為不跑 stack 所以從沒遇到。已加進 `eslint.config.js` 的 ignores。
+  > - 因此條目原本「預期不需要新 migration」這句**不再成立**；既有的表、RLS、grant 與複合外鍵確實都夠用（都在 `20260801092905` 與 `20260801092922`），不夠的是原子性與 partial unique index 的衝突處理。
+  >
+  > **下一段（尚未開始）**：把 occurrence 身分接進畫面。四個檢視的 `onOpenEvent(id)` 目前只給 base event id，要改成同時帶 `EventOccurrence`，才有辦法讓 `:430-439` 的範圍對話框知道使用者點的是哪一次；接著才是週檢視 `draggable` 解鎖。
+  >
   > **原條目：** 原稿 `:598` 的「重複」select 與 `:430-439` 的範圍選擇對話框（`scopeThis`／`scopeAll`／`scopeCancel`，標題與說明依情境變動）。**原本卡在兩件事**：(1) ~~DP-081 必須先完成~~ —— **已於 2026-08-27 完成**，重複事件現在四個檢視都畫得出來，這一項不再阻塞；(2) `cancelEventOccurrence()` 與 `replaceEventOccurrence()`（[`mutations.ts:368`](src/domain/mutations.ts#L368)、[`:398`](src/domain/mutations.ts#L398)）雖然 DP-027 已經寫好且有測試，但**`DayPopRepository` 契約上完全沒有 occurrence／exception 方法**，所以要新增契約方法並在 local、supabase 與 cached 三個 adapter 都實作。DB 的 `event_exceptions` 表 DP-027 已建好，預期不需要新 migration，但要確認 RLS 與既有 policy 涵蓋新的寫入路徑 —— 這一段會動到資料邊界，屬高風險區，應獨立成一個 PR 並在動手前先確認是否需要 Supabase MCP 驗證。
   > **DP-081 留給這一段的兩個接點**：(1) 週檢視的重複 occurrence 目前 `draggable` 為 false，範圍對話框做好後才解開（`WeekView.tsx` 的 `draggable` 判斷）；(2) 點一次 occurrence 開啟事件 sheet 時，目前編輯的是**整個系列**，畫面上還沒有任何說明 —— 這一段必須同時補上單次／全部的選擇，或至少講清楚修改的範圍。
 - [ ] **DP-072 — 讓跨午夜事件在週格也能拖曳：** DP-064 把週格改成畫 display segments 後，跨午夜事件在每一個它經過的欄位都有一個色塊，但**這些色塊不提供拖曳與拉長度**（點擊改為開啟事件；單日事件的拖曳完全不變）。原因是拖曳送出的 `EventPatch` 是「單一天的 `date` ＋ `start`／`end` 牆上時間」，而 `moveRange()`／`resizeRange()` 依 ADR §6 只處理 0–1440 的日內邊界 —— 把它套到 23:00–00:30 的第一段，patch 會把事件截成 60 分鐘，等於靜默刪掉使用者的資料，所以現階段寧可不提供。要真的支援需要新的 patch 形狀（以 instant delta 表示位移，或讓起訖各自帶日期），連帶要定義跨欄拖曳對多日事件的語意（移動整段？只改起點？），屬新的產品決策。決策背景記在 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6 落點的實作註記。
@@ -165,7 +182,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
 - `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。
-- 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
+- 本機 Supabase 完整 stack 需要 Docker-compatible runtime。~~目前此電腦未偵測到 Docker~~ —— **2026-08-31 更正：這台電腦有裝 Docker Desktop**，先前偵測不到是因為 CLI 不在 PATH。加上 `C:\Program Files\Docker\Docker\resources\bin` 並先啟動 `Docker Desktop.exe`（daemon 起來約 10 秒）之後，`npx supabase start`／`db reset`／`test db --local` 都可用，已實跑 15 檔 migration 與 5 檔 pgTAP 共 150 個斷言。**因此「沒有 Docker 所以 DB 測試跑不了」不再是可接受的理由**，動到 migration 就要實跑。附帶：`supabase/.temp` 已加入 `eslint.config.js` 的 ignores，否則跑過 stack 之後 `npm run lint` 會被 CLI 產生的檔噴 99 個錯。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 

@@ -517,3 +517,118 @@ describe('SupabaseDayPopRepository writes', () => {
     expect(db.rpcCalls.filter((call) => call.name === 'append_daypop_ics')).toHaveLength(1);
   });
 });
+
+/**
+ * The two faults review found in DP-082's first, client-side version. Both are
+ * regressions the `FakeSupabase` of that version could not have caught, so the
+ * fake grew the partial unique indexes, the FK cascade and the two RPCs first.
+ */
+describe('SupabaseDayPopRepository 單次 occurrence 寫入（DP-082 覆驗修正）', () => {
+  const SERIES = '88888888-8888-4888-8888-888888888888';
+  const OCCURRENCE = { kind: 'all-day' as const, date: '2026-08-05' };
+
+  function seriesRow(): FakeRow {
+    return eventRow({
+      id: SERIES,
+      title: '站會',
+      recurrence_rule: 'FREQ=DAILY;COUNT=5',
+      is_all_day: true,
+      start_date: '2026-08-03',
+      end_date: '2026-08-03',
+      starts_at: null,
+      ends_at: null,
+      timezone: null,
+    });
+  }
+
+  function withSeries() {
+    const db = new FakeSupabase();
+    db.seed('calendars', [calendarRow()]);
+    db.seed('events', [seriesRow()]);
+    db.seed('user_preferences', [preferencesRow()]);
+    return db;
+  }
+
+  it('取消已被替換的一次，會把替換事件的附件排進清理佇列並真的刪掉檔案', async () => {
+    const db = withSeries();
+    const repository = new SupabaseDayPopRepository(db.asClient(), OWNER);
+    await repository.load();
+    const replaced = await repository.replaceEventOccurrence(SERIES, OCCURRENCE, {
+      title: '改期的站會',
+    });
+    const replacementId = replaced.eventExceptions[0]!.replacementEventId!;
+
+    // 附件是使用者在替換事件存好之後加的，和任何一般事件一樣。
+    const attachment = attachmentRow({
+      event_id: replacementId,
+      object_path: `${OWNER}/${replacementId}/${ATTACHMENT}`,
+    });
+    db.seed('event_attachments', [attachment]);
+    db.objects.set(`event-attachments/${attachment.object_path}`, new Blob(['agenda']));
+    await repository.load();
+
+    const data = await repository.cancelEventOccurrence(SERIES, OCCURRENCE);
+
+    // 文件端：替換事件與它的附件一起消失，否則 parseDayPopUserData() 會因為
+    // 「附件指向不存在的事件」整個 commit 失敗。
+    expect(data.events.map((event) => event.id)).toEqual([SERIES]);
+    expect(data.eventAttachments).toEqual([]);
+    expect(data.eventExceptions[0]).toMatchObject({
+      isCancelled: true,
+      replacementEventId: null,
+    });
+    // Storage 端：檔案有被排進佇列並清掉，不是靜靜留下無法追蹤的孤兒。
+    expect(db.rows('event_attachments')).toHaveLength(0);
+    expect(db.rows('attachment_cleanup_jobs')).toHaveLength(0);
+    expect(db.objects.size).toBe(0);
+  });
+
+  /**
+   * 「提交成功但 response 遺失」與「兩個分頁同時操作」是同一件事：第二個
+   * writer 的 snapshot 看不到已經存進去的例外，於是提出一個全新的 UUID。
+   * 舊版以 primary key 做 upsert，這裡會插進第二列並撞上 partial unique
+   * index；replace 更糟，替換事件已經先寫進去了，每重試一次就多一個孤兒。
+   */
+  it('重試時以資料庫既有的列為準，不會多出第二列例外或第二個替換事件', async () => {
+    const db = withSeries();
+    const first = new SupabaseDayPopRepository(db.asClient(), OWNER);
+    await first.load();
+    const committed = await first.replaceEventOccurrence(SERIES, OCCURRENCE, {
+      title: '改期的站會',
+    });
+    const replacementId = committed.eventExceptions[0]!.replacementEventId;
+
+    // 第二個 adapter 的 snapshot 停在寫入之前，就像 response 遺失後的重試。
+    const stale = new SupabaseDayPopRepository(db.asClient(), OWNER, {
+      ...committed,
+      events: committed.events.filter((event) => event.id === SERIES),
+      eventExceptions: [],
+    });
+    const data = await stale.replaceEventOccurrence(SERIES, OCCURRENCE, {
+      title: '改期的站會（重試）',
+    });
+
+    expect(db.rows('event_exceptions')).toHaveLength(1);
+    expect(data.eventExceptions).toHaveLength(1);
+    // 重試沿用資料庫既有的替換事件，而不是再造一個。
+    expect(data.eventExceptions[0]!.replacementEventId).toBe(replacementId);
+    expect(db.rows('events').filter((row) => row.id !== SERIES)).toHaveLength(1);
+    expect(data.events.filter((event) => event.id !== SERIES)).toHaveLength(1);
+    expect(data.events.find((event) => event.id === replacementId)?.title).toBe(
+      '改期的站會（重試）',
+    );
+  });
+
+  it('取消也一樣：重試不會插進第二列例外', async () => {
+    const db = withSeries();
+    const first = new SupabaseDayPopRepository(db.asClient(), OWNER);
+    const committed = await first.load();
+    await first.cancelEventOccurrence(SERIES, OCCURRENCE);
+
+    const stale = new SupabaseDayPopRepository(db.asClient(), OWNER, committed);
+    const data = await stale.cancelEventOccurrence(SERIES, OCCURRENCE);
+
+    expect(db.rows('event_exceptions')).toHaveLength(1);
+    expect(data.eventExceptions).toHaveLength(1);
+  });
+});

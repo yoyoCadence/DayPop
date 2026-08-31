@@ -9,7 +9,7 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import type { DayPopUserData } from '../domain/types';
+import type { DayPopUserData, EventOccurrence } from '../domain/types';
 import type { Database } from '../lib/database.types';
 import {
   getAppStorage,
@@ -82,6 +82,26 @@ export class CachedSupabaseDayPopRepository
 
   async deleteEvent(id: string): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.deleteEvent(id));
+  }
+
+  // DP-082. Delegated like every other write, so the cache is only ever
+  // written from a document the remote adapter confirmed — a partially applied
+  // occurrence write throws before it reaches `#persist()`.
+  async cancelEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+  ): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.cancelEventOccurrence(eventId, occurrence));
+  }
+
+  async replaceEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): Promise<DayPopUserData> {
+    return this.#persist(
+      await this.#remote.replaceEventOccurrence(eventId, occurrence, patch),
+    );
   }
 
   async uploadEventAttachment(eventId: string, file: File): Promise<DayPopUserData> {

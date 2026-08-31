@@ -75,6 +75,8 @@ describe('DataProvider concurrent writes', () => {
       addEvent: pending,
       updateEvent: pending,
       deleteEvent: pending,
+      cancelEventOccurrence: pending,
+      replaceEventOccurrence: pending,
       addTodo(input) {
         startedTitles.push(input.title);
         return pending();
@@ -148,6 +150,8 @@ describe('DataProvider concurrent writes', () => {
       addEvent: pending,
       updateEvent: pending,
       deleteEvent: pending,
+      cancelEventOccurrence: pending,
+      replaceEventOccurrence: pending,
       addTodo: pending,
       toggleTodo: pending,
       deleteTodo: pending,

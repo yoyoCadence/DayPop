@@ -5,7 +5,11 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'public/sw.js'] },
+  // `supabase/.temp` is scratch the CLI writes on `supabase start` — bundled
+  // edge-runtime code, not ours. It is gitignored, so CI never saw it, but
+  // anyone who runs the local stack to verify a migration got ~99 phantom
+  // errors until this line existed.
+  { ignores: ['dist', 'coverage', 'public/sw.js', 'supabase/.temp'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

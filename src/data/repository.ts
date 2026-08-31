@@ -1,3 +1,4 @@
+import { findEvent, type OccurrenceMutationContext } from '../domain/mutations';
 import type {
   CalendarPatch,
   EventPatch,
@@ -8,7 +9,7 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import type { DayPopUserData } from '../domain/types';
+import { createDomainId, type DayPopUserData, type EventOccurrence } from '../domain/types';
 
 /**
  * The only data contract the UI is allowed to depend on.
@@ -33,6 +34,38 @@ export interface DayPopRepository {
   addEvent(input: NewEventInput): Promise<DayPopUserData>;
   updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData>;
   deleteEvent(id: string): Promise<DayPopUserData>;
+  /**
+   * Remove one generated occurrence of a recurring event — DP-082.
+   *
+   * `updateEvent`/`deleteEvent` stay the explicit "整個系列" operations; these
+   * two are the "只有這一次" half, and the pair is what the原檔's scope dialog
+   * (`scopeThis`/`scopeAll`) chooses between. Both write an `event_exceptions`
+   * row keyed on (event, occurrence), so repeating the same call is idempotent
+   * rather than piling up rows — a retried write cannot double-cancel.
+   *
+   * A no-op, like the row edits above, when `eventId` is unknown **or no
+   * longer recurring**: the user tapped an occurrence that was on screen, and
+   * a series another tab has since edited must not take this screen down. An
+   * occurrence whose shape disagrees with the event (all-day vs timed) does
+   * throw — that is a caller passing the wrong occurrence, not a race.
+   */
+  cancelEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+  ): Promise<DayPopUserData>;
+  /**
+   * Detach one generated occurrence into a standalone, non-recurring event and
+   * apply `patch` to it — DP-082. The series keeps every other occurrence.
+   *
+   * Re-editing the same occurrence reuses both the exception row and the
+   * replacement event, so this never accumulates copies. Same no-op and throw
+   * rules as `cancelEventOccurrence`.
+   */
+  replaceEventOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): Promise<DayPopUserData>;
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
@@ -60,6 +93,31 @@ export interface DayPopRepository {
    * All-or-nothing: on failure the stored data is left exactly as it was.
    */
   importData(command: ImportCommand): Promise<DayPopUserData>;
+}
+
+/**
+ * The no-op guard both adapters apply before an occurrence write — DP-082.
+ *
+ * Kept here rather than in each adapter so the contract's promise and its two
+ * implementations cannot drift apart.
+ */
+export function canEditOccurrencesOf(data: DayPopUserData, eventId: string): boolean {
+  return findEvent(data, eventId)?.recurrence != null;
+}
+
+/**
+ * Fresh ids and a timestamp for one occurrence write — DP-082.
+ *
+ * The domain mutations take these as input rather than minting them, which is
+ * what makes them pure and testable. Both are only used when the occurrence
+ * has no exception row yet; re-editing reuses the stored ids instead.
+ */
+export function occurrenceWriteContext(): OccurrenceMutationContext {
+  return {
+    exceptionId: createDomainId(),
+    replacementEventId: createDomainId(),
+    now: new Date().toISOString(),
+  };
 }
 
 /** Optional binary boundary implemented only by the authenticated adapter. */

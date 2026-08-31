@@ -161,3 +161,72 @@ describe('CachedSupabaseDayPopRepository', () => {
     expect(db.rpcCalls.filter((call) => call.name === 'append_daypop_ics')).toHaveLength(1);
   });
 });
+
+describe('CachedSupabaseDayPopRepository 的重複例外寫入（DP-082）', () => {
+  it('取消單次發生後，快取與遠端都只留下那一列例外', async () => {
+    const storage = new MemoryStorage();
+    const db = bootstrapped();
+    const repository = new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage);
+    await repository.load();
+    const created = await repository.addEvent({
+      title: '站會',
+      date: '2026-08-03',
+      allDay: true,
+      start: '',
+      end: '',
+      recurrenceRule: 'FREQ=DAILY;COUNT=5',
+    });
+
+    const data = await repository.cancelEventOccurrence(created.events[0]!.id, {
+      kind: 'all-day',
+      date: '2026-08-05',
+    });
+
+    expect(db.rows('event_exceptions')).toHaveLength(1);
+    expect(db.rows('event_exceptions')[0]).toMatchObject({
+      occurrence_date: '2026-08-05',
+      is_cancelled: true,
+      replacement_event_id: null,
+    });
+    expect(data.eventExceptions).toHaveLength(1);
+    const cached = readAccountCache(OWNER, storage);
+    expect(
+      cached.status === 'ready' ? cached.envelope.data.eventExceptions.length : null,
+    ).toBe(1);
+  });
+
+  /**
+   * The cache must never run ahead of the database. `replaceEventOccurrence()`
+   * writes the replacement event first, so a failure on the exception write is
+   * exactly the partial state the cache has to refuse to record.
+   */
+  it('例外寫入失敗時不寫快取，也不冒充成功', async () => {
+    const storage = new MemoryStorage();
+    const db = bootstrapped();
+    const repository = new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage);
+    await repository.load();
+    const created = await repository.addEvent({
+      title: '站會',
+      date: '2026-08-03',
+      allDay: true,
+      start: '',
+      end: '',
+      recurrenceRule: 'FREQ=DAILY;COUNT=5',
+    });
+    db.failures.set('event_exceptions', 'network unavailable');
+
+    await expect(
+      repository.replaceEventOccurrence(
+        created.events[0]!.id,
+        { kind: 'all-day', date: '2026-08-05' },
+        { title: '改期的站會' },
+      ),
+    ).rejects.toThrow(RemoteDataError);
+
+    const cached = readAccountCache(OWNER, storage);
+    const cachedData = cached.status === 'ready' ? cached.envelope.data : null;
+    expect(cachedData?.eventExceptions).toEqual([]);
+    // 快取停在最後一次確認的內容：只有那個系列，沒有那個替換事件。
+    expect(cachedData?.events.map((event) => event.title)).toEqual(['站會']);
+  });
+});

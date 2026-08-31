@@ -460,6 +460,15 @@ export type Database = {
     }
     Functions: {
       append_daypop_ics: { Args: { p_payload: Json }; Returns: undefined }
+      cancel_event_occurrence: {
+        Args: {
+          p_event_id: string
+          p_exception_id: string
+          p_occurrence_date: string | null
+          p_occurrence_starts_at: string | null
+        }
+        Returns: Json
+      }
       delete_event_attachment_with_cleanup: {
         Args: { p_attachment_id: string }
         Returns: boolean
@@ -500,6 +509,16 @@ export type Database = {
         Returns: Json
       }
       replace_daypop_data: { Args: { p_payload: Json }; Returns: undefined }
+      replace_event_occurrence: {
+        Args: {
+          p_event_id: string
+          p_exception_id: string
+          p_occurrence_date: string | null
+          p_occurrence_starts_at: string | null
+          p_replacement: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
