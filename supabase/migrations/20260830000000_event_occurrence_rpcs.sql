@@ -11,7 +11,10 @@
 --    objects were never enqueued in `attachment_cleanup_jobs` — an orphan file
 --    nothing can find again. `delete_event_with_attachment_cleanup` already
 --    solves that for whole events; `cancel_event_occurrence` repeats its
---    enqueue-then-delete body for the one event it removes.
+--    enqueue-then-delete body for the one event it removes. Copy that body from
+--    `20260809085514`, its current definition — **not** from the original in
+--    `20260809060200`, whose `ON CONFLICT` that follow-up existed to remove.
+--    See the comment at the enqueue itself.
 --
 -- 2. **Retries were not idempotent.** The client mints a fresh exception id per
 --    attempt and PostgREST's `upsert` infers its conflict target from the
@@ -120,12 +123,25 @@ begin
   -- deleted. Both FKs are `on delete cascade`, so the other order would take
   -- this row with it.
   if existing.replacement_event_id is not null then
+    -- **No `ON CONFLICT` here, deliberately.** `20260809085514` removed exactly
+    -- that clause from both delete RPCs, and this migration reintroduced it by
+    -- copying the superseded body — pgTAP caught it as `new row violates
+    -- row-level security policy for table attachment_cleanup_jobs`.
+    --
+    -- The reason: `attachment_cleanup_jobs_select_orphan_own` only makes a
+    -- queued row visible once no `event_attachments` row still holds that
+    -- `object_path`. At this point the metadata is still there — the cascade
+    -- below has not run yet — so the row just inserted is invisible, and
+    -- `ON CONFLICT` has to read the conflicting row to decide what to do.
+    --
+    -- Conflict handling is not needed anyway: the delete below cascades the
+    -- metadata away, so a retry finds nothing to enqueue and, having set
+    -- `replacement_event_id` to null, never reaches this block at all.
     insert into public.attachment_cleanup_jobs (owner_id, bucket_id, object_path)
     select attachment.owner_id, 'event-attachments', attachment.object_path
     from public.event_attachments attachment
     where attachment.event_id = existing.replacement_event_id
-      and attachment.owner_id = account_id
-    on conflict (owner_id, object_path) do nothing;
+      and attachment.owner_id = account_id;
 
     get diagnostics cleanup_count = row_count;
 
