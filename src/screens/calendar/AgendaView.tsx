@@ -5,6 +5,7 @@ import { eventDisplaySegments } from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
+import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
@@ -25,7 +26,7 @@ export interface AgendaViewProps {
   todayKey: string;
   todos: TodoItem[];
   calendars: Calendar[];
-  onOpenEvent(id: string): void;
+  onOpenEvent(target: OccurrenceTarget): void;
   onToggleTodo(id: string): void;
 }
 
@@ -66,6 +67,8 @@ export function AgendaView({
     const occurrences = resolveOccurrences({ startDate: todayKey, endDate: lastKey });
     type AgendaRow = {
       event: CalendarEvent;
+      /** Which drawn occurrence this row is — DP-082. */
+      target: OccurrenceTarget;
       /** Occurrence key — DP-081, see `AgendaItem.rowKey`. */
       key: string;
       time: string;
@@ -78,11 +81,13 @@ export function AgendaView({
       else segmentsByDate.set(dateKey, [row]);
     };
 
-    for (const { key: occurrenceKey, event } of occurrences) {
+    for (const resolved of occurrences) {
+      const { key: occurrenceKey, event } = resolved;
+      const target = occurrenceTarget(resolved);
       if (event.allDay) {
         const dateKey = eventDateInZone(event, displayTimezone);
         if (dateKey >= todayKey && dateKey <= lastKey) {
-          bucket(dateKey, { event, key: occurrenceKey, time: '全天', isContinuation: false });
+          bucket(dateKey, { event, target, key: occurrenceKey, time: '全天', isContinuation: false });
         }
         continue;
       }
@@ -93,6 +98,7 @@ export function AgendaView({
       })) {
         bucket(segment.dateKey, {
           event,
+          target,
           key: segment.key,
           // A continuation day says so instead of repeating the start clock.
           time: segment.isContinuation
@@ -126,6 +132,7 @@ export function AgendaView({
           kind: 'event',
           rowKey: row.key,
           id: row.event.id,
+          target: row.target,
           time: row.time,
           title: row.event.title,
           done: false,
@@ -180,7 +187,11 @@ export function AgendaView({
               className="cal-agenda-item"
               key={`${item.kind}-${item.rowKey}`}
               type="button"
-              onClick={() => (item.kind === 'event' ? onOpenEvent(item.id) : onToggleTodo(item.id))}
+              onClick={() =>
+                item.kind === 'event' && item.target
+                  ? onOpenEvent(item.target)
+                  : onToggleTodo(item.id)
+              }
             >
               <span className="cal-agenda-bar" style={{ background: item.color }} />
               <span className="cal-agenda-time">{item.time}</span>
@@ -217,6 +228,8 @@ interface AgendaItem {
   rowKey: string;
   /** What a tap addresses — the base event id, or the todo id. */
   id: string;
+  /** Set for events: which occurrence was tapped — DP-082. */
+  target?: OccurrenceTarget;
   time: string;
   title: string;
   done: boolean;

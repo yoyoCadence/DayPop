@@ -14,6 +14,7 @@ import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
 import '../screens.css';
 import './calendar.css';
+import { type OccurrenceTarget } from './occurrenceTarget';
 
 export type CalendarView = 'month' | 'week' | 'agenda';
 
@@ -51,6 +52,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     addEvent,
     updateEvent,
     deleteEvent,
+    cancelEventOccurrence,
+    replaceEventOccurrence,
     addTodo,
     toggleTodo,
     deleteTodo,
@@ -110,13 +113,25 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const [quickDraft, setQuickDraft] = useState<EventDraft | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
 
-  const editingEvent = editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null;
+  /**
+   * Which occurrence the sheet is editing — DP-082.
+   *
+   * A tap in a view sets this, so the sheet edits the occurrence the user
+   * actually pointed at. Arriving from 搜尋／綜覽 leaves it null: those screens
+   * search base events (`searchEvents()` takes `CalendarEvent[]`), so their
+   * result *is* the series and editing the whole series is the right thing.
+   */
+  const [editingTarget, setEditingTarget] = useState<OccurrenceTarget | null>(null);
+  const editingEvent =
+    editingTarget?.event ??
+    (editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null);
   const editingAttachments = editingEvent
     ? data.eventAttachments.filter((attachment) => attachment.eventId === editingEvent.id)
     : [];
 
-  const openEvent = useCallback((id: string) => {
-    setEditingId(id);
+  const openEvent = useCallback((target: OccurrenceTarget) => {
+    setEditingTarget(target);
+    setEditingId(target.event.id);
     setSheetOpen(true);
   }, []);
 
@@ -129,6 +144,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   function closeSheet() {
     setSheetOpen(false);
     setEditingId(null);
+    setEditingTarget(null);
     // Abandoning the sheet discards the quick-add draft; nothing was saved.
     setQuickDraft(null);
   }
@@ -361,7 +377,15 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         <PetLayer badge={openTodoCount} petName={data.preferences.petName} />
       )}
 
-      <button className="cal-fab" type="button" onClick={() => setSheetOpen(true)} aria-label="新增">
+      <button
+        className="cal-fab"
+        type="button"
+        onClick={() => {
+          setEditingTarget(null);
+          setSheetOpen(true);
+        }}
+        aria-label="新增"
+      >
         <svg
           width="26"
           height="26"
@@ -387,7 +411,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         calendars={data.calendars}
         onClose={() => setDayDetailKey(null)}
         onOpenEvent={openEvent}
-        onNewEvent={() => setSheetOpen(true)}
+        onNewEvent={() => {
+          setEditingTarget(null);
+          setSheetOpen(true);
+        }}
         onAddTodo={addTodo}
         onToggleTodo={toggleTodo}
         onDeleteTodo={deleteTodo}
@@ -407,6 +434,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         onAddEvent={addEvent}
         onUpdateEvent={updateEvent}
         onDeleteEvent={deleteEvent}
+        occurrence={editingTarget?.occurrence ?? null}
+        seriesEventId={editingTarget?.sourceEventId ?? null}
+        onCancelOccurrence={cancelEventOccurrence}
+        onReplaceOccurrence={replaceEventOccurrence}
         onAddTodo={addTodo}
         onUploadAttachment={uploadEventAttachment}
         onDeleteAttachment={deleteEventAttachment}

@@ -72,6 +72,8 @@ function render(overrides: Partial<EventSheetProps> = {}) {
     onAddEvent: vi.fn(),
     onUpdateEvent: vi.fn(),
     onDeleteEvent: vi.fn(),
+    onCancelOccurrence: vi.fn(),
+    onReplaceOccurrence: vi.fn(),
     onAddTodo: vi.fn(),
     onUploadAttachment: vi.fn(),
     onDeleteAttachment: vi.fn(),
@@ -388,41 +390,136 @@ describe('EventSheet fields', () => {
   });
 });
 
-describe('EventSheet 重複事件的範圍提示（DP-081 覆驗修正）', () => {
+/**
+ * 原稿 `:430-439` 的範圍對話框（DP-082）。取代了 DP-081 那段「只改其中一次還沒做好」
+ * 的提示 —— 那個提示存在的理由就是這個選擇還沒接上。
+ */
+describe('EventSheet 重複事件的單次／全部範圍選擇（DP-082）', () => {
+  const SERIES = '33333333-3333-4333-8333-333333333333';
+  const OCCURRENCE = { kind: 'timed' as const, startsAt: '2026-08-20T01:00:00.000Z' };
+
   function recurring(): CalendarEvent {
-    return { ...timedEvent(), recurrence: { rule: "FREQ=WEEKLY" } };
+    return { ...timedEvent(), recurrence: { rule: 'FREQ=WEEKLY' } };
   }
 
-  const notice = () => container.querySelector('.cal-series-notice');
+  /** 從畫面上點開一次 occurrence 的完整情境。 */
+  function openOccurrence(overrides: Partial<EventSheetProps> = {}) {
+    return render({
+      editing: recurring(),
+      occurrence: OCCURRENCE,
+      seriesEventId: SERIES,
+      ...overrides,
+    });
+  }
+
+  const dialog = () => container.querySelector('.cal-scope-card');
   const deleteButton = () => container.querySelector('.cal-delete-button') as HTMLButtonElement;
 
-  it('編輯重複事件時說明修改會套用到整個系列', () => {
-    render({ editing: recurring() });
+  it('儲存重複事件會先問範圍，還沒送出任何寫入', () => {
+    const props = openOccurrence();
 
-    expect(notice()?.textContent).toContain('整個系列');
-    expect(deleteButton().textContent).toBe('刪除整個系列');
+    expect(dialog()).toBeNull();
+    submit();
+
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    // 文案逐字照原稿 :1372。
+    expect(container.querySelector('.cal-scope-title')?.textContent).toBe('修改重複事件');
+    expect(container.querySelector('.cal-scope-this')?.textContent).toBe('只改這一次');
+    expect(container.querySelector('.cal-scope-all')?.textContent).toBe('套用全部');
   });
 
-  it('非重複事件沒有這個提示，刪除仍是一次就送出', () => {
-    const props = render({ editing: timedEvent() });
+  it('套用全部走既有的 updateEvent，對象是系列本身', () => {
+    const props = openOccurrence();
+    type('.cal-title-input', '改過的標題');
+    submit();
+    click('.cal-scope-all');
 
-    expect(notice()).toBeNull();
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      SERIES,
+      expect.objectContaining({ title: '改過的標題' }),
+    );
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('只改這一次走 replaceEventOccurrence，並帶上被點到的那一次', () => {
+    const props = openOccurrence();
+    type('.cal-title-input', '只有這次改');
+    submit();
+    click('.cal-scope-this');
+
+    expect(props.onReplaceOccurrence).toHaveBeenCalledWith(
+      SERIES,
+      OCCURRENCE,
+      expect.objectContaining({ title: '只有這次改' }),
+    );
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+  });
+
+  it('刪除重複事件問的是刪除版本的文案', () => {
+    const props = openOccurrence();
+
     expect(deleteButton().textContent).toBe('刪除事件');
+    click('.cal-delete-button');
+
+    expect(props.onDeleteEvent).not.toHaveBeenCalled();
+    expect(container.querySelector('.cal-scope-title')?.textContent).toBe('刪除重複事件');
+    expect(container.querySelector('.cal-scope-this')?.textContent).toBe('只刪這一次');
+    expect(container.querySelector('.cal-scope-all')?.textContent).toBe('刪除全部');
+  });
+
+  it('刪除全部刪掉系列，只刪這一次寫成一筆取消例外', () => {
+    const all = openOccurrence();
+    click('.cal-delete-button');
+    click('.cal-scope-all');
+    expect(all.onDeleteEvent).toHaveBeenCalledWith(SERIES);
+    expect(all.onCancelOccurrence).not.toHaveBeenCalled();
+
+    const single = openOccurrence();
+    click('.cal-delete-button');
+    click('.cal-scope-this');
+    expect(single.onCancelOccurrence).toHaveBeenCalledWith(SERIES, OCCURRENCE);
+    expect(single.onDeleteEvent).not.toHaveBeenCalled();
+  });
+
+  it('取消對話框不會寫入任何東西，也不會關掉 sheet', () => {
+    const props = openOccurrence();
+    submit();
+    click('.cal-scope-cancel');
+
+    expect(dialog()).toBeNull();
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    // 編輯內容還在，使用者可以改完再存一次。
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect((container.querySelector('.cal-title-input') as HTMLInputElement).value).toBe('既有會議');
+  });
+
+  it('非重複事件完全不問，維持原稿的一次點擊就刪', () => {
+    const props = render({ editing: timedEvent(), occurrence: OCCURRENCE, seriesEventId: SERIES });
 
     click('.cal-delete-button');
-    expect(props.onDeleteEvent).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333');
+
+    expect(dialog()).toBeNull();
+    expect(props.onDeleteEvent).toHaveBeenCalledWith(SERIES);
   });
 
-  it('刪除整個系列要按兩次才會真的刪', () => {
+  /**
+   * 從搜尋／綜覽打開時沒有 occurrence 可指。那些畫面搜的是 base event，結果本身
+   * 就是整個系列，所以維持整串編輯而不是猜一個 occurrence 出來。
+   */
+  it('沒有 occurrence 時不問範圍，直接當成整個系列編輯', () => {
     const props = render({ editing: recurring() });
 
-    click('.cal-delete-button');
-    // 第一次只換成確認文案，還沒送出。
-    expect(props.onDeleteEvent).not.toHaveBeenCalled();
-    expect(deleteButton().textContent).toContain('再按一次');
+    submit();
 
-    click('.cal-delete-button');
-    expect(props.onDeleteEvent).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333');
+    expect(dialog()).toBeNull();
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      '33333333-3333-4333-8333-333333333333',
+      expect.objectContaining({ title: '既有會議' }),
+    );
   });
 });
 

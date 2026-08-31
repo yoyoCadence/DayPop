@@ -11,8 +11,14 @@ import {
   recurrenceRuleForPreset,
   type RecurrencePreset,
 } from '../../domain/recurrence';
-import type { Calendar, CalendarEvent, EventAttachment } from '../../domain/types';
+import type {
+  Calendar,
+  CalendarEvent,
+  EventAttachment,
+  EventOccurrence,
+} from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
+import { ScopeDialog, type ScopeMode } from './ScopeDialog';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
 
 /**
@@ -72,6 +78,22 @@ export interface EventSheetProps {
   onAddEvent(input: NewEventInput): void;
   onUpdateEvent(id: string, patch: EventPatch): void;
   onDeleteEvent(id: string): void;
+  /**
+   * Which occurrence was tapped, when one was — DP-082.
+   *
+   * Null when the sheet was opened without pointing at a drawn occurrence (the
+   * FAB, or arriving from 搜尋／綜覽). The range dialog then has nothing to
+   * scope 只改這一次 to, so a recurring edit stays a whole-series edit.
+   */
+  occurrence?: EventOccurrence | null;
+  /** The series row an occurrence-scoped write targets — DP-082. */
+  seriesEventId?: string | null;
+  onCancelOccurrence(eventId: string, occurrence: EventOccurrence): void;
+  onReplaceOccurrence(
+    eventId: string,
+    occurrence: EventOccurrence,
+    patch: EventPatch,
+  ): void;
   onAddTodo(input: NewTodoInput): void;
   onUploadAttachment(eventId: string, file: File): Promise<void>;
   onDeleteAttachment(id: string): Promise<void>;
@@ -89,9 +111,13 @@ type SheetMode = 'event' | 'todo';
  * DP-082 adds 重複 on top: the原檔's six presets, writing the RRULE that DP-027
  * already knew how to expand and DP-081 already draws in all four views.
  *
+ * DP-082 also brings the原檔's 單次／全部 range dialog: editing or deleting a
+ * recurring event asks which occurrences it is for, instead of silently
+ * rewriting the whole series.
+ *
  * The rest stay listed but unbuilt on purpose. DP-027 completed recurrence,
- * exception, timezone and DST domain behaviour; the timezone control and the
- * single/all scope dialog remain canonical UI work. 提醒 needs a
+ * exception, timezone and DST domain behaviour; the timezone control remains
+ * canonical UI work. 提醒 needs a
  * delivery mechanism (DP-042) or it is a reminder that never fires, and
  * 邀請對象 has no domain type at all yet. DP-028 supplies real private
  * attachment upload/download/delete only after the event exists.
@@ -118,6 +144,10 @@ function EventSheetForm({
   onAddEvent,
   onUpdateEvent,
   onDeleteEvent,
+  occurrence = null,
+  seriesEventId = null,
+  onCancelOccurrence,
+  onReplaceOccurrence,
   onAddTodo,
   onUploadAttachment,
   onDeleteAttachment,
@@ -131,8 +161,13 @@ function EventSheetForm({
   const [title, setTitle] = useState(editing?.title ?? seed?.title ?? '');
   const [date, setDate] = useState(editingWallTime?.date ?? seed?.date ?? defaultDate);
   const [allDay, setAllDay] = useState(editing?.allDay ?? seed?.allDay ?? false);
-  /** Deleting a whole series asks once before it goes through — DP-081. */
-  const [confirmSeriesDelete, setConfirmSeriesDelete] = useState(false);
+  /**
+   * The原檔's `scopeAsk` — which question the range dialog is asking, or null
+   * when it is closed (DP-082).
+   */
+  const [scopeMode, setScopeMode] = useState<ScopeMode | null>(null);
+  /** Held while the dialog is open, so 套用全部／只改這一次 commit the same edit. */
+  const [pendingPatch, setPendingPatch] = useState<EventPatch | null>(null);
   const [start, setStart] = useState(editingWallTime?.start || seed?.start || '09:00');
   const [end, setEnd] = useState(editingWallTime?.end || seed?.end || '10:00');
   const [location, setLocation] = useState(editing?.location ?? seed?.location ?? '');
@@ -153,6 +188,38 @@ function EventSheetForm({
   );
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
+
+  /**
+   * True when saving or deleting has to ask 單次還是全部 — DP-082.
+   *
+   * All three conditions are needed. `editing.recurrence` is what the原檔
+   * tests (`base.repeat && base.repeat!=='none'`). The other two are DayPop's:
+   * an occurrence-scoped write needs the occurrence that was tapped and the
+   * series id to write the exception against, and without either there is no
+   * 這一次 to offer. A replacement row is already detached — its `recurrence`
+   * is null — so opening one edits it directly, as in the原檔.
+   */
+  const seriesScope =
+    editing != null &&
+    editing.recurrence !== null &&
+    occurrence !== null &&
+    seriesEventId !== null;
+
+  function applyScope(kind: 'this' | 'all') {
+    const mode = scopeMode;
+    setScopeMode(null);
+    if (!editing || !occurrence || !seriesEventId) return;
+    if (mode === 'delete') {
+      if (kind === 'all') onDeleteEvent(seriesEventId);
+      else onCancelOccurrence(seriesEventId, occurrence);
+    } else {
+      if (!pendingPatch) return;
+      if (kind === 'all') onUpdateEvent(seriesEventId, pendingPatch);
+      else onReplaceOccurrence(seriesEventId, occurrence, pendingPatch);
+    }
+    setPendingPatch(null);
+    onClose();
+  }
 
   async function uploadAttachment(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -237,7 +304,7 @@ function EventSheetForm({
     const recurrence =
       repeat === null ? {} : { recurrenceRule: recurrenceRuleForPreset(repeat) };
     if (editing) {
-      onUpdateEvent(editing.id, {
+      const patch: EventPatch = {
         title: named,
         date,
         allDay,
@@ -246,7 +313,15 @@ function EventSheetForm({
         location,
         notes,
         ...recurrence,
-      });
+      };
+      // The原檔's `saveEvent()` (`:912`): a repeating event asks which
+      // occurrences the change is for instead of committing straight away.
+      if (seriesScope) {
+        setPendingPatch(patch);
+        setScopeMode('save');
+        return;
+      }
+      onUpdateEvent(editing.id, patch);
     } else if (mode === 'event') {
       onAddEvent({
         title: named,
@@ -504,47 +579,29 @@ function EventSheetForm({
                   {attachmentMessage && <p role="status">{attachmentMessage}</p>}
                 </section>
 
-                {/*
-                  DP-081 draws every occurrence of a series, but this sheet still
-                  edits the base event, so every change here applies to the whole
-                  series. Saying so is the DP-081 half of the promise; the
-                  單次／全部 choice that makes it selectable is DP-082.
-                */}
-                {editing?.recurrence !== null && editing !== null && (
-                  <p className="cal-series-notice" role="note">
-                    <strong>這是重複事件</strong>
-                    在這裡的修改與刪除都會套用到<strong>整個系列</strong>，不只你點開的那一次。
-                    只改其中一次的選項還沒有做好（DP-082）。
-                  </p>
-                )}
-
                 {editing && (
                   <button
                     className="cal-delete-button"
                     type="button"
-                    // A recurring delete removes every occurrence, so it asks
-                    // first. A single event keeps the原檔's one-tap delete.
+                    // 原稿 `:913`: a repeating event asks which occurrences to
+                    // delete; a single event keeps the原檔's one-tap delete.
                     onClick={() => {
-                      if (editing.recurrence !== null && !confirmSeriesDelete) {
-                        setConfirmSeriesDelete(true);
+                      if (seriesScope) {
+                        setScopeMode('delete');
                         return;
                       }
                       onDeleteEvent(editing.id);
                       onClose();
                     }}
                   >
-                    {editing.recurrence === null
-                      ? '刪除事件'
-                      : confirmSeriesDelete
-                        ? '確定刪除整個系列？再按一次'
-                        : '刪除整個系列'}
+                    刪除事件
                   </button>
                 )}
 
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
-                  單次／全部範圍（DP-082 剩下的一半）與時區的底層行為已由 DP-027 完成，
-                  控制項仍待依原稿接回；提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
+                  時區的底層行為已由 DP-027 完成，控制項仍待依原稿接回；
+                  提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
                   邀請對象目前連 domain 型別都還沒有。
                 </div>
               </>
@@ -559,6 +616,16 @@ function EventSheetForm({
           </div>
         </form>
       </div>
+      {/* 原稿 :430 puts this at z-index 92, above the sheet it was opened from. */}
+      <ScopeDialog
+        mode={scopeMode}
+        onThis={() => applyScope('this')}
+        onAll={() => applyScope('all')}
+        onCancel={() => {
+          setScopeMode(null);
+          setPendingPatch(null);
+        }}
+      />
     </ViewportLayer>
   );
 }
