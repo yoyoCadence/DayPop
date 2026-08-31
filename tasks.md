@@ -182,7 +182,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
 - `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。
-- 本機 Supabase 完整 stack 需要 Docker-compatible runtime；目前此電腦未偵測到 Docker。未確認需求前不安裝。
+- 本機 Supabase 完整 stack 需要 Docker-compatible runtime。~~目前此電腦未偵測到 Docker~~ —— **2026-08-31 更正：這台電腦有裝 Docker Desktop**，先前偵測不到是因為 CLI 不在 PATH。加上 `C:\Program Files\Docker\Docker\resources\bin` 並先啟動 `Docker Desktop.exe`（daemon 起來約 10 秒）之後，`npx supabase start`／`db reset`／`test db --local` 都可用，已實跑 15 檔 migration 與 5 檔 pgTAP 共 150 個斷言。**因此「沒有 Docker 所以 DB 測試跑不了」不再是可接受的理由**，動到 migration 就要實跑。附帶：`supabase/.temp` 已加入 `eslint.config.js` 的 ignores，否則跑過 stack 之後 `npm run lint` 會被 CLI 產生的檔噴 99 個錯。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
