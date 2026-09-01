@@ -510,6 +510,90 @@ describe('EventSheet 重複事件的單次／全部範圍選擇（DP-082）', ()
    * 從搜尋／綜覽打開時沒有 occurrence 可指。那些畫面搜的是 base event，結果本身
    * 就是整個系列，所以維持整串編輯而不是猜一個 occurrence 出來。
    */
+/**
+   * 覆驗抓到的第一個 blocking：套用全部會把系列起始日搬到被點擊的 occurrence。
+   *
+   * 表單是用「被點到的那一次」預填的（只改這一次需要這樣），但套用全部把同一份
+   * patch 送給 base row，而 base 的 `date` 是系列的錨點。什麼都不改按下去，
+   * 8/29 起的每日系列就被重新錨定到 8/31，8/29 與 8/30 兩次直接消失。
+   */
+  it('套用全部不會把系列起始日搬到被點的那一次', () => {
+    const props = render({
+      // 使用者點的是 8/31 那一次；系列本身從 8/29 開始。
+      editing: {
+        ...recurring(),
+        ...timedEventFromWallTime(
+          { ...timedEvent(), recurrence: { rule: 'FREQ=DAILY' } },
+          { date: '2026-08-31', start: '09:00', end: '10:00' },
+          'Asia/Taipei',
+        ),
+      },
+      occurrence: { kind: 'timed', startsAt: '2026-08-31T01:00:00.000Z' },
+      seriesEventId: SERIES,
+      seriesDate: '2026-08-29',
+    });
+
+    // 一個欄位都不改。
+    submit();
+    click('.cal-scope-all');
+
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      SERIES,
+      expect.objectContaining({ date: '2026-08-29' }),
+    );
+  });
+
+  it('套用全部時改日期，系列跟著位移同樣天數，而不是被搬到絕對日期', () => {
+    const props = render({
+      editing: {
+        ...timedEventFromWallTime(
+          { ...timedEvent(), recurrence: { rule: 'FREQ=WEEKLY' } },
+          { date: '2026-08-31', start: '09:00', end: '10:00' },
+          'Asia/Taipei',
+        ),
+      },
+      occurrence: { kind: 'timed', startsAt: '2026-08-31T01:00:00.000Z' },
+      seriesEventId: SERIES,
+      seriesDate: '2026-08-17',
+    });
+
+    // 把這一次從 8/31（週一）挪到 9/2（週三）＝ +2 天。
+    type('[aria-label="日期"]', '2026-09-02');
+    submit();
+    click('.cal-scope-all');
+
+    // 系列錨點同樣 +2 天：8/17 → 8/19，整個系列改成週三。
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(
+      SERIES,
+      expect.objectContaining({ date: '2026-08-19' }),
+    );
+  });
+
+  it('只改這一次仍然用被點到的那一次的日期，不受上面的位移影響', () => {
+    const props = render({
+      editing: {
+        ...timedEventFromWallTime(
+          { ...timedEvent(), recurrence: { rule: 'FREQ=DAILY' } },
+          { date: '2026-08-31', start: '09:00', end: '10:00' },
+          'Asia/Taipei',
+        ),
+      },
+      occurrence: { kind: 'timed', startsAt: '2026-08-31T01:00:00.000Z' },
+      seriesEventId: SERIES,
+      seriesDate: '2026-08-29',
+    });
+
+    submit();
+    click('.cal-scope-this');
+
+    expect(props.onReplaceOccurrence).toHaveBeenCalledWith(
+      SERIES,
+      { kind: 'timed', startsAt: '2026-08-31T01:00:00.000Z' },
+      expect.objectContaining({ date: '2026-08-31' }),
+    );
+  });
+
+
   it('沒有 occurrence 時不問範圍，直接當成整個系列編輯', () => {
     const props = render({ editing: recurring() });
 

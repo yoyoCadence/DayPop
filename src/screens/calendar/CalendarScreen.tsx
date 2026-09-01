@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
-import { instantDateInZone } from '../../domain/eventTime';
+import { eventWallTime, instantDateInZone } from '../../domain/eventTime';
 import { visibleOccurrences } from '../../domain/calendars';
 import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
@@ -122,12 +122,36 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
    * result *is* the series and editing the whole series is the right thing.
    */
   const [editingTarget, setEditingTarget] = useState<OccurrenceTarget | null>(null);
+  /**
+   * The target only counts while `editingId` still names it — DP-082 review fix.
+   *
+   * `editingTarget` used to be read on its own, so every place that ended an
+   * edit had to remember to clear *both* pieces of state. Escape and 快速新增
+   * cleared only `editingId`, which left the stale target answering for
+   * `editingEvent` — so typing a quick-add line after dismissing a sheet with
+   * Escape reopened the old event as 編輯行程 instead of the parsed draft.
+   *
+   * Deriving it instead of clearing it in more places means `setEditingId(null)`
+   * is sufficient on its own, and a future exit path cannot forget half of it.
+   */
+  const activeTarget =
+    editingId !== null && editingTarget?.event.id === editingId ? editingTarget : null;
   const editingEvent =
-    editingTarget?.event ??
+    activeTarget?.event ??
     (editingId ? (data.events.find((item) => item.id === editingId) ?? null) : null);
   const editingAttachments = editingEvent
     ? data.eventAttachments.filter((attachment) => attachment.eventId === editingEvent.id)
     : [];
+  /**
+   * The series' own anchor date, read live rather than from the target — the
+   * sheet shifts it by however far the user moved the occurrence (DP-082
+   * review fix). Looked up here because `resolveEventOccurrences()` returns the
+   * concrete occurrence, not the base row it came from.
+   */
+  const seriesEvent = activeTarget
+    ? (data.events.find((item) => item.id === activeTarget.sourceEventId) ?? null)
+    : null;
+  const seriesDate = seriesEvent ? eventWallTime(seriesEvent).date : null;
 
   const openEvent = useCallback((target: OccurrenceTarget) => {
     setEditingTarget(target);
@@ -434,8 +458,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         onAddEvent={addEvent}
         onUpdateEvent={updateEvent}
         onDeleteEvent={deleteEvent}
-        occurrence={editingTarget?.occurrence ?? null}
-        seriesEventId={editingTarget?.sourceEventId ?? null}
+        occurrence={activeTarget?.occurrence ?? null}
+        seriesEventId={activeTarget?.sourceEventId ?? null}
+        seriesDate={seriesDate}
         onCancelOccurrence={cancelEventOccurrence}
         onReplaceOccurrence={replaceEventOccurrence}
         onAddTodo={addTodo}

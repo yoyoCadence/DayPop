@@ -5,6 +5,7 @@ import {
   formatAttachmentBytes,
 } from '../../domain/attachments';
 import { sortedCalendars } from '../../domain/calendars';
+import { addDays, daysBetween, fromDateKey, toDateKey } from '../../domain/date';
 import { eventWallTime } from '../../domain/eventTime';
 import {
   recurrencePresetForRule,
@@ -88,6 +89,13 @@ export interface EventSheetProps {
   occurrence?: EventOccurrence | null;
   /** The series row an occurrence-scoped write targets — DP-082. */
   seriesEventId?: string | null;
+  /**
+   * The series row's own wall date — DP-082 review fix.
+   *
+   * 套用全部 needs it so the patch can shift the anchor rather than replace it
+   * with the tapped occurrence's date. See `seriesPatch()`.
+   */
+  seriesDate?: string | null;
   onCancelOccurrence(eventId: string, occurrence: EventOccurrence): void;
   onReplaceOccurrence(
     eventId: string,
@@ -146,6 +154,7 @@ function EventSheetForm({
   onDeleteEvent,
   occurrence = null,
   seriesEventId = null,
+  seriesDate = null,
   onCancelOccurrence,
   onReplaceOccurrence,
   onAddTodo,
@@ -186,6 +195,8 @@ function EventSheetForm({
       options[0]?.id ??
       '',
   );
+  /** The date the form was seeded with, i.e. the tapped occurrence's own day. */
+  const occurrenceDate = editingWallTime?.date ?? null;
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
 
@@ -205,6 +216,32 @@ function EventSheetForm({
     occurrence !== null &&
     seriesEventId !== null;
 
+  /**
+   * Re-aims a patch built from one occurrence at the series itself — DP-082
+   * review fix.
+   *
+   * The form is seeded from the occurrence that was tapped, which is what makes
+   * 只改這一次 correct. 套用全部 sends the same patch to the *base* row, and
+   * `date` there means the series anchor — so a patch carrying the occurrence's
+   * own date moved the whole series onto it. Opening 8/31 of a daily series
+   * that starts 8/29 and pressing 儲存 → 套用全部 without editing anything
+   * re-anchored it to 8/31 and destroyed the 8/29 and 8/30 occurrences.
+   *
+   * The date is therefore translated, not copied: the series moves by however
+   * far the user moved *this* occurrence. An untouched date is a zero shift, so
+   * the anchor stays put; dragging Tuesday's occurrence to Wednesday and
+   * choosing 套用全部 moves the whole series to Wednesdays, which is what a
+   * weekly rule anchored on DTSTART's weekday should do.
+   *
+   * Times need no such treatment: every occurrence of a series shares one wall
+   * clock, so `start`/`end` are already the series' own values.
+   */
+  function seriesPatch(patch: EventPatch): EventPatch {
+    if (!seriesDate || !occurrenceDate || patch.date === undefined) return patch;
+    const shift = daysBetween(fromDateKey(occurrenceDate), fromDateKey(patch.date));
+    return { ...patch, date: toDateKey(addDays(fromDateKey(seriesDate), shift)) };
+  }
+
   function applyScope(kind: 'this' | 'all') {
     const mode = scopeMode;
     setScopeMode(null);
@@ -214,7 +251,7 @@ function EventSheetForm({
       else onCancelOccurrence(seriesEventId, occurrence);
     } else {
       if (!pendingPatch) return;
-      if (kind === 'all') onUpdateEvent(seriesEventId, pendingPatch);
+      if (kind === 'all') onUpdateEvent(seriesEventId, seriesPatch(pendingPatch));
       else onReplaceOccurrence(seriesEventId, occurrence, pendingPatch);
     }
     setPendingPatch(null);

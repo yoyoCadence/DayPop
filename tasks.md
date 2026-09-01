@@ -106,8 +106,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > - 四個檢視裡真正會開事件的三個（週、列表、日詳情）的 `onOpenEvent` 從「只給 base event id」改成帶 `OccurrenceTarget`（系列 id ＋ `EventOccurrence` ＋ 該次的具體事件）。**這是還原原稿**：原稿 `openEvent(id, occ)`（`:909`）本來就帶 occurrence 並存進 `editOcc`。月檢視不開事件（它開日詳情），所以沒動。
   > - 事件 sheet 的儲存與刪除照原稿 `:912`／`:913` 先問範圍：套用全部走 `updateEvent`／`deleteEvent`，只改這一次走 `replaceEventOccurrence`／`cancelEventOccurrence`（PR #72 建好的那兩個）。四段文案逐字照原稿 `:1372`。
   > - **有一處刻意偏離原稿**：sheet 以「被點到的那一次」而不是 base event 來預填。原稿是用 base 填表、再在 `scopeApply()` 裡把 `date` 覆寫成 occurrence；DayPop 不能這樣，因為 `replaceEventOccurrence()` 會把 sheet 送出的 patch 套到解析出來的 occurrence 上，而 sheet 一定會送 `date` —— 表單顯示系列起始日的話，使用者一按「只改這一次」就會把那次悄悄搬到系列起始日。
+  >   **2026-09-01 覆驗補正**：這個偏離修好了「只改這一次」，卻**在「套用全部」那一側製造出對稱的另一個 bug** —— 同一份 patch 送給 base row 時，`date` 的意思是系列錨點，所以點開 8/31 那一次、什麼都不改按「套用全部」，8/29 起的每日系列就被重新錨定到 8/31，8/29 與 8/30 兩次直接消失。修法是 `seriesPatch()`：**日期用位移而不是複製** —— 系列跟著使用者把「這一次」移動了多少天而移動同樣天數。沒動日期就是 0 天位移，錨點不動；把週一那次拉到週三再選「套用全部」，整個系列改成週三。時間不需要這樣處理，因為同一系列每一次共用同一個牆上時鐘。
   > - **從搜尋／綜覽打開時不問範圍**，維持整個系列編輯：那兩個畫面搜的是 base event（`searchEvents()` 收 `CalendarEvent[]`），結果本身就是系列，不是某一次。
   > - DP-081 那段「只改其中一次還沒做好」的畫面提示（`.cal-series-notice`）連同 CSS 一起移除 —— 它存在的唯一理由就是這個選擇還沒接上。
+  > - **2026-09-01 覆驗抓到的第二個問題**：`editingTarget` 本來是獨立讀取的，而 Escape 與快速新增只清了 `editingId`，殘留的 target 就繼續代表 `editingEvent` —— Escape 關掉 sheet 後打一行快速新增，開出來的是舊事件的「編輯行程」而不是解析出來的草稿。**修法不是去補那兩個出口**，而是改成 `activeTarget`：只有 `editingId` 仍然指名它時才算數。這樣 `setEditingId(null)` 自己就夠，之後新增的離開路徑也不可能只清一半。
   > - 真機尺寸（393×852）實跑：建立每日重複 → 點某一次 → 改標題 → 對話框四段文案正確 → 只改這一次 → localStorage 剩「一個重複系列 ＋ 一個獨立替換事件 ＋ 一列 `isCancelled:false` 且有 replacement 的例外」；替換事件再打開時不再問範圍（它已經是獨立事件）。鍵盤 Tab 量到 2px 焦點框，Escape 只關對話框不關 sheet，console 0 error／warning。
   >
   > **唯一沒做的接點已另立為 DP-083**（週檢視重複色塊解鎖拖曳），理由不是能力不足而是產品決策未定，見 Backlog。
