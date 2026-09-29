@@ -250,7 +250,7 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 ## 7. 工程治理
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。
-- CI 同時固定 Node major version；`package.json#engines` 與版本檔應保持一致。
+- CI 同時固定 Node major version；`package.json#engines` 與版本檔應保持一致。DP-086 起 runner 映像也固定為 `ubuntu-26.04`，不用 `ubuntu-latest`：後者會在沒有任何 PR 的情況下換作業系統，而 Playwright 的系統依賴與 Supabase 的 Docker 流程都依賴 OS。升級視為一次需要完整 CI 驗證的變更。
 - Browser e2e 採雙邊界：guest CRUD／reload 必須走 production 真實入口；authenticated repository／附件流程可走 dev-only harness，以既有 `FakeSupabase` 提供決定性 Auth、DB 與 Storage 回應。harness 不進 production build，不得連真實專案、帶正式帳號或宣稱取代 RLS／pgTAP 驗證。
 - mobile Chromium 以 390×844 驗證 App-only shell，desktop Chromium 以 1280×900 驗證 canonical 404×824 展示框；兩者都把 console error／warning 與 page error 視為失敗。iOS Safari、Android Chrome、真實 OAuth／redirect 與 staging data persistence 仍是 DP-032／033 的 release acceptance。
 - LICENSE 暫不替專案擁有者做決定。Public repository 在沒有 LICENSE 時仍是保留所有權利；若要接受外部貢獻，再由擁有者選擇授權條款。

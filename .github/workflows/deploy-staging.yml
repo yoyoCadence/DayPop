@@ -7,6 +7,11 @@ name: Deploy staging
 #
 # rollback 也走同一個入口，但要注意 dispatch 只接受 branch 或 tag，不接受
 # 任意 commit SHA，而網頁介面的下拉選單只列 branch。詳見 docs/deployment.md。
+#
+# DP-086：build 與 deploy 的 runner 固定為 ubuntu-26.04，與 ci.yml 的三個
+# job 相同（理由寫在 ci.yml 開頭）。這兩個 job 在固定當下還沒在 26.04 上
+# 實際跑過 —— 部署會真的發布，不能拿來探測；若第一次部署失敗在環境，
+# 先把這兩處改回原本的 ubuntu-latest（當時即 24.04）再查。
 on:
   workflow_dispatch:
 
@@ -30,7 +35,7 @@ jobs:
   build:
     name: Build for Pages
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     env:
       # GitHub Pages 專案站台位於 https://<owner>.github.io/<repo>/。
@@ -106,7 +111,7 @@ jobs:
   deploy:
     name: Publish to Pages
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       pages: write
