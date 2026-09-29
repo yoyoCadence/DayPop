@@ -108,6 +108,8 @@ npm run supabase:test:linked
 npm run supabase:types:linked
 ```
 
+`src/lib/database.types.ts` 一律以 `npm run supabase:types`（本機、從 migration 重建的資料庫產生）的輸出為準，逐字提交、不要手改；CI 會在 `db reset` 之後重新產生並比對，不一致就失敗。`supabase:types:linked`（以及 Supabase MCP 產生的型別）會多出一段 `__InternalSupabase` PostgREST 版本資訊，只能拿來比對遠端與 repo 是否一致，不能直接提交。產生器表達不出的事實（例如 RPC 參數可以是 NULL）寫在呼叫端，範例見 `src/data/supabaseRepository.ts` 的 `OccurrenceRpcArgs`。
+
 正式 schema 以 `supabase/migrations/` 為準；目前 migrations 已套用到 DayPop 遠端專案，並通過 owner RLS、帳號刪除 cascade 測試與 Supabase security advisor。不要對有正式資料的專案執行 remote reset。
 
 Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase Dashboard 啟用，因此 UI 會提示先使用 Email；完成 Google OAuth client 與 redirect allowlist 設定後，App 會從公開 Auth settings 偵測並顯示 Google 登入按鈕。
