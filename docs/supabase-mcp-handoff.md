@@ -94,6 +94,14 @@
 - RPC 成功後確實持有 `event_attachments` 與 `event_attendees` 的 `ShareLock`；`authenticated` 具備取得該 lock 所需的表權限。MCP 會序列化同專案 SQL，所以兩個 MCP call 無法形成真正重疊；改試 transaction-local `dblink` 又被 Supabase 的非 superuser 連線政策要求 DB password／GSSAPI。沒有取得或輸出密碼，也不宣稱真正兩連線 interleaving 已自動化。
 - 遠端重新產生的 TypeScript types 為 LF 18,506 字元；repo 忽略 CRLF 後逐字一致，新增的只有兩支 RPC。後續應用層已於同一個 PR 完成：authenticated adapter 只送 allowlist payload，成功後 reload 才更新 account cache，RPC／reload 失敗不寫 cache且不重送；設定頁四個按鈕、preview 與 browser IO 亦已接上。DP-056 現可移入 Done；不需要再使用 MCP 或重做 migration。
 
+## 0.9 DP-085 完成後更新（2026-09-29）
+
+這一段沒有使用 MCP、也沒有碰遠端。寫在這裡，是因為它**改變了上面每一段 postflight 都在做的那項比對**：「遠端重新產生的型別與 repo 逐字一致」。
+
+- `src/lib/database.types.ts` 自 DP-085 起以 `npm run supabase:types`（本機、從 migration 重建的資料庫產生）的輸出為準。CI 的 `database` job 會在 `db reset` 後重新產生並 `git diff --exit-code`，不一致就失敗。
+- 遠端／MCP 產生的型別（以及 `npm run supabase:types:linked`）會多出一段 `__InternalSupabase: { PostgrestVersion: ... }`。這一段從第一版型別檔（`9978bad`）起就在 repo 裡，也就是上面各段比對時都包含它；本機 CLI 2.111.0 不論只啟動 Postgres 或完整 stack 都不會產生它。**所以日後的 postflight 應改成「扣掉這一段之後逐字一致」，而且不要把遠端輸出提交回 repo**，否則 CI 會失敗。
+- 同時消除了另一個差異：DP-082 在沒有 Docker 的情況下手寫的兩支 occurrence RPC 參數（`string | null`）已改回產生器輸出的 `string`；「其中一個可以是 NULL」這件事改由 `src/data/supabaseRepository.ts` 的 `OccurrenceRpcArgs` 表達，參數名稱與型別仍對照產生出來的 `Args` 檢查。
+
 ---
 
 ## 1. 交接當下已驗證的狀態

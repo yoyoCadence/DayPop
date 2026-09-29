@@ -567,14 +567,15 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
    * several rows and must commit together — see the migration header for the
    * two faults that made a client-side sequence unworkable.
    */
-  async #callOccurrenceRpc(
-    name: 'cancel_event_occurrence' | 'replace_event_occurrence',
-    args: Record<string, Json>,
+  async #callOccurrenceRpc<Name extends OccurrenceRpcName>(
+    name: Name,
+    args: OccurrenceRpcArgs<Name>,
   ): Promise<OccurrenceRpcResult> {
     const operation = name === 'cancel_event_occurrence' ? '取消單次發生' : '寫入單次修改';
+    // The only widening is the NULL documented on `OccurrenceRpcArgs`.
     const { data, error } = await requestRemote(
       operation,
-      this.client.rpc(name, args as never),
+      this.client.rpc(name, args as GeneratedRpcArgs<Name>),
     );
     if (error || !data) throw new RemoteDataError(operation, error);
     const result = data as unknown as Partial<OccurrenceRpcResult>;
@@ -653,11 +654,33 @@ interface OccurrenceRpcResult {
   enqueued_cleanup: number;
 }
 
+type OccurrenceRpcName = 'cancel_event_occurrence' | 'replace_event_occurrence';
+type OccurrenceKeyName = 'p_occurrence_date' | 'p_occurrence_starts_at';
+type GeneratedRpcArgs<Name extends OccurrenceRpcName> =
+  Database['public']['Functions'][Name]['Args'];
+
+/**
+ * The generated `Args` of an occurrence RPC plus the one fact the generator
+ * cannot know. PostgreSQL function parameters carry no nullability, so
+ * `database.types.ts` types both occurrence keys as `string`, while the
+ * functions take exactly one of them as NULL. Every other key and type still
+ * comes from the generated file, so a parameter renamed in a migration fails
+ * typecheck here instead of failing at runtime (DP-085).
+ */
+type OccurrenceRpcArgs<Name extends OccurrenceRpcName> = Omit<
+  GeneratedRpcArgs<Name>,
+  OccurrenceKeyName
+> & {
+  [Key in OccurrenceKeyName]: GeneratedRpcArgs<Name>[Key] | null;
+};
+
 /**
  * The occurrence key as the RPCs take it: exactly one of the two is non-null,
  * matching `event_exceptions_occurrence_shape`.
  */
-function occurrenceKeyArgs(occurrence: EventOccurrence): Record<string, Json> {
+function occurrenceKeyArgs(
+  occurrence: EventOccurrence,
+): Pick<OccurrenceRpcArgs<OccurrenceRpcName>, OccurrenceKeyName> {
   return occurrence.kind === 'all-day'
     ? { p_occurrence_date: occurrence.date, p_occurrence_starts_at: null }
     : { p_occurrence_date: null, p_occurrence_starts_at: occurrence.startsAt };

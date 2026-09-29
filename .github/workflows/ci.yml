@@ -111,7 +111,8 @@ jobs:
           retention-days: 14
 
   # DP-084：migration 必須能從零重建，且 pgTAP（owner RLS、跨帳號隔離、
-  # RPC 與附件清理）全部通過。只用 runner 內的本機 Postgres：不 link 遠端
+  # RPC 與附件清理）全部通過；DP-085 再要求 src/lib/database.types.ts 與
+  # 重建後的 schema 一致。只用 runner 內的本機 Postgres：不 link 遠端
   # 專案、不需要任何 secret。CLI 版本由 package-lock 固定，指令與本機的
   # npm scripts 相同。
   database:
@@ -163,3 +164,17 @@ jobs:
 
       - name: Database tests (pgTAP)
         run: npm run supabase:test
+
+      # DP-085：型別檔必須就是從 migration 重建的資料庫產生出來的結果。
+      # 以本機產生為準：--linked 需要 access token，而 CI 不使用 secret。
+      # 本機產生不含 linked 才有的 __InternalSupabase 段落，所以 linked 或
+      # MCP 產生的檔案不能直接提交。產生器表達不出的事實（例如 RPC 參數
+      # 可以是 NULL）寫在呼叫端，見 supabaseRepository.ts 的 OccurrenceRpcArgs，
+      # 不要手改這個檔案。
+      - name: Check generated database types
+        run: |
+          npm run supabase:types
+          if ! git diff --exit-code -- src/lib/database.types.ts; then
+            echo "::error file=src/lib/database.types.ts::與 migration 產生的型別不一致。請在本機執行 npm run supabase:types 並提交結果，不要手改這個檔案。"
+            exit 1
+          fi

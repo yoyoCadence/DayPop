@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.15"
-  }
   public: {
     Tables: {
       attachment_cleanup_jobs: {
@@ -464,8 +459,8 @@ export type Database = {
         Args: {
           p_event_id: string
           p_exception_id: string
-          p_occurrence_date: string | null
-          p_occurrence_starts_at: string | null
+          p_occurrence_date: string
+          p_occurrence_starts_at: string
         }
         Returns: Json
       }
@@ -513,8 +508,8 @@ export type Database = {
         Args: {
           p_event_id: string
           p_exception_id: string
-          p_occurrence_date: string | null
-          p_occurrence_starts_at: string | null
+          p_occurrence_date: string
+          p_occurrence_starts_at: string
           p_replacement: Json
         }
         Returns: Json
@@ -651,3 +646,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
