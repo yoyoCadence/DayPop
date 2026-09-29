@@ -89,6 +89,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-08-26 指定**：專案擁有者指定 **DP-014** 為下一項並已移入 In Progress，同時把 DP-032 移回 Backlog。這一段完成的是「設定的桌寵與一般偏好區塊」，DP-014 的其餘段落仍未完成，見 In Progress 條目。
   > **2026-09-29 授權**：專案擁有者這次明確授權 agent「從 Next 選一項；Next 沒有就依既有優先序與依賴自選一項」。當時 DP-014 剩下的段落都被 DP-042／043／054 與 canonical token 決策擋住，Backlog 的候選不是產品決策（DP-072／075／083）、要真機（DP-077），就是要專案擁有者放行（DP-034、版本提升＋DP-067），所以選了原本就寫著「要做需另立任務」、不需要任何產品決策的 **DP-084（Supabase db reset／pgTAP 進 CI）**，完成後已移入 Done。當時 PR #73（DP-082 第三段）仍在等審查，DP-084 從 `main` 另開分支，不依賴它。**這次授權只涵蓋一項**，上面「不要自行挑一個補上」的規則仍然有效。
   > **2026-09-29 指定**：專案擁有者合併 PR #73、#74 後指定 **DP-085**（「DP-085 可修」），完成後已移入 Done。
+  > **2026-09-29 委託**：專案擁有者合併 PR #75 後指示「繼續下個任務，你判斷優先度即可」。agent 選了 **DP-086（固定 runner 映像）**：GitHub 公告 `ubuntu-latest` 會在 2026-10-19 至 11-19 分批換成 Ubuntu 26.04，這是有期限、影響所有 PR 檢查與部署閘門，又不需要產品決策的項目。同時發現的 `npm audit` 3 個 moderate 只在開發工具（production 為 0），急迫性較低，登記為 DP-087。DP-086 完成後已移入 Done。
 
 ## In Progress
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -162,6 +163,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-08-14 專案擁有者定案：採 (a) 刪除欄位**，同步移除 generator、`ReleaseInfo` 型別與相關測試中的欄位。理由是沒有任何程式讀它、release version 與 user-data schema 本來就必須獨立，而把 schema version 放在 release metadata 裡容易讓未來程式錯誤耦合兩者；等真的需要更新相容性協議時，再設計專門且有消費者的 metadata。
   >
   > **但不能現在做。** v0.3.0 已部署，generated `version.json` 不可在相同版號下改寫成不同內容（AGENTS.md）。**DP-067 要併入下一次版本提升**，與新版號一起重新產生 `version.json` 與 `sw.js`。
+- [ ] **DP-087 — `npm audit` 的 3 個 moderate（只在開發工具）：** 2026-09-29 發現，每個 CI job 的 `npm ci` 都會印出「3 moderate severity vulnerabilities」。`npm audit --omit=dev` 為 0，production 相依不受影響。三個分別是 `@vitest/mocker`（連帶 `vitest`；GHSA-82fw-gwwq-j7x9，redirect mock 的路徑穿越／任意讀檔）與 `undici`（GHSA-3wwx-pv8p-q78v，WebSocket permessage-deflate 解壓縮的未處理錯誤造成 DoS）。`npm audit` 表示 `npm audit fix` 可修，沒有要求 `--force`。**動手前先確認**：`vitest` 與 `undici` 各會升到哪一版、`undici` 是被誰拉進來的（`npm ls undici`），以及修完四個閘門與 e2e 都要重跑。
 
 ### 原型假功能與待補能力
 
@@ -196,13 +198,18 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
-- CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e，DP-084 起另有 Supabase `db reset`／pgTAP job（runner 內只啟動本機 Postgres）。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
+- CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e，DP-084 起另有 Supabase `db reset`／pgTAP job（runner 內只啟動本機 Postgres）。DP-086 起所有 job 的 runner 固定為 `ubuntu-26.04`，不用 `ubuntu-latest`。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
 - `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime。~~目前此電腦未偵測到 Docker~~ —— **2026-08-31 更正：這台電腦有裝 Docker Desktop**，先前偵測不到是因為 CLI 不在 PATH。加上 `C:\Program Files\Docker\Docker\resources\bin` 並先啟動 `Docker Desktop.exe`（daemon 起來約 10 秒）之後，`npx supabase start`／`db reset`／`test db --local` 都可用，已實跑 15 檔 migration 與 5 檔 pgTAP 共 150 個斷言。**因此「沒有 Docker 所以 DB 測試跑不了」不再是可接受的理由**，動到 migration 就要實跑。附帶：`supabase/.temp` 已加入 `eslint.config.js` 的 ignores，否則跑過 stack 之後 `npm run lint` 會被 CLI 產生的檔噴 99 個錯。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-086 — 固定 CI 與部署的 runner 映像：** 2026-09-29 完成。GitHub 公告（[actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)）`ubuntu-latest` 會從 2026-10-19 起分批、在 11-19 前全部改成 Ubuntu 26.04。這個 label 的切換不經過任何 PR，分批期間同一個 PR 的兩次執行甚至可能落在不同作業系統；而 `playwright install --with-deps` 依 OS 版本安裝 apt 套件、DP-084 的 Supabase 流程依賴 Docker，兩者都可能受影響。
+  > **做法是先量再定**：在 Draft PR #76 上把 `ci.yml` 三個 job 改成 `ubuntu-26.04` 實跑（run `36572431343`），三個 job 全綠。再與當時的 `ubuntu-latest`（即 24.04，PR #75 run `36569057681`）逐項對照：unit 都是 53 檔、630 個案例；e2e 都是同樣 10 個測試、9 passed 1 skipped（被 skip 的是 `responsive-shell.spec.ts:68` 本來就 `test.skip` 的桌面橫向案例）；pgTAP 150／150；Playwright 沒有「OS 不受支援」之類的警告；warning 行內容兩邊相同（既有的 git init hint 與 Vite chunk size 提示）。因此 `ci.yml` 三處與 `deploy-staging.yml` 兩處全部固定為 `ubuntu-26.04`，等於在可控的時間點先完成遷移。
+  > **沒驗到的**：`deploy-staging.yml` 的 build 與 deploy job 沒有在 26.04 上實際跑過 —— 部署會真的發布，不能拿來探測。build 的步驟和 CI 裡已通過的 subpath base 建置相同，deploy 用的是官方 Pages actions；下一次人工部署才是第一次實證。若失敗在環境，先把這兩處改回 `ubuntu-latest` 再查（workflow 註解已寫明）。
+  > **升級規則**：日後要換版，`ci.yml` 三處與 `deploy-staging.yml` 兩處一起改，並讓 CI 完整跑一輪；AGENTS.md、README 與 ADR §7 已同步。**沒有改任何程式碼、測試或相依套件。**
 
 - [x] **DP-085 — generated types 與 migration 的漂移檢查：** 2026-09-29 由專案擁有者在合併 #73／#74 後指定（「DP-085 可修」）並完成。三件事：
   > **1. 型別檔改以本機產生為準，逐字提交。** `npm run supabase:types` 重新產生後，與舊檔只差預期的三處：拿掉 `__InternalSupabase`、兩支 occurrence RPC 的 `p_occurrence_date`／`p_occurrence_starts_at` 由手寫的 `string | null` 回到產生器輸出的 `string`，以及檔尾多一行空行。**`__InternalSupabase` 的來源已查清**：本機 CLI 2.111.0 不論只啟動 Postgres 或完整 stack（PostgREST 映像沿用 linked 版本檔的 v14.15），產生的輸出都逐字相同，也都沒有這一段；它從第一版型別檔（`9978bad`）起就在 repo 裡，來自遠端產生。**決定不保留它**：PostgREST 版本是執行環境設定，不是 schema 事實，CI 不用 secret 就無法驗證。留著它，等於在「產生出來的檔案」裡繼續夾帶一段手動維護、又無法驗證的內容，而那正是這一項要消除的東西。代價只在型別層：supabase-js 對 `maxAffected()` 與多筆關聯 spread 改用 PostgREST 12 的型別，這兩者在 repo 內都沒有使用（grep 0 處）；日後要用，得先決定如何在建立 client 時明確宣告伺服器版本。

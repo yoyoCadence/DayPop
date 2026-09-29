@@ -3,6 +3,11 @@ name: CI
 # 對 PR 與 main 執行本機品質檢查、DP-030 Playwright e2e 與 DP-084 的
 # Supabase db reset／pgTAP。全部只在 runner 內跑，不連線到任何 Supabase
 # 專案，也不碰正式資料。
+#
+# DP-086：runner 固定為 ubuntu-26.04，不用 ubuntu-latest。ubuntu-latest 會在
+# 沒有任何 PR 的情況下換作業系統（2026-10-19 起分批改成 26.04），而
+# `playwright install --with-deps` 與 Supabase 的 Docker 流程都依賴 OS。
+# 升級時把這裡三處與 deploy-staging.yml 兩處一起改，並讓 CI 完整跑一輪。
 on:
   pull_request:
   push:
