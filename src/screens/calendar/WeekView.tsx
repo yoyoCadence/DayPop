@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { instantDateInZone, instantTimeInZone } from '../../domain/eventTime';
 import {
@@ -26,6 +33,7 @@ import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
+import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -50,7 +58,7 @@ export interface WeekViewProps {
   calendars: Calendar[];
   onUpdateEvent(id: string, patch: EventPatch): void;
   /** A press that did not turn into a drag opens the event, as in the原檔. */
-  onOpenEvent(id: string): void;
+  onOpenEvent(target: OccurrenceTarget): void;
 }
 
 interface DragState {
@@ -77,9 +85,14 @@ interface DragState {
  * DP-081 draws every occurrence of a recurring series, but those blocks are
  * **not draggable or resizable**: a drag sends an `EventPatch` for the base
  * event, so dragging the third occurrence of a weekly series would silently
- * move the whole series. The single/all scope dialog that makes that choice
- * explicit is DP-082; until then a recurring block only opens on tap. Blocks
- * of non-recurring events drag and resize exactly as before.
+ * move the whole series. DP-082 gave the event sheet the 單次／全部 dialog and
+ * the repository the occurrence-scoped writes a drag would need, so the
+ * plumbing now exists — but unlocking the drag is a **product decision that has
+ * not been made**. The原檔's `wkUp` (`:917`) splits the dragged occurrence into
+ * a standalone event *without asking*, which would contradict the dialog the
+ * sheet just started showing for the same series. Until that is settled a
+ * recurring block only opens on tap. Blocks of non-recurring events drag and
+ * resize exactly as before.
  */
 export function WeekView({
   weekStartsOn,
@@ -120,6 +133,13 @@ export function WeekView({
     () => resolveOccurrences({ startDate: weekStartKey, endDate: weekEndKey }),
     [resolveOccurrences, weekStartKey, weekEndKey],
   );
+
+  /** Occurrence key → what a tap on any of its blocks addresses — DP-082. */
+  const targetsByOccurrence = useMemo(() => {
+    const byKey = new Map<string, OccurrenceTarget>();
+    for (const resolved of occurrences) byKey.set(resolved.key, occurrenceTarget(resolved));
+    return byKey;
+  }, [occurrences]);
 
   const segmentsByDate = useMemo(() => {
     const byDate = new Map<string, DisplaySegment[]>();
@@ -177,8 +197,10 @@ export function WeekView({
             // A recurring occurrence is excluded for a different reason: the
             // patch addresses the base event, so dragging one occurrence would
             // move the entire series with nothing on screen saying so. DP-082
-            // adds the 單次／全部 choice; until it exists these blocks only
-            // open on tap (DP-081).
+            // built both halves this would need — the dialog and
+            // `replaceEventOccurrence()` — but whether a drag should ask, or
+            // split silently as the原檔 does, is still undecided. See the
+            // component docstring.
             draggable:
               !segment.isContinuation &&
               !segment.continuesNextDay &&
@@ -197,6 +219,22 @@ export function WeekView({
     nowKey >= weekStartKey && nowKey <= weekEndKey
       ? nowLineTop(minutesFromTime(instantTimeInZone(now.toISOString(), displayTimezone)), range)
       : null;
+
+  /**
+   * Opens the occurrence a block belongs to — DP-082.
+   *
+   * Resolved from the occurrence key rather than from `segment.event.id`,
+   * which for a recurring occurrence is the *series* id and says nothing about
+   * which one was tapped. Both halves of a cross-midnight block share the key,
+   * so either half opens the same occurrence.
+   */
+  const openOccurrence = useCallback(
+    (occurrenceKey: string) => {
+      const target = targetsByOccurrence.get(occurrenceKey);
+      if (target) onOpenEvent(target);
+    },
+    [onOpenEvent, targetsByOccurrence],
+  );
 
   function beginDrag(
     domEvent: ReactPointerEvent<HTMLElement>,
@@ -252,7 +290,7 @@ export function WeekView({
       setPreview(null);
 
       if (!drag.moved) {
-        if (drag.mode === 'move') onOpenEvent(drag.id);
+        if (drag.mode === 'move') openOccurrence(drag.key);
         return;
       }
       if (!range) return;
@@ -281,7 +319,7 @@ export function WeekView({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [displayTimezone, onOpenEvent, onUpdateEvent, preview, weekStart]);
+  }, [displayTimezone, openOccurrence, onUpdateEvent, preview, weekStart]);
 
   const rail = hourRail(range);
 
@@ -340,12 +378,12 @@ export function WeekView({
                       // the draggable ones open from the pointerup that turned
                       // out not to be a drag.
                       onClick={
-                        block.draggable ? undefined : () => onOpenEvent(block.segment.event.id)
+                        block.draggable ? undefined : () => openOccurrence(block.segment.key)
                       }
                       onKeyDown={(domEvent) => {
                         if (domEvent.key === 'Enter' || domEvent.key === ' ') {
                           domEvent.preventDefault();
-                          onOpenEvent(block.segment.event.id);
+                          openOccurrence(block.segment.key);
                         }
                       }}
                       style={{

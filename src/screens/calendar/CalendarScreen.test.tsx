@@ -186,3 +186,61 @@ describe('CalendarScreen today sources', () => {
     expect(periodLabel()).toBe(`${date.getFullYear()}年 ${date.getMonth() + 1}月`);
   });
 });
+
+/**
+ * 覆驗抓到的第二個 blocking：Escape 關掉 sheet 之後，快速新增會重新打開舊事件。
+ *
+ * `editingTarget`（DP-082 加的）本來是獨立讀取的，而 Escape 與快速新增只清了
+ * `editingId`，殘留的 target 就繼續代表 `editingEvent`，於是 sheet 停在「編輯行程」
+ * 並顯示舊標題，解析出來的草稿被忽略。
+ */
+describe('CalendarScreen 離開編輯後的殘留狀態（DP-082 覆驗修正）', () => {
+  const sheetHeading = () => container.querySelector('.cal-sheet-bar strong')?.textContent;
+  const titleValue = () =>
+    (container.querySelector('.cal-title-input') as HTMLInputElement | null)?.value;
+
+  async function typeQuickAdd(text: string) {
+    const input = container.querySelector('.cal-quick input') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      input.form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+  }
+
+  async function pressEscape() {
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+  }
+
+  it('Escape 關掉編輯後，快速新增開的是新事件而不是舊的那一筆', async () => {
+    await render(null);
+
+    // 先用 FAB 建一筆，再從列表點開它，讓 editingTarget 真的被設起來。
+    await click(container.querySelector('.cal-fab'));
+    const input = container.querySelector('.cal-title-input') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '舊會議');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      container.querySelector('.cal-sheet')?.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+    });
+    await click(container.querySelectorAll('.cal-segmented button')[2]);
+    await click(container.querySelector('.cal-agenda-item'));
+    expect(sheetHeading()).toBe('編輯行程');
+
+    await pressEscape();
+    expect(container.querySelector('.cal-sheet')).toBeNull();
+
+    await typeQuickAdd('明天下午3點 新會議');
+
+    expect(sheetHeading()).toBe('新增行程');
+    expect(titleValue()).toBe('新會議');
+  });
+});

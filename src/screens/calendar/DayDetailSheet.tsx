@@ -15,6 +15,7 @@ import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/rec
 import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
+import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -38,7 +39,7 @@ export interface DayDetailSheetProps {
   stickers: Sticker[];
   calendars: Calendar[];
   onClose(): void;
-  onOpenEvent(id: string): void;
+  onOpenEvent(target: OccurrenceTarget): void;
   onNewEvent(): void;
   onAddTodo(input: NewTodoInput): void;
   onToggleTodo(id: string): void;
@@ -91,20 +92,30 @@ function DayDetailSheetBody({
     // the second day of an overnight event says 「續」; opening it used to show
     // 「這天沒有行程」.
     const window = { startDateKey: dateKey, endDateKey: dateKey };
-    const rows: { event: CalendarEvent; key: string; time: string; isContinuation: boolean }[] = [];
+    const rows: {
+      event: CalendarEvent;
+      /** Which drawn occurrence this row is — DP-082. */
+      target: OccurrenceTarget;
+      key: string;
+      time: string;
+      isContinuation: boolean;
+    }[] = [];
     // One day is the whole window — DP-081.
     const occurrences = resolveOccurrences({ startDate: dateKey, endDate: dateKey });
 
-    for (const { key: occurrenceKey, event } of occurrences) {
+    for (const resolved of occurrences) {
+      const { key: occurrenceKey, event } = resolved;
+      const target = occurrenceTarget(resolved);
       if (event.allDay) {
         if (eventDateInZone(event, displayTimezone) === dateKey) {
-          rows.push({ event, key: occurrenceKey, time: '全天', isContinuation: false });
+          rows.push({ event, target, key: occurrenceKey, time: '全天', isContinuation: false });
         }
         continue;
       }
       for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, window)) {
         rows.push({
           event,
+          target,
           key: segment.key,
           // The segment's own span: 23:00–24:00 on the first day, 00:00–00:30
           // on the second, rather than the whole event's clock on both.
@@ -128,6 +139,7 @@ function DayDetailSheetBody({
     );
     return rows.map((row) => ({
       event: row.event,
+      target: row.target,
       key: row.key,
       time: row.isContinuation ? `${CONTINUATION_LABEL} ${row.time}` : row.time,
       conflict: conflicting.has(row.key),
@@ -221,7 +233,7 @@ function DayDetailSheetBody({
               className="cal-day-event"
               key={row.key}
               type="button"
-              onClick={() => onOpenEvent(row.event.id)}
+              onClick={() => onOpenEvent(row.target)}
             >
               <span
                 className="cal-day-bar"

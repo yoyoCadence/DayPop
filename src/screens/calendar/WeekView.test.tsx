@@ -199,7 +199,10 @@ describe('WeekView cross-midnight segments', () => {
     act(() => {
       columns[4]![0]!.element.click();
     });
-    expect(onOpenEvent).toHaveBeenCalledWith('overnight');
+    // DP-082: 帶回的是被點到的那一次 occurrence，不再只是事件 id。
+    expect(onOpenEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceEventId: 'overnight' }),
+    );
   });
 
   it('still offers drag and resize on a single-day event', () => {
@@ -244,7 +247,7 @@ describe('WeekView 重複事件（DP-081）', () => {
     expect(columns[3]![0]!.label).toBe('09:00–10:00 週會');
   });
 
-  it('重複事件的色塊不可拖曳也沒有縮放把手，但仍可點開（DP-082 之前）', () => {
+  it('重複事件的色塊不可拖曳也沒有縮放把手，但仍可點開', () => {
     render([weekly()]);
 
     const block = blocksByColumn()[3]![0]!;
@@ -252,7 +255,13 @@ describe('WeekView 重複事件（DP-081）', () => {
     expect(block.hasResizeHandle).toBe(false);
 
     act(() => block.element.click());
-    expect(onOpenEvent).toHaveBeenCalledWith('r1');
+    // 點開的是 08-12 那一次，不是系列本身 —— 這正是範圍對話框要用的資訊（DP-082）。
+    expect(onOpenEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceEventId: 'r1',
+        occurrence: { kind: 'timed', startsAt: '2026-08-12T01:00:00.000Z' },
+      }),
+    );
   });
 
   it('非重複事件仍然可拖曳，這條限制只針對重複', () => {
