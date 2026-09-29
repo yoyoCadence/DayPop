@@ -22,7 +22,7 @@ concurrency:
 jobs:
   verify:
     name: lint / typecheck / test / build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     # 不設定任何 env secret。日後若某個步驟需要密鑰，只能經由 GitHub Secrets
     # 注入到該步驟，不得寫進這個檔案或 repository 其他位置。
@@ -77,7 +77,7 @@ jobs:
 
   e2e:
     name: Playwright / mobile and desktop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -117,7 +117,7 @@ jobs:
   # npm scripts 相同。
   database:
     name: Supabase / db reset and pgTAP
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - name: Checkout
