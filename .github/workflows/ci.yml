@@ -134,12 +134,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 只啟動 Postgres，其餘服務與這些測試無關，排除掉可省下映像下載時間。
+      # 只啟動 Postgres 容器，其餘服務與這些測試無關。
       # 2026-09-29 以同一版 CLI 在本機比對：這個組合與完整 stack 在 db reset
       # 之後，auth／storage 的欄位、trigger、function、policy、index、RLS
       # 開關，以及 extension 與 schema 清單都逐行相同，pgTAP 兩邊都是 150/150。
       # 若日後的測試需要 gotrue 或 storage-api 的 HTTP API，才從這份清單移除。
-      # 這個組合的輸出只有 DB_URL，不會在 log 印出本機 stack 的 API key。
+      #
+      # 「只啟動」不等於「只下載」：CI log 顯示 CLI 初始化 schema 時仍會拉
+      # gotrue、realtime、storage-api 的映像來跑它們各自的 migration（這也是
+      # 不啟動這些服務、auth／storage schema 仍然完整的原因），reset 會再拉
+      # edge-runtime，test 會拉 pg_prove。排除清單省下的是其他服務。
+      #
+      # 映像都來自 public.ecr.aws，匿名拉取有速率限制：這個 job 第一次執行就
+      # 遇到兩次 `toomanyrequests: Rate exceeded`，CLI 自行重試後成功。若這個
+      # job 紅在拉映像，先確認是不是這個原因再重跑，不要當成 migration 壞了。
+      #
+      # 輸出只列出資料庫連線網址，不會在 log 印出本機 stack 的 API key。
       - name: Start local Postgres
         run: >-
           npm run supabase:start --
