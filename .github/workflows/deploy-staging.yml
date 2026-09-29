@@ -21,7 +21,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 與 PR 上完全相同的 lint／typecheck／unit／build／asset check 與 e2e。
+  # 與 PR 上完全相同的 lint／typecheck／unit／build／asset check、e2e，
+  # 以及 DP-084 的 Supabase db reset／pgTAP —— 後者失敗也會擋下部署。
   verify:
     name: Quality gate
     uses: ./.github/workflows/ci.yml

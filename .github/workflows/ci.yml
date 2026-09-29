@@ -1,7 +1,8 @@
 name: CI
 
-# 對 PR 與 main 執行本機品質檢查與 DP-030 Playwright e2e。
-# Supabase db reset／pgTAP 仍待 DP-033，且不連線到正式資料。
+# 對 PR 與 main 執行本機品質檢查、DP-030 Playwright e2e 與 DP-084 的
+# Supabase db reset／pgTAP。全部只在 runner 內跑，不連線到任何 Supabase
+# 專案，也不碰正式資料。
 on:
   pull_request:
   push:
@@ -108,3 +109,47 @@ jobs:
           name: playwright-report
           path: output/playwright/
           retention-days: 14
+
+  # DP-084：migration 必須能從零重建，且 pgTAP（owner RLS、跨帳號隔離、
+  # RPC 與附件清理）全部通過。只用 runner 內的本機 Postgres：不 link 遠端
+  # 專案、不需要任何 secret。CLI 版本由 package-lock 固定，指令與本機的
+  # npm scripts 相同。
+  database:
+    name: Supabase / db reset and pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # 也會安裝 package-lock 固定版本的 Supabase CLI。
+      - name: Install dependencies
+        run: npm ci
+
+      # 只啟動 Postgres，其餘服務與這些測試無關，排除掉可省下映像下載時間。
+      # 2026-09-29 以同一版 CLI 在本機比對：這個組合與完整 stack 在 db reset
+      # 之後，auth／storage 的欄位、trigger、function、policy、index、RLS
+      # 開關，以及 extension 與 schema 清單都逐行相同，pgTAP 兩邊都是 150/150。
+      # 若日後的測試需要 gotrue 或 storage-api 的 HTTP API，才從這份清單移除。
+      # 這個組合的輸出只有 DB_URL，不會在 log 印出本機 stack 的 API key。
+      - name: Start local Postgres
+        run: >-
+          npm run supabase:start --
+          --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      # start 已經套用過一次 migration。這裡仍照 AGENTS.md 的驗收條件
+      # 「可由 db reset 重建」實際跑一次，而不是用「start 成功所以 reset 也會
+      # 成功」的推論代替。
+      - name: Rebuild database from migrations
+        run: npm run supabase:reset
+
+      - name: Database tests (pgTAP)
+        run: npm run supabase:test
