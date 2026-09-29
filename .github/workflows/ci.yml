@@ -124,6 +124,15 @@ jobs:
     name: Supabase / db reset and pgTAP
     runs-on: ubuntu-26.04
     timeout-minutes: 15
+    # DP-088：所有 Supabase 映像直接從 ghcr.io 拉，不經 public.ecr.aws（CLI
+    # 預設）。ECR 對匿名拉取有兩種限制，CI 都遇過：`toomanyrequests: Rate
+    # exceeded`，以及 2026-09-29 讓 staging 部署閘門失敗的 `Data limit
+    # exceeded`。start／reset／test 遇到 ECR 拒絕時 CLI 會自行改拉 ghcr.io，
+    # 但 gen types 啟動 postgres-meta 走的是直接 `docker run`，沒有這個備援，
+    # 所以當時只有型別比對那一步失敗。設成 ghcr.io 之後每一條路徑都不碰
+    # ECR（本機以同一版 CLI 實測：七個映像全部來自 ghcr.io，ECR 參照 0 次）。
+    env:
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -151,9 +160,9 @@ jobs:
       # 不啟動這些服務、auth／storage schema 仍然完整的原因），reset 會再拉
       # edge-runtime，test 會拉 pg_prove。排除清單省下的是其他服務。
       #
-      # 映像都來自 public.ecr.aws，匿名拉取有速率限制：這個 job 第一次執行就
-      # 遇到兩次 `toomanyrequests: Rate exceeded`，CLI 自行重試後成功。若這個
-      # job 紅在拉映像，先確認是不是這個原因再重跑，不要當成 migration 壞了。
+      # 映像來源見 job 層的 SUPABASE_INTERNAL_IMAGE_REGISTRY（DP-088）。若這個
+      # job 仍紅在拉映像，先確認是 registry 的問題再重跑，不要當成 migration
+      # 壞了。
       #
       # 輸出只列出資料庫連線網址，不會在 log 印出本機 stack 的 API key。
       - name: Start local Postgres

@@ -90,6 +90,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-09-29 授權**：專案擁有者這次明確授權 agent「從 Next 選一項；Next 沒有就依既有優先序與依賴自選一項」。當時 DP-014 剩下的段落都被 DP-042／043／054 與 canonical token 決策擋住，Backlog 的候選不是產品決策（DP-072／075／083）、要真機（DP-077），就是要專案擁有者放行（DP-034、版本提升＋DP-067），所以選了原本就寫著「要做需另立任務」、不需要任何產品決策的 **DP-084（Supabase db reset／pgTAP 進 CI）**，完成後已移入 Done。當時 PR #73（DP-082 第三段）仍在等審查，DP-084 從 `main` 另開分支，不依賴它。**這次授權只涵蓋一項**，上面「不要自行挑一個補上」的規則仍然有效。
   > **2026-09-29 指定**：專案擁有者合併 PR #73、#74 後指定 **DP-085**（「DP-085 可修」），完成後已移入 Done。
   > **2026-09-29 委託**：專案擁有者合併 PR #75 後指示「繼續下個任務，你判斷優先度即可」。agent 選了 **DP-086（固定 runner 映像）**：GitHub 公告 `ubuntu-latest` 會在 2026-10-19 至 11-19 分批換成 Ubuntu 26.04，這是有期限、影響所有 PR 檢查與部署閘門，又不需要產品決策的項目。同時發現的 `npm audit` 3 個 moderate 只在開發工具（production 為 0），急迫性較低，登記為 DP-087。DP-086 完成後已移入 Done。
+  > **2026-09-29 回報**：專案擁有者合併 #76 後手動部署 staging，品質閘門的 `Supabase / db reset and pgTAP` 失敗在型別比對步驟（ECR 回 `Data limit exceeded`），build／deploy 因此被跳過。agent 據此開 **DP-088** 修正，完成後已移入 Done。
 
 ## In Progress
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -206,9 +207,15 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-088 — CI 的 Supabase 映像改從 ghcr.io 拉：** 2026-09-29 完成。起因是專案擁有者合併 #76 後手動部署 staging（run `36576716658`），品質閘門的 `Supabase / db reset and pgTAP` 失敗，build／deploy 被跳過。
+  > **成因（從 log 讀出來的，不是推論）**：Supabase CLI 預設從 `public.ecr.aws` 拉映像，這次 ECR 回的是 `error from registry: Data limit exceeded`（匿名拉取的流量額度），不是 DP-084 記過的 `Rate exceeded`。`start`／`reset`／`test` 被拒時 CLI 會自行改拉 `ghcr.io`（同一份 log 裡 ECR 的 `Data limit exceeded` 出現了十多次，而 postgres、gotrue、realtime、storage-api、edge-runtime、pg_prove 六個映像最後都是 `Downloaded newer image for ghcr.io/supabase/…`），所以 pgTAP 仍是 150／150；**只有 DP-085 加的 `gen types` 啟動 postgres-meta 走的是直接 `docker run`，沒有這個備援**，於是 exit 125。同一個 commit（`50ca316`）在 `main` 的 push CI 是綠的 —— 會不會碰到，取決於當次分到的 runner。與 DP-086 的 Ubuntu 26.04 無關。
+  > **修正**：`database` job 設 `SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io`，讓每一條路徑都直接從 ghcr.io 拉、完全不碰 ECR。先確認 CLI 2.111.0 的執行檔確實讀這個變數，再在本機以同一版 CLI 實跑 CI 的完整順序：本機原本只有 ECR 標籤的映像，設定後 start／reset／test／gen types 下載的七個映像（postgres、gotrue、realtime、storage-api、edge-runtime、pg_prove、postgres-meta）**全部來自 ghcr.io，log 中 ECR 參照 0 次**；pgTAP 150／150、型別比對無差異。部署 workflow 以 `uses:` 重用 `ci.yml`，所以部署閘門自動套用。
+  > **沒有改的**：沒有把 DB job 從部署閘門拿掉、沒有加 `continue-on-error`，也沒有改任何程式碼、migration 或相依套件。DP-084 定下的「pgTAP 紅了就不能部署」維持不變；這次修的是讓它不再因為 registry 額度誤擋。
+  > **仍待實證**：staging 的 build／deploy 在 Ubuntu 26.04 上的第一次成功，要等這個修正合併後重新部署才看得到（見 DP-086）。
+
 - [x] **DP-086 — 固定 CI 與部署的 runner 映像：** 2026-09-29 完成。GitHub 公告（[actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)）`ubuntu-latest` 會從 2026-10-19 起分批、在 11-19 前全部改成 Ubuntu 26.04。這個 label 的切換不經過任何 PR，分批期間同一個 PR 的兩次執行甚至可能落在不同作業系統；而 `playwright install --with-deps` 依 OS 版本安裝 apt 套件、DP-084 的 Supabase 流程依賴 Docker，兩者都可能受影響。
   > **做法是先量再定**：在 Draft PR #76 上把 `ci.yml` 三個 job 改成 `ubuntu-26.04` 實跑（run `36572431343`），三個 job 全綠。再與當時的 `ubuntu-latest`（即 24.04，PR #75 run `36569057681`）逐項對照：unit 都是 53 檔、630 個案例；e2e 都是同樣 10 個測試、9 passed 1 skipped（被 skip 的是 `responsive-shell.spec.ts:68` 本來就 `test.skip` 的桌面橫向案例）；pgTAP 150／150；Playwright 沒有「OS 不受支援」之類的警告；warning 行內容兩邊相同（既有的 git init hint 與 Vite chunk size 提示）。因此 `ci.yml` 三處與 `deploy-staging.yml` 兩處全部固定為 `ubuntu-26.04`，等於在可控的時間點先完成遷移。
-  > **沒驗到的**：`deploy-staging.yml` 的 build 與 deploy job 沒有在 26.04 上實際跑過 —— 部署會真的發布，不能拿來探測。build 的步驟和 CI 裡已通過的 subpath base 建置相同，deploy 用的是官方 Pages actions；下一次人工部署才是第一次實證。若失敗在環境，先把這兩處改回 `ubuntu-latest` 再查（workflow 註解已寫明）。
+  > **沒驗到的**：`deploy-staging.yml` 的 build 與 deploy job 沒有在 26.04 上實際跑過 —— 部署會真的發布，不能拿來探測。build 的步驟和 CI 裡已通過的 subpath base 建置相同，deploy 用的是官方 Pages actions；下一次人工部署才是第一次實證。若失敗在環境，先把這兩處改回 `ubuntu-latest` 再查（workflow 註解已寫明）。**2026-09-29 更新**：合併後的第一次部署（run `36576716658`）停在品質閘門的 DB job，原因是 ECR 的 `Data limit exceeded`（見 DP-088），與 26.04 無關；build／deploy 因此被跳過，**所以它們在 26.04 上仍未實證**。
   > **升級規則**：日後要換版，`ci.yml` 三處與 `deploy-staging.yml` 兩處一起改，並讓 CI 完整跑一輪；AGENTS.md、README 與 ADR §7 已同步。**沒有改任何程式碼、測試或相依套件。**
 
 - [x] **DP-085 — generated types 與 migration 的漂移檢查：** 2026-09-29 由專案擁有者在合併 #73／#74 後指定（「DP-085 可修」）並完成。三件事：
@@ -226,7 +233,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **反向驗證（只在本機暫時修改，均已還原）**：把 `daypop_owner_rls.test.sql` 的 `plan(36)` 改成 37，`supabase test db` 回 exit 1（`planned 37 tests but ran 36`、`Result: FAIL`）；另加一檔引用不存在資料表的 migration，`db reset` 回 exit 1，並指出是哪一行 SQL。兩個方向都確認 exit code 會如實反映失敗，這個 job 不是只會變綠。
   > **連帶影響（刻意的）**：`deploy-staging.yml` 以 `uses: ./.github/workflows/ci.yml` 呼叫整份 CI，所以這個 job 也成為 staging 部署的閘門 —— pgTAP 紅了就無法部署。部署 workflow 本身只更新了註解。
   > **沒有做、留給專案擁有者的**：`main` 目前沒有 branch protection 或 ruleset（2026-09-29 以 `gh api` 唯讀確認），所以這個 check 和既有兩個一樣只提供參考、不強制；要不要設成 required 是 repository 設定，agent 不代為變更。generated types 的漂移檢查不在本項範圍，比對結果與待決事項已另登記為 DP-085（同日已完成）。
-  > **CI 實測（PR #74 第一次執行，run `36565222560`）**：三個 job 全部成功。`database` job 套用 15 檔 migration 兩次（start 一次、reset 一次），pgTAP **5 檔 150／150 PASS**。耗時 2 分 04 秒：start 78 秒（大多是拉映像，含兩次速率限制重試）、reset 27 秒、pgTAP 4 秒。另外兩個 job 分別是 1 分 15 秒與 1 分 26 秒；三個 job 並行，所以這次整體等待時間由最慢的這個 job 決定，大約多了 40 秒。**已知風險**：映像來自 public.ecr.aws，匿名拉取有速率限制，這次遇到兩次 `toomanyrequests: Rate exceeded`，CLI 自行重試後成功。若日後這個 job 紅在拉映像，先確認原因再重跑，不要當成 migration 壞了；如果變得頻繁，再考慮快取映像或改用其他 registry（尚未評估）。
+  > **CI 實測（PR #74 第一次執行，run `36565222560`）**：三個 job 全部成功。`database` job 套用 15 檔 migration 兩次（start 一次、reset 一次），pgTAP **5 檔 150／150 PASS**。耗時 2 分 04 秒：start 78 秒（大多是拉映像，含兩次速率限制重試）、reset 27 秒、pgTAP 4 秒。另外兩個 job 分別是 1 分 15 秒與 1 分 26 秒；三個 job 並行，所以這次整體等待時間由最慢的這個 job 決定，大約多了 40 秒。**已知風險**：映像來自 public.ecr.aws，匿名拉取有速率限制，這次遇到兩次 `toomanyrequests: Rate exceeded`，CLI 自行重試後成功。若日後這個 job 紅在拉映像，先確認原因再重跑，不要當成 migration 壞了；如果變得頻繁，再考慮快取映像或改用其他 registry（尚未評估）。**2026-09-29 更新：已由 DP-088 改為一律從 `ghcr.io` 拉，見該條。**
 
 - [x] **DP-081 — 重複事件在所有檢視都只顯示一次（已修正）：** 2026-08-27 完成。`visibleOccurrences()`（[`calendars.ts`](src/domain/calendars.ts)）成為畫事件的檢視唯一的入口，`CalendarScreen` 把它包成 `resolveOccurrences(window)` 往下傳，**由每個檢視自己決定要展開哪一段**：月是它的捲動 buffer、週是那一週、列表是往後 16 天、日詳情是那一天、綜覽是正在瀏覽的年／月／週。`visibleEvents()` 保留，但只給「一個系列一筆」的地方用（搜尋）。
   > **實測結果**（瀏覽器，`FREQ=WEEKLY;COUNT=6`、起點 2026-08-03）：存 **1** 筆事件，月檢視畫出 **6** 個日期（8/3、8/10、8/17、8/24、8/31、9/7）；列表檢視在往後 16 天內列出 2 列；綜覽 8 月計為「共 5 筆」；搜尋仍只有 1 筆；週檢視的色塊沒有縮放把手（不可拖曳）。console 全程 0 error／0 warning。
