@@ -31,7 +31,27 @@ export function agendaRow(page: Page, title: string) {
   return page.locator('.cal-agenda-item').filter({ hasText: title });
 }
 
-export async function openApp(page: Page, path = '/') {
+/**
+ * A fresh browser has never shown any release notes, so since DP-090 the app
+ * opens with the current version's notes on top. Specs about something else
+ * start from a device that has "seen every release" — a sentinel far above any
+ * real version, so this never needs updating on a release. The spec that tests
+ * the notes themselves passes `{ releaseNotesSeen: false }`.
+ */
+const RELEASE_NOTES_SEEN_KEY = 'daypop.release-notes-seen';
+const SEEN_EVERY_RELEASE = '9999.0.0';
+
+export async function openApp(
+  page: Page,
+  path = '/',
+  { releaseNotesSeen = true }: { releaseNotesSeen?: boolean } = {},
+) {
+  if (releaseNotesSeen) {
+    await page.addInitScript(
+      ([key, version]) => window.localStorage.setItem(key, version),
+      [RELEASE_NOTES_SEEN_KEY, SEEN_EVERY_RELEASE] as const,
+    );
+  }
   await page.goto(path, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.dp-viewport')).toBeVisible();
 }

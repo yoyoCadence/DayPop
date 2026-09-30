@@ -1,16 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getAppStorage, type StorageLike } from '../storage/browserStorage';
+import { readSeenRelease, recordSeenRelease, shouldShowReleaseNotes } from './releaseNotesSeen';
 import { isNewerVersion, type ReleaseInfo } from './version';
+
+/** What a manual 檢查更新 found when it did not find an update — DP-090. */
+export type UpdateCheckResult =
+  | { kind: 'latest'; release: ReleaseInfo | null }
+  | { kind: 'failed'; message: string };
 
 export interface AppUpdateState {
   currentVersion: string;
   currentRelease: ReleaseInfo | null;
   availableRelease: ReleaseInfo | null;
+  /**
+   * The running version's notes, until this device has shown them once — DP-090.
+   *
+   * Without this nobody saw release notes at all: the service worker serves
+   * navigations network-first, so relaunching the app already runs the new
+   * build, and a version check then finds nothing newer to announce.
+   */
+  whatsNew: ReleaseInfo | null;
+  /** Outcome of the last manual check, when it found no update — DP-090. */
+  checkResult: UpdateCheckResult | null;
   checking: boolean;
   preparing: boolean;
   error: string | null;
+  /** The manual 檢查更新: never throttled, always ends in visible feedback. */
   checkForUpdate: () => Promise<void>;
   updateNow: () => Promise<void>;
   dismissUpdate: () => void;
+  acknowledgeWhatsNew: () => void;
+  clearCheckResult: () => void;
 }
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -33,9 +53,11 @@ const CHECK_INTERVAL_MS = 30 * 60 * 1000;
  */
 const AUTO_CHECK_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
-export function useAppUpdate(): AppUpdateState {
+export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateState {
   const [currentRelease, setCurrentRelease] = useState<ReleaseInfo | null>(null);
   const [availableRelease, setAvailableRelease] = useState<ReleaseInfo | null>(null);
+  const [seenRelease, setSeenRelease] = useState(() => readSeenRelease(storage));
+  const [checkResult, setCheckResult] = useState<UpdateCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,12 +87,19 @@ export function useAppUpdate(): AppUpdateState {
     });
   }, []);
 
-  const checkForUpdate = useCallback(async () => {
+  /**
+   * One version check. Automatic checks stay silent unless there is an update;
+   * a manual one always ends in feedback — the update dialog, or a result — and
+   * re-offers a release the user earlier put off with 稍後提醒, since pressing
+   * the button is asking for exactly that (DP-090).
+   */
+  const runCheck = useCallback(async (manual: boolean) => {
     // Recorded for every trigger, manual included: a check the user just asked
     // for makes an automatic one moments later redundant.
     lastCheckStartedAtRef.current = Date.now();
     setChecking(true);
     setError(null);
+    if (manual) setCheckResult(null);
     try {
       const versionUrl = `${import.meta.env.BASE_URL}version.json?ts=${Date.now()}`;
       const response = await fetch(versionUrl, { cache: 'no-store' });
@@ -78,23 +107,41 @@ export function useAppUpdate(): AppUpdateState {
       const release = (await response.json()) as ReleaseInfo;
 
       if (release.version === __APP_VERSION__) setCurrentRelease(release);
-      if (
-        isNewerVersion(release.version, __APP_VERSION__) &&
-        dismissedVersionRef.current !== release.version
-      ) {
+      const newer = isNewerVersion(release.version, __APP_VERSION__);
+      if (newer && (manual || dismissedVersionRef.current !== release.version)) {
+        if (manual) dismissedVersionRef.current = null;
         setAvailableRelease(release);
         await registrationRef.current?.update();
+      } else if (manual && !newer) {
+        // An older answer (a stale cache in front of version.json) is still
+        // "nothing newer", but its notes are not this version's to show.
+        setCheckResult({
+          kind: 'latest',
+          release: release.version === __APP_VERSION__ ? release : null,
+        });
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '無法檢查更新');
+      const message = cause instanceof Error ? cause.message : '無法檢查更新';
+      setError(message);
+      if (manual) setCheckResult({ kind: 'failed', message });
     } finally {
       setChecking(false);
     }
   }, []);
 
+  const checkForUpdate = useCallback(() => runCheck(true), [runCheck]);
+
+  const acknowledgeRelease = useCallback(
+    (version: string) => {
+      recordSeenRelease(storage, version);
+      setSeenRelease(version);
+    },
+    [storage],
+  );
+
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !import.meta.env.PROD) {
-      const initialCheck = window.setTimeout(() => void checkForUpdate(), 0);
+      const initialCheck = window.setTimeout(() => void runCheck(false), 0);
       return () => window.clearTimeout(initialCheck);
     }
 
@@ -107,7 +154,7 @@ export function useAppUpdate(): AppUpdateState {
       .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
       .then((registration) => {
         captureWorker(registration);
-        return checkForUpdate();
+        return runCheck(false);
       })
       .catch((cause: unknown) => {
         setError(cause instanceof Error ? cause.message : '無法註冊離線更新服務');
@@ -116,13 +163,13 @@ export function useAppUpdate(): AppUpdateState {
     // The timer is not throttled: it fires every 30 minutes, which is already
     // well outside the window, and it is the guarantee that a release is noticed
     // without any user action.
-    const timer = window.setInterval(() => void checkForUpdate(), CHECK_INTERVAL_MS);
+    const timer = window.setInterval(() => void runCheck(false), CHECK_INTERVAL_MS);
 
     /** An automatic trigger; runs only if the window has passed — DP-035. */
     const checkIfDue = () => {
       const startedAt = lastCheckStartedAtRef.current;
       if (startedAt !== null && Date.now() - startedAt < AUTO_CHECK_MIN_INTERVAL_MS) return;
-      void checkForUpdate();
+      void runCheck(false);
     };
 
     const onVisibility = () => {
@@ -138,9 +185,12 @@ export function useAppUpdate(): AppUpdateState {
       window.removeEventListener('online', onOnline);
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
     };
-  }, [captureWorker, checkForUpdate]);
+  }, [captureWorker, runCheck]);
 
   const updateNow = useCallback(async () => {
+    // The user just read these notes in the update dialog; the build that the
+    // reload brings up must not announce them a second time — DP-090.
+    if (availableRelease) acknowledgeRelease(availableRelease.version);
     setPreparing(true);
     applyWhenReadyRef.current = true;
     reloadOnControllerChangeRef.current = true;
@@ -164,12 +214,21 @@ export function useAppUpdate(): AppUpdateState {
     // PWA registration). Reloading fetches the new app shell without touching
     // localStorage or IndexedDB.
     window.location.reload();
-  }, []);
+  }, [acknowledgeRelease, availableRelease]);
+
+  const whatsNew =
+    currentRelease &&
+    !availableRelease &&
+    shouldShowReleaseNotes(currentRelease.version, seenRelease)
+      ? currentRelease
+      : null;
 
   return {
     currentVersion: __APP_VERSION__,
     currentRelease,
     availableRelease,
+    whatsNew,
+    checkResult,
     checking,
     preparing,
     error,
@@ -178,6 +237,17 @@ export function useAppUpdate(): AppUpdateState {
     dismissUpdate: () => {
       dismissedVersionRef.current = availableRelease?.version ?? null;
       setAvailableRelease(null);
+    },
+    acknowledgeWhatsNew: () => {
+      if (currentRelease) acknowledgeRelease(currentRelease.version);
+    },
+    clearCheckResult: () => {
+      // The 已是最新 dialog shows the running version's notes, so closing it
+      // counts as having seen them.
+      if (checkResult?.kind === 'latest' && checkResult.release) {
+        acknowledgeRelease(checkResult.release.version);
+      }
+      setCheckResult(null);
     },
   };
 }

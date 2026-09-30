@@ -3,6 +3,7 @@ import { AuthDialog } from './auth/AuthDialog';
 import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
 import { useStorageMode } from './hooks/useStorageMode';
+import { ReleaseNoticeDialog } from './pwa/ReleaseNoticeDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdateState } from './pwa/appUpdateContext';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
@@ -99,14 +100,32 @@ export default function App() {
       dialogs={
         <>
           <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
-          {updater.availableRelease && (
+          {/* At most one release dialog at a time, most actionable first: an
+              update to take, then the answer to a 檢查更新 the user just
+              pressed, then this version's notes if this device has not shown
+              them yet — DP-090. */}
+          {updater.availableRelease ? (
             <UpdateDialog
               release={updater.availableRelease}
               preparing={updater.preparing}
               onUpdate={() => void updater.updateNow()}
               onLater={updater.dismissUpdate}
             />
-          )}
+          ) : updater.checkResult ? (
+            <ReleaseNoticeDialog
+              notice={{
+                kind: 'check',
+                currentVersion: updater.currentVersion,
+                result: updater.checkResult,
+              }}
+              onClose={updater.clearCheckResult}
+            />
+          ) : updater.whatsNew ? (
+            <ReleaseNoticeDialog
+              notice={{ kind: 'whats-new', release: updater.whatsNew }}
+              onClose={updater.acknowledgeWhatsNew}
+            />
+          ) : null}
         </>
       }
     >
