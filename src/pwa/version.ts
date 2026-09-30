@@ -3,7 +3,6 @@ export interface ReleaseInfo {
   releasedAt: string;
   title: string;
   changes: string[];
-  dataSchemaVersion: number;
 }
 
 export function isNewerVersion(candidate: string, current: string): boolean {
