@@ -97,7 +97,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-09-30 本次委託**：專案擁有者授權自選並完成一項後續開發工作。Next 為空，DP-014／083／072／075 仍有產品決策依賴，DP-077 仍需真機證據；因此從 DP-034 拆出可獨立驗證、前置 DP-056／030 已滿足的 **DP-091（遊客 JSON 備份／還原瀏覽器回歸）**，由 Backlog 經 Next、In Progress 完成後移入 Done。這只完成本子項，不改變 DP-034 是否等待 DP-032 的放行決策。
 
+> **2026-10-01 本次委託**：專案擁有者合併 PR #81 後授權繼續。上述依賴仍未解除，沿資料保存優先序，將 DP-091 交接的帳號 JSON 路徑拆成 **DP-092**，由 Backlog 經 Next、In Progress 完成後移入 Done。新增回歸重現預期匯入拒絕會卸載整個 App，因此本項包含必要的 DataProvider 錯誤分類與 saving 修正；沒有擴至 schema、Auth、版本或部署。DP-034 父任務仍未完成。
+
 ## In Progress
+
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
   > **2026-08-27 這一段完成的是事件 sheet 的 `全天` 開關**：依原稿 `:586` 從 checkbox 改為 44×25 軌道／21px 旋鈕，整列也改回原稿的「上分隔線＋左右對齊」而不是有外框的欄位。行為不變（開啟時收起開始／結束），鍵盤可 Tab 抵達、空白鍵可切換、焦點框 2px。
   > **同時查出一個未登記的缺口，已開為 DP-081**：重複事件在所有檢視只會顯示一次。這不是這一段造成的。**DP-081 已於 2026-08-27 完成並移入 Done**，剩下的 DP-082 仍在 Backlog。
@@ -165,6 +168,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-034 — 正式上線檢查：** 執行備份／還原、資料刪除、隱私說明、錯誤監控、效能 budget、PWA 更新，以及同裝置登出／重新登入後的資料保存 smoke test；確認已部署 release note 不再被同版號改寫。
   > **2026-09-30 子項進度**：DP-091 已補上遊客 JSON 備份／還原的本機 Chromium 自動化回歸，見 Done 與 [`docs/deployment.md`](docs/deployment.md) §5.5。登入帳號、真機／staging 備份還原及本條其他項目未由此驗證，父任務維持未完成。
+  > **2026-10-01 子項進度**：DP-092 已補上帳號 JSON 還原與附件拒絕匯入的本機 harness 回歸，並修正拒絕後 App 卸載與 saving 未清除；見 Done 與同份交接 §5.6。使用 FakeSupabase 的證據不等於真實雲端／session restore、RLS、Storage binary、真機或 staging 驗收，父任務仍未完成。
 
 ### 原型假功能與待補能力
 
@@ -206,6 +210,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-092 — 登入帳號 JSON 還原與附件保護瀏覽器回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/account-json-backup.spec.ts`，兩個情境 × mobile／desktop 共 4 個案例：真實下載／選檔／取消／確認還原帳號事件、待辦與偏好；登出、清掉 synthetic account cache 再重登，確認 adapter 重新讀回且遊客原始 bytes 不變；帳號有附件時備份只列略過筆數，拒絕取代仍保留預覽與錯誤訊息，不顯示成功，快取及重新讀回的資料、附件 metadata 全部保留。
+  > **必要修正**：DataProvider 原先把寫入前的 `DataTransferError` 當成 fatal load failure，導致 App／預覽卸載。改為保留 ready snapshot 與既有 warning，由預覽呈現拒絕原因；rejection 後 `saving` 按剩餘 queue 清除或保留。新增 3 個 provider 回歸、既有 remote rejection 補一個 saving 斷言；這 4 個單元案例與附件 e2e 均先在修正前重現失敗。序列化順序、storage write barrier、未知錯誤與附件保護契約維持不變。
+  > **驗證**：lint、typecheck、unit **55 檔 650/650**、build、check:build 通過；完整 e2e **29 passed、3 skipped**（原有桌面不適用的橫向／短螢幕案例），本項新增 **4/4**。browser timezone 實印 `Asia/Taipei`，單元流程實印 `Etc/GMT-8`，未宣稱跨時區矩陣。console warning／error 與 pageerror 為 0；build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：fake DB 只存在當頁記憶體，完整 page reload 會重建；不宣稱真實 Supabase durability／Auth session restore、RLS、Storage binary 或真機保存已驗證。未使用 Supabase MCP、未修改 schema／版本／部署。ICS、真機與 staging 備份還原及 DP-034 的其餘驗收留待後續；詳見 [`docs/deployment.md`](docs/deployment.md) §5.6。
 
 - [x] **DP-091 — 遊客 JSON 備份／還原瀏覽器回歸（DP-034 子項）：** 2026-09-30 完成。新增 `e2e/json-backup.spec.ts` 與獨立 synthetic fixture，四個情境 × mobile／desktop 共 8 個案例：真實下載後核對完整可攜資料；透過 UI 刪除／新增行程及修改偏好後，預覽、取消按鈕與 Escape 都不得寫入，同頁可重選同一檔；確認取代後復原完整資料並在 reload、畫面與再次匯出三處驗證；截斷 JSON、較新格式版本、缺必要欄位均拒絕且保留原始 storage bytes，拒絕後仍可選有效檔案。fixture 含兩個日曆、重複與單次取消／替換、跨午夜及多日全天事件、子待辦、貼圖與非預設偏好；expected data 不呼叫 production 匯入／匯出 helper 產生。
   > **必要工具修改**：加入 Node 24 對應的 `@types/node` 開發型別與 e2e `types: ["node"]`，用於讀取真實下載檔與建立無效測試檔；無 runtime 相依、UI、schema、版本或部署修改，也沒有呼叫 Supabase MCP。

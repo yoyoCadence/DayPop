@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-092（2026-10-01）**：`e2e/account-json-backup.spec.ts` 在 mobile／desktop 共新增 4 個帳號 JSON 案例，驗證確認還原、清除 synthetic account cache 後重登重新讀取、guest bytes 隔離，以及有附件時拒絕取代且資料保留。修正該回歸發現的 DataProvider 錯誤分類：預期匯入拒絕由原預覽顯示，保留 snapshot／既有警告並正確結束 saving，不再卸載整個 App。harness 限制與交接見 [`deployment.md`](deployment.md) §5.6；未驗證真實 Supabase 或真機。
+
 - **DP-091（2026-09-30）**：`e2e/json-backup.spec.ts` 在 mobile／desktop 共新增 8 個遊客 JSON 備份案例，走真實 download 與選檔，驗證預覽／取消不寫入、確認取代及 reload 保存、無效檔案拒絕。資料含重複例外、子待辦、貼圖與偏好；不是用同份空資料來回匯入。範圍與剩餘限制見 [`deployment.md`](deployment.md) §5.5；不取代 DP-034 正式上線驗收。
 
 - `e2e/guest-crud.spec.ts` 走 production 真實入口，於 390×844 與 1280×900 驗證 guest event／todo 的建立、修改、reload 保存與刪除。

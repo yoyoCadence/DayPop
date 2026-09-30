@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { DataTransferError } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { CachedRemoteLoadError } from './cachedSupabaseRepository';
@@ -92,8 +93,8 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
             const saving = finishWrite();
             setState((current) => {
               const failure = toWriteFailureState(error, current);
-              return failure.status === 'ready' && saving
-                ? { ...failure, saving: true }
+              return failure.status === 'ready'
+                ? { ...failure, saving }
                 : failure;
             });
           },
@@ -219,6 +220,12 @@ function toFailureState(error: unknown): DataState {
 function toWriteFailureState(error: unknown, current: DataState): DataState {
   if (error instanceof LocalDataBlockedError) {
     return { status: 'blocked', result: error.result };
+  }
+  // Import validation can refuse a command before any write (e.g. an account
+  // still has attachments). Keep the dialog mounted to show its awaited
+  // rejection, and retain the last snapshot and any existing sync warning.
+  if (error instanceof DataTransferError && current.status === 'ready') {
+    return current;
   }
   if (error instanceof RemoteDataError && current.status === 'ready') {
     return {

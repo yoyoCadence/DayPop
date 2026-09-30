@@ -268,3 +268,27 @@ DP-034 的備份／還原項目已有 DP-056 的 domain、adapter 與元件測�
 重跑：`npm run test:e2e -- e2e/json-backup.spec.ts`。完整 e2e 為 **25 passed、3 skipped**，跳過的是原有桌面專案不適用的手機橫向／短視窗案例；lint、typecheck、55 檔 647 個單元測試、build、check:build 通過。正式 bundle 仍有既有 >500 kB chunk 提示。為實際讀取下載檔與建立無效檔案，新增 `@types/node` 24 的開發相依並在 e2e TypeScript config 明確載入 Node 型別。
 
 **仍待後續任務**：登入帳號 JSON 還原、ICS 瀏覽器流程、真機檔案選擇器、staging 備份還原，以及 DP-034 的資料刪除／隱私／監控／效能／PWA 更新等驗收。附件本來就不包含在 JSON 備份，這次也未驗證帳號帶附件時的取代阻擋 UI；其既有 domain／adapter 測試不等同實機驗收。DP-032 是否仍為 DP-034 放行前置，仍依任務板等待專案擁有者定案。
+
+> **2026-10-01 更新**：上述登入帳號 JSON 路徑與附件取代阻擋 UI，已由 DP-092 補上本機 harness 回歸，詳見下一節；真實服務與裝置限制仍保留。
+
+### 5.6 帳號 JSON 還原與匯入拒絕交接（DP-092，2026-10-01）
+
+`e2e/account-json-backup.spec.ts` 沿用 dev-only auth harness，以真實 App、SessionDataProvider、authenticated／cached repository 配合 FakeSupabase，在 mobile／desktop 驗證兩個情境（共 **4/4** 通過）：
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| UI 建立帳號事件、待辦及偏好 → 真實 JSON 下載 | 備份與帳號可攜資料一致，不含遊客行程。 |
+| 刪除舊事件、新增事件及修改偏好 → 選檔／取消／重選／確認 | 預覽與取消不改快取；確認後舊事件與偏好還原、新事件移除，顯示成功及已同步。 |
+| 登出 → 移除該測試帳號快取 → 重登 → 再匯出 | 新 adapter 重新讀回相同資料與偏好；登出只見原遊客行程，guest 原始 bytes 全程不變。 |
+| 建立附件 → 匯出 → 改事件標題 → 選檔／確認 | 備份只有略過附件筆數、不含 metadata；確認取代被拒絕、預覽仍可操作且顯示錯誤，不顯示成功、不改快取與遊客資料。 |
+| 拒絕後登出／移除帳號快取／重登 | 事件維持新標題，附件 metadata 與全部帳號資料仍在。 |
+
+**本項找到並修正的問題**：附件保護的 `DataTransferError` 在任何寫入前就拒絕操作，但 DataProvider 原先把它當成 fatal load failure，導致整個 App 與預覽卸載。現在保留 ready snapshot 與既有同步警告，由等待 promise 的預覽呈現拒絕原因；rejection 後的 `saving` 也依實際剩餘 queue 清除或保留。未知錯誤、storage write barrier 與序列化順序維持原契約。沒有修改 schema、RPC 或附件保護規則。
+
+新增三個 provider 單元案例涵蓋一般／快取警告狀態下的拒絕、後續操作及已排隊寫入；既有遠端寫入拒絕案例另驗證 `saving` 清除。修正前這四個斷言案例及附件 e2e 均先重現失敗；修正後 provider／race 兩檔 **16/16** 通過。
+
+重跑：`npm run test:e2e -- e2e/account-json-backup.spec.ts`。本機 Windows／Node 24.14.1、Chromium 390×844 與 1280×900；固定在 `2026-10-01T04:00:00Z`，每個案例印出實際 browser timezone `Asia/Taipei`。初始化開始即監聽 console warning／error 與 pageerror，均要求為 0。
+
+完整本機驗證：lint、typecheck、unit **55 檔 650/650**、build、check:build 通過；完整 e2e **29 passed、3 skipped**（原有桌面不適用的手機橫向／短視窗案例）。單元流程另印出實際 timezone `Etc/GMT-8`，本次未宣稱跨時區矩陣。build 仍有既有 >500 kB chunk 提示。
+
+**限制與下一步**：harness 的 fake DB 只存在該頁記憶體，完整 page reload 會重建，故這裡用登出後清掉 synthetic account cache 再重登來證明 adapter 重新讀取，不能宣稱真實 Supabase durability、Auth session restore、RLS 或 Storage binary 保存已通過。沒有使用 Supabase MCP、真實帳號或正式資料。ICS 瀏覽器流程、真機檔案選擇器、staging 備份還原與 DP-034 其他驗收仍未完成；本子項不改變 DP-032／034 的放行決策。
