@@ -878,6 +878,12 @@ footer {
 
 .dialog-backdrop .update-dialog {
   width: min(100%, 480px);
+  /* The backdrop cannot scroll (`.dp-viewport` clips it), so a dialog taller
+   * than the screen used to push both buttons out of reach — phone landscape,
+   * iPhone SE — with no way to dismiss it. The dialog scrolls itself instead. */
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: white;
   padding: 24px;
 }
