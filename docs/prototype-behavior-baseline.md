@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-091（2026-09-30）**：`e2e/json-backup.spec.ts` 在 mobile／desktop 共新增 8 個遊客 JSON 備份案例，走真實 download 與選檔，驗證預覽／取消不寫入、確認取代及 reload 保存、無效檔案拒絕。資料含重複例外、子待辦、貼圖與偏好；不是用同份空資料來回匯入。範圍與剩餘限制見 [`deployment.md`](deployment.md) §5.5；不取代 DP-034 正式上線驗收。
+
 - `e2e/guest-crud.spec.ts` 走 production 真實入口，於 390×844 與 1280×900 驗證 guest event／todo 的建立、修改、reload 保存與刪除。
 - `e2e/auth-attachment.spec.ts` 走 dev-only auth harness，掛載真實 App、SessionDataProvider 與 authenticated repository，使用既有 FakeSupabase 驗證登入、帳號同步、事件、附件 upload／signed URL／delete 與登出隔離；它不驗證真實 Supabase provider、RLS 或正式資料。
 - `e2e/responsive-shell.spec.ts` 驗證手機不出現展示框、桌面維持 canonical 404×824 frame，並檢查設定頁與 sheet 不水平溢出。三個 specs 都要求 console error／warning 與 page error 為 0。

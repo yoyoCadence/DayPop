@@ -248,3 +248,23 @@ git push origin rollback/staging
 ### 5.4 Google OAuth 的已知品牌差異
 
 Google account chooser 目前會顯示 Supabase 預設的 `<project-ref>.supabase.co` callback hostname，而不是 DayPop 網址；這是 Supabase 預設 OAuth domain 的既有行為，不是 redirect drift。Google Cloud project 僅要求 `openid`、`userinfo.email`、`userinfo.profile` 三個基本登入 scope，Client Secret 只保存於 Google／Supabase 的 server-side 設定與專案擁有者的密碼管理器，未進 repo、前端環境變數或對話紀錄。專案擁有者已定案熟人使用階段保留 provider；若日後面向一般使用者，應先評估自有網域與 Supabase paid custom-domain add-on，再把新 callback URI 加到 Google client 後啟用，不能直接改掉既有 callback。
+
+### 5.5 遊客 JSON 備份／還原自動化交接（DP-091，2026-09-30）
+
+DP-034 的備份／還原項目已有 DP-056 的 domain、adapter 與元件測試，但瀏覽器整段流程只有一次手動 smoke 紀錄。DP-091 將其中可獨立完成的遊客 JSON 路徑加入既有 Playwright／CI；父任務仍未結案，這不是 staging 或正式上線驗收。
+
+`e2e/json-backup.spec.ts` 使用 `e2e/fixtures/backupData.ts` 的純 synthetic 資料，預期值不經 production 匯入／匯出 helper 產生。資料包含兩個日曆、重複事件與取消／替換例外、跨午夜與多日全天事件、父子待辦、貼圖及非預設偏好。fixture 只寫入該測試的隔離 browser context 一次，reload 不重新灌資料，避免掩蓋保存失敗。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 設定 → 匯出資料 → 真實 download | 檔名、格式與完整可攜資料正確，原 storage bytes 不變。 |
+| UI 刪除／新增行程、修改寵物名字 → 選擇下載檔 | 預覽顯示正確筆數與取代警告，初始焦點在確認鈕；預覽期間不寫入。 |
+| 取消 → 同頁重選同一檔 → Escape → reload | 兩種取消都保留原 bytes；同一 file input 可以再次觸發選檔。 |
+| 重新選檔 → 取代資料 → reload → 再匯出 | 被刪除的事件回來，備份後新增事件移除，所有資料與偏好精確還原，revision 只增加一次；UI 與再次下載均一致。 |
+| 截斷 JSON／較新格式版本／缺必要欄位 | 顯示對應錯誤、不開預覽、原 bytes 與 reload 結果不變；之後仍可選取有效檔案。 |
+
+本機 Windows／Node 24.14.1，以 Chromium 390×844 與 1280×900 跑上述四個情境，共 **8/8** 通過；測試固定在 `2026-09-30T04:00:00Z`，每個案例均印出實際 `Intl.DateTimeFormat().resolvedOptions().timeZone = Asia/Taipei`，沒有宣稱跨時區矩陣。包含初始化在內的 console warning／error 與 pageerror 均要求為 0。
+
+重跑：`npm run test:e2e -- e2e/json-backup.spec.ts`。完整 e2e 為 **25 passed、3 skipped**，跳過的是原有桌面專案不適用的手機橫向／短視窗案例；lint、typecheck、55 檔 647 個單元測試、build、check:build 通過。正式 bundle 仍有既有 >500 kB chunk 提示。為實際讀取下載檔與建立無效檔案，新增 `@types/node` 24 的開發相依並在 e2e TypeScript config 明確載入 Node 型別。
+
+**仍待後續任務**：登入帳號 JSON 還原、ICS 瀏覽器流程、真機檔案選擇器、staging 備份還原，以及 DP-034 的資料刪除／隱私／監控／效能／PWA 更新等驗收。附件本來就不包含在 JSON 備份，這次也未驗證帳號帶附件時的取代阻擋 UI；其既有 domain／adapter 測試不等同實機驗收。DP-032 是否仍為 DP-034 放行前置，仍依任務板等待專案擁有者定案。
