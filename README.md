@@ -117,7 +117,7 @@ Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase D
 ## 版本發布方式
 
 1. 更新 `package.json` 的 `version`。
-2. 在 `release-notes.json` 新增同版本的公告內容，最新版本放第一筆；版本正式部署後，該版公告不再修改。
+2. 在 `release-notes.json` 新增同版本的公告內容，最新版本放第一筆；版本正式部署後，該版公告不再修改。**公告是由使用者手上的舊版 App 畫出來的**：0.3.0（含）以前的更新對話框不能捲動，只要還有使用者可能停在那些版本，公告就要短到在舊版畫面上、375×667 直向與 932×430 橫向都看得到兩顆按鈕（0.4.0 以 7 條、約 165 字通過）。
 3. 執行 `npm run build`；prebuild 會產生 `public/version.json` 與含版本 cache 名稱的 `public/sw.js`。
 4. 部署 `dist/`。使用者開啟 App、回到前景、恢復連線或手動檢查時會取得不快取的 `version.json`，看到更新內容後可選擇立即更新或稍後提醒。
 
