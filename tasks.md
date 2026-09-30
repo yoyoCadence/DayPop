@@ -90,6 +90,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-09-29 授權**：專案擁有者這次明確授權 agent「從 Next 選一項；Next 沒有就依既有優先序與依賴自選一項」。當時 DP-014 剩下的段落都被 DP-042／043／054 與 canonical token 決策擋住，Backlog 的候選不是產品決策（DP-072／075／083）、要真機（DP-077），就是要專案擁有者放行（DP-034、版本提升＋DP-067），所以選了原本就寫著「要做需另立任務」、不需要任何產品決策的 **DP-084（Supabase db reset／pgTAP 進 CI）**，完成後已移入 Done。當時 PR #73（DP-082 第三段）仍在等審查，DP-084 從 `main` 另開分支，不依賴它。**這次授權只涵蓋一項**，上面「不要自行挑一個補上」的規則仍然有效。
   > **2026-09-29 指定**：專案擁有者合併 PR #73、#74 後指定 **DP-085**（「DP-085 可修」），完成後已移入 Done。
   > **2026-09-29 委託**：專案擁有者合併 PR #75 後指示「繼續下個任務，你判斷優先度即可」。agent 選了 **DP-086（固定 runner 映像）**：GitHub 公告 `ubuntu-latest` 會在 2026-10-19 至 11-19 分批換成 Ubuntu 26.04，這是有期限、影響所有 PR 檢查與部署閘門，又不需要產品決策的項目。同時發現的 `npm audit` 3 個 moderate 只在開發工具（production 為 0），急迫性較低，登記為 DP-087。DP-086 完成後已移入 Done。
+  > **2026-09-30 委託**：專案擁有者確認 staging 部署成功、合併 #77 後指示「請做下一步」。agent 依前一輪的建議接 **DP-087**，完成後已移入 Done。版本提升（0.4.0＋DP-067）雖然也到時候了，但版號與公告內容要由專案擁有者定案，沒有自行開始。
   > **2026-09-29 回報**：專案擁有者合併 #76 後手動部署 staging，品質閘門的 `Supabase / db reset and pgTAP` 失敗在型別比對步驟（ECR 回 `Data limit exceeded`），build／deploy 因此被跳過。agent 據此開 **DP-088** 修正，完成後已移入 Done。
 
 ## In Progress
@@ -164,7 +165,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-08-14 專案擁有者定案：採 (a) 刪除欄位**，同步移除 generator、`ReleaseInfo` 型別與相關測試中的欄位。理由是沒有任何程式讀它、release version 與 user-data schema 本來就必須獨立，而把 schema version 放在 release metadata 裡容易讓未來程式錯誤耦合兩者；等真的需要更新相容性協議時，再設計專門且有消費者的 metadata。
   >
   > **但不能現在做。** v0.3.0 已部署，generated `version.json` 不可在相同版號下改寫成不同內容（AGENTS.md）。**DP-067 要併入下一次版本提升**，與新版號一起重新產生 `version.json` 與 `sw.js`。
-- [ ] **DP-087 — `npm audit` 的 3 個 moderate（只在開發工具）：** 2026-09-29 發現，每個 CI job 的 `npm ci` 都會印出「3 moderate severity vulnerabilities」。`npm audit --omit=dev` 為 0，production 相依不受影響。三個分別是 `@vitest/mocker`（連帶 `vitest`；GHSA-82fw-gwwq-j7x9，redirect mock 的路徑穿越／任意讀檔）與 `undici`（GHSA-3wwx-pv8p-q78v，WebSocket permessage-deflate 解壓縮的未處理錯誤造成 DoS）。`npm audit` 表示 `npm audit fix` 可修，沒有要求 `--force`。**動手前先確認**：`vitest` 與 `undici` 各會升到哪一版、`undici` 是被誰拉進來的（`npm ls undici`），以及修完四個閘門與 e2e 都要重跑。
 
 ### 原型假功能與待補能力
 
@@ -200,12 +200,18 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e，DP-084 起另有 Supabase `db reset`／pgTAP job（runner 內只啟動本機 Postgres）。DP-086 起所有 job 的 runner 固定為 `ubuntu-26.04`，不用 `ubuntu-latest`。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
-- `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。
+- `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。DP-087（2026-09-30）後，含開發相依的完整 `npm audit` 也是 0。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime。~~目前此電腦未偵測到 Docker~~ —— **2026-08-31 更正：這台電腦有裝 Docker Desktop**，先前偵測不到是因為 CLI 不在 PATH。加上 `C:\Program Files\Docker\Docker\resources\bin` 並先啟動 `Docker Desktop.exe`（daemon 起來約 10 秒）之後，`npx supabase start`／`db reset`／`test db --local` 都可用，已實跑 15 檔 migration 與 5 檔 pgTAP 共 150 個斷言。**因此「沒有 Docker 所以 DB 測試跑不了」不再是可接受的理由**，動到 migration 就要實跑。附帶：`supabase/.temp` 已加入 `eslint.config.js` 的 ignores，否則跑過 stack 之後 `npm run lint` 會被 CLI 產生的檔噴 99 個錯。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-087 — `npm audit` 的漏洞（只在開發相依）：** 2026-09-30 完成，**只改了 `package-lock.json`**，`package.json` 沒有動。
+  > **動手時的數字已經和登記時不同**：2026-09-29 登記時是 3 個 moderate；隔天 advisory 資料庫更新後變成 **4 個（2 moderate、2 high）**，`undici` 升為 high 並多了九個 advisory，另外新增 `brace-expansion`（high）。四個全部只在開發相依（lockfile 標記 `dev`），`npm audit --omit=dev` 前後都是 0。
+  > **`npm audit fix`（沒有 `--force`）實際改了 11 個套件，全部是 dev、全部是 patch／minor**：`vitest` 與七個 `@vitest/*` 4.1.10 → 4.1.11、`undici` 7.29.0 → 7.30.0（由 `jsdom` 引用）、`brace-expansion` 5.0.9 → 5.0.12（由 `eslint` → `minimatch` 引用）、`tinyrainbow` 3.1.1 → 3.2.0。修完 `npm audit` 為 0。
+  > **驗證**：以 `npm ci` 照新 lockfile 重裝後，lint／typecheck／check:migrations／build／check:build 通過；unit 53 檔、630 個案例通過。**有一次失敗要如實記下**：`npm ci` 之後的第一次 `npm run test` 有 15 個測試檔報 `Failed to start forks worker … Timeout waiting for worker to respond`（worker 啟動逾時，不是斷言失敗），只跑了 38 檔。之後原樣重跑兩次都通過（13 秒）；再做受控對照 —— 4.1.10 與 4.1.11 各自「`npm ci` 後立刻跑」—— 兩者都通過（50 秒與 47 秒，都比熱啟動慢得多）。**結論只能是「觀察到一次、無法重現、成因未確認」**，沒有證據指向 4.1.11；若日後 CI 出現同樣的 worker 啟動逾時，這一條是線索。
+  > **原條目：** **DP-087 — `npm audit` 的 3 個 moderate（只在開發工具）：** 2026-09-29 發現，每個 CI job 的 `npm ci` 都會印出「3 moderate severity vulnerabilities」。`npm audit --omit=dev` 為 0，production 相依不受影響。三個分別是 `@vitest/mocker`（連帶 `vitest`；GHSA-82fw-gwwq-j7x9，redirect mock 的路徑穿越／任意讀檔）與 `undici`（GHSA-3wwx-pv8p-q78v，WebSocket permessage-deflate 解壓縮的未處理錯誤造成 DoS）。`npm audit` 表示 `npm audit fix` 可修，沒有要求 `--force`。**動手前先確認**：`vitest` 與 `undici` 各會升到哪一版、`undici` 是被誰拉進來的（`npm ls undici`），以及修完四個閘門與 e2e 都要重跑。
 
 - [x] **DP-088 — CI 的 Supabase 映像改從 ghcr.io 拉：** 2026-09-29 完成。起因是專案擁有者合併 #76 後手動部署 staging（run `36576716658`），品質閘門的 `Supabase / db reset and pgTAP` 失敗，build／deploy 被跳過。
   > **成因（從 log 讀出來的，不是推論）**：Supabase CLI 預設從 `public.ecr.aws` 拉映像，這次 ECR 回的是 `error from registry: Data limit exceeded`（匿名拉取的流量額度），不是 DP-084 記過的 `Rate exceeded`。`start`／`reset`／`test` 被拒時 CLI 會自行改拉 `ghcr.io`（同一份 log 裡 ECR 的 `Data limit exceeded` 出現了十多次，而 postgres、gotrue、realtime、storage-api、edge-runtime、pg_prove 六個映像最後都是 `Downloaded newer image for ghcr.io/supabase/…`），所以 pgTAP 仍是 150／150；**只有 DP-085 加的 `gen types` 啟動 postgres-meta 走的是直接 `docker run`，沒有這個備援**，於是 exit 125。同一個 commit（`50ca316`）在 `main` 的 push CI 是綠的 —— 會不會碰到，取決於當次分到的 runner。與 DP-086 的 Ubuntu 26.04 無關。
