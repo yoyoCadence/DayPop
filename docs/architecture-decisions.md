@@ -118,6 +118,8 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
 - 自動版本檢查要節流：定時檢查可維持較長間隔；回到前景或恢復連線的自動檢查，距上次成功／嘗試未滿 5 分鐘時不重送。使用者手動按「檢查更新」永遠可以立即執行。
 - release note 在該版本正式部署後視為不可變；後續修正必須使用新版本號與新公告。App release version 與 user-data schema version 持續分開管理。
+- 公告要能被看到（DP-090）：service worker 對導覽採網路優先，重新開啟 App 就已經在跑新版，更新對話框只會出現在「舊版仍在執行」的 session。因此每台裝置第一次執行某版時，由 App 自己顯示該版公告一次；「看過哪一版」是裝置層級的介面狀態（`daypop.release-notes-seen`），不寫進 user data、不同步，讀寫失敗只會讓公告多出現一次。手動「檢查更新」一定要有可見結果，自動檢查維持安靜。
+- 更新公告是由使用者手上的舊版程式畫出來的（DP-089）：0.3.0（含）以前的對話框不能捲動，只要還可能有人停在那些版本，公告長度就以舊版畫面放得下為準。
 
 ## 6. 資料庫與日期邊界
 

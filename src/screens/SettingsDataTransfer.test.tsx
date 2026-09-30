@@ -32,6 +32,10 @@ const updater = {
   checkForUpdate: () => Promise.resolve(),
   updateNow: () => Promise.resolve(),
   dismissUpdate: () => {},
+  whatsNew: null,
+  checkResult: null,
+  acknowledgeWhatsNew: () => {},
+  clearCheckResult: () => {},
 };
 
 const ics = [
