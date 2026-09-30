@@ -119,7 +119,7 @@ Email Auth 已啟用且需要信箱驗證。Google provider 尚未在 Supabase D
 1. 更新 `package.json` 的 `version`。
 2. 在 `release-notes.json` 新增同版本的公告內容，最新版本放第一筆；版本正式部署後，該版公告不再修改。**公告是由使用者手上的舊版 App 畫出來的**：0.3.0（含）以前的更新對話框不能捲動，只要還有使用者可能停在那些版本，公告就要短到在舊版畫面上、375×667 直向與 932×430 橫向都看得到兩顆按鈕（0.4.0 以 7 條、約 165 字通過）。
 3. 執行 `npm run build`；prebuild 會產生 `public/version.json` 與含版本 cache 名稱的 `public/sw.js`。
-4. 部署 `dist/`。使用者開啟 App、回到前景、恢復連線或手動檢查時會取得不快取的 `version.json`，看到更新內容後可選擇立即更新或稍後提醒。
+4. 部署 `dist/`。使用者開啟 App、回到前景、恢復連線或手動檢查時會取得不快取的 `version.json`，看到更新內容後可選擇立即更新或稍後提醒。重新開啟 App 時通常已經直接載入新版，這時每台裝置第一次執行該版會自動顯示公告一次；在設定按「檢查更新」一定會得到結果（有新版、已是最新，或檢查失敗的原因）。
 
 Service worker 只清理由 DayPop 管理、且帶有 `daypop-app-shell-` 前綴的舊 App cache。它不操作 `localStorage` 或 IndexedDB。
 

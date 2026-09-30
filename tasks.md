@@ -92,6 +92,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-09-29 委託**：專案擁有者合併 PR #75 後指示「繼續下個任務，你判斷優先度即可」。agent 選了 **DP-086（固定 runner 映像）**：GitHub 公告 `ubuntu-latest` 會在 2026-10-19 至 11-19 分批換成 Ubuntu 26.04，這是有期限、影響所有 PR 檢查與部署閘門，又不需要產品決策的項目。同時發現的 `npm audit` 3 個 moderate 只在開發工具（production 為 0），急迫性較低，登記為 DP-087。DP-086 完成後已移入 Done。
   > **2026-09-30 委託**：專案擁有者確認 staging 部署成功、合併 #77 後指示「請做下一步」。agent 依前一輪的建議接 **DP-087**，完成後已移入 Done。版本提升（0.4.0＋DP-067）雖然也到時候了，但版號與公告內容要由專案擁有者定案，沒有自行開始。
   > **2026-09-30 委託**：專案擁有者合併 #78 後指示「你擬稿就好，直接上」。agent 據此開 **DP-089（發布 v0.4.0）**，DP-067 依 2026-08-14 的定案併入同一次版本提升；兩者完成後已移入 Done。
+  > **2026-09-30 回報**：專案擁有者部署 0.4.0（run `36711705548`）後指出兩件事：公告應該在第一次開啟新版時自動出現，以及按「檢查更新」沒有任何回饋。agent 據此開 **DP-090**（發成 0.4.1），完成後已移入 Done。
   > **2026-09-29 回報**：專案擁有者合併 #76 後手動部署 staging，品質閘門的 `Supabase / db reset and pgTAP` 失敗在型別比對步驟（ECR 回 `Data limit exceeded`），build／deploy 因此被跳過。agent 據此開 **DP-088** 修正，完成後已移入 Done。
 
 ## In Progress
@@ -203,10 +204,19 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-090 — 讓更新公告真的被看到，並讓「檢查更新」一定有回饋（v0.4.1）：** 2026-09-30 完成。起因是專案擁有者部署 0.4.0 後回報：公告應該在第一次開啟新版時自動出現，而按「檢查更新」沒有任何反應。
+  > **成因（從程式讀出，與專案擁有者的觀察一致）**：公告原本只由更新對話框顯示，而更新對話框只在「舊版程式還在執行、又檢查到較新的 `version.json`」時出現。service worker 對頁面導覽採網路優先，所以重新開啟 App 時跑的已經是新版，檢查結果是「版號相同」，公告永遠不會出現；設定頁只有一個預設收合的「查看這個版本更新了什麼」。手動「檢查更新」在沒有新版時只把按鈕從「檢查中…」變回原樣；而且**之前按過「稍後提醒」的版本，手動檢查也不會再出現**，因為 `dismissedVersionRef` 同樣擋住了手動檢查。
+  > **做法**：
+  > - 每台裝置第一次執行某個版本時，自動顯示該版公告一次（新元件 `ReleaseNoticeDialog`），按「知道了」後記在 `daypop.release-notes-seen`。這是裝置層級的介面狀態：走 `AppStorage`、不寫進 user data、不同步，讀寫失敗只會讓公告多出現一次（`src/pwa/releaseNotesSeen.ts`）。依專案擁有者「首次沒看過時」的說法，**全新安裝也會看到一次**。判斷用「目前版本比看過的新」而不是「不相等」；更新對話框按「立即更新」會先把新版記為看過，所以重新載入後不會再跳一次，萬一更新失敗退回舊版，也不會跳出舊公告。
+  > - 手動「檢查更新」一定有結果：有新版 → 更新對話框（**即使之前按過稍後提醒**）；沒有新版 → 「目前已是最新版本」加上目前版本的公告（關閉即視為看過）；失敗 → 「暫時無法檢查更新」加上原因。自動檢查維持原本的安靜。三種對話框同一時間最多一個，順序是更新 > 檢查結果 > 新版公告。
+  > - 新對話框沿用 `.update-dialog` 樣式，所以繼承 DP-089 的捲動修正。0.4.1 公告 3 條、102 字，以 0.3.0 CSS 模擬在五種尺寸都放得下；公告附一行 0.4.0 的重點，因為大部分使用者從沒看過 0.4.0 的公告。0.4.0 條目沒有動。
+  > **驗證**：unit 55 檔、647 個案例（新增 `releaseNotesSeen.test.ts`、`ReleaseNoticeDialog.test.tsx`，以及 `useAppUpdate.test.ts` 六個案例）。兩個關鍵行為做了突變驗證 —— 拿掉「手動檢查可略過稍後提醒」、拿掉「立即更新時記為看過」，各自只讓對應的那一個測試變紅。e2e 新增 `release-notice.spec.ts` 三個案例（第一次開啟自動顯示且重新整理後不再出現、已是最新、檢查失敗），兩個專案合計 17 passed、3 skipped；既有 e2e 由 `openApp` 預設寫入「已看過所有版本」的哨兵值，避免公告擋住無關的測試。production build 以 390×844、375×667、932×430 截圖量測，兩種新對話框都完整在畫面內、焦點在「知道了」、console 乾淨。
+  > **仍未確認**：實機（iPhone）上的顯示與「只出現一次」，要等部署後由專案擁有者確認。
+
 - [x] **DP-089 — 發布 v0.4.0「重複行程與資料備份」：** 2026-09-30 完成；版號與公告由專案擁有者授權 agent 擬稿直接採用。`package.json`／`package-lock.json` 升到 0.4.0，`release-notes.json` 新增 0.4.0 條目（0.3.0 條目不動），`public/version.json` 與 `public/sw.js` 由 generator 重新產生 —— 快取名稱改成 `daypop-app-shell-0.4.0`，新 service worker 啟用後會清掉 0.3.0 的快取。公告涵蓋 0.3.0 定稿（2026-08-12）後使用者看得到的變更：重複行程與單次／全部（DP-081／082）、跨午夜呈現（DP-064）、JSON／ICS 匯入匯出（DP-056）、設定的桌寵與一般偏好（DP-014）、快速新增只給時間（DP-076）、橫向版面（DP-078）、主題底色（DP-074）、月格鍵盤（DP-069）。
   > **發版前抓到一個會卡住使用者的既有缺陷，一併修正**：更新對話框比畫面高時，`.dialog-backdrop` 不能捲（`.dp-viewport` 以 `overflow: hidden` 裁掉它），兩顆按鈕被推出畫面、手指也滑不到，整個 App 被 modal 擋住。以原始 CDP 觸控事件量測（先確認這個方法真的能捲動；CDP 的 `synthesizeScrollGesture` 在這個環境連月格都捲不動，因此不採用），修正前在 iPhone 15 Pro Max 橫向、iPhone SE、320×640 滑兩次後按鈕仍在畫面外；`src/styles.css` 讓對話框本身 `max-height: 100%`＋`overflow-y: auto` 後，三者都能捲到按鈕，並以畫面座標按「稍後提醒」關閉。這個對話框是 DayPop 自有畫面，原稿沒有可對照的設計。`e2e/update-dialog.spec.ts` 釘住它（手機專案 932×430 與 375×667，使用刻意加長的假公告），修正前兩個案例都紅在「the dialog must fit on screen」。
   > **但這個修正幫不了這一次升級**：0.3.0 使用者看到的 0.4.0 公告，是由他們手上 0.3.0 的程式與 CSS 畫出來的。所以公告改以「在 0.3.0 CSS 下放得下」為準來縮短 —— 在頁面注入樣式、把修正的三個屬性還原來模擬舊版（先確認模擬出的尺寸與修正前實際 build 量到的完全相同），第一版 10 條草稿在 375×667、360×640 與橫向都會切到按鈕；定稿 7 條、165 字在 430×932、390×844、375×667、360×640、932×430 全部放得下（最緊的是橫向，對話框 15..418／430）。刪掉的是使用者看不到的項目（資料庫自動測試）與較細的修正（農曆對比、螢幕閱讀器結構）。
-  > **驗證**：lint／typecheck／unit 53 檔 630 個案例／build／check:build 通過；在本機以空的 `VITE_SUPABASE_*` 覆蓋 `.env.local`（重現 CI 不連 Supabase 的條件，否則本機會因 Supabase 網域解析失敗而讓既有 e2e 一起紅）跑完整 e2e：11 passed、3 skipped。實際產出的 `version.json` 只剩 `version`／`releasedAt`／`title`／`changes`，公告與量測過的版本逐字相同。**實機（iPhone）上的更新對話框尚未確認**，要等部署後由專案擁有者看到。
+  > **驗證**：lint／typecheck／unit 53 檔 630 個案例／build／check:build 通過；在本機以空的 `VITE_SUPABASE_*` 覆蓋 `.env.local`（重現 CI 不連 Supabase 的條件，否則本機會因 Supabase 網域解析失敗而讓既有 e2e 一起紅）跑完整 e2e：11 passed、3 skipped。實際產出的 `version.json` 只剩 `version`／`releasedAt`／`title`／`changes`，公告與量測過的版本逐字相同。**實機（iPhone）上的更新對話框尚未確認**，要等部署後由專案擁有者看到。**2026-09-30 更新**：已部署（run `36711705548`），0.4.0 條目自此不可回寫；專案擁有者回報冷啟動根本看不到公告、手動檢查更新沒有回饋，成因與修正見 DP-090。
 
 - [x] **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** 2026-09-30 隨 DP-089 的 v0.4.0 完成，照 2026-08-14 定案的 (a) 刪除：`scripts/generate-release-assets.mjs` 不再輸出這個欄位（原地註明不要加回），`src/pwa/version.ts` 的 `ReleaseInfo` 移除該欄位；測試與 e2e 本來就沒有用到它，所以沒有要改的測試。仍在跑 0.3.0 的使用者讀到新的 `version.json` 不受影響 —— `useAppUpdate` 與 `UpdateDialog` 只讀 `version`／`title`／`changes`／`releasedAt`。
   > **原條目：** **DP-067 — `version.json` 的 `dataSchemaVersion` 停在 1：** `scripts/generate-release-assets.mjs` 把 `dataSchemaVersion: 1` 寫死，但實際的 user-data schema 早在 DP-028 就到 4（`vite.config.ts` 的 `__DATA_SCHEMA_VERSION__`）。目前**沒有任何程式讀這個欄位** —— `ReleaseInfo` 有宣告它，`useAppUpdate` 只用 `version`／`changes`，所以它不會造成 runtime 錯誤，但每次發布都在公開檔案裡輸出一個錯的數字，遲早有人拿它當判斷依據。DP-065 沒有順手改掉是刻意的：兩個合理選項各自是設計決策 —— **(a) 刪掉這個欄位**（沒人讀，而且 AGENTS.md 明定 release version 與 user-data schema version 必須獨立，把它塞在 release 檔裡本來就在誘導耦合）；**(b) 讓它變成真的單一來源**，但 `vite.config.ts` 與這支 `.mjs` 現在各寫死一份，要真的同步就得再引入一個兩邊都讀得到的來源（例如一個小 JSON），那是新增結構。先決定 (a)／(b) 再動，不要只把 `1` 改成 `4` —— 那正是它第一次漂掉的方式。
