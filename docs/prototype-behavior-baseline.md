@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-095（2026-10-01）**：`e2e/service-worker.spec.ts` 直接在 mobile／desktop Chromium 執行 generated worker，以隔離的最小靜態 shell 驗證 install／waiting／明確啟用／controllerchange、只清理舊 app-shell cache，以及 guest／account cache／legacy bytes、IndexedDB 與其他 cache 保留。另驗證 `/DayPop/` scope、已取得 shell／asset 的離線讀取與版本資訊不得回 stale cache。不是完整 React 更新 UX 或真機 PWA 驗收；測試來源與限制見 [`deployment.md`](deployment.md) §5.9，canonical UI 與 runtime 未修改。
+
 - **DP-094（2026-10-01）**：`e2e/account-ics-transfer.spec.ts` 在 mobile／desktop 共新增 4 個帳號 ICS 案例，驗證真實下載／選檔、取消、碰撞 UID 與取消／替換例外、只附加並保留原附件／待辦／偏好及 guest bytes、非法檔案整份拒絕且可重選，以及清除 synthetic account cache 後重登重新讀取。帳號資料透過 UI 建立，附件只留在原事件，ICS 副本沒有附件。沿用 dev-only FakeSupabase，沒有修改 canonical UI 或 runtime；限制見 [`deployment.md`](deployment.md) §5.8，未驗證真實服務、第三方互通、真機或 staging。
 
 - **DP-093（2026-10-01）**：`e2e/ics-transfer.spec.ts` 在 mobile／desktop 共新增 8 個遊客 ICS 案例，驗證真實下載、預覽／取消、UID 碰撞重新命名、重複取消／替換例外、只附加並保留所有既有資料、外部浮動時間／TZID／UTC／全天及文字轉義，以及整份拒絕後仍可匯入。device timezone 設為紐約、preferences 為台北，預設日曆不放第一筆，reload 不重新灌 fixture。交接與格式限制見 [`deployment.md`](deployment.md) §5.7；未驗證 authenticated ICS、第三方服務、真機或 staging。

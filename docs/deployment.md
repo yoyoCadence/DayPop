@@ -333,3 +333,22 @@ DP-034 的備份／還原項目已有 DP-056 的 domain、adapter 與元件測�
 完整驗證：lint、typecheck、unit **55 檔 650/650**（`npm run test -- --maxWorkers=2`）、build、check:build 通過；完整 e2e **41 passed、3 skipped**，跳過原有桌面專案不適用的手機橫向／短視窗案例。單元流程另印出實際 timezone `Etc/GMT-8`，build 仍有既有 >500 kB chunk 提示。首輪一個桌面案例的最後斷言假設第一筆同名事件是原事件；改為逐筆檢查並要求附件數恰為 `[0, 1]`，避免依賴排序，runtime 與 timeout 未修改。
 
 **限制與下一步**：ICS 只交換事件，附件不隨副本搬移；帳號有附件時仍允許 ICS 附加，JSON 取代的既有附件阻擋則由 DP-092 驗證。fake DB 只存在當頁記憶體，完整 page reload 會重建，因此以登出、只移除該 synthetic account cache、重登強制新 adapter 讀取；本項不證明真實 Supabase durability、Auth session restore、RLS 或 Storage binary 保存。沒有修改 runtime、harness、schema、版本或部署，未使用 Supabase MCP、真實帳號或正式資料。第三方日曆服務實際互通、真機檔案選擇器、staging 備份還原，以及 DP-034 的資料刪除／隱私／監控／效能／PWA 更新等驗收仍未完成；DP-032／034 的放行決策不因本子項改變。
+
+### 5.9 真實 service worker 更新與資料保全回歸（DP-095，2026-10-01）
+
+`e2e/service-worker.spec.ts` 直接在 Chromium 執行目前 `public/sw.js`，不 stub `navigator.serviceWorker`。`e2e/fixtures/workerSite.ts` 為每個測試建立獨立 loopback origin 與最小靜態 shell，scope 採 `/DayPop/`；讀取 worker 時先核對它等於 template 代入 package version 的內容。下一版 `999.0.0` 只是測試伺服器在記憶體裡替換 worker 的 `APP_VERSION`，不是正式 release，沒有回寫任何已部署版號、release note 或 generated asset。測試來源固定送 `Cache-Control: no-store`，避免把 HTTP cache 誤當成 worker 的 Cache Storage。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 寫入 synthetic 使用者資料 → 註冊 current worker → 等待控制頁面 | scope 恰為 `/DayPop/`；guest、account cache、legacy 原始 bytes、`CALPET_FIRED`、IndexedDB sentinel 與非 DayPop Cache Storage 均保留。 |
+| 取得 asset → 伺服器換新版 → `registration.update()` | asset 實際進入 current cache；新 worker 停在 installed／waiting，old active worker 仍控制頁面，舊 cache 尚未刪除，使用者儲存不變。 |
+| 明確傳送 `SKIP_WAITING` → controllerchange → reload | 新 worker activated 且 waiting 清空，只清理舊 `daypop-app-shell-` cache；其他 cache 與使用者儲存不變，reload 取得新版 shell／asset。 |
+| 刻意放入舊 `version.json` → 換伺服器版本 → online fetch | 回傳網路新版，伺服器確實收到 request；不得使用已放入的 stale cache。 |
+| 離線 → navigation 到 scope 內另一個路徑 | 由 worker 回退到已快取的 index，asset 也從 Cache Storage 讀回；資料仍保留。這只證明已取得 shell／asset 的快取能力。 |
+| 離線 fetch `version.json` → 恢復網路 → 開 scope 外頁面 | 版本 request 必須失敗，不能回舊快取；scope 外新頁面的 controller 必須為 null。 |
+
+console 檢查只允許刻意離線版本 request 的一個 `ERR_INTERNET_DISCONNECTED`，且同時核對 error 類型、完整訊息、request URL 與出現次數；其他 console warning／error 與 pageerror 仍要求為 0。每個案例都印出並斷言實際 browser timezone `Asia/Taipei`。loopback fixture 在 `finally` 恢復網路並關閉 server／connections，不留下長期服務。
+
+本機 Windows／Node 24.14.1，以 Chromium mobile 390×844 與 desktop 1280×900 執行兩個情境，新增 targeted **4/4** 首輪通過；完整 e2e **45 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。lint、typecheck、unit **55 檔 650/650**（`npm run test -- --maxWorkers=2`）、build、check:build 全部通過。單元流程另印出實際 timezone `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/service-worker.spec.ts`，沿用既有 Playwright／CI，不需要新增相依或 CI job。
+
+**限制與下一步**：本項測的是 generated worker 與 browser storage contract，使用最小靜態 shell，未載入完整 production React App；直接傳送 `SKIP_WAITING` 不等於已驗證 App 的「立即更新」按鈕、controllerchange 自動 reload、更新後登入狀態或 production bundle 的離線完整性。未驗證全新安裝未曾取得的 asset、離線寫入佇列、真機 PWA 或 staging 更新。沒有修改 runtime、worker template、release、schema 或部署，也未使用 Supabase MCP／真實帳號。DP-034 的完整 App 更新 smoke test、資料刪除／隱私／監控／效能與放行決策仍待後續。
