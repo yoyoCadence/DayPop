@@ -105,6 +105,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-01 Worker 委託**：專案擁有者合併 PR #84 後授權繼續。Next 為空，其他優先項的產品決策／真機依賴未解除；沿 DP-034 正式上線檢查拆出 **DP-095（真實 service worker 更新與資料保全回歸）**，從 Backlog 經 Next、In Progress 完成後移入 Done。既有 browser 更新案例使用 dev App，本項直接執行 generated worker，不修改 release、runtime 或部署；父任務及放行仍未完成。
 
+> **2026-10-01 Production 更新委託**：專案擁有者合併 PR #85 後授權繼續。Next 為空，其他優先項的產品決策／真機依賴未解除；承接 DP-095 的完整 App 更新交接，將前置 DP-030／090／095 已滿足的 **DP-096** 從 Backlog 經 Next、In Progress 完成後移入 Done。新回歸重現安裝中按更新會提早 reload，因此包含必要的等待修正；DP-034 父任務及上線放行仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -178,6 +180,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 ICS 子項進度**：DP-093 已補上遊客 ICS 真實檔案 IO、附加／例外／時區／拒絕與 reload 的本機 Chromium 回歸，見同份交接 §5.7。authenticated ICS、第三方服務實際互通、真機／staging 與本條其他驗收仍未完成。
   > **2026-10-01 帳號 ICS 子項進度**：DP-094 已補上 authenticated ICS 真實下載／選檔、碰撞 UID／例外、附件保留、整份拒絕及清除帳號快取後重登讀回的本機 harness 回歸，見同份交接 §5.8。真實服務 durability／RLS／Storage binary／Auth session restore、第三方服務、真機／staging 與本條其他驗收未由此驗證，父任務仍未完成。
   > **2026-10-01 Worker 子項進度**：DP-095 已在本機 mobile／desktop Chromium 實跑 generated worker 的等待／啟用／快取清理、使用者儲存保全、離線已快取 shell／asset 與版本資訊不回 stale cache，見同份交接 §5.9。使用最小靜態 shell，未驗證完整 production React 更新 UX、自動 reload、更新後 Auth、真機 PWA 或 staging；本條其他項目與父任務放行仍未完成。
+  > **2026-10-01 Production 更新子項進度**：DP-096 已補上完整 production 遊客 App 的稍後提醒／重新檢查／立即更新／自動 reload 與資料保留回歸，並修正 installing worker 尚未就緒就 reload 的時序，見同份交接 §5.10。更新後真實 Auth、account adapter 重新初始化、完整離線、安裝失敗／重試、真機／staging 及本條其他驗收仍未完成，父任務不結案。
 
 ### 原型假功能與待補能力
 
@@ -219,6 +222,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-096 — Production 遊客 PWA 更新與自動重新載入回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/production-update.spec.ts` 與隔離 loopback fixture，使用既有 Vite config 的兩份 production build、真實 AppUpdateProvider 與 generated worker；兩個情境 × mobile／desktop 共 4 個案例，驗證稍後提醒、手動重查、立即更新、自動 reload 到新版 bundle、公告已讀與 guest envelope 逐字保留，以及新版仍在 install 時按更新。fixture 只在 setup page 灌一次資料，含重複例外、跨午夜與全天行程、子待辦、貼圖與偏好；合成版 `999.0.0` 只在 ignored 產物／測試回應，不修改既有 release。
+  > **必要修正**：安裝中案例在原實作重現提早 reload；`registration.update()` resolve 不保證 install 已完成。`useAppUpdate.ts` 在沒有 waiting、仍有 installing worker 時返回等待，沿用既有 statechange 啟用及 controllerchange reload；新增 2 個單元案例確認此路徑與原本沒有 worker 的 reload fallback。
+  > **驗證**：lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 通過；targeted **4/4**、完整 e2e **49 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。新增案例 console warning／error、pageerror 與對外 request 為 0；實際 browser timezone 印出 `Asia/Taipei`，本機 Node 為 `Etc/GMT-8`。build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：未驗證更新後真實 Auth、account cache／adapter 初始化、完整離線、安裝失敗／重試、真機 PWA、staging 或舊 hashed assets 已移除的部署。未使用 Supabase MCP／真實帳號／正式資料，不改 canonical UI、worker template、schema、版號或部署；修正仍待後續 release 發布。DP-034 與放行決策保持未完成；重跑方法與範圍見 [`docs/deployment.md`](docs/deployment.md) §5.10。
 
 - [x] **DP-095 — 真實 service worker 更新與資料保全瀏覽器回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/service-worker.spec.ts` 與 per-test loopback `e2e/fixtures/workerSite.ts`，兩個情境 × mobile／desktop 共 4 個案例，直接執行 `public/sw.js` 而非 stub。先核對 generated worker 與 template／package version 一致；下一版只在測試回應記憶體中換成 synthetic `999.0.0`。驗證 `/DayPop/` scope、installed／waiting 保留 old active worker 與 cache、明確 `SKIP_WAITING` 後 controllerchange／activate 只刪舊 app-shell cache；guest、account cache、legacy／`CALPET_FIRED` bytes、IndexedDB sentinel 及其他 Cache Storage 保留。另驗證離線 navigation／已取得 asset、版本檢查 bypass stale cache 且離線拒絕，以及 scope 外頁面不受控制。fixture 在 finally 恢復網路、關閉 server／connections。
   > **驗證**：lint、typecheck、unit **55 檔 650/650**（`--maxWorkers=2`）、build、check:build 通過；新增 targeted **4/4**、完整 e2e **45 passed、3 skipped**（原有桌面不適用案例）。Browser 實印並斷言 `Asia/Taipei`，unit 實印 `Etc/GMT-8`。只允許刻意 offline version request 的一個指定 `ERR_INTERNET_DISCONNECTED`，逐一核對 URL／訊息／類型／次數；其他 console error／warning 與 pageerror 為 0。Build 保留既有 >500 kB chunk 提示。

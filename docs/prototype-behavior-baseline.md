@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-096（2026-10-01）**：`e2e/production-update.spec.ts` 在 mobile／desktop 共新增 4 個完整 production 遊客更新案例，驗證稍後提醒／手動重查／立即更新、App 自動 reload 到新版 bundle、資料／偏好與公告已讀保存；gate 暫停新版安裝，重現並修正 installing worker 尚未就緒就提早 reload 的時序。`useAppUpdate` 沿用既有 statechange／controllerchange，只補上安裝中的等待；canonical UI 未改。測試使用隔離 origin、真正 production entry 與兩份 Vite build，未驗證 Auth、完整離線、真機或 staging；來源與限制見 [`deployment.md`](deployment.md) §5.10。
+
 - **DP-095（2026-10-01）**：`e2e/service-worker.spec.ts` 直接在 mobile／desktop Chromium 執行 generated worker，以隔離的最小靜態 shell 驗證 install／waiting／明確啟用／controllerchange、只清理舊 app-shell cache，以及 guest／account cache／legacy bytes、IndexedDB 與其他 cache 保留。另驗證 `/DayPop/` scope、已取得 shell／asset 的離線讀取與版本資訊不得回 stale cache。不是完整 React 更新 UX 或真機 PWA 驗收；測試來源與限制見 [`deployment.md`](deployment.md) §5.9，canonical UI 與 runtime 未修改。
 
 - **DP-094（2026-10-01）**：`e2e/account-ics-transfer.spec.ts` 在 mobile／desktop 共新增 4 個帳號 ICS 案例，驗證真實下載／選檔、取消、碰撞 UID 與取消／替換例外、只附加並保留原附件／待辦／偏好及 guest bytes、非法檔案整份拒絕且可重選，以及清除 synthetic account cache 後重登重新讀取。帳號資料透過 UI 建立，附件只留在原事件，ICS 副本沒有附件。沿用 dev-only FakeSupabase，沒有修改 canonical UI 或 runtime；限制見 [`deployment.md`](deployment.md) §5.8，未驗證真實服務、第三方互通、真機或 staging。

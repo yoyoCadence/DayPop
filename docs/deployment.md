@@ -352,3 +352,21 @@ console 檢查只允許刻意離線版本 request 的一個 `ERR_INTERNET_DISCON
 本機 Windows／Node 24.14.1，以 Chromium mobile 390×844 與 desktop 1280×900 執行兩個情境，新增 targeted **4/4** 首輪通過；完整 e2e **45 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。lint、typecheck、unit **55 檔 650/650**（`npm run test -- --maxWorkers=2`）、build、check:build 全部通過。單元流程另印出實際 timezone `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/service-worker.spec.ts`，沿用既有 Playwright／CI，不需要新增相依或 CI job。
 
 **限制與下一步**：本項測的是 generated worker 與 browser storage contract，使用最小靜態 shell，未載入完整 production React App；直接傳送 `SKIP_WAITING` 不等於已驗證 App 的「立即更新」按鈕、controllerchange 自動 reload、更新後登入狀態或 production bundle 的離線完整性。未驗證全新安裝未曾取得的 asset、離線寫入佇列、真機 PWA 或 staging 更新。沒有修改 runtime、worker template、release、schema 或部署，也未使用 Supabase MCP／真實帳號。DP-034 的完整 App 更新 smoke test、資料刪除／隱私／監控／效能與放行決策仍待後續。
+
+### 5.10 Production 遊客 PWA 更新與自動 reload（DP-096，2026-10-01）
+
+承接 DP-095 的完整 App 交接，`e2e/production-update.spec.ts` 使用真正的 `src/main.tsx` production build、AppUpdateProvider 與瀏覽器 service worker，沒有 Auth harness 或 worker stub。`e2e/fixtures/productionUpdateSite.ts` 透過既有 Vite config 建置目前版本與 synthetic `999.0.0`，保留建置期金鑰檢查、將測試 build 的公開 Auth 設定設為空，並斷言沒有對外 request。產物只寫入 ignored `output/playwright/production-updates/` 的獨立目錄，`emptyOutDir: false` 不清除其他輸出；目前 worker 必須逐字符合 generated template／package version，合成新版的 worker 與公告只存在測試產物／記憶體，不回寫 release assets。
+
+每個案例有自己的 loopback origin、`/DayPop/` base 與 scope，HTTP 回應使用 `Cache-Control: no-store`。完整 schema-v4 fixture 與目前版的公告已讀紀錄只在 blank setup page 寫入一次，沒有 reload 會重灌的 init script。更新後逐字比對 guest envelope（含 revision／timestamp、重複取消／替換、跨午夜及全天行程、子待辦、貼圖、非預設偏好），並從畫面確認暖陽主題、寵物名字及 occurrence 列表。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| current App → 提供新版 → 檢查更新 → worker waiting → 稍後提醒 | App 留在舊 build，沒有新 navigation，資料與目前版已讀紀錄不變。 |
+| 手動再檢查 → 立即更新 | 由 App 自動 reload 一次取得新版 production bundle（測試不呼叫 `page.reload()`），新版 UI 與 `version.json` 一致，僅留下新版 app-shell cache；資料保留、公告記為已讀且不重複顯示，手動再檢查顯示「目前已是最新版本」。 |
+| 新版 `index.html` 安裝快取 request 被 gate 暫停 → installing 時按立即更新 | 保持原頁「準備更新…」且兩個按鈕停用，不提早 navigation；釋放 gate 後完成安裝、啟用、自動 reload 與相同資料驗證。gate 不擋 root navigation，因此能抓到錯誤的提早 reload。 |
+
+**回歸重現與必要修正**：第一條流程通過後，安裝中案例在原實作失敗：`registration.update()` 可以在 worker 尚未完成 install／`cache.addAll` 時 resolve，當時沒有 waiting worker，`updateNow()` 便落入 reload fallback。新 build 雖載入，舊頁的 `applyWhenReady` 意圖已丟失，仍由舊 worker 控制。`useAppUpdate.ts` 只補上「有 installing worker 就返回等待」；既有 statechange listener 在安裝完成後送 `SKIP_WAITING`，controllerchange 才 reload。新增兩個單元案例確認這個時序與沒有 waiting／installing worker 時仍保留 reload fallback。
+
+本機 Windows／Node 24.14.1，在 mobile 390×844 與 desktop 1280×900 的 targeted **4/4** 通過；完整 e2e **49 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例），console warning／error、pageerror 與對外 request 為 0。lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 全部通過；各 production 案例印出實際 timezone `Asia/Taipei`，本機 Node 為 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-update.spec.ts`，沿用既有 CI、不需新增相依或 job。
+
+**限制與下一步**：這是本機 Chromium 的 production 遊客流程，未驗證更新後真實 Auth session、account cache／遠端 adapter 重新初始化、真機 PWA、staging 更新、production bundle 完整離線、安裝失敗／重試，或部署時舊 hashed assets 已移除的情境（測試站保留舊 assets）。worker／release note／schema／版號／部署均未修改，未使用 Supabase MCP／正式帳號／正式資料；這項修正仍需隨後續 release 發布。DP-034 的資料刪除、隱私、監控、效能及上線放行仍未完成，不改變 DP-032／034 的待決關係。
