@@ -22,7 +22,7 @@ let root: Root;
 let fetchSpy: ReturnType<typeof vi.fn>;
 let registration: {
   waiting: { postMessage: ReturnType<typeof vi.fn> } | null;
-  installing: null;
+  installing: (EventTarget & { state: string; postMessage: ReturnType<typeof vi.fn> }) | null;
   update: ReturnType<typeof vi.fn>;
   addEventListener: ReturnType<typeof vi.fn>;
 };
@@ -331,5 +331,57 @@ describe('useAppUpdate release notes and manual feedback', () => {
     expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
     // So the build the reload brings up does not announce the same notes again.
     expect(readSeenRelease(storage)).toBe(NEWER_VERSION);
+  });
+
+  it('waits for an installing worker and reloads only after controllerchange', async () => {
+    const reload = vi.fn();
+    vi.stubGlobal('window', new Proxy(window, {
+      get(target, property, receiver) {
+        if (property === 'location') return { reload };
+        return Reflect.get(target, property, receiver);
+      },
+    }));
+    Object.assign(navigator.serviceWorker, { controller: {} });
+    respondWith(NEWER);
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+
+    const worker = Object.assign(new EventTarget(), { state: 'installing', postMessage: vi.fn() });
+    registration.installing = worker;
+    const updateFound = registration.addEventListener.mock.calls.find(([type]) => type === 'updatefound')![1] as () => void;
+    act(() => updateFound());
+    await act(async () => { await hook.current.updateNow(); });
+    expect(hook.current.preparing).toBe(true);
+    expect(reload).not.toHaveBeenCalled();
+    expect(worker.postMessage).not.toHaveBeenCalled();
+
+    act(() => {
+      worker.state = 'installed';
+      registration.installing = null;
+      registration.waiting = worker;
+      worker.dispatchEvent(new Event('statechange'));
+    });
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    expect(reload).not.toHaveBeenCalled();
+    const onControllerChange = vi.mocked(navigator.serviceWorker.addEventListener).mock.calls.find(
+      ([type]) => type === 'controllerchange',
+    )![1] as () => void;
+    act(() => onControllerChange());
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('still reloads when registration has no waiting or installing worker', async () => {
+    const reload = vi.fn();
+    vi.stubGlobal('window', new Proxy(window, {
+      get(target, property, receiver) {
+        if (property === 'location') return { reload };
+        return Reflect.get(target, property, receiver);
+      },
+    }));
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+    await act(async () => { await hook.current.updateNow(); });
+    expect(registration.update).toHaveBeenCalledOnce();
+    expect(reload).toHaveBeenCalledOnce();
   });
 });

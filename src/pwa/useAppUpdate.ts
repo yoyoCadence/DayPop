@@ -208,6 +208,10 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         return;
       }
+      // update() can resolve while install/cache.addAll is still running. Keep
+      // this page's applyWhenReady listener alive until it activates the worker;
+      // an early reload loses that intent and leaves the old worker controlling.
+      if (registration.installing) return;
     }
 
     // No controlling worker yet (for example an old HTTP-cached page on first
