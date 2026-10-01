@@ -370,3 +370,22 @@ console 檢查只允許刻意離線版本 request 的一個 `ERR_INTERNET_DISCON
 本機 Windows／Node 24.14.1，在 mobile 390×844 與 desktop 1280×900 的 targeted **4/4** 通過；完整 e2e **49 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例），console warning／error、pageerror 與對外 request 為 0。lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 全部通過；各 production 案例印出實際 timezone `Asia/Taipei`，本機 Node 為 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-update.spec.ts`，沿用既有 CI、不需新增相依或 job。
 
 **限制與下一步**：這是本機 Chromium 的 production 遊客流程，未驗證更新後真實 Auth session、account cache／遠端 adapter 重新初始化、真機 PWA、staging 更新、production bundle 完整離線、安裝失敗／重試，或部署時舊 hashed assets 已移除的情境（測試站保留舊 assets）。worker／release note／schema／版號／部署均未修改，未使用 Supabase MCP／正式帳號／正式資料；這項修正仍需隨後續 release 發布。DP-034 的資料刪除、隱私、監控、效能及上線放行仍未完成，不改變 DP-032／034 的待決關係。
+
+### 5.11 PWA 下載／安裝失敗復原與重試（DP-097，2026-10-01）
+
+承接 DP-096 的失敗路徑交接，沿用兩份真正 production build 與隔離 loopback origin，不新增 harness、依賴或 CI job。`e2e/fixtures/productionUpdateSite.ts` 可讓新版 `sw.js` 回 HTTP 503，或在原有 install gate 釋放時讓 `/DayPop/index.html` 回 503，使真正的 `cache.addAll` 拒絕、worker 進入 redundant；root navigation 仍可正常取得 App，不把 navigation 失敗混成安裝失敗。
+
+新回歸在修改前重現兩個問題：script 下載失敗留下未處理 Promise rejection（pageerror）；install 失敗後準備中狀態不會解除，兩個按鈕一直停用。`useAppUpdate` 現在捕捉更新 request／啟用訊息的失敗，並觀察 installing → redundant；失敗時清除待啟用、controllerchange reload 與暫存 waiting worker 的意圖，解除 preparing，保留 available release／使用者資料。若失敗事件早於 `update()` resolve，該次 request 也不得繼續落入 reload fallback。舊 activated worker 正常退役變成 redundant 不算安裝失敗，有獨立單元回歸。
+
+更新嘗試有獨立的 `updateError`，`App` 將它傳給原 `UpdateDialog`，以既有 `.update-error` 樣式與 `role="alert"` 顯示可採取的處理方式；不改 CSS、canonical token、正常成功畫面或更新按鈕文案。重試及稍後提醒會清除這筆錯誤。這個欄位不混入手動版本檢查的 `checkResult`；已讀公告仍代表使用者已閱讀，不代表安裝成功，沿用 DP-090 的既有規則。
+
+| 新增驗證路徑 | 通過條件 |
+| --- | --- |
+| 新版 script 回 503 → 立即更新 | 顯示「無法取得新版程式」，沒有 pageerror、navigation 或資料改寫；兩個按鈕重新可用，舊 worker／cache 保留。恢復 script 回應後，可在同一個 dialog 重試成功並自動載入新版。 |
+| gate 暫停 install → 立即更新 → index 回 503 | 真正的安裝失敗後顯示「新版安裝未完成」、解除準備中，原 App／activated controller／guest bytes 保留。可稍後提醒回到日曆；恢復回應後手動重新檢查，再更新成功。 |
+
+兩條情境各跑 mobile／desktop；成功重試後沿用 DP-096 的完整 envelope 逐字比對、主題／寵物名字／occurrence 列表、新版 bundle／cache 與公告已讀驗證。資料只在初始 setup page 寫入一次；所有原頁 console warning／error、pageerror 與對外 request 仍要求 0，沒有放寬監控來容忍原本的 unhandled rejection。
+
+本機 Windows／Node 24.14.1，production targeted **8/8**（本項新增 **4/4**）；完整 e2e **53 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 全部通過，build 保留既有 >500 kB chunk 提示。production 案例印出實際 timezone `Asia/Taipei`，單元流程印出 `Etc/GMT-8`。重跑：`npm run test:e2e -- e2e/production-update.spec.ts`；只跑失敗路徑可加 `--grep '失敗'`。
+
+**限制與下一步**：503 是決定性的服務失敗，不等於已驗證裝置實際斷線、storage quota、長時間無回應、worker activation／clients.claim 失敗或多分頁競態。更新後真實 Auth／account adapter 初始化、production bundle 完整離線、真機、staging 與舊 hashed assets 已移除的部署仍未涵蓋。未使用 Supabase MCP、真實帳號或正式資料，worker template、schema、版本、release assets 與部署不變；修正仍待後續 release 發布。DP-034 與上線放行保持未完成。另確認 ESLint 未忽略已被 Git 排除的 `output/playwright/production-updates/` generated JS，獨立登記 DP-098，不在本次改 lint config 或刪產物。

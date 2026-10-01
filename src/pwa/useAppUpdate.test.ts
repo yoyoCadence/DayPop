@@ -103,6 +103,29 @@ function fireOnline() {
   });
 }
 
+function trackReload() {
+  const reload = vi.fn();
+  vi.stubGlobal('window', new Proxy(window, {
+    get(target, property, receiver) {
+      if (property === 'location') return { reload };
+      return Reflect.get(target, property, receiver);
+    },
+  }));
+  return reload;
+}
+
+function fireUpdateFound() {
+  const listener = registration.addEventListener.mock.calls.find(([type]) => type === 'updatefound')![1] as () => void;
+  act(() => listener());
+}
+
+function fireControllerChange() {
+  const listener = vi.mocked(navigator.serviceWorker.addEventListener).mock.calls.find(
+    ([type]) => type === 'controllerchange',
+  )![1] as () => void;
+  act(() => listener());
+}
+
 describe('useAppUpdate automatic check throttling', () => {
   it('checks once on mount', async () => {
     renderHook();
@@ -382,6 +405,96 @@ describe('useAppUpdate release notes and manual feedback', () => {
     await settle();
     await act(async () => { await hook.current.updateNow(); });
     expect(registration.update).toHaveBeenCalledOnce();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('handles a rejected update, disarms reload, and allows a fresh retry', async () => {
+    const reload = trackReload();
+    respondWith(NEWER);
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+    registration.update.mockRejectedValueOnce(new Error('script fetch failed'));
+    await act(async () => { await hook.current.updateNow(); });
+    expect(hook.current.preparing).toBe(false);
+    expect(hook.current.updateError).toContain('無法取得新版程式');
+    expect(hook.current.availableRelease).toEqual(NEWER);
+    expect(hook.current.checkResult).toBeNull();
+    fireControllerChange();
+    expect(reload).not.toHaveBeenCalled();
+
+    const worker = { postMessage: vi.fn() };
+    registration.waiting = worker;
+    await act(async () => { await hook.current.updateNow(); });
+    expect(hook.current.updateError).toBeNull();
+    expect(hook.current.preparing).toBe(true);
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    fireControllerChange();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it.each([false, true])('recovers failed installation (before update settles: %s)', async (beforeSettled) => {
+    const reload = trackReload();
+    Object.assign(navigator.serviceWorker, { controller: {} });
+    respondWith(NEWER);
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+    const worker = Object.assign(new EventTarget(), { state: 'installing', postMessage: vi.fn() });
+    registration.installing = worker;
+    fireUpdateFound();
+    let finishUpdate = () => {};
+    if (beforeSettled) registration.update.mockImplementation(() => new Promise<void>((resolve) => { finishUpdate = resolve; }));
+    let request = Promise.resolve();
+    act(() => { request = hook.current.updateNow(); });
+    await settle();
+    expect(hook.current.preparing).toBe(true);
+    act(() => {
+      registration.installing = null;
+      worker.state = 'redundant';
+      worker.dispatchEvent(new Event('statechange'));
+    });
+    expect(hook.current.preparing).toBe(false);
+    expect(hook.current.updateError).toContain('新版安裝未完成');
+    expect(hook.current.availableRelease).toEqual(NEWER);
+    await act(async () => { finishUpdate(); await request; });
+    fireControllerChange();
+    expect(reload).not.toHaveBeenCalled();
+    expect(worker.postMessage).not.toHaveBeenCalled();
+    act(() => hook.current.dismissUpdate());
+    expect(hook.current.availableRelease).toBeNull();
+    expect(hook.current.updateError).toBeNull();
+  });
+
+  it('does not confuse an old activated worker becoming redundant with installation failure', async () => {
+    const reload = trackReload();
+    respondWith(NEWER);
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+    const oldWorker = Object.assign(new EventTarget(), { state: 'installing', postMessage: vi.fn() });
+    registration.installing = oldWorker;
+    fireUpdateFound();
+    act(() => {
+      for (const state of ['installed', 'activating', 'activated']) {
+        oldWorker.state = state;
+        oldWorker.dispatchEvent(new Event('statechange'));
+      }
+    });
+    Object.assign(navigator.serviceWorker, { controller: {} });
+    const newWorker = Object.assign(new EventTarget(), { state: 'installing', postMessage: vi.fn() });
+    registration.installing = newWorker;
+    fireUpdateFound();
+    await act(async () => { await hook.current.updateNow(); });
+    act(() => {
+      oldWorker.state = 'redundant';
+      oldWorker.dispatchEvent(new Event('statechange'));
+      newWorker.state = 'installed';
+      registration.installing = null;
+      registration.waiting = newWorker;
+      newWorker.dispatchEvent(new Event('statechange'));
+    });
+    expect(hook.current.updateError).toBeNull();
+    expect(hook.current.preparing).toBe(true);
+    expect(newWorker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    fireControllerChange();
     expect(reload).toHaveBeenCalledOnce();
   });
 });

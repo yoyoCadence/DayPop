@@ -107,6 +107,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-01 Production 更新委託**：專案擁有者合併 PR #85 後授權繼續。Next 為空，其他優先項的產品決策／真機依賴未解除；承接 DP-095 的完整 App 更新交接，將前置 DP-030／090／095 已滿足的 **DP-096** 從 Backlog 經 Next、In Progress 完成後移入 Done。新回歸重現安裝中按更新會提早 reload，因此包含必要的等待修正；DP-034 父任務及上線放行仍未完成。
 
+> **2026-10-01 更新復原委託**：專案擁有者合併 PR #86 後授權繼續。Next 為空，其餘優先項的產品決策／真機依賴仍在；承接 DP-096 的安裝失敗／重試交接，將可獨立完成的 **DP-097** 從 Backlog 經 Next、In Progress 完成後移入 Done。只處理更新失敗時的復原與回歸，不改變 DP-034 父任務及上線放行。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -120,6 +122,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## Backlog
 
 ### Foundation / maintainable frontend
+
+- [ ] **DP-098 — ESLint 排除 Playwright generated 產物：** DP-097 驗證時確認 `output/playwright/production-updates/` 已被 Git 忽略，ESLint `isPathIgnored()` 卻回 false；本機已累積 60 個 generated JS，重跑 `npm run lint` 會再讀它們。另立本項處理，DP-097 不改 lint config。驗收為 Playwright 產物排除、`src`／`e2e` 真正來源仍受 lint、既有 lint／typecheck 通過；不刪除產物或重構測試。
 
 - [x] **DP-082 — 事件 sheet 的「重複」控制項與單次／全部範圍選擇：2026-08-31 完成，分三個 PR（#71 重複 select／#72 repository 契約與 RPC／#73 範圍對話框）。**
   > **2026-08-31 第三段：原稿 `:430-439` 的範圍對話框已接上，本項結案。**
@@ -181,6 +185,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 帳號 ICS 子項進度**：DP-094 已補上 authenticated ICS 真實下載／選檔、碰撞 UID／例外、附件保留、整份拒絕及清除帳號快取後重登讀回的本機 harness 回歸，見同份交接 §5.8。真實服務 durability／RLS／Storage binary／Auth session restore、第三方服務、真機／staging 與本條其他驗收未由此驗證，父任務仍未完成。
   > **2026-10-01 Worker 子項進度**：DP-095 已在本機 mobile／desktop Chromium 實跑 generated worker 的等待／啟用／快取清理、使用者儲存保全、離線已快取 shell／asset 與版本資訊不回 stale cache，見同份交接 §5.9。使用最小靜態 shell，未驗證完整 production React 更新 UX、自動 reload、更新後 Auth、真機 PWA 或 staging；本條其他項目與父任務放行仍未完成。
   > **2026-10-01 Production 更新子項進度**：DP-096 已補上完整 production 遊客 App 的稍後提醒／重新檢查／立即更新／自動 reload 與資料保留回歸，並修正 installing worker 尚未就緒就 reload 的時序，見同份交接 §5.10。更新後真實 Auth、account adapter 重新初始化、完整離線、安裝失敗／重試、真機／staging 及本條其他驗收仍未完成，父任務不結案。
+  > **2026-10-01 更新復原子項進度**：DP-097 已補上 script／install 回 503 後留在原 production App、解除準備中、顯示錯誤、保留資料並可重試的回歸，見同份交接 §5.11。實際斷線／quota／長時間無回應／activation／多分頁、真實 Auth、完整離線、真機／staging 及本條其他驗收仍未完成，父任務及放行保持未完成。
 
 ### 原型假功能與待補能力
 
@@ -222,6 +227,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-097 — PWA 更新失敗復原與重試（DP-034 子項）：** 2026-10-01 完成。沿用 production fixture，新增兩條情境 × mobile／desktop 共 4 個 browser cases：新版 script 回 503 後留在原頁，恢復回應可立即重試；gate 暫停 install 後讓 index 回 503，真正 worker 進入 redundant，解除準備中、稍後提醒回日曆、恢復回應再檢查並更新成功。逐字保留 guest envelope、原 controller／cache，重試後沿用新版 bundle／偏好／occurrence／公告已讀驗證，沒有 init script 重灌資料。
+  > **必要修正**：先在原實作重現 script failure 的 unhandled rejection 與 install failure 的按鈕永久停用。`useAppUpdate` 捕捉更新失敗、監聽 installing → redundant，清除待啟用／reload 意圖與 waiting worker，保留 release、解除 preparing；失敗早於 update resolve 時不得落入 reload fallback。`updateError` 在原 dialog 以既有錯誤樣式與 alert 顯示，重試／稍後提醒清除；CSS、canonical token 與正常成功畫面不改。4 個新增單元案例涵蓋 reject／retry、安裝失敗早於／晚於 update resolve，以及舊 activated worker 正常退役不誤判；既有四處 mock 只對齊新 state 欄位。
+  > **驗證**：lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 通過；production targeted **8/8**（本項新增 **4/4**），完整 e2e **53 passed、3 skipped**（原有桌面不適用案例）。新增案例原頁 console warning／error、pageerror 與對外 request 為 0，實際 browser timezone 印出 `Asia/Taipei`、本機 Node 為 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：503 不等於實際斷線／quota，activation、長時間無回應、多分頁、真實 Auth／account adapter、完整離線、真機／staging 與刪除舊 assets 的部署仍未測。worker template、schema、release、版號與部署不變，未用 Supabase MCP／正式帳號／正式資料；修正待後續 release，DP-034 未結案。重跑與詳細界線見 [`docs/deployment.md`](docs/deployment.md) §5.11；另觀察到的 lint generated 產物界線登記為 Backlog DP-098，未混入本次工具修改。
 
 - [x] **DP-096 — Production 遊客 PWA 更新與自動重新載入回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/production-update.spec.ts` 與隔離 loopback fixture，使用既有 Vite config 的兩份 production build、真實 AppUpdateProvider 與 generated worker；兩個情境 × mobile／desktop 共 4 個案例，驗證稍後提醒、手動重查、立即更新、自動 reload 到新版 bundle、公告已讀與 guest envelope 逐字保留，以及新版仍在 install 時按更新。fixture 只在 setup page 灌一次資料，含重複例外、跨午夜與全天行程、子待辦、貼圖與偏好；合成版 `999.0.0` 只在 ignored 產物／測試回應，不修改既有 release。
   > **必要修正**：安裝中案例在原實作重現提早 reload；`registration.update()` resolve 不保證 install 已完成。`useAppUpdate.ts` 在沒有 waiting、仍有 installing worker 時返回等待，沿用既有 statechange 啟用及 controllerchange reload；新增 2 個單元案例確認此路徑與原本沒有 worker 的 reload fallback。
