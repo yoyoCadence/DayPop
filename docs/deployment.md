@@ -312,3 +312,24 @@ DP-034 的備份／還原項目已有 DP-056 的 domain、adapter 與元件測�
 本機 Windows／Node 24.14.1：新增 **8/8**，完整 e2e **37 passed、3 skipped**（原有桌面不適用案例）；lint、typecheck、unit **55 檔 650/650**、build、check:build 通過。第一次同時跑 unit／e2e 時，4 個既有元件案例超過 5 秒期限、沒有斷言失敗；browser 完成後以 `npm run test -- --maxWorkers=2` 重跑全部通過，未提高 timeout 或修改設定。單元流程實印 timezone `Etc/GMT-8`，build 仍有既有 >500 kB chunk 提示。
 
 **格式界線與下一步**：ICS 是事件交換格式，這次明確確認現有 exporter 不帶待辦、偏好或 VALARM，imported event 使用預設日曆、空提醒與匯入時間戳；完整資料保存請使用 JSON 備份。沒有修改 runtime、schema、版本或部署，也未使用 Supabase MCP、真實帳號或正式資料。authenticated ICS、第三方服務實際互通、真機檔案選擇器、staging 備份還原及 DP-034 的其餘驗收仍未完成；父任務與 DP-032／034 放行決策不因本子項結案。
+
+> **2026-10-01 帳號路徑更新**：authenticated ICS 的本機 harness 回歸已由 DP-094 補上，見下一節；真實服務與裝置限制仍保留。
+
+### 5.8 帳號 ICS 匯入／匯出自動化交接（DP-094，2026-10-01）
+
+`e2e/account-ics-transfer.spec.ts` 沿用 dev-only auth harness，讓真實 App、SessionDataProvider、authenticated／cached repository 配合 FakeSupabase。來源資料全部透過 UI 建立：帶附件的普通事件、每日系列及單次取消／改期、待辦與非預設寵物名字；外部 ICS 沿用 DP-093 的手寫 fixture。匯出預期用 UI 輸入與 literal ICS 欄位建立，不呼叫 production serializer／parser。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| UI 建立帳號資料 → 匯出 .ics → 真實 download | 核對檔名及三個完整 VEVENT，包含 RRULE、EXDATE、RECURRENCE-ID；不含附件 path／檔名、待辦、偏好、VALARM 或遊客事件，原帳號快取 bytes 不變。 |
+| 選擇下載檔 → 取消／同頁重選／Escape | 預覽顯示三個事件、兩個例外與兩個 UID 碰撞，確認鈕初始有焦點；預覽與兩種取消不寫入，同一 file input 可重選。 |
+| 再選下載檔 → 確認附加五筆 | 只新增三個事件與兩個例外；原事件／例外、日曆、待辦、貼圖、偏好與附件 metadata 逐欄保留。新 ID 唯一，新例外只指向新系列／替換；顯示成功及已同步。 |
+| 登出 → 清除該測試帳號快取 → 重登 | 新 adapter 重新讀回完整結果，列表顯示兩套 occurrence；兩個同名事件只有原事件帶附件，ICS 副本沒有附件。登出只顯示遊客行程，guest bytes 全程不變。 |
+| 第一個 VEVENT 有效、後續 TZID 非法 → 同頁選有效檔／取消 → 清快取重登 | 整份拒絕、不開預覽、不部分寫入，快取與 guest bytes 不變；拒絕後同一選檔入口仍可預覽及取消，新 adapter 讀回原資料。 |
+| 再選有效外部檔 → 確認附加四筆 → 清快取重登 | 浮動／TZID／UTC／全天、文字轉義與換行依手寫預期讀回，原資料及附件保留，成功與已同步可見。 |
+
+本機 Windows／Node 24.14.1，以 Chromium mobile 390×844 與 desktop 1280×900 執行兩個情境，共 **4/4** 通過。固定日期為 `2026-09-30T04:00:00Z`，每個案例印出並斷言實際 browser timezone `Asia/Taipei`；沒有宣稱跨時區矩陣。初始化起監聽 console warning／error 與 pageerror，均要求為 0。harness 的 server timestamp 固定為 `2026-08-09T00:00:00Z`，匯入後讀回須採此 server 值而非 browser clock。重跑：`npm run test:e2e -- e2e/account-ics-transfer.spec.ts`。
+
+完整驗證：lint、typecheck、unit **55 檔 650/650**（`npm run test -- --maxWorkers=2`）、build、check:build 通過；完整 e2e **41 passed、3 skipped**，跳過原有桌面專案不適用的手機橫向／短視窗案例。單元流程另印出實際 timezone `Etc/GMT-8`，build 仍有既有 >500 kB chunk 提示。首輪一個桌面案例的最後斷言假設第一筆同名事件是原事件；改為逐筆檢查並要求附件數恰為 `[0, 1]`，避免依賴排序，runtime 與 timeout 未修改。
+
+**限制與下一步**：ICS 只交換事件，附件不隨副本搬移；帳號有附件時仍允許 ICS 附加，JSON 取代的既有附件阻擋則由 DP-092 驗證。fake DB 只存在當頁記憶體，完整 page reload 會重建，因此以登出、只移除該 synthetic account cache、重登強制新 adapter 讀取；本項不證明真實 Supabase durability、Auth session restore、RLS 或 Storage binary 保存。沒有修改 runtime、harness、schema、版本或部署，未使用 Supabase MCP、真實帳號或正式資料。第三方日曆服務實際互通、真機檔案選擇器、staging 備份還原，以及 DP-034 的資料刪除／隱私／監控／效能／PWA 更新等驗收仍未完成；DP-032／034 的放行決策不因本子項改變。
