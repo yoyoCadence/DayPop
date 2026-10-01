@@ -292,3 +292,23 @@ DP-034 的備份／還原項目已有 DP-056 的 domain、adapter 與元件測�
 完整本機驗證：lint、typecheck、unit **55 檔 650/650**、build、check:build 通過；完整 e2e **29 passed、3 skipped**（原有桌面不適用的手機橫向／短視窗案例）。單元流程另印出實際 timezone `Etc/GMT-8`，本次未宣稱跨時區矩陣。build 仍有既有 >500 kB chunk 提示。
 
 **限制與下一步**：harness 的 fake DB 只存在該頁記憶體，完整 page reload 會重建，故這裡用登出後清掉 synthetic account cache 再重登來證明 adapter 重新讀取，不能宣稱真實 Supabase durability、Auth session restore、RLS 或 Storage binary 保存已通過。沒有使用 Supabase MCP、真實帳號或正式資料。ICS 瀏覽器流程、真機檔案選擇器、staging 備份還原與 DP-034 其他驗收仍未完成；本子項不改變 DP-032／034 的放行決策。
+
+> **2026-10-01 後續更新**：遊客 ICS 瀏覽器流程已由 DP-093 補上，見下一節；authenticated ICS、真實服務與裝置驗收仍待後續。
+
+### 5.7 遊客 ICS 匯入／匯出自動化交接（DP-093，2026-10-01）
+
+`e2e/ics-transfer.spec.ts` 使用真實 App 遊客入口與下載／選檔，沿用 DP-091 的豐富 synthetic 文件；`e2e/fixtures/icsTransfer.ts` 另提供手寫的匯出預期與外部 ICS bytes。預期值不經 production serializer／parser 產生。fixture 只灌入一次，reload 不會重設資料，初始 revision 為 7。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 匯出 .ics → 真實 download | 核對檔名及四個完整 VEVENT；包含 RRULE、EXDATE、RECURRENCE-ID、跨午夜時間與全天 exclusive end。匯出不改 storage bytes。 |
+| 選擇下載檔 → 取消／同頁重選／Escape／reload | 預覽顯示四個事件、兩個例外與三個 UID 碰撞；確認鈕初始有焦點，預覽與取消都不寫入，同一 file input 可重選。 |
+| 再選下載檔 → 確認附加六筆 → reload | 只新增四個事件與兩個例外，revision 僅 +1；原日曆、事件、例外、待辦、貼圖與偏好逐欄保留。新 ID 不與既有列重複，取消／替換例外只指向新系列與新替換事件；列表顯示兩套獨立 occurrence 與跨午夜片段。 |
+| 選擇手寫外部檔 → 確認 → reload／事件 sheet | 浮動時間依已保存的台北偏好解析，紐約 TZID 與 UTC 的 instant／timezone 維持原值；全天 end date 正確，文字換行、逗號、分號與 folded line 讀回正確。 |
+| 無事件檔／第一筆有效但後續 TZID 無效 → 重新選有效檔 | 整份拒絕、不開預覽、不部分匯入，原 bytes 與 reload 結果不變；之後有效檔能確認附加且 reload 保存。 |
+
+四個情境各在 mobile（390×844）與 desktop（1280×900）執行。瀏覽器明確設為 `America/New_York`，每個案例印出並斷言實際 `Intl.DateTimeFormat().resolvedOptions().timeZone`；文件偏好維持 `Asia/Taipei`，預設日曆刻意放在儲存陣列第二筆，避免裝置時區或第一筆日曆恰好與正確來源相同而掩蓋錯誤。日期固定為 `2026-09-30T04:00:00Z`，包含初始化在內的 console warning／error 與 pageerror 均要求為 0。重跑：`npm run test:e2e -- e2e/ics-transfer.spec.ts`。
+
+本機 Windows／Node 24.14.1：新增 **8/8**，完整 e2e **37 passed、3 skipped**（原有桌面不適用案例）；lint、typecheck、unit **55 檔 650/650**、build、check:build 通過。第一次同時跑 unit／e2e 時，4 個既有元件案例超過 5 秒期限、沒有斷言失敗；browser 完成後以 `npm run test -- --maxWorkers=2` 重跑全部通過，未提高 timeout 或修改設定。單元流程實印 timezone `Etc/GMT-8`，build 仍有既有 >500 kB chunk 提示。
+
+**格式界線與下一步**：ICS 是事件交換格式，這次明確確認現有 exporter 不帶待辦、偏好或 VALARM，imported event 使用預設日曆、空提醒與匯入時間戳；完整資料保存請使用 JSON 備份。沒有修改 runtime、schema、版本或部署，也未使用 Supabase MCP、真實帳號或正式資料。authenticated ICS、第三方服務實際互通、真機檔案選擇器、staging 備份還原及 DP-034 的其餘驗收仍未完成；父任務與 DP-032／034 放行決策不因本子項結案。
