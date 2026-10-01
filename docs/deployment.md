@@ -355,6 +355,10 @@ console 檢查只允許刻意離線版本 request 的一個 `ERR_INTERNET_DISCON
 
 ### 5.10 Production 遊客 PWA 更新與自動 reload（DP-096，2026-10-01）
 
+> **2026-10-01 工具交接（DP-098）**：`output/playwright/` 保存測試產物，不是來源。它已在 `.gitignore`，但 ESLint 不會自動沿用 Git 排除規則；實測 production generated JS 的 `isPathIgnored()` 原為 false，因此 `eslint.config.js` 的 global ignores 新增此目錄。只排除這個目錄，不擴至 `e2e` 或整個 `output`，不刪除除錯產物。
+>
+> 本機 API 驗證 64 個 generated JS 均 ignored，137 個 `src` 與 17 個 `e2e` TS／TSX 均未被忽略，且其他 `output` TS 路徑仍受檢查；App／e2e spec／fixture 的三個 `lintText()` 未使用變數負向檢查全部報錯。`npm run lint`、`npm run typecheck` 通過；只改設定，本機未重跑 runtime／browser／DB，完整驗證由既有 PR CI 執行。日後新增來源請留在 `src`／`e2e`，Playwright 產物沿用 `output/playwright`。
+
 承接 DP-095 的完整 App 交接，`e2e/production-update.spec.ts` 使用真正的 `src/main.tsx` production build、AppUpdateProvider 與瀏覽器 service worker，沒有 Auth harness 或 worker stub。`e2e/fixtures/productionUpdateSite.ts` 透過既有 Vite config 建置目前版本與 synthetic `999.0.0`，保留建置期金鑰檢查、將測試 build 的公開 Auth 設定設為空，並斷言沒有對外 request。產物只寫入 ignored `output/playwright/production-updates/` 的獨立目錄，`emptyOutDir: false` 不清除其他輸出；目前 worker 必須逐字符合 generated template／package version，合成新版的 worker 與公告只存在測試產物／記憶體，不回寫 release assets。
 
 每個案例有自己的 loopback origin、`/DayPop/` base 與 scope，HTTP 回應使用 `Cache-Control: no-store`。完整 schema-v4 fixture 與目前版的公告已讀紀錄只在 blank setup page 寫入一次，沒有 reload 會重灌的 init script。更新後逐字比對 guest envelope（含 revision／timestamp、重複取消／替換、跨午夜及全天行程、子待辦、貼圖、非預設偏好），並從畫面確認暖陽主題、寵物名字及 occurrence 列表。

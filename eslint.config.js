@@ -9,7 +9,9 @@ export default tseslint.config(
   // edge-runtime code, not ours. It is gitignored, so CI never saw it, but
   // anyone who runs the local stack to verify a migration got ~99 phantom
   // errors until this line existed.
-  { ignores: ['dist', 'coverage', 'public/sw.js', 'supabase/.temp'] },
+  // Playwright production builds and reports are generated under
+  // `output/playwright`; keep the actual `e2e` sources covered by lint.
+  { ignores: ['dist', 'coverage', 'public/sw.js', 'supabase/.temp', 'output/playwright'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
