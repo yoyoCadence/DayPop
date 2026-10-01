@@ -103,6 +103,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-01 帳號 ICS 委託**：專案擁有者合併 PR #83 後授權繼續。Next 仍為空，既有產品決策／真機依賴未解除；承接 DP-093 的帳號路徑交接，將前置 DP-056／030／082 已滿足的 **DP-094** 從 Backlog 經 Next、In Progress 完成後移入 Done。本項限登入 harness 的 ICS 瀏覽器回歸與交接，DP-034 父任務及上線放行仍未完成。
 
+> **2026-10-01 Worker 委託**：專案擁有者合併 PR #84 後授權繼續。Next 為空，其他優先項的產品決策／真機依賴未解除；沿 DP-034 正式上線檢查拆出 **DP-095（真實 service worker 更新與資料保全回歸）**，從 Backlog 經 Next、In Progress 完成後移入 Done。既有 browser 更新案例使用 dev App，本項直接執行 generated worker，不修改 release、runtime 或部署；父任務及放行仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -175,6 +177,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 子項進度**：DP-092 已補上帳號 JSON 還原與附件拒絕匯入的本機 harness 回歸，並修正拒絕後 App 卸載與 saving 未清除；見 Done 與同份交接 §5.6。使用 FakeSupabase 的證據不等於真實雲端／session restore、RLS、Storage binary、真機或 staging 驗收，父任務仍未完成。
   > **2026-10-01 ICS 子項進度**：DP-093 已補上遊客 ICS 真實檔案 IO、附加／例外／時區／拒絕與 reload 的本機 Chromium 回歸，見同份交接 §5.7。authenticated ICS、第三方服務實際互通、真機／staging 與本條其他驗收仍未完成。
   > **2026-10-01 帳號 ICS 子項進度**：DP-094 已補上 authenticated ICS 真實下載／選檔、碰撞 UID／例外、附件保留、整份拒絕及清除帳號快取後重登讀回的本機 harness 回歸，見同份交接 §5.8。真實服務 durability／RLS／Storage binary／Auth session restore、第三方服務、真機／staging 與本條其他驗收未由此驗證，父任務仍未完成。
+  > **2026-10-01 Worker 子項進度**：DP-095 已在本機 mobile／desktop Chromium 實跑 generated worker 的等待／啟用／快取清理、使用者儲存保全、離線已快取 shell／asset 與版本資訊不回 stale cache，見同份交接 §5.9。使用最小靜態 shell，未驗證完整 production React 更新 UX、自動 reload、更新後 Auth、真機 PWA 或 staging；本條其他項目與父任務放行仍未完成。
 
 ### 原型假功能與待補能力
 
@@ -216,6 +219,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-095 — 真實 service worker 更新與資料保全瀏覽器回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/service-worker.spec.ts` 與 per-test loopback `e2e/fixtures/workerSite.ts`，兩個情境 × mobile／desktop 共 4 個案例，直接執行 `public/sw.js` 而非 stub。先核對 generated worker 與 template／package version 一致；下一版只在測試回應記憶體中換成 synthetic `999.0.0`。驗證 `/DayPop/` scope、installed／waiting 保留 old active worker 與 cache、明確 `SKIP_WAITING` 後 controllerchange／activate 只刪舊 app-shell cache；guest、account cache、legacy／`CALPET_FIRED` bytes、IndexedDB sentinel 及其他 Cache Storage 保留。另驗證離線 navigation／已取得 asset、版本檢查 bypass stale cache 且離線拒絕，以及 scope 外頁面不受控制。fixture 在 finally 恢復網路、關閉 server／connections。
+  > **驗證**：lint、typecheck、unit **55 檔 650/650**（`--maxWorkers=2`）、build、check:build 通過；新增 targeted **4/4**、完整 e2e **45 passed、3 skipped**（原有桌面不適用案例）。Browser 實印並斷言 `Asia/Taipei`，unit 實印 `Etc/GMT-8`。只允許刻意 offline version request 的一個指定 `ERR_INTERNET_DISCONNECTED`，逐一核對 URL／訊息／類型／次數；其他 console error／warning 與 pageerror 為 0。Build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：最小靜態 shell 不等於完整 production App；直接傳訊息不代表「立即更新」按鈕、自動 reload、更新後登入狀態、完整 bundle 離線能力、真機 PWA 或 staging 已驗收。沒有修改 runtime、worker template、release／generated asset、schema 或部署，未使用 Supabase MCP／真實帳號。DP-034 的完整 App 更新、資料刪除／隱私／監控／效能與放行仍待後續；詳見 [`docs/deployment.md`](docs/deployment.md) §5.9。
 
 - [x] **DP-094 — 登入帳號 ICS 匯入／匯出瀏覽器回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/account-ics-transfer.spec.ts`，兩個情境 × mobile／desktop 共 4 個案例。透過 UI 建立附件、每日系列、單次取消／改期、待辦與偏好；真實 ICS 下載核對三個完整 VEVENT／RRULE／EXDATE／RECURRENCE-ID，不含附件、待辦、偏好或遊客資料。預覽／取消／Escape 保留快取 bytes，同頁可重選；確認只附加三個事件與兩個例外，新例外指向新系列／替換，全部原資料、附件 metadata 及 guest bytes 保留，ICS 副本不帶附件。後續非法 TZID 整份拒絕，同一選檔入口仍能預覽有效檔；清除 synthetic account cache 重登無部分寫入，有效外部檔可附加並再次重新讀回。
   > **驗證**：lint、typecheck、unit **55 檔 650/650**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **41 passed、3 skipped**（原有桌面不適用案例），新增 **4/4**，console warning／error 與 pageerror 為 0。browser 實印並斷言 `Asia/Taipei`，單元流程實印 `Etc/GMT-8`，未宣稱跨時區矩陣。首輪一個桌面斷言依賴同名事件排序，已改為檢查兩筆各自的附件，未提高 timeout 或修改 runtime；build 保留既有 >500 kB chunk 提示。
