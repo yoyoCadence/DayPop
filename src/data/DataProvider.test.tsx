@@ -1,6 +1,7 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { DataTransferError } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { MemoryStorage } from '../storage/browserStorage';
@@ -267,6 +268,66 @@ describe('DataProvider', () => {
     expect(state.status).toBe('ready');
     expect(state.status === 'ready' ? state.data.todos : []).toHaveLength(0);
     expect(state.status === 'ready' ? state.warning?.kind : null).toBe('write-failed');
+    expect(state.status === 'ready' ? state.saving : null).toBe(false);
+  });
+
+  it.each([false, true])('keeps an import refusal in the caller without discarding ready data (cached warning: %s)', async (cached) => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    const refusal = new DataTransferError('帳號仍有附件，不能取代');
+    const next = { ...data, preferences: { ...data.preferences, petName: '繼續編輯' } };
+    const repository: DayPopRepository = {
+      ...asyncRepository(data),
+      ...(cached ? {
+        load: () => Promise.reject(new CachedRemoteLoadError(
+          data, new RemoteDataError('讀取帳號資料', new Error('network down')),
+        )),
+      } : {}),
+      importData: () => Promise.reject(refusal),
+      updatePreferences: async () => next,
+    };
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    const before = latest().state;
+    const renderCount = seen.length;
+
+    await act(async () => {
+      await expect(latest().actions.importData({ kind: 'replace', data })).rejects.toBe(refusal);
+    });
+
+    expect(latest().state).toEqual({ ...before, saving: false });
+    expect(seen.slice(renderCount).every((value) => value.state.status === 'ready')).toBe(true);
+    await act(async () => {
+      latest().actions.updatePreferences({ petName: '繼續編輯' });
+    });
+    expect(latest().state).toEqual({ status: 'ready', data: next });
+  });
+
+  it('keeps saving after an import refusal until the already queued write settles', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    let rejectImport!: (error: Error) => void;
+    let resolveWrite!: (data: DayPopUserData) => void;
+    const repository: DayPopRepository = {
+      ...asyncRepository(data),
+      importData: () => new Promise((_resolve, reject) => { rejectImport = reject; }),
+      updatePreferences: () => new Promise((resolve) => { resolveWrite = resolve; }),
+    };
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    let rejection!: Promise<unknown>;
+    await act(async () => {
+      // Attach a rejection handler immediately; the dialog also awaits this promise.
+      rejection = latest().actions.importData({ kind: 'replace', data }).catch((error) => error);
+      latest().actions.updatePreferences({ petName: '排隊編輯' });
+    });
+    expect(resolveWrite).toBeUndefined();
+    const refusal = new DataTransferError('帳號仍有附件，不能取代');
+    await act(async () => {
+      rejectImport(refusal);
+      expect(await rejection).toBe(refusal);
+    });
+    expect(resolveWrite).toBeTypeOf('function');
+    expect(latest().state).toEqual({ status: 'ready', data, saving: true });
+    const next = { ...data, preferences: { ...data.preferences, petName: '排隊編輯' } };
+    await act(async () => { resolveWrite(next); });
+    expect(latest().state).toEqual({ status: 'ready', data: next });
   });
 
   it('reports saving until every queued repository write has settled', async () => {
