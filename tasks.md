@@ -107,6 +107,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-01 Production 更新委託**：專案擁有者合併 PR #85 後授權繼續。Next 為空，其他優先項的產品決策／真機依賴未解除；承接 DP-095 的完整 App 更新交接，將前置 DP-030／090／095 已滿足的 **DP-096** 從 Backlog 經 Next、In Progress 完成後移入 Done。新回歸重現安裝中按更新會提早 reload，因此包含必要的等待修正；DP-034 父任務及上線放行仍未完成。
 
+> **2026-10-01 Lint 委託**：專案擁有者授權繼續；開工以 GitHub metadata 與 `git ls-remote` 核對，PR #87 仍待審查、`origin/main` 停在已合併的 #86。其他優先項的產品決策／真機依賴未解除，因此承接 DP-097 交接中已登記、只依賴 DP-096 產物路徑的 **DP-098**，在本分支登記為 Backlog 後經 Next、In Progress 完成並移入 Done。本項可獨立推進，沒有代為合併 #87 或帶入其變更，DP-034 父任務仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -222,6 +224,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-098 — ESLint 排除 Playwright generated 產物：** 2026-10-01 完成。`eslint.config.js` 的 global ignores 只新增 `output/playwright`，排除 production build／report，保留真實 `src`／`e2e` 來源檢查。原本 `.gitignore` 已排除此路徑，但 ESLint 不會自動沿用，修改前 `isPathIgnored()` 實測為 false。
+  > **實際驗證**：ESLint API 確認本機 64 個 generated JS 全部 ignored，137 個 `src` 與 17 個 `e2e` TS／TSX 全部未被忽略，`output/playwright` 外的 TS 路徑仍未被忽略；以 `lintText()` 在 App、e2e spec、fixture 三個來源位置放入未使用變數，3/3 均得到 `@typescript-eslint/no-unused-vars`。`npm run lint`、`npm run typecheck` 通過；低影響設定修改不新增重複實作的測試，本機未重跑 runtime／browser／DB，完整閘門交由既有 PR CI。
+  > **範圍與交接**：沒有刪除產物、改 lint 規則、重構測試或修改 runtime／schema／release／部署。交接見 [`docs/deployment.md`](docs/deployment.md) §5.10 的工具註記；未改變 DP-034／032 驗收與放行。本次從實際最新 `origin/main`（已合併 PR #86）獨立開分支，PR #87 在開工核對時仍為 Open，本項不依賴其 runtime 修正。
 
 - [x] **DP-096 — Production 遊客 PWA 更新與自動重新載入回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/production-update.spec.ts` 與隔離 loopback fixture，使用既有 Vite config 的兩份 production build、真實 AppUpdateProvider 與 generated worker；兩個情境 × mobile／desktop 共 4 個案例，驗證稍後提醒、手動重查、立即更新、自動 reload 到新版 bundle、公告已讀與 guest envelope 逐字保留，以及新版仍在 install 時按更新。fixture 只在 setup page 灌一次資料，含重複例外、跨午夜與全天行程、子待辦、貼圖與偏好；合成版 `999.0.0` 只在 ignored 產物／測試回應，不修改既有 release。
   > **必要修正**：安裝中案例在原實作重現提早 reload；`registration.update()` resolve 不保證 install 已完成。`useAppUpdate.ts` 在沒有 waiting、仍有 installing worker 時返回等待，沿用既有 statechange 啟用及 controllerchange reload；新增 2 個單元案例確認此路徑與原本沒有 worker 的 reload fallback。
