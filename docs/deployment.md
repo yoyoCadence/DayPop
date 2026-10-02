@@ -421,3 +421,21 @@ PR #89 已合併後，GitHub 回報仍為 Open 的 PR #87 `mergeable: false`。�
 本機 Windows／Node 24.14.1：lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 全部通過；完整 e2e **55 passed、3 skipped**，含 DP-097 更新失敗／重試與 DP-099 已快取遊客 App 離線情境，跳過項都是原有桌面不適用案例。Node 實際 timezone 印出 `Etc/GMT-8`，browser 印出 `Asia/Taipei`／`America/New_York`；build 保留既有 >500 kB chunk 提示。ESLint API 確認 generated 產物 ignored、`e2e/production-offline.spec.ts` 未被忽略。
 
 合併 commit 會保留兩邊歷史，以 fast-forward 更新既有遠端 `fix/dp-097-pwa-update-retry` 及 PR #87，不 force push、不新增重複 PR，也不推 main 或操作 GitHub 合併。CI 與可合併狀態在 push 後另行核對；這只恢復可審查狀態，DP-034 上線放行、真實 Auth／account adapter、quota／多分頁、真機及 staging 限制仍保留，未使用 Supabase MCP／正式帳號／正式資料。
+
+### 5.12 不可讀資料的備份與重設（DP-101，2026-10-02）
+
+PR #87 合併後，從最新 `origin/main`（`5255438`）獨立開分支，依 ADR §1 的原始內容保存規則補上復原回歸。原本 UI 以最後一個 backup key 開放重設，`resetUserData()` 也只檢查是否有任何備份；使用者留下先前文件的備份時，新的 corrupt／future 原始內容仍未備份卻可被覆寫。修正前 3 個 storage 單元案例重現未拒絕，兩條 production 手機案例在 `toBeDisabled()` 重現錯誤開放。
+
+`findMatchingUserDataBackup()` 對原始字串逐字比較，不 parse／重新序列化不可讀內容；UI 初始化只認領相符備份，較新的無關 backup 不會遮蔽較舊的相符 backup。`resetUserData()` 在執行前重新讀取目前 key，再走同一檢查；備份後原始內容變動時拒絕重設，保留 key 與舊備份。此修正不改 UI 版面、延遲初始化或既有下載／明確按重設的流程。
+
+`e2e/production-storage-recovery.spec.ts` 沿用隔離 loopback production fixture／generated worker，關閉真實 Auth，手機 390×844 與桌面 1280×900 各跑截斷 JSON、較新 schema 兩條情境。原始內容與 sentinel 只在 setup page 寫一次，沒有 init script 在 reload 重灌。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 舊 backup＋新的不可讀資料 → 開啟及 reload | 原始 bytes 不變、復原原因正確、重設停用、正常編輯／分頁入口隱藏；future 顯示先更新 App 建議。 |
+| 備份並下載 → 較新無關 backup → reload | 真實 download 逐字保留原始字串（含空白、中文與換行），本機相符備份存在、原始 key 不變，畫面認領相符 key 並開放重設。 |
+| 明確按重設 → 設定／reload | schema v4、revision 1、空事項與單一預設日曆，漫畫／摩卡偏好可見；reload 後 envelope bytes 相同。相符／不相符舊備份、calpet.v2、CALPET_FIRED、synthetic account cache 及其他 key 不變。 |
+
+新增 4 個單元案例涵蓋無關舊備份、備份後原始內容變動、相同 JSON 值但 bytes 不同、較舊相符備份可使用；局部 **20/20**。本機 Windows／Node 24.14.1：lint、typecheck、完整 unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 全部通過，targeted **4/4**，完整 e2e **59 passed、3 skipped**（原有桌面不適用案例）。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0。browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-storage-recovery.spec.ts`。
+
+**限制與下一步**：只驗證 persistent guest 的不可讀資料復原。重設 guard 能拒絕「進入重設前已變動」的資料，不提供跨分頁原子鎖，沒有驗證真正同時 interleaving。記憶體模式、quota、下載取消／OS 封鎖、valid data 全刪除、帳號刪除、真機與 staging 仍未驗證。未使用 Supabase MCP／正式帳號／正式資料，不改 schema／Auth／worker template／release assets／版本或部署；修正待後續 release，DP-034 父任務與上線放行保持未完成。

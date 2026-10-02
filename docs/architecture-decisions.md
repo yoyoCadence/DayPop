@@ -23,6 +23,7 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 - 四個狀態中的 `unavailable` **沒有**做成第四種 read status。`StorageReadResult` 維持 `ready`／`corrupt`／`future` 三態，storage 不可用改由下一層的 `AppStorage` 處理：probe 失敗或中途遭拒就換成 `MemoryStorage`，讀取結果照常是 `ready`。這樣「資料本身有問題」與「這台裝置存不了」是兩個獨立的軸，UI 也能同時呈現（復原畫面＋記憶體模式橫幅）。
 - 記憶體模式的警告是版面內、不可關閉的橫幅，四個分頁與復原畫面都顯示；降級後不自動切回持久化，否則同一個 session 會半在磁碟半在記憶體。
 - write barrier 與 future-version 回歸測試已完成，schema version 提升的前置解除。
+- **DP-101（2026-10-02）補正復原閘門**：存在任意舊備份不代表目前原始資料已備份。復原畫面以 `findMatchingUserDataBackup()` 找內容逐字一致的備份；`resetUserData()` 執行前重新讀取目前 key 並套用同一檢查，資料在備份後變動即拒絕重設。較新但不相符的備份不會遮蔽較舊的相符備份。這是 §1 既有規則的修正，不提升 schema，也不提供跨分頁原子鎖；驗證與剩餘限制見 [`deployment.md`](deployment.md) §5.12。
 
 ## 2. Domain contract 先於 repository adapter
 

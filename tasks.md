@@ -115,6 +115,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-02 待審 PR 整合委託**：專案擁有者合併 PR #89 後授權繼續。PR #87 仍為 Open，但 GitHub 回報 `mergeable: false`；優先將已完成的 PWA 更新失敗修正恢復為可審查狀態，登記 **DP-100**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main` 獨立開整合分支，更新原 PR 而不建立重複 PR；DP-097 原實作與 DP-098／099 已合併成果均保留，DP-034 父任務仍未完成。
 
+> **2026-10-02 復原委託**：專案擁有者合併 PR #87 後授權繼續。Next 為空，其餘產品決策／真機依賴未解除；依資料保存優先序承接 DP-034 與 ADR §1 的復原規則，登記 **DP-101**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`5255438`）獨立開分支；新增回歸重現舊備份錯誤開放重設，因此包含必要的 UI／storage 閘門修正，父任務與上線放行仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -192,6 +194,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 更新復原子項進度**：DP-097 已補上 script／install 回 503 後留在原 production App、解除準備中、顯示錯誤、保留資料並可重試的回歸，見同份交接 §5.11。實際斷線／quota／長時間無回應／activation／多分頁、真實 Auth、完整離線、真機／staging 及本條其他驗收仍未完成，父任務及放行保持未完成。
 
   > **2026-10-02 已快取 App 離線子項進度**：DP-099 已補上完整 production 遊客 App 的已快取新頁／reload、離線本機編輯保存與恢復後人工更新檢查回歸，見同份交接 §5.10.1。首次未控制載入、未快取資源、browser process 重啟、帳號離線／session、原生 online event、真機與 staging 仍未驗證；不代表完整離線或父任務已完成。
+  > **2026-10-02 復原子項進度**：DP-101 修正舊備份錯誤開放重設，補上 persistent guest 的 corrupt／future 資料保護、原始內容下載、重設及 reload 回歸，見同份交接 §5.12。不是有效資料的全刪除／帳號刪除驗收；記憶體模式、quota／下載取消、真正跨分頁競態、真機／staging 仍未驗，父任務不結案。
 
 ### 原型假功能與待補能力
 
@@ -233,6 +236,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-101 — 復原前必須備份目前原始資料（DP-034 子項）：** 2026-10-02 完成。先在原實作重現 3 個 storage 回歸不拒絕重設及 2 條 production 手機案例按鈕錯誤開放。新增 `findMatchingUserDataBackup()` 供 UI 與 reset 共用，備份必須與原始內容逐字一致；reset 執行前重新讀取當下 key，備份後變動即拒絕，不讓任意舊備份授權覆寫。保留延遲初始化、版面與既有備份／下載流程。
+  > **實際驗證**：新增 4 個單元回歸，局部 20/20；lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過。`e2e/production-storage-recovery.spec.ts` 用真正 production App，在 mobile／desktop 各跑 corrupt／future，targeted **4/4**，完整 e2e **59 passed、3 skipped**（原有桌面不適用案例）。核對未備份前 bytes 不變／編輯入口隱藏、真實 download 逐字內容、matching backup 不被較新無關備份遮蔽、重設後 canonical 空資料與 reload 持久化、舊備份／legacy／帳號快取／其他 key 保留；console warning／error、pageerror、意外失敗與對外 request 為 0。新增 browser 實際時區印出並斷言 `Asia/Taipei`，Node 為 `Etc/GMT-8`；保留既有 >500 kB chunk 提示。
+  > **範圍與交接**：限 persistent guest 復原，不是有效資料的全刪除或帳號刪除。記憶體模式、quota／下載取消、真正跨分頁原子競態、真機／staging 未由本項驗證；未使用 Supabase MCP／正式帳號／正式資料，不改 schema／Auth／worker template／release／版本／部署。交接見 [`docs/deployment.md`](docs/deployment.md) §5.12 與 ADR §1；修正待後續 release，DP-034 父任務與上線放行仍未完成。
 
 - [x] **DP-100 — 更新待審 PWA 重試 PR 至最新基線：** 2026-10-02 完成。由最新 `origin/main`（`7a513ad`）建立獨立整合分支，整合 PR #87 原 commit `c14df6b`；只在 `tasks.md` 與 `docs/deployment.md` 解決內容衝突、補上本項交接，保留兩側紀錄，DP-098 只保留 Done。DP-097 runtime／原測試與 DP-098 lint 設定／DP-099 離線回歸的來源差異均為空。
   > **實際驗證**：lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **55 passed、3 skipped**，含兩側 production 更新／離線案例，跳過項皆為原有桌面不適用案例。Node 實際 timezone `Etc/GMT-8`，browser 印出 `Asia/Taipei`／`America/New_York`；保留既有 >500 kB chunk 提示，ESLint API 確認 generated 產物 ignored、真實離線 spec 未忽略。

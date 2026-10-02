@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStorageMode } from '../hooks/useStorageMode';
 import {
   backupRawUserData,
-  listUserDataBackups,
+  findMatchingUserDataBackup,
   resetUserData,
   type StorageReadResult,
 } from '../storage/versionedStorage';
@@ -27,7 +27,7 @@ export interface DataRecoveryScreenProps {
  */
 export function DataRecoveryScreen({ result, onRecovered }: DataRecoveryScreenProps) {
   const [backupKey, setBackupKey] = useState<string | null>(
-    () => listUserDataBackups().at(-1) ?? null,
+    () => findMatchingUserDataBackup(result.raw),
   );
   const [error, setError] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState(false);

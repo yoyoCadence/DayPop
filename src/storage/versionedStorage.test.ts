@@ -186,6 +186,46 @@ describe('backup and reset', () => {
     expect(readUserData().status).toBe('ready');
   });
 
+  it('refuses an unrelated old backup without changing either document', () => {
+    const oldKey = backupRawUserData('older damaged document');
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'new damaged document');
+
+    expect(() => resetUserData()).toThrow(/尚未備份/);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('new damaged document');
+    expect(localStorage.getItem(oldKey)).toBe('older damaged document');
+  });
+
+  it('rechecks the current bytes if the document changed after backup', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'original');
+    const key = backupRawUserData('original');
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'changed after backup');
+
+    expect(() => resetUserData()).toThrow(/尚未備份/);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe('changed after backup');
+    expect(localStorage.getItem(key)).toBe('original');
+  });
+
+  it('requires identical bytes even when JSON values are equivalent', () => {
+    backupRawUserData('{"schemaVersion":99}');
+    const raw = ' { "schemaVersion": 99 }\n';
+    localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
+
+    expect(() => resetUserData()).toThrow(/尚未備份/);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
+  });
+
+  it('accepts an older matching backup even when the latest one differs', () => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, 'original');
+    const matching = backupRawUserData('original', localStorage, new Date('2026-10-01T00:00:00Z'));
+    const unrelated = backupRawUserData('other', localStorage, new Date('2026-10-02T00:00:00Z'));
+
+    resetUserData();
+
+    expect(readUserData().status).toBe('ready');
+    expect(localStorage.getItem(matching)).toBe('original');
+    expect(localStorage.getItem(unrelated)).toBe('other');
+  });
+
   it('keeps every backup instead of clobbering an earlier one', () => {
     const first = backupRawUserData('first', localStorage, new Date(2026, 0, 1));
     const second = backupRawUserData('second', localStorage, new Date(2026, 0, 2));
