@@ -458,3 +458,21 @@ App 正常啟動並讀回偏好／occurrence 後，測試才以 `quota-test.fill
 完整驗證：lint、typecheck、unit **55 檔 660/660**（`npm run test -- --maxWorkers=2`）、build、check:build 通過；完整 e2e **61 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。Node 實際 timezone 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示，沒有回寫版本或 release assets。
 
 **限制與下一步**：只驗證已正常啟動的 guest 在編輯途中 persistent→memory，以及釋放額度後 reload。開機 probe 就失敗、storage 存取被安全政策禁止、corrupt／future 的記憶體復原、下載取消、多分頁競態、實際帳號快取降級、真機與 staging 仍未驗證。未修改 runtime、schema、Auth、worker template、release／版本或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補開機／blocked storage 或記憶體復原案例；DP-034 父任務與上線放行仍未完成。
+
+### 5.15 Production 開機 localStorage 不可用（DP-104，2026-10-02）
+
+承接 DP-017／102 的開機交接，從實際最新 `origin/main`（`09f7166`）獨立開分支。開工核對 PR #92（DP-103）仍為 Open，本項不依賴或搬入其 quota helper／案例；§5.14 保留給該待審 PR 的記憶體復原交接。
+
+`e2e/production-unavailable-storage.spec.ts` 沿用隔離 loopback production build fixture，在此 spec 的 worker 設定 Chromium 原生 `--disable-local-storage`。先進入同 origin 的 blank setup page，核對並印出 `window.localStorage === null`，再載入真正 production App；不替換 Storage API／getter、不以 init script 注入模式或預設文件。公開 Auth 設定為空，測試只發送同 origin request，不連真實服務。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 初次啟動 | 正常顯示 App 與漫畫淺色預設；四分頁皆顯示不可關閉的 `role=status` 警告，原因為「這個瀏覽器沒有提供本機儲存空間」，明示 reload／關閉後內容消失。 |
+| UI 建立行程／待辦、完成待辦、修改寵物名字 | 跨分頁仍可看到編輯；真實 JSON 下載保留全天日期、預設日曆關聯、completion instant 與偏好，localStorage 仍為 null。 |
+| reload 新 document | memory store 重建，修改消失、寵物回「摩卡」、canonical 空資料與新預設日曆可再次真實匯出；四分頁警告繼續存在。 |
+
+「看過公告」同樣只在 memory store，首次與 reload 都等待並以「知道了」關閉真實版本公告，不用 storage sentinel 跳過。mobile 390×844 與 desktop 1280×900 的 targeted **2/2** 已通過；首輪測試返回日曆時未重新選列表造成 locator 失敗，補上正常 UI 操作後通過，未改 runtime。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；實際 browser timezone 印出並斷言 `Asia/Taipei`。
+
+重跑：`npm run test:e2e -- e2e/production-unavailable-storage.spec.ts`。本機 Windows／Node 24.14.1 的 lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **63 passed、3 skipped**（原有桌面不適用案例）。Node 實際 timezone 印出 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。
+
+**限制與下一步**：這只證明原生 API 缺少／null 時的開機記憶體模式，不等於驗證 `SecurityError`、初始 quota、瀏覽器 cookie／隱私政策封鎖、已存在但不可讀的 durable bytes、下載取消、真正多分頁競態、實際帳號快取、真機或 staging。未改 runtime、schema、Auth、worker template、release／版號或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補初始 quota 或下載失敗回饋；DP-034 父任務及上線放行仍未完成。
