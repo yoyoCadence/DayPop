@@ -119,7 +119,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-02 Quota 委託**：專案擁有者合併 PR #90 後授權繼續。Next 為空，既有產品決策／真機依賴未解除；承接 DP-017／101 的資料保存交接，將已正常啟動的遊客 session quota 降級拆為 **DP-102**，從 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`f74e8e3`）獨立開分支；本項只補測試與交接，不改 runtime，DP-034 父任務與上線放行仍未完成。
 
+> **2026-10-02 記憶體復原委託**：專案擁有者合併 PR #91 後授權繼續。Next 為空，既有產品決策／真機依賴未解除；承接 DP-101／102 的復原交接，將備份遇 quota 後的記憶體重設與 reload 拆為 **DP-103**，從 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`09f7166`）獨立開分支；本項只改測試與交接，父任務 DP-034 與上線放行未完成。
+
 > **2026-10-02 開機儲存委託**：專案擁有者授權繼續一項工作。Next 為空，其餘產品決策／真機依賴未解除；依資料保存優先序承接 DP-017／102，登記 **DP-104**，由 Backlog 經 Next、In Progress 完成並移入 Done。開工遠端核對 PR #92 仍為 Open，從實際最新 `origin/main`（`09f7166`）獨立開分支，不依賴其 quota helper／案例。本項限 production 開機原生 localStorage 為 null 的回歸，DP-034 父任務及上線放行仍未完成。
+
+> **2026-10-02 待審記憶體復原 PR 整合委託**：專案擁有者合併 PR #93 後授權繼續一項工作。開工以 `git fetch` 與 GitHub metadata 核對：PR #92（DP-103）仍為 Open、三項 CI 均為成功，但 #93 合併後 GitHub 回報 `mergeable: CONFLICTING`。Next 為空，其餘產品決策／真機依賴未解除；比照 DP-100，優先把已完成的工作恢復為可審查狀態，登記 **DP-105**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`6c9de6d`）獨立開整合分支，更新原 PR 而不建立重複 PR；DP-103 原實作與已合併的 DP-104 成果均保留，沒有新增測試情境或 runtime 變更，DP-034 父任務仍未完成。
 
 ## In Progress
 
@@ -200,6 +204,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 已快取 App 離線子項進度**：DP-099 已補上完整 production 遊客 App 的已快取新頁／reload、離線本機編輯保存與恢復後人工更新檢查回歸，見同份交接 §5.10.1。首次未控制載入、未快取資源、browser process 重啟、帳號離線／session、原生 online event、真機與 staging 仍未驗證；不代表完整離線或父任務已完成。
   > **2026-10-02 復原子項進度**：DP-101 修正舊備份錯誤開放重設，補上 persistent guest 的 corrupt／future 資料保護、原始內容下載、重設及 reload 回歸，見同份交接 §5.12。不是有效資料的全刪除／帳號刪除驗收；記憶體模式、quota／下載取消、真正跨分頁競態、真機／staging 仍未驗，父任務不結案。
   > **2026-10-02 Quota 子項進度**：DP-102 已補上正常啟動的 production guest 編輯中途原生 quota 降級、四分頁持續警告、完整記憶體匯出與 durable bytes 保護；釋放額度不自動補寫，reload 讀回原文件，見同份交接 §5.13。開機 probe 失敗、記憶體復原、實際帳號、真機／staging 與其他驗收仍未完成，父任務不結案。
+  > **2026-10-02 記憶體復原子項進度**：DP-103 已補上 corrupt／future 備份遇 quota 的真實下載、記憶體重設／編輯及持續警告；釋放額度不補寫、reload 回原 blocked 文件並重新要求備份，見同份交接 §5.14。開機 probe／storage 存取封鎖、下載取消、多分頁競態、實際帳號及真機／staging 仍未完成，父任務不結案。
   > **2026-10-02 開機儲存子項進度**：DP-104 已補上原生 localStorage 為 null 時的 production 開機記憶體模式、四分頁持續警告、跨分頁編輯／真實 JSON 匯出與 reload 回預設，見同份交接 §5.15。SecurityError、初始 quota、實際政策封鎖、帳號、真機／staging 及其他驗收仍未完成，父任務不結案。
 
 ### 原型假功能與待補能力
@@ -243,9 +248,17 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-105 — 更新待審記憶體復原 PR 至最新基線：** 2026-10-02 完成。由最新 `origin/main`（`6c9de6d`）建立獨立整合分支，整合 PR #92 原 commit `d623033`。衝突只在 `tasks.md`、`docs/deployment.md` 與 `docs/prototype-behavior-baseline.md` 共五處，都是 DP-103 與 DP-104 在同一位置各自新增紀錄；解法是兩側全留，依章節／時間順序排列（§5.14 在 §5.15 之前），沒有改寫任一側的文字或數字。DP-103 的 quota fixture 與兩個 storage spec 相對 PR head 的差異為空；`src`、DP-104 的 `e2e/production-unavailable-storage.spec.ts`、其餘 e2e 支援檔、`package.json`／lockfile、release assets、worker template、`supabase`、workflow 與 scripts 相對 `origin/main` 的差異亦為空。
+  > **實際驗證**：整合後 lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **67 passed、3 skipped**、無 flaky／重試，是第一次把 DP-103 的 4 個記憶體復原案例與 DP-104 的 2 個開機案例放在同一輪跑（兩側條目的 65 與 63 各自量於不含對方的分支，照留不回寫）。跳過的仍是原有 3 個桌面不適用的橫向／短視窗案例。Node 實際 timezone 印出 `Etc/GMT-8`，browser 印出 `Asia/Taipei`／`America/New_York`；build 保留既有 >500 kB chunk 提示。build 產生的 `public/version.json` 只有換行差異、內容相同，未納入提交。
+  > **範圍與交接**：以保留兩邊歷史的 merge commit fast-forward 更新既有 `test/dp-103-memory-storage-recovery`／PR #92，不 force push、不新增重複 PR、不推 main 或自行合併。CI 與 GitHub 可合併狀態於 push 後核對。本項不新增測試情境、runtime／browser 行為，不改 schema／Auth／release／版號／部署，未使用 Supabase MCP／正式帳號／正式資料。詳見 [`docs/deployment.md`](docs/deployment.md) §5.14.1；DP-034 父任務、初始 quota、下載失敗回饋、真機／staging 仍未驗收。
+
 - [x] **DP-104 — Production 開機 localStorage 不可用回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-unavailable-storage.spec.ts`，真正 production App 在 mobile／desktop 各一例，以此 spec worker 的 Chromium 原生 `--disable-local-storage` 讓 API 為 null，先在空白頁核對再載入 App，不替換 Storage API／getter。初次啟動與 reload 後四分頁皆持續警告；UI 建立全天行程／待辦、完成待辦與修改寵物名字後，跨分頁保留編輯並真實下載 JSON；reload 重新建立 canonical 空資料與預設日曆，修改消失。版本公告依正常 UI 關閉，沒有 storage sentinel。
   > **實際驗證**：lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**、完整 e2e **63 passed、3 skipped**（原有桌面不適用案例）。新增 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；印出並斷言 native API 為 null、browser timezone `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。首輪返回日曆未重新選列表造成測試 locator 失敗，補上 UI 操作後通過，未改 runtime。
   > **限制與交接**：限原生 API 缺少／null 的開機情境，不證明 SecurityError、初始 quota、實際隱私政策封鎖、已有但不可讀的 durable bytes、下載取消、多分頁競態、實際帳號、真機／staging。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號／部署。重跑與下一步見 [`docs/deployment.md`](docs/deployment.md) §5.15；DP-034 父任務及上線放行仍未完成。
+
+- [x] **DP-103 — Production quota 下的記憶體復原回歸（DP-034 子項）：** 2026-10-02 完成。production 復原 spec 新增 corrupt／future × mobile／desktop 共 4 個案例：復原畫面填滿原生 localStorage，備份下載逐字保留原始內容並降級，文案指向下載檔案、磁碟無新 backup；明確重設只改記憶體，四分頁持續警告。釋放測試填充後再改偏好與真實 JSON 下載，單一預設日曆／空資料正確、原始 envelope／舊 backup／legacy／synthetic account cache／其他 entries 不變；reload 再回原 blocked 文件，重設停用並需重新備份。相同 quota 填充抽至 test fixture，既有 DP-102 斷言保留。
+  > **實際驗證**：lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；新增 targeted **4/4**，完整 e2e **65 passed、3 skipped**（原有桌面不適用案例）。首輪既有六條 storage 案例通過，新案例只因 Windows Chromium 將下載檔名冒號替換為底線而失敗，正規化這個平台差異後通過，仍逐字核對原始內容。新增 console warning／error、pageerror、意外失敗與對外 request 為 0；browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 為 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：只驗證備份寫入時的 quota 降級；開機 probe／storage 存取封鎖、下載取消／OS 封鎖、真正多分頁競態、實際帳號、真機／staging 未涵蓋。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版本／部署；詳見 [`docs/deployment.md`](docs/deployment.md) §5.14，父任務及上線放行仍未完成。
 
 - [x] **DP-102 — Production 遊客編輯中途 quota 降級回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-storage-quota.spec.ts`，真正 production App 在 mobile／desktop 各一例，以原生 localStorage 填滿額度、要求真正 `DOMException`／`QuotaExceededError`，不替換 Storage API。修改全天事件後，四分頁持續顯示不可關閉的警告，真實 JSON 下載保留完整資料及本次修改；原始 guest envelope／backup／legacy／synthetic account cache／其他 key 逐字不變。只移除測試填充並證明 native 寫入恢復後，再改偏好仍只留記憶體、沒有補寫；reload 讀回原始資料。
   > **實際驗證**：lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**，完整 e2e **61 passed、3 skipped**（原有桌面不適用案例）。新增案例 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。首輪測試輸入的尾端空白被既有表單 trim，調整輸入後通過，未改 runtime。
