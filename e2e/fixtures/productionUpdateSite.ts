@@ -72,6 +72,8 @@ const mimeTypes: Record<string, string> = {
 export async function startProductionUpdateSite(artifacts: Awaited<ReturnType<typeof buildProductionUpdates>>) {
   let version = artifacts.currentVersion;
   let holdInstall = false;
+  let failInstall = false;
+  let workerUnavailable = false;
   let releaseInstall = () => {};
   const installGate = new Promise<void>((resolveGate) => { releaseInstall = resolveGate; });
   let blockedInstallRequests = 0;
@@ -92,6 +94,12 @@ export async function startProductionUpdateSite(artifacts: Awaited<ReturnType<ty
       if (holdInstall && path === '/DayPop/index.html') {
         blockedInstallRequests += 1;
         await installGate;
+      }
+      if (servedVersion === artifacts.nextVersion && (
+        (key === '/sw.js' && workerUnavailable) || (path === '/DayPop/index.html' && failInstall)
+      )) {
+        response.writeHead(503).end('Synthetic update failure');
+        return;
       }
       if (request.headers['sec-fetch-mode'] === 'navigate') navigations.push(servedVersion);
       if (key === '/version.json') versionRequests.push(servedVersion);
@@ -114,7 +122,8 @@ export async function startProductionUpdateSite(artifacts: Awaited<ReturnType<ty
     navigations, versionRequests,
     get blockedInstallRequests() { return blockedInstallRequests; },
     promote: (pauseInstall = false) => { holdInstall = pauseInstall; version = artifacts.nextVersion; },
-    releaseInstall: () => { holdInstall = false; releaseInstall(); },
+    releaseInstall: (fail = false) => { failInstall = fail; holdInstall = false; releaseInstall(); },
+    setWorkerUnavailable: (unavailable: boolean) => { workerUnavailable = unavailable; },
     close: async () => {
       releaseInstall();
       server.closeAllConnections();

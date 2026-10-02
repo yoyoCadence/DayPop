@@ -111,6 +111,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-02 離線委託**：專案擁有者合併 PR #88 後授權繼續；PR #87 仍為 Open，未自行合併或帶入其修正。Next 為空，DP-014／072／075／083 的產品決策及 DP-077 真機依賴仍未解除，因此承接 DP-096 的 production 離線交接，從 DP-034 拆出前置已滿足的 **DP-099**，由 Backlog 經 Next、In Progress 完成並移入 Done。本項限定已快取的遊客 App，父任務及上線放行仍未完成。
 
+> **2026-10-01 更新復原委託**：專案擁有者合併 PR #86 後授權繼續。Next 為空，其餘優先項的產品決策／真機依賴仍在；承接 DP-096 的安裝失敗／重試交接，將可獨立完成的 **DP-097** 從 Backlog 經 Next、In Progress 完成後移入 Done。只處理更新失敗時的復原與回歸，不改變 DP-034 父任務及上線放行。
+
+> **2026-10-02 待審 PR 整合委託**：專案擁有者合併 PR #89 後授權繼續。PR #87 仍為 Open，但 GitHub 回報 `mergeable: false`；優先將已完成的 PWA 更新失敗修正恢復為可審查狀態，登記 **DP-100**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main` 獨立開整合分支，更新原 PR 而不建立重複 PR；DP-097 原實作與 DP-098／099 已合併成果均保留，DP-034 父任務仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -185,6 +189,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 帳號 ICS 子項進度**：DP-094 已補上 authenticated ICS 真實下載／選檔、碰撞 UID／例外、附件保留、整份拒絕及清除帳號快取後重登讀回的本機 harness 回歸，見同份交接 §5.8。真實服務 durability／RLS／Storage binary／Auth session restore、第三方服務、真機／staging 與本條其他驗收未由此驗證，父任務仍未完成。
   > **2026-10-01 Worker 子項進度**：DP-095 已在本機 mobile／desktop Chromium 實跑 generated worker 的等待／啟用／快取清理、使用者儲存保全、離線已快取 shell／asset 與版本資訊不回 stale cache，見同份交接 §5.9。使用最小靜態 shell，未驗證完整 production React 更新 UX、自動 reload、更新後 Auth、真機 PWA 或 staging；本條其他項目與父任務放行仍未完成。
   > **2026-10-01 Production 更新子項進度**：DP-096 已補上完整 production 遊客 App 的稍後提醒／重新檢查／立即更新／自動 reload 與資料保留回歸，並修正 installing worker 尚未就緒就 reload 的時序，見同份交接 §5.10。更新後真實 Auth、account adapter 重新初始化、完整離線、安裝失敗／重試、真機／staging 及本條其他驗收仍未完成，父任務不結案。
+  > **2026-10-01 更新復原子項進度**：DP-097 已補上 script／install 回 503 後留在原 production App、解除準備中、顯示錯誤、保留資料並可重試的回歸，見同份交接 §5.11。實際斷線／quota／長時間無回應／activation／多分頁、真實 Auth、完整離線、真機／staging 及本條其他驗收仍未完成，父任務及放行保持未完成。
 
   > **2026-10-02 已快取 App 離線子項進度**：DP-099 已補上完整 production 遊客 App 的已快取新頁／reload、離線本機編輯保存與恢復後人工更新檢查回歸，見同份交接 §5.10.1。首次未控制載入、未快取資源、browser process 重啟、帳號離線／session、原生 online event、真機與 staging 仍未驗證；不代表完整離線或父任務已完成。
 
@@ -229,6 +234,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-100 — 更新待審 PWA 重試 PR 至最新基線：** 2026-10-02 完成。由最新 `origin/main`（`7a513ad`）建立獨立整合分支，整合 PR #87 原 commit `c14df6b`；只在 `tasks.md` 與 `docs/deployment.md` 解決內容衝突、補上本項交接，保留兩側紀錄，DP-098 只保留 Done。DP-097 runtime／原測試與 DP-098 lint 設定／DP-099 離線回歸的來源差異均為空。
+  > **實際驗證**：lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **55 passed、3 skipped**，含兩側 production 更新／離線案例，跳過項皆為原有桌面不適用案例。Node 實際 timezone `Etc/GMT-8`，browser 印出 `Asia/Taipei`／`America/New_York`；保留既有 >500 kB chunk 提示，ESLint API 確認 generated 產物 ignored、真實離線 spec 未忽略。
+  > **範圍與交接**：以保留兩邊歷史的 merge commit fast-forward 更新既有 `fix/dp-097-pwa-update-retry`／PR #87，不 force push、不新增重複 PR、不推 main 或自行合併 PR。CI 與 GitHub 可合併狀態於 push 後核對；本項不新增 runtime／browser 行為、改 schema／release／部署，不使用 Supabase MCP／正式帳號／正式資料。詳見 [`docs/deployment.md`](docs/deployment.md) §5.11.1；DP-034、真實 Auth、quota／多分頁、真機／staging 與完整離線仍未驗收。
+
 - [x] **DP-099 — 已快取 production 遊客 App 的離線重啟回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-offline.spec.ts`，沿用真正 production build／generated worker／隔離 loopback fixture，手機與桌面各一例。在線上受控 reload 取得並核對 JS／CSS 快取後關閉原頁，另開頁離線導向 scope 內路徑，核對 HTML／JS／CSS 確由 worker 回應、完整 guest bytes／偏好／occurrence 保留。離線改全天行程標題與寵物名字，完整預期資料只改這兩處及時間戳、revision 7→9；reload 及恢復網路後 bytes 保留。人工更新失敗回饋可關閉，恢復後檢查成功且 server 收到 request。
   > **驗證**：lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**、完整 e2e **51 passed、3 skipped**（原有桌面不適用案例）。三筆刻意 offline version console error 逐一核對完整 URL／等級／文字及對應失敗 request，其他 warning／error、pageerror、意外 request failure 及對外 request 為 0。browser 實際 timezone 印出並斷言 `Asia/Taipei`，單元程序為 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。
   > **限制與交接**：Playwright 1.62 的 native `navigator.onLine` 在新離線 document 實測仍 true，測試如實印出、不偽造它，以 request／server counters 證明離線，未宣稱 native online event 已驗。只驗證已快取、同一 browser context 的另開頁／reload；首次載入、未快取資源／其他主題字體、quota、browser process 重啟、帳號離線 queue、真機與 staging 保留未驗。未改 runtime／worker／schema／release／部署、未用 Supabase MCP 或真實帳號。重跑與交接見 [`docs/deployment.md`](docs/deployment.md) §5.10.1，DP-034 父任務仍未結案。
@@ -236,6 +245,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [x] **DP-098 — ESLint 排除 Playwright generated 產物：** 2026-10-01 完成。`eslint.config.js` 的 global ignores 只新增 `output/playwright`，排除 production build／report，保留真實 `src`／`e2e` 來源檢查。原本 `.gitignore` 已排除此路徑，但 ESLint 不會自動沿用，修改前 `isPathIgnored()` 實測為 false。
   > **實際驗證**：ESLint API 確認本機 64 個 generated JS 全部 ignored，137 個 `src` 與 17 個 `e2e` TS／TSX 全部未被忽略，`output/playwright` 外的 TS 路徑仍未被忽略；以 `lintText()` 在 App、e2e spec、fixture 三個來源位置放入未使用變數，3/3 均得到 `@typescript-eslint/no-unused-vars`。`npm run lint`、`npm run typecheck` 通過；低影響設定修改不新增重複實作的測試，本機未重跑 runtime／browser／DB，完整閘門交由既有 PR CI。
   > **範圍與交接**：沒有刪除產物、改 lint 規則、重構測試或修改 runtime／schema／release／部署。交接見 [`docs/deployment.md`](docs/deployment.md) §5.10 的工具註記；未改變 DP-034／032 驗收與放行。本次從實際最新 `origin/main`（已合併 PR #86）獨立開分支，PR #87 在開工核對時仍為 Open，本項不依賴其 runtime 修正。
+- [x] **DP-097 — PWA 更新失敗復原與重試（DP-034 子項）：** 2026-10-01 完成。沿用 production fixture，新增兩條情境 × mobile／desktop 共 4 個 browser cases：新版 script 回 503 後留在原頁，恢復回應可立即重試；gate 暫停 install 後讓 index 回 503，真正 worker 進入 redundant，解除準備中、稍後提醒回日曆、恢復回應再檢查並更新成功。逐字保留 guest envelope、原 controller／cache，重試後沿用新版 bundle／偏好／occurrence／公告已讀驗證，沒有 init script 重灌資料。
+  > **必要修正**：先在原實作重現 script failure 的 unhandled rejection 與 install failure 的按鈕永久停用。`useAppUpdate` 捕捉更新失敗、監聽 installing → redundant，清除待啟用／reload 意圖與 waiting worker，保留 release、解除 preparing；失敗早於 update resolve 時不得落入 reload fallback。`updateError` 在原 dialog 以既有錯誤樣式與 alert 顯示，重試／稍後提醒清除；CSS、canonical token 與正常成功畫面不改。4 個新增單元案例涵蓋 reject／retry、安裝失敗早於／晚於 update resolve，以及舊 activated worker 正常退役不誤判；既有四處 mock 只對齊新 state 欄位。
+  > **驗證**：lint、typecheck、unit **55 檔 656/656**（`--maxWorkers=2`）、build、check:build 通過；production targeted **8/8**（本項新增 **4/4**），完整 e2e **53 passed、3 skipped**（原有桌面不適用案例）。新增案例原頁 console warning／error、pageerror 與對外 request 為 0，實際 browser timezone 印出 `Asia/Taipei`、本機 Node 為 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：503 不等於實際斷線／quota，activation、長時間無回應、多分頁、真實 Auth／account adapter、完整離線、真機／staging 與刪除舊 assets 的部署仍未測。worker template、schema、release、版號與部署不變，未用 Supabase MCP／正式帳號／正式資料；修正待後續 release，DP-034 未結案。重跑與詳細界線見 [`docs/deployment.md`](docs/deployment.md) §5.11；另觀察到的 lint generated 產物界線登記為 Backlog DP-098，未混入本次工具修改。
 
 - [x] **DP-096 — Production 遊客 PWA 更新與自動重新載入回歸（DP-034 子項）：** 2026-10-01 完成。新增 `e2e/production-update.spec.ts` 與隔離 loopback fixture，使用既有 Vite config 的兩份 production build、真實 AppUpdateProvider 與 generated worker；兩個情境 × mobile／desktop 共 4 個案例，驗證稍後提醒、手動重查、立即更新、自動 reload 到新版 bundle、公告已讀與 guest envelope 逐字保留，以及新版仍在 install 時按更新。fixture 只在 setup page 灌一次資料，含重複例外、跨午夜與全天行程、子待辦、貼圖與偏好；合成版 `999.0.0` 只在 ignored 產物／測試回應，不修改既有 release。
   > **必要修正**：安裝中案例在原實作重現提早 reload；`registration.update()` resolve 不保證 install 已完成。`useAppUpdate.ts` 在沒有 waiting、仍有 installing worker 時返回等待，沿用既有 statechange 啟用及 controllerchange reload；新增 2 個單元案例確認此路徑與原本沒有 worker 的 reload fallback。

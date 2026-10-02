@@ -25,6 +25,8 @@ export interface AppUpdateState {
   checking: boolean;
   preparing: boolean;
   error: string | null;
+  /** Update-attempt feedback belongs in the open update dialog, not the check result. */
+  updateError: string | null;
   /** The manual 檢查更新: never throttled, always ends in visible feedback. */
   checkForUpdate: () => Promise<void>;
   updateNow: () => Promise<void>;
@@ -61,6 +63,7 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
   const [checking, setChecking] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const waitingWorkerRef = useRef<ServiceWorker | null>(null);
   const applyWhenReadyRef = useRef(false);
@@ -69,6 +72,14 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
   /** When the last check of any kind began; `null` until the first one — DP-035. */
   const lastCheckStartedAtRef = useRef<number | null>(null);
 
+  const failUpdate = useCallback((message: string) => {
+    applyWhenReadyRef.current = false;
+    reloadOnControllerChangeRef.current = false;
+    waitingWorkerRef.current = null;
+    setPreparing(false);
+    setUpdateError(message);
+  }, []);
+
   const captureWorker = useCallback((registration: ServiceWorkerRegistration) => {
     registrationRef.current = registration;
     if (registration.waiting) waitingWorkerRef.current = registration.waiting;
@@ -76,16 +87,29 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
     registration.addEventListener('updatefound', () => {
       const worker = registration.installing;
       if (!worker) return;
+      let previousState = worker.state;
       worker.addEventListener('statechange', () => {
+        const failedInstall = previousState === 'installing' && worker.state === 'redundant';
+        previousState = worker.state;
+        // An old activated worker also becomes redundant during a successful
+        // update. Only installation failure should cancel this page's intent.
+        if (failedInstall && applyWhenReadyRef.current) {
+          failUpdate('新版安裝未完成。請確認網路連線或裝置儲存空間後再試一次；你的行程與設定不受影響。');
+          return;
+        }
         if (worker.state !== 'installed' || !navigator.serviceWorker.controller) return;
         waitingWorkerRef.current = registration.waiting ?? worker;
         if (applyWhenReadyRef.current) {
           reloadOnControllerChangeRef.current = true;
-          waitingWorkerRef.current.postMessage({ type: 'SKIP_WAITING' });
+          try {
+            waitingWorkerRef.current.postMessage({ type: 'SKIP_WAITING' });
+          } catch {
+            failUpdate('暫時無法啟用新版。請稍後再試一次；你的行程與設定不受影響。');
+          }
         }
       });
     });
-  }, []);
+  }, [failUpdate]);
 
   /**
    * One version check. Automatic checks stay silent unless there is an update;
@@ -191,34 +215,41 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
     // The user just read these notes in the update dialog; the build that the
     // reload brings up must not announce them a second time — DP-090.
     if (availableRelease) acknowledgeRelease(availableRelease.version);
+    setUpdateError(null);
     setPreparing(true);
     applyWhenReadyRef.current = true;
     reloadOnControllerChangeRef.current = true;
 
-    const registration = registrationRef.current;
-    const worker = registration?.waiting ?? waitingWorkerRef.current;
-    if (worker) {
-      worker.postMessage({ type: 'SKIP_WAITING' });
-      return;
-    }
-
-    if (registration) {
-      await registration.update();
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    try {
+      const registration = registrationRef.current;
+      const worker = registration?.waiting ?? waitingWorkerRef.current;
+      if (worker) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
         return;
       }
-      // update() can resolve while install/cache.addAll is still running. Keep
-      // this page's applyWhenReady listener alive until it activates the worker;
-      // an early reload loses that intent and leaves the old worker controlling.
-      if (registration.installing) return;
-    }
 
-    // No controlling worker yet (for example an old HTTP-cached page on first
-    // PWA registration). Reloading fetches the new app shell without touching
-    // localStorage or IndexedDB.
-    window.location.reload();
-  }, [acknowledgeRelease, availableRelease]);
+      if (registration) {
+        await registration.update();
+        // A redundant event can report failure before update() settles.
+        if (!applyWhenReadyRef.current) return;
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          return;
+        }
+        // update() can resolve while install/cache.addAll is still running. Keep
+        // this page's applyWhenReady listener alive until it activates the worker;
+        // an early reload loses that intent and leaves the old worker controlling.
+        if (registration.installing) return;
+      }
+
+      // No controlling worker yet (for example an old HTTP-cached page on first
+      // PWA registration). Reloading fetches the new app shell without touching
+      // localStorage or IndexedDB.
+      window.location.reload();
+    } catch {
+      failUpdate('無法取得新版程式。請確認連線後再試一次；你的行程與設定不受影響。');
+    }
+  }, [acknowledgeRelease, availableRelease, failUpdate]);
 
   const whatsNew =
     currentRelease &&
@@ -236,11 +267,13 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
     checking,
     preparing,
     error,
+    updateError,
     checkForUpdate,
     updateNow,
     dismissUpdate: () => {
       dismissedVersionRef.current = availableRelease?.version ?? null;
       setAvailableRelease(null);
+      setUpdateError(null);
     },
     acknowledgeWhatsNew: () => {
       if (currentRelease) acknowledgeRelease(currentRelease.version);

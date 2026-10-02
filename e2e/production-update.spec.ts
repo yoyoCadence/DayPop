@@ -111,3 +111,56 @@ test('Production 安裝尚未完成時按立即更新，等待 worker 就緒後�
   site.releaseInstall();
   await assertUpdated(page, site);
 });
+
+async function assertUpdateFailed(page: Page, site: ProductionUpdateSite, reason: string) {
+  const dialog = page.getByRole('dialog', { name: 'Production 更新回歸', exact: true });
+  await expect(dialog.getByRole('alert')).toContainText(reason);
+  await expect(dialog.getByRole('button', { name: '立即更新', exact: true })).toBeEnabled();
+  await expect(dialog.getByRole('button', { name: '稍後提醒', exact: true })).toBeEnabled();
+  expect(site.navigations).toEqual([site.currentVersion]);
+  expect(await page.evaluate((key) => localStorage.getItem(key), guestKey)).toBe(guestBytes);
+  expect(await page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
+  await expect.poll(() => page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    return Boolean(registration && registration.active === navigator.serviceWorker.controller
+      && !registration.waiting && !registration.installing);
+  })).toBe(true);
+  expect(await page.evaluate(async (version) => (await caches.keys()).includes(
+    `daypop-app-shell-${version}`,
+  ), site.currentVersion)).toBe(true);
+}
+
+test('Production 新版程式下載失敗可留在原頁，恢復服務後立即更新可重試成功', async ({ page, site }) => {
+  site.promote();
+  site.setWorkerUnavailable(true);
+  await page.getByRole('button', { name: '檢查更新', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Production 更新回歸', exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '立即更新', exact: true }).click();
+  await assertUpdateFailed(page, site, '無法取得新版程式');
+  site.setWorkerUnavailable(false);
+  await dialog.getByRole('button', { name: '立即更新', exact: true }).click();
+  await assertUpdated(page, site);
+});
+
+test('Production 新版安裝失敗解除準備中，可稍後提醒並重新檢查後更新成功', async ({ page, site }) => {
+  site.promote(true);
+  await page.getByRole('button', { name: '檢查更新', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Production 更新回歸', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect.poll(() => site.blockedInstallRequests).toBeGreaterThan(0);
+  await dialog.getByRole('button', { name: '立即更新', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '準備更新…', exact: true })).toBeDisabled();
+  site.releaseInstall(true); // Real cache.addAll rejects and the worker becomes redundant.
+  await assertUpdateFailed(page, site, '新版安裝未完成');
+  await dialog.getByRole('button', { name: '稍後提醒', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await assertGuestPreserved(page);
+  site.releaseInstall(); // Subsequent installation requests can now succeed.
+  await tabButton(page, '設定').click();
+  await page.getByRole('button', { name: '檢查更新', exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await dialog.getByRole('button', { name: '立即更新', exact: true }).click();
+  await assertUpdated(page, site);
+});

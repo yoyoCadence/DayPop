@@ -32,6 +32,7 @@ vi.mock('./pwa/useAppUpdate', () => ({
     checking: false,
     preparing: false,
     error: null,
+    updateError: null,
     checkForUpdate: () => Promise.resolve(),
     updateNow: () => Promise.resolve(),
     dismissUpdate: () => {},
