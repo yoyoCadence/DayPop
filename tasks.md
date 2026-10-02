@@ -109,6 +109,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-01 Lint 委託**：專案擁有者授權繼續；開工以 GitHub metadata 與 `git ls-remote` 核對，PR #87 仍待審查、`origin/main` 停在已合併的 #86。其他優先項的產品決策／真機依賴未解除，因此承接 DP-097 交接中已登記、只依賴 DP-096 產物路徑的 **DP-098**，在本分支登記為 Backlog 後經 Next、In Progress 完成並移入 Done。本項可獨立推進，沒有代為合併 #87 或帶入其變更，DP-034 父任務仍未完成。
 
+> **2026-10-02 離線委託**：專案擁有者合併 PR #88 後授權繼續；PR #87 仍為 Open，未自行合併或帶入其修正。Next 為空，DP-014／072／075／083 的產品決策及 DP-077 真機依賴仍未解除，因此承接 DP-096 的 production 離線交接，從 DP-034 拆出前置已滿足的 **DP-099**，由 Backlog 經 Next、In Progress 完成並移入 Done。本項限定已快取的遊客 App，父任務及上線放行仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -184,6 +186,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-01 Worker 子項進度**：DP-095 已在本機 mobile／desktop Chromium 實跑 generated worker 的等待／啟用／快取清理、使用者儲存保全、離線已快取 shell／asset 與版本資訊不回 stale cache，見同份交接 §5.9。使用最小靜態 shell，未驗證完整 production React 更新 UX、自動 reload、更新後 Auth、真機 PWA 或 staging；本條其他項目與父任務放行仍未完成。
   > **2026-10-01 Production 更新子項進度**：DP-096 已補上完整 production 遊客 App 的稍後提醒／重新檢查／立即更新／自動 reload 與資料保留回歸，並修正 installing worker 尚未就緒就 reload 的時序，見同份交接 §5.10。更新後真實 Auth、account adapter 重新初始化、完整離線、安裝失敗／重試、真機／staging 及本條其他驗收仍未完成，父任務不結案。
 
+  > **2026-10-02 已快取 App 離線子項進度**：DP-099 已補上完整 production 遊客 App 的已快取新頁／reload、離線本機編輯保存與恢復後人工更新檢查回歸，見同份交接 §5.10.1。首次未控制載入、未快取資源、browser process 重啟、帳號離線／session、原生 online event、真機與 staging 仍未驗證；不代表完整離線或父任務已完成。
+
 ### 原型假功能與待補能力
 
 > 原稿裡有畫面但沒有真正能力的部分。搬移時一律停用並保留版面位置，不得以假的成功狀態充數（規則見 `docs/claude-design-source-of-truth.md` 與 `docs/prototype-behavior-baseline.md`）。這裡是每一項的歸屬，避免停用之後被遺忘。
@@ -224,6 +228,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-099 — 已快取 production 遊客 App 的離線重啟回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-offline.spec.ts`，沿用真正 production build／generated worker／隔離 loopback fixture，手機與桌面各一例。在線上受控 reload 取得並核對 JS／CSS 快取後關閉原頁，另開頁離線導向 scope 內路徑，核對 HTML／JS／CSS 確由 worker 回應、完整 guest bytes／偏好／occurrence 保留。離線改全天行程標題與寵物名字，完整預期資料只改這兩處及時間戳、revision 7→9；reload 及恢復網路後 bytes 保留。人工更新失敗回饋可關閉，恢復後檢查成功且 server 收到 request。
+  > **驗證**：lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**、完整 e2e **51 passed、3 skipped**（原有桌面不適用案例）。三筆刻意 offline version console error 逐一核對完整 URL／等級／文字及對應失敗 request，其他 warning／error、pageerror、意外 request failure 及對外 request 為 0。browser 實際 timezone 印出並斷言 `Asia/Taipei`，單元程序為 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：Playwright 1.62 的 native `navigator.onLine` 在新離線 document 實測仍 true，測試如實印出、不偽造它，以 request／server counters 證明離線，未宣稱 native online event 已驗。只驗證已快取、同一 browser context 的另開頁／reload；首次載入、未快取資源／其他主題字體、quota、browser process 重啟、帳號離線 queue、真機與 staging 保留未驗。未改 runtime／worker／schema／release／部署、未用 Supabase MCP 或真實帳號。重跑與交接見 [`docs/deployment.md`](docs/deployment.md) §5.10.1，DP-034 父任務仍未結案。
 
 - [x] **DP-098 — ESLint 排除 Playwright generated 產物：** 2026-10-01 完成。`eslint.config.js` 的 global ignores 只新增 `output/playwright`，排除 production build／report，保留真實 `src`／`e2e` 來源檢查。原本 `.gitignore` 已排除此路徑，但 ESLint 不會自動沿用，修改前 `isPathIgnored()` 實測為 false。
   > **實際驗證**：ESLint API 確認本機 64 個 generated JS 全部 ignored，137 個 `src` 與 17 個 `e2e` TS／TSX 全部未被忽略，`output/playwright` 外的 TS 路徑仍未被忽略；以 `lintText()` 在 App、e2e spec、fixture 三個來源位置放入未使用變數，3/3 均得到 `@typescript-eslint/no-unused-vars`。`npm run lint`、`npm run typecheck` 通過；低影響設定修改不新增重複實作的測試，本機未重跑 runtime／browser／DB，完整閘門交由既有 PR CI。

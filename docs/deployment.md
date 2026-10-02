@@ -374,3 +374,21 @@ console 檢查只允許刻意離線版本 request 的一個 `ERR_INTERNET_DISCON
 本機 Windows／Node 24.14.1，在 mobile 390×844 與 desktop 1280×900 的 targeted **4/4** 通過；完整 e2e **49 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例），console warning／error、pageerror 與對外 request 為 0。lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 全部通過；各 production 案例印出實際 timezone `Asia/Taipei`，本機 Node 為 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-update.spec.ts`，沿用既有 CI、不需新增相依或 job。
 
 **限制與下一步**：這是本機 Chromium 的 production 遊客流程，未驗證更新後真實 Auth session、account cache／遠端 adapter 重新初始化、真機 PWA、staging 更新、production bundle 完整離線、安裝失敗／重試，或部署時舊 hashed assets 已移除的情境（測試站保留舊 assets）。worker／release note／schema／版號／部署均未修改，未使用 Supabase MCP／正式帳號／正式資料；這項修正仍需隨後續 release 發布。DP-034 的資料刪除、隱私、監控、效能及上線放行仍未完成，不改變 DP-032／034 的待決關係。
+#### 5.10.1 已快取 production 遊客 App 的離線另開頁回歸（DP-099，2026-10-02）
+
+`e2e/production-offline.spec.ts` 沿用 DP-096 的 production build／隔離 loopback fixture 與 generated worker。先在線上註冊並取得 controller，再做一次受控制的線上 reload、實際使用設定及列表，逐一確認 HTML 宣告的 JS／CSS 已進入該版 Cache Storage；不直接灌入快取。測試伺服器所有回應都是 `no-store`。完整 schema-v4 synthetic envelope 與 release 已讀 bytes 只在 setup page 灌一次，原頁關閉後另開空白頁，切成離線後才首次導向 `/DayPop/offline-return`，沒有 reseed 或 runtime stub。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 離線另開 scope 內頁面 | URL／title 正確，HTML、JS、CSS 的 response 均標示 `fromServiceWorker()`；完整 envelope bytes 保留，暖陽主題、寵物名字、取消／改期 occurrence 與跨午夜片段可讀。 |
+| 離線修改全天行程標題及寵物名字 | revision 由 7 到 9，兩筆時間戳採固定 instant；完整資料與獨立預期比較，其他日曆、事件、例外、待辦／子項、貼圖及偏好保持原值。 |
+| 人工檢查更新 → 關閉失敗回饋 → 離線 reload | 顯示「暫時無法檢查更新」及資料不受影響的說明；新 App 實例讀回編輯後 bytes，伺服器 navigation／version counters 在整段離線期間不增加。 |
+| 恢復網路 → 再次人工檢查 | 顯示「目前已是最新版本」，伺服器確實收到新 request，編輯後 bytes 與已讀公告不變。 |
+
+console 只允許三筆已核對完整 version URL（含固定 `ts`）、error 等級與 `ERR_INTERNET_DISCONNECTED` 文字的錯誤，並要求對應的三個 page request 實際 failed；其餘 warning／error、pageerror、意外 request failure 及對外 request 均為 0。三筆分別是新頁自動檢查、人工檢查、reload 自動檢查，不能用全面忽略離線 console 代替。
+
+**測試工具限制**：本機 Playwright 1.62.1 在新 document 離線時實測原生 `navigator.onLine` 仍為 true；與 [上游 #42174](https://github.com/microsoft/playwright/issues/42174) 的回歸相符。測試印出這個原值、不偽造 navigator，也不把它當離線證據；使用 `context.setOffline(true)`、實際失敗 request、未增加的 server counters 及 worker 回應核對真正的網路／快取路徑。恢復連線後以成功的 UI 與 server request 證明，不宣稱已驗證原生 online／offline event。
+
+本機 Windows／Node 24.14.1：手機 390×844、桌面 1280×900 新增 targeted **2/2** 通過；每個案例印出並斷言實際 browser timezone `Asia/Taipei`，單元程序另印出 `Etc/GMT-8`。lint、typecheck、unit **55 檔 652/652**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **51 passed、3 skipped**（原有桌面不適用案例）。build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-offline.spec.ts`。
+
+**限制與下一步**：只驗證同一 browser context 中，已快取且曾由 worker 控制的 production 遊客 App 另開頁／reload；沒有停止並重啟 browser process。首次安裝未控制的載入、未快取 asset／其他主題字體、移除快取／quota、帳號 session／遠端 adapter／離線寫入 queue、真機 PWA 與 staging 均未涵蓋，不能宣稱完整離線已完成。只新增測試與交接，未改 runtime、worker template、schema、release、版號或部署，未使用 Supabase MCP／正式帳號／正式資料。DP-034 父任務與 DP-032／034 的放行決策仍未完成。
