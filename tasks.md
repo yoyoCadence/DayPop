@@ -119,6 +119,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-02 Quota 委託**：專案擁有者合併 PR #90 後授權繼續。Next 為空，既有產品決策／真機依賴未解除；承接 DP-017／101 的資料保存交接，將已正常啟動的遊客 session quota 降級拆為 **DP-102**，從 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`f74e8e3`）獨立開分支；本項只補測試與交接，不改 runtime，DP-034 父任務與上線放行仍未完成。
 
+> **2026-10-02 開機儲存委託**：專案擁有者授權繼續一項工作。Next 為空，其餘產品決策／真機依賴未解除；依資料保存優先序承接 DP-017／102，登記 **DP-104**，由 Backlog 經 Next、In Progress 完成並移入 Done。開工遠端核對 PR #92 仍為 Open，從實際最新 `origin/main`（`09f7166`）獨立開分支，不依賴其 quota helper／案例。本項限 production 開機原生 localStorage 為 null 的回歸，DP-034 父任務及上線放行仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -198,6 +200,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 已快取 App 離線子項進度**：DP-099 已補上完整 production 遊客 App 的已快取新頁／reload、離線本機編輯保存與恢復後人工更新檢查回歸，見同份交接 §5.10.1。首次未控制載入、未快取資源、browser process 重啟、帳號離線／session、原生 online event、真機與 staging 仍未驗證；不代表完整離線或父任務已完成。
   > **2026-10-02 復原子項進度**：DP-101 修正舊備份錯誤開放重設，補上 persistent guest 的 corrupt／future 資料保護、原始內容下載、重設及 reload 回歸，見同份交接 §5.12。不是有效資料的全刪除／帳號刪除驗收；記憶體模式、quota／下載取消、真正跨分頁競態、真機／staging 仍未驗，父任務不結案。
   > **2026-10-02 Quota 子項進度**：DP-102 已補上正常啟動的 production guest 編輯中途原生 quota 降級、四分頁持續警告、完整記憶體匯出與 durable bytes 保護；釋放額度不自動補寫，reload 讀回原文件，見同份交接 §5.13。開機 probe 失敗、記憶體復原、實際帳號、真機／staging 與其他驗收仍未完成，父任務不結案。
+  > **2026-10-02 開機儲存子項進度**：DP-104 已補上原生 localStorage 為 null 時的 production 開機記憶體模式、四分頁持續警告、跨分頁編輯／真實 JSON 匯出與 reload 回預設，見同份交接 §5.15。SecurityError、初始 quota、實際政策封鎖、帳號、真機／staging 及其他驗收仍未完成，父任務不結案。
 
 ### 原型假功能與待補能力
 
@@ -239,6 +242,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-104 — Production 開機 localStorage 不可用回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-unavailable-storage.spec.ts`，真正 production App 在 mobile／desktop 各一例，以此 spec worker 的 Chromium 原生 `--disable-local-storage` 讓 API 為 null，先在空白頁核對再載入 App，不替換 Storage API／getter。初次啟動與 reload 後四分頁皆持續警告；UI 建立全天行程／待辦、完成待辦與修改寵物名字後，跨分頁保留編輯並真實下載 JSON；reload 重新建立 canonical 空資料與預設日曆，修改消失。版本公告依正常 UI 關閉，沒有 storage sentinel。
+  > **實際驗證**：lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**、完整 e2e **63 passed、3 skipped**（原有桌面不適用案例）。新增 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；印出並斷言 native API 為 null、browser timezone `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。首輪返回日曆未重新選列表造成測試 locator 失敗，補上 UI 操作後通過，未改 runtime。
+  > **限制與交接**：限原生 API 缺少／null 的開機情境，不證明 SecurityError、初始 quota、實際隱私政策封鎖、已有但不可讀的 durable bytes、下載取消、多分頁競態、實際帳號、真機／staging。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號／部署。重跑與下一步見 [`docs/deployment.md`](docs/deployment.md) §5.15；DP-034 父任務及上線放行仍未完成。
 
 - [x] **DP-102 — Production 遊客編輯中途 quota 降級回歸（DP-034 子項）：** 2026-10-02 完成。新增 `e2e/production-storage-quota.spec.ts`，真正 production App 在 mobile／desktop 各一例，以原生 localStorage 填滿額度、要求真正 `DOMException`／`QuotaExceededError`，不替換 Storage API。修改全天事件後，四分頁持續顯示不可關閉的警告，真實 JSON 下載保留完整資料及本次修改；原始 guest envelope／backup／legacy／synthetic account cache／其他 key 逐字不變。只移除測試填充並證明 native 寫入恢復後，再改偏好仍只留記憶體、沒有補寫；reload 讀回原始資料。
   > **實際驗證**：lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；targeted **2/2**，完整 e2e **61 passed、3 skipped**（原有桌面不適用案例）。新增案例 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。首輪測試輸入的尾端空白被既有表單 trim，調整輸入後通過，未改 runtime。

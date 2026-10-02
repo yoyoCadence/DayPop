@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-104（2026-10-02）**：`e2e/production-unavailable-storage.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 2 個案例，以 Chromium 原生 `--disable-local-storage` 並先核對 API 為 null，驗證開機記憶體模式、四分頁持續警告、行程／待辦與偏好的跨分頁編輯、真實 JSON 匯出及 reload 回預設。只新增回歸，runtime／canonical UI 不變；此證據不是 SecurityError 或實際隱私政策封鎖，完整範圍見 [`deployment.md`](deployment.md) §5.15，DP-034 父任務未完成。
+
 - **DP-102（2026-10-02）**：`e2e/production-storage-quota.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 2 個案例，以原生 localStorage 填滿額度觸發 `QuotaExceededError`；驗證分頁修改與真實 JSON 匯出保留完整資料、四分頁持續警告、原始磁碟 entries 不變，釋放額度後同一 session 不補寫，reload 讀回原始資料。僅新增測試，既有 runtime／canonical UI 不變；開機 probe、記憶體復原及其他限制見 [`deployment.md`](deployment.md) §5.13，DP-034 父任務未完成。
 
 - **DP-101（2026-10-02）**：`e2e/production-storage-recovery.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 4 個案例驗證 corrupt／future bytes 不因無關舊備份而開放重設，真實下載／相符備份後可重設並 reload，原始備份、legacy、帳號快取與其他 key 保留。修正 `resetUserData()` 的當下原始內容核對及復原 UI 的 backup 選擇，符合既有 ADR §1；限制見 [`deployment.md`](deployment.md) §5.12，不取代 DP-034 放行。
