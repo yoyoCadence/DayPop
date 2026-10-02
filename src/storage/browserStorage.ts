@@ -146,29 +146,46 @@ export class AppStorage implements StorageLike {
   }
 
   #degrade(reason: string): void {
-    const memory = new MemoryStorage();
-    // Best effort: the store that refused a write is usually still readable, so
-    // carrying its contents over keeps the session showing the same data.
-    try {
-      for (let index = 0; index < this.#delegate.length; index += 1) {
-        const key = this.#delegate.key(index);
-        if (key === null) continue;
-        if (!key.startsWith(OWNED_KEY_PREFIX) && !LEGACY_KEYS.includes(key)) continue;
-        const value = this.#delegate.getItem(key);
-        if (value !== null) memory.setItem(key, value);
-      }
-    } catch {
-      // A store that cannot even be enumerated starts the session empty. The
-      // original bytes are untouched on disk either way.
-    }
-
-    this.#delegate = memory;
+    this.#delegate = carryOwnedEntries(this.#delegate);
     this.#mode = { kind: 'memory', reason };
     for (const listener of [...this.#listeners]) listener();
   }
 }
 
-export type StorageProbe = { ok: true; storage: StorageLike } | { ok: false; reason: string };
+/**
+ * Copy what DayPop owns out of a store that stopped accepting writes.
+ *
+ * Best effort: such a store is usually still readable, so carrying its
+ * contents over keeps the session showing the same data — and keeps export
+ * able to hand that data back, which is the user's way out of a full device.
+ * Only ever reads `source`; the original bytes stay on disk untouched.
+ */
+function carryOwnedEntries(source: StorageLike): MemoryStorage {
+  const memory = new MemoryStorage();
+  try {
+    for (let index = 0; index < source.length; index += 1) {
+      const key = source.key(index);
+      if (key === null || key === PROBE_KEY) continue;
+      if (!key.startsWith(OWNED_KEY_PREFIX) && !LEGACY_KEYS.includes(key)) continue;
+      const value = source.getItem(key);
+      if (value !== null) memory.setItem(key, value);
+    }
+  } catch {
+    // A store that cannot even be enumerated starts the session empty. The
+    // original bytes are untouched on disk either way.
+  }
+  return memory;
+}
+
+/**
+ * `readable` is the store that failed the probe but could still be reached. It
+ * is absent when there was nothing to reach: the accessor threw or returned
+ * nothing. It is for reading only — a store that fails the probe is never
+ * written to again.
+ */
+export type StorageProbe =
+  | { ok: true; storage: StorageLike }
+  | { ok: false; reason: string; readable?: StorageLike };
 
 /**
  * Decide whether a store is usable before trusting it with user data.
@@ -191,13 +208,28 @@ export function probeStorage(access: () => StorageLike | null | undefined): Stor
     storage.removeItem(PROBE_KEY);
     // Some privacy modes accept the write and hand back nothing at all.
     if (echoed !== PROBE_VALUE) {
-      return { ok: false, reason: '瀏覽器沒有保留剛剛寫入的測試資料。' };
+      return { ok: false, reason: '瀏覽器沒有保留剛剛寫入的測試資料。', readable: storage };
     }
   } catch (cause) {
-    return { ok: false, reason: describeStorageFailure(cause) };
+    return { ok: false, reason: describeStorageFailure(cause), readable: storage };
   }
 
   return { ok: true, storage };
+}
+
+/**
+ * Build the tab's store from whatever the browser offers at startup (DP-106).
+ *
+ * A failed probe starts in memory, like a write refused mid-session does, and
+ * for the same reason starts from what can still be read: an origin that is
+ * merely full at startup must not open as an empty calendar whose export is
+ * empty too. With nothing to read, the session starts empty as before.
+ */
+export function createAppStorage(access: () => StorageLike | null | undefined): AppStorage {
+  const probe = probeStorage(access);
+  if (probe.ok) return new AppStorage(probe.storage);
+  const memory = probe.readable ? carryOwnedEntries(probe.readable) : new MemoryStorage();
+  return new AppStorage(memory, { kind: 'memory', reason: probe.reason });
 }
 
 const QUOTA_ERROR_NAMES = new Set(['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED']);
@@ -228,10 +260,7 @@ let appStorage: AppStorage | null = null;
 export function getAppStorage(): AppStorage {
   if (appStorage) return appStorage;
 
-  const probe = probeStorage(() => globalThis.localStorage);
-  appStorage = probe.ok
-    ? new AppStorage(probe.storage)
-    : new AppStorage(new MemoryStorage(), { kind: 'memory', reason: probe.reason });
+  appStorage = createAppStorage(() => globalThis.localStorage);
   return appStorage;
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyUserData } from '../domain/types';
-import { AppStorage, MemoryStorage, probeStorage, type StorageLike } from './browserStorage';
+import { AppStorage, createAppStorage, MemoryStorage, probeStorage, type StorageLike } from './browserStorage';
 import { LocalDayPopRepository } from './localRepository';
 import { readUserData, USER_DATA_STORAGE_KEY, writeUserData } from './versionedStorage';
 
@@ -197,6 +197,120 @@ describe('degrading to memory', () => {
 
     expect(storage.mode).toMatchObject({ kind: 'memory' });
     expect(browser.entries.has('daypop.b')).toBe(false);
+  });
+});
+
+describe('starting up on a store that fails the probe', () => {
+  it('uses a working store directly', () => {
+    const browser = new FlakyStorage();
+    const storage = createAppStorage(() => browser);
+
+    storage.setItem('daypop.a', '1');
+
+    expect(storage.mode).toEqual({ kind: 'persistent' });
+    expect(browser.entries.get('daypop.a')).toBe('1');
+  });
+
+  it('hands back the store it could reach, and nothing when it could reach none', () => {
+    const full = new FlakyStorage();
+    full.failWrites = quotaError();
+
+    expect(probeStorage(() => full)).toMatchObject({ ok: false, readable: full });
+    expect(probeStorage(() => null)).not.toHaveProperty('readable');
+    expect(
+      probeStorage(() => {
+        throw new DOMException('access denied', 'SecurityError');
+      }),
+    ).not.toHaveProperty('readable');
+  });
+
+  it('starts from what a full store can still read, in memory, with the reason', () => {
+    const browser = new FlakyStorage();
+    browser.entries.set(USER_DATA_STORAGE_KEY, 'kept');
+    browser.entries.set('daypop.release-notes-seen', '0.4.1');
+    browser.entries.set('calpet.v2', 'legacy');
+    browser.entries.set('another.app.setting', 'not ours');
+    browser.failWrites = quotaError();
+
+    const storage = createAppStorage(() => browser);
+
+    expect(storage.mode).toEqual({ kind: 'memory', reason: '這台裝置給 DayPop 的儲存空間已經滿了。' });
+    expect(storage.getItem(USER_DATA_STORAGE_KEY)).toBe('kept');
+    expect(storage.getItem('daypop.release-notes-seen')).toBe('0.4.1');
+    expect(storage.getItem('calpet.v2')).toBe('legacy');
+    expect(storage.getItem('another.app.setting')).toBeNull();
+    expect(storage.length).toBe(3);
+  });
+
+  it('never writes to the store that failed, even once it has room again', () => {
+    const browser = new FlakyStorage();
+    browser.entries.set(USER_DATA_STORAGE_KEY, 'kept');
+    browser.failWrites = quotaError();
+    const storage = createAppStorage(() => browser);
+    const before = new Map(browser.entries);
+
+    browser.failWrites = null;
+    storage.setItem(USER_DATA_STORAGE_KEY, 'edited in this tab');
+    storage.removeItem('daypop.release-notes-seen');
+
+    expect(storage.getItem(USER_DATA_STORAGE_KEY)).toBe('edited in this tab');
+    expect(storage.mode).toMatchObject({ kind: 'memory' });
+    expect(browser.entries).toEqual(before);
+  });
+
+  it('shows the saved document instead of an empty one', async () => {
+    const browser = new FlakyStorage();
+    await new LocalDayPopRepository(new AppStorage(browser)).addTodo({ title: '買菜', date: '2026-08-06' });
+    browser.failWrites = quotaError();
+
+    const startup = readUserData(createAppStorage(() => browser));
+
+    expect(startup.status).toBe('ready');
+    if (startup.status === 'ready') {
+      expect(startup.envelope.data.todos.map((todo) => todo.title)).toEqual(['買菜']);
+    }
+  });
+
+  it('keeps unreadable data blocked rather than replacing it with an empty document', () => {
+    const browser = new FlakyStorage();
+    browser.entries.set(USER_DATA_STORAGE_KEY, '{"schemaVersion":4,"revision":3,"upd');
+    browser.failWrites = quotaError();
+
+    const startup = readUserData(createAppStorage(() => browser));
+
+    expect(startup).toMatchObject({ status: 'corrupt', raw: '{"schemaVersion":4,"revision":3,"upd' });
+  });
+
+  it('does not carry a stranded probe key into the session', () => {
+    const browser = new FlakyStorage();
+    browser.entries.set('daypop.storage-probe', 'ok');
+    browser.failWrites = quotaError();
+
+    expect(createAppStorage(() => browser).getItem('daypop.storage-probe')).toBeNull();
+  });
+
+  it('starts empty when the browser offers no store at all', () => {
+    const missing = createAppStorage(() => null);
+    const blocked = createAppStorage(() => {
+      throw new DOMException('access denied', 'SecurityError');
+    });
+
+    expect(missing.mode).toEqual({ kind: 'memory', reason: '這個瀏覽器沒有提供本機儲存空間。' });
+    expect(missing.length).toBe(0);
+    expect(blocked.mode).toMatchObject({ kind: 'memory' });
+    expect(blocked.length).toBe(0);
+  });
+
+  it('starts empty when the failing store cannot be read either', () => {
+    const browser = new FlakyStorage();
+    browser.entries.set(USER_DATA_STORAGE_KEY, 'unreachable');
+    browser.failEverything = new DOMException('gone', 'SecurityError');
+
+    const storage = createAppStorage(() => browser);
+
+    expect(storage.mode).toMatchObject({ kind: 'memory' });
+    expect(storage.length).toBe(0);
+    expect(browser.entries.get(USER_DATA_STORAGE_KEY)).toBe('unreachable');
   });
 });
 

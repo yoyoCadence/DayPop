@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-106（2026-10-02）**：`e2e/production-startup-quota.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 2 個案例，App 啟動前先以原生 localStorage 把額度填到連開機 probe 都寫不進去；驗證開機即進入記憶體模式並四分頁持續警告，但仍顯示磁碟上讀得到的偏好與行程、不重跳已看過的版本公告，真實 JSON 匯出帶出完整資料，磁碟 entries 不變，釋放額度並 reload 後恢復保存。**這一項含 runtime 修正**（修正前同情境顯示空白預設資料、匯出為空）；canonical UI 不變，原稿沒有對應行為可對照。範圍與限制見 [`deployment.md`](deployment.md) §5.16，DP-034 父任務未完成。
+
 - **DP-104（2026-10-02）**：`e2e/production-unavailable-storage.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 2 個案例，以 Chromium 原生 `--disable-local-storage` 並先核對 API 為 null，驗證開機記憶體模式、四分頁持續警告、行程／待辦與偏好的跨分頁編輯、真實 JSON 匯出及 reload 回預設。只新增回歸，runtime／canonical UI 不變；此證據不是 SecurityError 或實際隱私政策封鎖，完整範圍見 [`deployment.md`](deployment.md) §5.15，DP-034 父任務未完成。
 
 - **DP-103（2026-10-02）**：production 復原 spec 新增 corrupt／future × mobile／desktop 共 4 個備份遇 quota 案例，真實下載逐字保留原始內容、文案指出下載檔案是備份、只在記憶體重設／編輯並持續警告；釋放額度仍不補寫，reload 讀回原 blocked 文件且重新要求備份。原生 quota 填充抽至共用 test fixture，runtime／canonical UI 不變；開機 storage、下載取消／真機等限制見 [`deployment.md`](deployment.md) §5.14，DP-034 父任務未完成。
