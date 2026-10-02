@@ -439,3 +439,22 @@ PR #87 合併後，從最新 `origin/main`（`5255438`）獨立開分支，依 A
 新增 4 個單元案例涵蓋無關舊備份、備份後原始內容變動、相同 JSON 值但 bytes 不同、較舊相符備份可使用；局部 **20/20**。本機 Windows／Node 24.14.1：lint、typecheck、完整 unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 全部通過，targeted **4/4**，完整 e2e **59 passed、3 skipped**（原有桌面不適用案例）。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0。browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-storage-recovery.spec.ts`。
 
 **限制與下一步**：只驗證 persistent guest 的不可讀資料復原。重設 guard 能拒絕「進入重設前已變動」的資料，不提供跨分頁原子鎖，沒有驗證真正同時 interleaving。記憶體模式、quota、下載取消／OS 封鎖、valid data 全刪除、帳號刪除、真機與 staging 仍未驗證。未使用 Supabase MCP／正式帳號／正式資料，不改 schema／Auth／worker template／release assets／版本或部署；修正待後續 release，DP-034 父任務與上線放行保持未完成。
+
+### 5.13 遊客編輯中途儲存額度不足（DP-102，2026-10-02）
+
+PR #90 合併後，從最新 `origin/main`（`f74e8e3`）獨立開分支，承接 DP-017／101 的 quota 交接。`e2e/production-storage-quota.spec.ts` 沿用隔離 loopback production fixture、真實 App／generated worker 及完整 schema-v4 synthetic 資料；Auth 公開設定為空，不連真實服務。資料與 sentinel 只在 blank setup page 寫一次，reload 不重灌。
+
+App 正常啟動並讀回偏好／occurrence 後，測試才以 `quota-test.fill.*` 無關 key 填滿該 origin 的原生 localStorage。依序使用 256 Ki、16 Ki、1 Ki 字元塊，每階段最多 128 次；要求各階段真正拋出 `DOMException`／`QuotaExceededError`，並印出實際填入字元數。不替換 Storage 方法、不假造 mode，也不把額度硬編成固定大小。修改全天事件時增加超過最小填充塊的備註，使既有 envelope 寫入也必須超額；填充 key 不屬於 `daypop.*`，不增加 AppStorage 的記憶體複製量。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| persistent App → 填滿額度 → 編輯事件 | 修改留在列表；日曆／搜尋／綜覽／設定皆顯示不可關閉的 `role=status` 儲存警告，明示分頁內容重新整理後消失。 |
+| 額度仍滿 → 真實 JSON 下載 | 完整可攜資料只改事件標題／備註及其時間戳，其餘日曆、事件、重複例外、待辦、貼圖及偏好保留；原始 guest envelope、backup、legacy、account cache sentinel 與其他 key 逐字不變。 |
+| 只移除本次填充 → 原生寫入成功 → 再改寵物名字 | 同一 session 仍顯示警告；第二份真實下載保留兩次修改，localStorage 全部 entries 仍等於原始文件，不自動恢復持久化或補寫。 |
+| 釋放空間後 reload | 警告消失，讀回原始偏好與 occurrence，記憶體修改消失；全部 durable entries 保留。 |
+
+本機 Windows／Node 24.14.1，Chromium mobile 390×844 與 desktop 1280×900 的 targeted **2/2** 通過。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；印出並斷言實際 browser timezone `Asia/Taipei`。首輪只因測試備註尾端空白被既有表單 `trim` 而失敗，調整輸入後通過，runtime 未改。重跑：`npm run test:e2e -- e2e/production-storage-quota.spec.ts`。
+
+完整驗證：lint、typecheck、unit **55 檔 660/660**（`npm run test -- --maxWorkers=2`）、build、check:build 通過；完整 e2e **61 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。Node 實際 timezone 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示，沒有回寫版本或 release assets。
+
+**限制與下一步**：只驗證已正常啟動的 guest 在編輯途中 persistent→memory，以及釋放額度後 reload。開機 probe 就失敗、storage 存取被安全政策禁止、corrupt／future 的記憶體復原、下載取消、多分頁競態、實際帳號快取降級、真機與 staging 仍未驗證。未修改 runtime、schema、Auth、worker template、release／版本或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補開機／blocked storage 或記憶體復原案例；DP-034 父任務與上線放行仍未完成。
