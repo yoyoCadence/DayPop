@@ -458,3 +458,22 @@ App 正常啟動並讀回偏好／occurrence 後，測試才以 `quota-test.fill
 完整驗證：lint、typecheck、unit **55 檔 660/660**（`npm run test -- --maxWorkers=2`）、build、check:build 通過；完整 e2e **61 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。Node 實際 timezone 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示，沒有回寫版本或 release assets。
 
 **限制與下一步**：只驗證已正常啟動的 guest 在編輯途中 persistent→memory，以及釋放額度後 reload。開機 probe 就失敗、storage 存取被安全政策禁止、corrupt／future 的記憶體復原、下載取消、多分頁競態、實際帳號快取降級、真機與 staging 仍未驗證。未修改 runtime、schema、Auth、worker template、release／版本或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補開機／blocked storage 或記憶體復原案例；DP-034 父任務與上線放行仍未完成。
+
+### 5.14 備份遇到 quota 的記憶體復原（DP-103，2026-10-02）
+
+PR #91 合併後，從最新 `origin/main`（`09f7166`）獨立開分支，依 ADR §1 的兩個獨立狀態軸補上交接：不可讀資料仍需備份，storage 無法持久化時則只在記憶體工作並持續警告。`e2e/production-storage-recovery.spec.ts` 新增 corrupt／future 兩個情境 × mobile／desktop，共 4 個 production browser cases；沿用隔離 loopback fixture、真實 App／generated worker，Auth 公開設定為空。資料只在 setup page 寫一次，reload 不重灌。
+
+復原畫面先在可持久化狀態確認重設停用與舊備份不相符，再填滿原生 localStorage。原始內容保留中文／換行並增加 2048 個尾端空白，確保連較短的 corrupt 備份都超過最後 1 Ki 字元填充塊的剩餘額度。從 DP-102 抽出相同填充流程至 `e2e/fixtures/storageQuota.ts` 供兩個 spec 共用，維持三階段、每階段最多 128 次與真正 `DOMException`／`QuotaExceededError` 的斷言，不替換 Storage API。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 復原畫面 → 原生 quota → 備份並下載 | 下載內容逐字等於 raw bytes；App 降級且復原畫面顯示不可保存警告，備份文案指向下載檔案、不宣稱已持久化；新 backup key 不在原生 localStorage，原資料與 sentinel 不變。 |
+| 相符記憶體備份 → 明確重設 | 正常分頁恢復，四分頁仍有不可關閉的 `role=status` 警告，漫畫／摩卡預設可見。 |
+| 釋放本次填充 → 原生寫入恢復 → 修改偏好／JSON 下載 | 同一 session 仍為記憶體；下載包含單一預設日曆、空事件／例外／待辦／貼圖、修改後偏好，全部 durable entries 仍是原本 blocked 文件與 sentinel。 |
+| reload | 再次顯示原本 corrupt／future 原因，編輯入口隱藏、重設停用；記憶體 backup 與成功訊息消失，沒有把空資料或編輯結果補寫到磁碟。 |
+
+本機 Windows／Node 24.14.1，Chromium mobile 390×844 與 desktop 1280×900 的新增 targeted **4/4** 通過；首輪既有 DP-101／102 六條案例也通過。新增案例 console warning／error、pageerror、意外失敗 request 與對外 request 為 0，實際 browser timezone 印出並斷言 `Asia/Taipei`。首輪新案例的精確檔名斷言遇到 Windows Chromium 將 ISO 時間冒號改成底線，改為正規化這項原生差異後通過，仍逐字核對下載內容，runtime 未改。重跑：`npm run test:e2e -- e2e/production-storage-recovery.spec.ts -g '備份遇 quota'`；全部 storage 路徑可同時指定該 spec 與 `e2e/production-storage-quota.spec.ts`。
+
+完整驗證：lint、typecheck、unit **55 檔 660/660**（`npm run test -- --maxWorkers=2`）、build、check:build 通過，完整 e2e **65 passed、3 skipped**（原有桌面不適用的橫向／短視窗案例）。Node 實際 timezone 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示，generated release assets 沒有帶入變更。
+
+**限制與下一步**：只涵蓋原本可以讀取 storage、備份寫入時遇到 quota 的復原。開機 probe／storage 存取封鎖、下載取消／OS 封鎖、原始文件在多分頁間真正同時改動、實際帳號快取、真機與 staging 仍未驗證；下載成功只代表本次 Chromium 測試檔案可讀，不代表 App 可偵測所有使用者取消或 OS 層失敗。未修改 runtime、schema、Auth、worker template、release／版本或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補開機／blocked storage 或下載失敗回饋；DP-034 父任務與上線放行仍未完成。

@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test as base } from '@playwright/test';
+import type { DayPopBackup } from '../src/domain/dataTransfer';
 import { backupData } from './fixtures/backupData';
 import { buildProductionUpdates, startProductionUpdateSite, type ProductionUpdateSite } from './fixtures/productionUpdateSite';
+import { fillLocalStorageQuota } from './fixtures/storageQuota';
 import { monitorBrowser, tabButton } from './support';
 
 const test = base.extend<{ site: ProductionUpdateSite }, {
@@ -108,6 +110,122 @@ for (const scenario of scenarios) {
     expect(await page.evaluate((keys) => Object.fromEntries(keys.map(
       (key) => [key, localStorage.getItem(key)],
     )), Object.keys(protectedEntries))).toEqual(protectedEntries);
+    assertCleanBrowser();
+    expect(unexpectedRequests).toEqual([]);
+  });
+
+  test(`Production ${scenario.name} 備份遇 quota 後只在記憶體復原，reload 保留原始 blocked 資料`, async ({ page, context, site }) => {
+    const assertCleanBrowser = monitorBrowser(page);
+    const unexpectedRequests: string[] = [];
+    context.on('request', (request) => {
+      if (new URL(request.url()).origin !== site.origin) unexpectedRequests.push(request.url());
+    });
+    page.on('requestfailed', (request) => unexpectedRequests.push(`failed: ${request.url()}`));
+    await page.clock.setFixedTime(new Date(fixedInstant));
+    // More than the smallest filler chunk: even a corrupt document's backup
+    // must genuinely exceed the remaining quota. Keep its raw whitespace.
+    const raw = scenario.raw + '\n' + ' '.repeat(2048);
+    const protectedEntries = {
+      [dataKey]: raw,
+      [`${backupPrefix}2026-10-01T00:00:00.000Z`]: 'unrelated older backup',
+      'calpet.v2': '{"legacy":"keep original bytes"}',
+      CALPET_FIRED: '["legacy-reminder"]',
+      'daypop.account-cache.memory-recovery-test': '{"account":"synthetic untouched cache"}',
+      'another.app.setting': 'unrelated site data',
+      'daypop.release-notes-seen': site.currentVersion,
+    };
+    await page.goto(`${site.origin}/setup.html`);
+    await page.evaluate((entries) => {
+      for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
+    }, protectedEntries);
+    await page.goto(`${site.origin}/DayPop/`);
+    const zone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+    console.log('Production memory recovery browser timezone:', zone);
+    expect(zone).toBe('Asia/Taipei');
+    const reset = page.getByRole('button', { name: '重設本機資料', exact: true });
+    const heading = page.getByRole('heading', { name: '資料需要處理', exact: true });
+    const warning = page.locator('.dp-storage-warning');
+    await expect(heading).toBeVisible();
+    await expect(page.getByText(scenario.heading, { exact: true })).toBeVisible();
+    await expect(reset).toBeDisabled();
+    await expect(warning).toHaveCount(0);
+    const quota = await fillLocalStorageQuota(page);
+    expect(quota.keys.length).toBeGreaterThan(0);
+    expect(quota.failures).toEqual(Array(3).fill({ name: 'QuotaExceededError', native: true }));
+    console.log('Production memory recovery native quota:', { characters: quota.characters, failures: quota.failures });
+    await expect(reset).toBeDisabled();
+    await expect(warning).toHaveCount(0);
+
+    const downloadReady = page.waitForEvent('download');
+    await page.getByRole('button', { name: '備份並下載原始資料', exact: true }).click();
+    const download = await downloadReady;
+    const backupKey = `${backupPrefix}${fixedInstant}`;
+    // Chromium sanitizes the ISO timestamp's colons on Windows.
+    expect(download.suggestedFilename().replaceAll('_', ':')).toBe(`${backupKey}.json`);
+    expect(await download.failure()).toBeNull();
+    expect(await readFile((await download.path())!, 'utf8')).toBe(raw);
+    await expect(warning).toBeVisible();
+    await expect(warning).toContainText('儲存空間已經滿了');
+    await expect(warning).toContainText('這次的變更不會被保存');
+    await expect(page.locator('.recovery-ok')).toContainText(`${backupKey}.json`);
+    await expect(page.locator('.recovery-ok')).toContainText('請務必確認這個檔案已經存到裝置上，它是唯一的備份');
+    await expect(page.locator('.recovery-ok')).not.toContainText('已複製到這台裝置');
+    expect(await page.evaluate((key) => localStorage.getItem(key), backupKey)).toBeNull();
+    expect(await page.evaluate((keys) => Object.fromEntries(keys.map(
+      (key) => [key, localStorage.getItem(key)],
+    )), Object.keys(protectedEntries))).toEqual(protectedEntries);
+    await expect(page.getByRole('navigation', { name: '主導覽' })).toHaveCount(0);
+    await expect(reset).toBeEnabled();
+    await reset.click();
+    await expect(heading).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: '主導覽' })).toBeVisible();
+    for (const tab of ['日曆', '搜尋', '綜覽', '設定'] as const) {
+      await tabButton(page, tab).click();
+      await expect(warning).toBeVisible();
+      await expect(warning).toHaveAttribute('role', 'status');
+      await expect(warning.getByRole('button')).toHaveCount(0);
+    }
+    await expect(page.getByLabel('寵物名字')).toHaveValue('摩卡');
+    await expect(page.getByRole('button', { name: /漫畫/ })).toHaveAttribute('aria-pressed', 'true');
+
+    // Recovering in memory must never overwrite the blocked durable document,
+    // even after native quota is released and further edits succeed.
+    await page.evaluate((keys) => {
+      for (const key of keys) localStorage.removeItem(key);
+      localStorage.setItem('quota-test.available', 'native writes work again');
+      if (localStorage.getItem('quota-test.available') !== 'native writes work again') throw new Error('quota was not released');
+      localStorage.removeItem('quota-test.available');
+    }, quota.keys);
+    await page.getByLabel('寵物名字').fill('只在記憶體復原');
+    await page.getByLabel('寵物名字').blur();
+    const memoryDownloadReady = page.waitForEvent('download');
+    await page.getByRole('button', { name: '⬇ 匯出資料', exact: true }).click();
+    const memoryDownload = await memoryDownloadReady;
+    expect(await memoryDownload.failure()).toBeNull();
+    const backup = JSON.parse(await readFile((await memoryDownload.path())!, 'utf8')) as DayPopBackup;
+    expect(backup).toMatchObject({
+      format: 'daypop.backup', formatVersion: 1, exportedAt: fixedInstant, appVersion: site.currentVersion,
+      omitted: { eventAttachments: 0 },
+      data: { events: [], eventExceptions: [], todos: [], stickers: [],
+        preferences: { themeId: 'manga', petName: '只在記憶體復原', timezone: 'Asia/Taipei' } },
+    });
+    expect(backup.data.calendars).toHaveLength(1);
+    expect(backup.data.calendars[0]).toMatchObject({ isDefault: true, isVisible: true });
+    await expect(warning).toBeVisible();
+    expect(await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map(
+      (key) => [key, localStorage.getItem(key)],
+    )))).toEqual(protectedEntries);
+
+    await page.reload();
+    await expect(heading).toBeVisible();
+    await expect(page.getByText(scenario.heading, { exact: true })).toBeVisible();
+    await expect(reset).toBeDisabled();
+    await expect(warning).toHaveCount(0);
+    await expect(page.locator('.recovery-ok')).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: '主導覽' })).toHaveCount(0);
+    expect(await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map(
+      (key) => [key, localStorage.getItem(key)],
+    )))).toEqual(protectedEntries);
     assertCleanBrowser();
     expect(unexpectedRequests).toEqual([]);
   });

@@ -38,6 +38,8 @@
 
 ## DP-030 自動化 browser baseline
 
+- **DP-103（2026-10-02）**：production 復原 spec 新增 corrupt／future × mobile／desktop 共 4 個備份遇 quota 案例，真實下載逐字保留原始內容、文案指出下載檔案是備份、只在記憶體重設／編輯並持續警告；釋放額度仍不補寫，reload 讀回原 blocked 文件且重新要求備份。原生 quota 填充抽至共用 test fixture，runtime／canonical UI 不變；開機 storage、下載取消／真機等限制見 [`deployment.md`](deployment.md) §5.14，DP-034 父任務未完成。
+
 - **DP-102（2026-10-02）**：`e2e/production-storage-quota.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 2 個案例，以原生 localStorage 填滿額度觸發 `QuotaExceededError`；驗證分頁修改與真實 JSON 匯出保留完整資料、四分頁持續警告、原始磁碟 entries 不變，釋放額度後同一 session 不補寫，reload 讀回原始資料。僅新增測試，既有 runtime／canonical UI 不變；開機 probe、記憶體復原及其他限制見 [`deployment.md`](deployment.md) §5.13，DP-034 父任務未完成。
 
 - **DP-101（2026-10-02）**：`e2e/production-storage-recovery.spec.ts` 在真正 production 遊客 App 的 mobile／desktop 共 4 個案例驗證 corrupt／future bytes 不因無關舊備份而開放重設，真實下載／相符備份後可重設並 reload，原始備份、legacy、帳號快取與其他 key 保留。修正 `resetUserData()` 的當下原始內容核對及復原 UI 的 backup 選擇，符合既有 ADR §1；限制見 [`deployment.md`](deployment.md) §5.12，不取代 DP-034 放行。
