@@ -162,6 +162,14 @@ export function listUserDataBackups(storage: StorageLike = getAppStorage()): str
   return keys.sort();
 }
 
+/** An older recovery's backup cannot authorize replacing today's bytes. */
+export function findMatchingUserDataBackup(
+  raw: string,
+  storage: StorageLike = getAppStorage(),
+): string | null {
+  return listUserDataBackups(storage).reverse().find((key) => storage.getItem(key) === raw) ?? null;
+}
+
 /**
  * Replace unreadable data with a fresh empty envelope.
  *
@@ -169,8 +177,11 @@ export function listUserDataBackups(storage: StorageLike = getAppStorage()): str
  * cannot be used to destroy data that was never copied anywhere.
  */
 export function resetUserData(storage: StorageLike = getAppStorage()): StoredEnvelope {
-  if (listUserDataBackups(storage).length === 0) {
-    throw new Error('尚未備份原始內容，拒絕重設本機資料。');
+  // Re-read at the destructive boundary: a mounted recovery screen may hold
+  // older bytes if another tab or process changed the document after backup.
+  const raw = storage.getItem(USER_DATA_STORAGE_KEY);
+  if (raw === null || !findMatchingUserDataBackup(raw, storage)) {
+    throw new Error('尚未備份目前的原始內容，拒絕重設本機資料。');
   }
   return writeUserData(createEmptyUserData(), 0, storage);
 }
