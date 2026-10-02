@@ -108,6 +108,7 @@ export default function App() {
             <UpdateDialog
               release={updater.availableRelease}
               preparing={updater.preparing}
+              error={updater.updateError}
               onUpdate={() => void updater.updateNow()}
               onLater={updater.dismissUpdate}
             />

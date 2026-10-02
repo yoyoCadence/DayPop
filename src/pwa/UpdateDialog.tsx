@@ -3,11 +3,12 @@ import type { ReleaseInfo } from './version';
 interface UpdateDialogProps {
   release: ReleaseInfo;
   preparing: boolean;
+  error: string | null;
   onUpdate: () => void;
   onLater: () => void;
 }
 
-export function UpdateDialog({ release, preparing, onUpdate, onLater }: UpdateDialogProps) {
+export function UpdateDialog({ release, preparing, error, onUpdate, onLater }: UpdateDialogProps) {
   return (
     <div className="dialog-backdrop" role="presentation">
       <section className="update-dialog" role="dialog" aria-modal="true" aria-labelledby="update-title">
@@ -20,6 +21,7 @@ export function UpdateDialog({ release, preparing, onUpdate, onLater }: UpdateDi
             <li key={change}>{change}</li>
           ))}
         </ul>
+        {error ? <p className="update-error" role="alert">{error}</p> : null}
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={onLater} disabled={preparing}>
             稍後提醒

@@ -29,6 +29,7 @@ const updater = {
   checking: false,
   preparing: false,
   error: null,
+  updateError: null,
   checkForUpdate: () => Promise.resolve(),
   updateNow: () => Promise.resolve(),
   dismissUpdate: () => {},
