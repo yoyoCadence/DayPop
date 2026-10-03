@@ -286,7 +286,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     event.preventDefault();
     // "明天下午3點" is relative to today on this grid, not to the device's day.
     const parsed = parseQuickAdd(quick, todayDate);
-    if (!parsed || !parsed.title) return;
+    if (!parsed) return;
 
     // The原檔 hands the parsed line to the event sheet for confirmation rather
     // than creating straight away, so nothing is saved until the user agrees.

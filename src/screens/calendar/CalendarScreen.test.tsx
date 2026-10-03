@@ -50,6 +50,70 @@ const weekButton = () => container.querySelectorAll('.cal-segmented button')[1];
 const periodLabel = () => container.querySelector('.cal-period')?.textContent;
 const daySheet = () => container.querySelector('.cal-day-sheet');
 
+describe('quick-add confirmation (DP-075)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-08-12T00:00:00.000Z'));
+    const data = createEmptyUserData();
+    data.preferences.timezone = 'Asia/Taipei';
+    writeUserData(data, 0);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function submit(text: string) {
+    const input = container.querySelector('.cal-quick input') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => input.form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  }
+  const value = (label: string) => container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!.value;
+  const stored = () => JSON.parse(window.localStorage.getItem('daypop.user-data')!).data;
+
+  it('pre-fills Chinese clocks/recurrence/location without writing and cancels cleanly', async () => {
+    await render(null);
+    const before = window.localStorage.getItem('daypop.user-data');
+    await submit('每週 明天下午三點半 開會 @３０１教室');
+    expect(value('標題')).toBe('開會');
+    expect(value('日期')).toBe('2026-08-13');
+    expect(value('開始')).toBe('15:30');
+    expect(value('結束')).toBe('16:30');
+    expect(value('地點')).toBe('３０１教室');
+    expect(container.querySelector<HTMLSelectElement>('[aria-label="重複"]')!.value).toBe('weekly');
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(before);
+    await click(container.querySelector('.cal-sheet-bar button'));
+    expect(container.querySelector('.cal-sheet')).toBeNull();
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(before);
+  });
+
+  it.each(['明天下午三點', '明天下午3點', '明天'])('opens and saves a title-less draft: %s', async (text) => {
+    await render(null);
+    await submit(text);
+    expect(container.querySelector('.cal-sheet-bar strong')?.textContent).toBe('新增行程');
+    expect(value('標題')).toBe('');
+    expect(value('日期')).toBe('2026-08-13');
+    expect(stored().events).toEqual([]);
+    await act(async () => container.querySelector('.cal-sheet')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(stored().events).toHaveLength(1);
+    expect(stored().events[0].title).toBe('新事件');
+    expect(stored().events[0].allDay).toBe(text === '明天');
+    if (text !== '明天') expect(stored().events[0].startsAt).toBe('2026-08-13T07:00:00.000Z');
+  });
+
+  it('ignores empty input and leaves unsupported clock text visible in the sheet', async () => {
+    await render(null);
+    await submit('  ');
+    expect(container.querySelector('.cal-sheet')).toBeNull();
+    await submit('明天下午三點差十分 開會');
+    expect(value('標題')).toBe('下午三點差十分 開會');
+    expect(container.querySelector('[aria-label="開始"]')).toBeNull();
+    expect(stored().events).toEqual([]);
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(stored().events).toEqual([]);
+  });
+});
+
 describe('recurring week drags (DP-083)', () => {
   async function setup(displayZone = 'Asia/Taipei', eventZone = displayZone, anchor = '2026-07-29') {
     const data = createEmptyUserData();
