@@ -1,6 +1,7 @@
-import { readFile, readdir, mkdir, mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { extname, join } from 'node:path';
 import { build } from 'vite';
 
 const nextVersion = '999.0.0'; // Test-only version, never written to tracked release assets.
@@ -20,43 +21,50 @@ async function readTree(directory: string, prefix = ''): Promise<Map<string, Buf
 }
 
 /** Two real production builds, shared by a Playwright worker. No auth harness,
- * real account, deployment, or tracked generated asset is involved. */
+ * real account, deployment, or tracked generated asset is involved.
+ *
+ * The site below serves every file from memory, so the build directory is only
+ * needed until it has been read. It lives in the OS temp directory and is
+ * removed right away: builds left under the repository piled up by a dozen
+ * per full run and were synced by OneDrive (DP-109). */
 export async function buildProductionUpdates(browserName: string) {
   const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as { version: string };
   const currentVersion = packageJson.version;
   const template = await readFile('pwa/sw-template.js', 'utf8');
-  const parent = resolve('output/playwright/production-updates');
-  await mkdir(parent, { recursive: true });
-  const directory = await mkdtemp(join(parent, `build-${browserName}-`));
+  const directory = await mkdtemp(join(tmpdir(), `daypop-production-${browserName}-`));
   const builds = new Map<string, Map<string, Buffer>>();
-  for (const version of [currentVersion, nextVersion]) {
-    const outDir = join(directory, version);
-    await build({
-      base: '/DayPop/',
-      // Retain the repository config's safety checks, but disable real Auth in
-      // these guest builds even on a developer machine with a public .env file.
-      define: {
-        __APP_VERSION__: JSON.stringify(version),
-        'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(''),
-        'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(''),
-      },
-      build: { outDir, emptyOutDir: false },
-      logLevel: 'error',
-    });
-    const files = await readTree(outDir);
-    const worker = Buffer.from(template.replaceAll('__DAYPOP_VERSION__', version));
-    if (version === currentVersion) {
-      if (!files.get('/sw.js')?.equals(worker)) {
-        throw new Error('Production worker differs from its template/version; run npm run release:assets');
+  try {
+    for (const version of [currentVersion, nextVersion]) {
+      const outDir = join(directory, version);
+      await build({
+        base: '/DayPop/',
+        // Retain the repository config's safety checks, but disable real Auth in
+        // these guest builds even on a developer machine with a public .env file.
+        define: {
+          __APP_VERSION__: JSON.stringify(version),
+          'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(''),
+          'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(''),
+        },
+        build: { outDir, emptyOutDir: false },
+        logLevel: 'error',
+      });
+      const files = await readTree(outDir);
+      const worker = Buffer.from(template.replaceAll('__DAYPOP_VERSION__', version));
+      if (version === currentVersion) {
+        if (!files.get('/sw.js')?.equals(worker)) {
+          throw new Error('Production worker differs from its template/version; run npm run release:assets');
+        }
+      } else {
+        files.set('/sw.js', worker);
+        files.set('/version.json', Buffer.from(JSON.stringify({
+          version, releasedAt: '2026-10-01', title: 'Production 更新回歸',
+          changes: ['驗證新版 App 載入與資料保存'],
+        })));
       }
-    } else {
-      files.set('/sw.js', worker);
-      files.set('/version.json', Buffer.from(JSON.stringify({
-        version, releasedAt: '2026-10-01', title: 'Production 更新回歸',
-        changes: ['驗證新版 App 載入與資料保存'],
-      })));
+      builds.set(version, files);
     }
-    builds.set(version, files);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
   return { builds, currentVersion, nextVersion };
 }
