@@ -133,6 +133,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-03 產物清理委託**：專案擁有者合併 PR #96 後指示「繼續」。agent 依 DP-108 交接的建議接 **DP-109**（由 Backlog 經 Next、In Progress 完成並移入 Done），從最新 `origin/main`（`e919417`）獨立開分支。開工時 0.4.1 仍未部署。
 
+> **2026-10-03 公告不可回寫檢查委託**：專案擁有者合併 PR #97 後指示「繼續」。agent 依前一輪的建議，從 DP-034 清單拆出「確認已部署 release note 不再被同版號改寫」，登記為 **DP-110**（由 Backlog 經 Next、In Progress 完成並移入 Done），從最新 `origin/main`（`a600478`）獨立開分支。選在此時是因為 0.4.1 即將部署（開工時線上仍是 0.4.0），部署後它的公告就與 0.3.0、0.4.0 一樣不可回寫。本項會改 `deploy-staging.yml`，屬高風險區；agent 不觸發部署，第一次實際執行要等專案擁有者部署。DP-034 父任務仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -215,6 +217,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 記憶體復原子項進度**：DP-103 已補上 corrupt／future 備份遇 quota 的真實下載、記憶體重設／編輯及持續警告；釋放額度不補寫、reload 回原 blocked 文件並重新要求備份，見同份交接 §5.14。開機 probe／storage 存取封鎖、下載取消、多分頁競態、實際帳號及真機／staging 仍未完成，父任務不結案。
   > **2026-10-02 開機儲存子項進度**：DP-104 已補上原生 localStorage 為 null 時的 production 開機記憶體模式、四分頁持續警告、跨分頁編輯／真實 JSON 匯出與 reload 回預設，見同份交接 §5.15。SecurityError、初始 quota、實際政策封鎖、帳號、真機／staging 及其他驗收仍未完成，父任務不結案。
   > **2026-10-02 開機額度子項進度**：DP-106 重現並修正「額度已滿時開機顯示空白預設資料、匯出為空」，改為沿用仍可讀的內容並持續警告；補上 production 回歸與 9 個單元案例，見同份交接 §5.16。SecurityError／實際政策封鎖、開機額度滿＋不可讀資料的瀏覽器流程、帳號快取、Chromium 以外的瀏覽器、真機／staging 及其他驗收仍未完成，父任務不結案。
+  > **2026-10-03 公告不可回寫子項進度**：DP-110 把本條的「確認已部署 release note 不再被同版號改寫」做成部署 workflow 的一步，上傳產物前比對線上 `version.json`，見同份交接 §5.17。這一步尚未在 runner 上實際跑過，也只看得到此刻線上的那一版；資料刪除、隱私說明、錯誤監控、效能 budget、真機／staging 等其餘驗收仍未完成，父任務不結案。
 
 ### 原型假功能與待補能力
 
@@ -256,6 +259,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-110 — 部署前擋下已部署公告的回寫（DP-034 子項）：** 2026-10-03 完成。新增 `scripts/check-release-notes.mjs` 與 `npm run check:release-notes`，並接進 `deploy-staging.yml` 的 build job（Configure Pages 之後、上傳產物之前；線上網址取自 `actions/configure-pages` 的 `base_url` 輸出）。兩條規則都對照線上目前的 `version.json`：(1) 那一版在 `release-notes.json` 的條目必須存在且逐欄相同，這也擋下「發布新版時回頭改到上一版」；(2) 這次產物若同版號，`dist/version.json` 必須相同，同版號重新部署程式修正仍然允許。線上回 404 視為尚未部署；其他讀取失敗一律擋下部署（fail closed）。
+  > **設計中途改掉的兩件事**：(a) 第一版規則會擋住 rollback —— 被還原的 tag 的 `release-notes.json` 不可能有在它之後才發布的版本。改為「這次的版號比線上舊」視為 rollback，只警告不阻擋。(b) 第一版在 404 路徑印出通過卻以結束碼 127 結束：回應還沒讀完就呼叫 `process.exit()`，Node 在 Windows 上觸發 libuv assertion，而這正是第一次部署會走的路徑。改為不在請求之後強制結束，失敗一律丟例外、最後才設定結束碼。
+  > **實際驗證**：`npm run build` 後跑 16 個情境，全部符合預期：真實 staging（線上 0.4.0、本次 0.4.1）通過；條目被改／同版號標題不同／已部署版本不在 `release-notes.json`／不是 JSON／沒有 `version`／HTTP 500／HTTP 200 但回傳 HTML／連不上主機／`dist/version.json` 未重新 build 皆以結束碼 1 失敗並指出原因；同版號相同、欄位重排且壓縮、rollback、HTTP 404、HTTP 200 有效內容皆通過；未給參數為 2。真實 GitHub Pages 的 404 另外驗過。workflow 以 YAML parser 解析確認步驟順序，`base_url` 對照 `actions/configure-pages@v6` 的 `action.yml`。lint、typecheck、unit **55 檔 669/669**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **69 passed、3 skipped、無 flaky**（本項沒有改 runtime 或 e2e 檔案，跑它是確認沒有弄壞別的）。
+  > **限制與交接**：**workflow 的這一步還沒在 runner 上實際跑過**，部署會真的發布、不能拿來探測；第一次由專案擁有者部署 0.4.1 時才會執行，線上 0.4.0 的條目未變，預期通過。只看得到此刻線上的那一版，更早版本的條目被改抓不到，仍靠審查。只在部署時檢查、不在 PR CI，避免 PR CI 依賴外部站台。驗證情境的腳本只放在 agent 的暫存目錄，沒有提交。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號。規則與細節見 [`docs/deployment.md`](docs/deployment.md) §3.4、§4 與 §5.17；DP-034 父任務及上線放行仍未完成。
 
 - [x] **DP-109 — production fixture 的 build 目錄不再累積：** 2026-10-03 完成。`e2e/fixtures/productionUpdateSite.ts` 的測試伺服器一律從記憶體提供檔案（`readTree` 把整份 build 讀成 Buffer），build 目錄讀完就沒有用途，卻一直留在 `output/playwright/production-updates/`，每跑一輪完整 e2e 多 12 個。`buildProductionUpdates()` 改為建在系統暫存目錄（`os.tmpdir()` 下的 `daypop-production-<browser>-*`），並在 `finally` 刪除，build 失敗或 service worker 檢查不通過時也一樣。六個 production spec、伺服器行為與 DP-098 對 `output/playwright` 的 ESLint ignore 都沒有改（報告與 test-results 仍在那裡）。建在專案外也避開了 OneDrive：即使只暫時存在，幾百個檔案也會被同步。
   > **既有產物已刪除**：刪除前確認 `output/playwright/production-updates/` 的 168 個項目全是 `build-*` 目錄、每個只含 `0.4.1` 與 `999.0.0` 兩份 build（最早 2026-10-01），共 44,016 個檔案、約 1,054.5 MB。`output/playwright/` 底下的其他內容（截圖、日誌、`pr95-review-*`／`pr96-review-*`、report、test-results）不是這個 fixture 產生的，沒有動。

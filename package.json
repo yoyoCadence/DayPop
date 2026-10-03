@@ -16,6 +16,7 @@
     "postbuild": "node scripts/copy-spa-fallback.mjs",
     "check:build": "node scripts/check-build-assets.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
+    "check:release-notes": "node scripts/check-release-notes.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
