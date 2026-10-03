@@ -251,6 +251,15 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 跨午夜的**提醒**時間點屬 DP-042。
 - 這條決策不改變資料模型：`events` 仍是單一 instant 區間，不新增「片段」資料表或欄位。
 
+### 決策（DP-083，2026-10-03）— 重複週格拖曳沿用單次／全部選擇
+
+專案擁有者委託 agent 對未定事項提出建議並直接執行，再以 PR 自行合併。採 DP-083 的 (b)：單日重複 occurrence 在週格可拖曳、跨欄換日與拉長度，放開後沿用事件 sheet 的「只改這一次／套用全部／取消」對話框。這是刻意偏離原稿 `wkUp()` 不詢問便拆成獨立事件的行為，目的為讓同一系列在兩個入口的修改範圍一致；決策可由後續 PR 修訂。
+
+- 放開時只保存待確認 patch；選範圍以前不呼叫 repository。取消／Escape 回到原色塊、恢復焦點且不寫入。對話框 Tab／Shift+Tab 維持在三個按鈕內。
+- 「只改這一次」透過既有 `replaceEventOccurrence()` 建立 replacement 與 exception；已拆出的 replacement 是獨立事件，之後拖曳不再詢問。
+- 「套用全部」先按本節 DP-064 以 display timezone 解析**具體 occurrence** 的格線座標，再換算成事件自己的牆上時間。新起訖時鐘套到系列，日期則依該次在事件時區移動的日數平移系列錨點，不能直接把被拖那次的日期拷到錨點。先解析後換算同時處理「錨點在冬季、該次在夏季」的 DST 偏移，不用固定 instant delta，也不改 `event.timezone`。
+- 非重複事件沿用直接寫入。跨午夜片段仍不提供拖曳與拉長度（DP-072）；iPhone 真機拖曳回饋的 DP-077 仍未驗證或結案。
+
 ## 7. 工程治理
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。

@@ -5,6 +5,7 @@ import { DataProvider } from '../../data/DataProvider';
 import { addDays, startOfWeek } from '../../domain/date';
 import { instantDateInZone } from '../../domain/eventTime';
 import { createEmptyUserData } from '../../domain/types';
+import { timedEventFromWallTime } from '../../domain/eventTime';
 import { writeUserData } from '../../storage/versionedStorage';
 import { CalendarScreen, type CalendarFocus } from './CalendarScreen';
 
@@ -48,6 +49,106 @@ async function click(element: Element | null | undefined) {
 const weekButton = () => container.querySelectorAll('.cal-segmented button')[1];
 const periodLabel = () => container.querySelector('.cal-period')?.textContent;
 const daySheet = () => container.querySelector('.cal-day-sheet');
+
+describe('recurring week drags (DP-083)', () => {
+  async function setup(displayZone = 'Asia/Taipei', eventZone = displayZone, anchor = '2026-07-29') {
+    const data = createEmptyUserData();
+    data.preferences.timezone = displayZone;
+    data.preferences.petEnabled = false;
+    data.events = [timedEventFromWallTime({
+      id: '83000000-0000-4000-8000-000000000001', calendarId: data.calendars[0]!.id,
+      title: '週會', location: null, notes: null, reminderMinutes: [],
+      recurrence: { rule: 'FREQ=WEEKLY;COUNT=52' }, sharingScope: 'inherit',
+      createdAt: '2026-07-01T00:00:00.000Z', updatedAt: '2026-07-01T00:00:00.000Z',
+    }, { date: anchor, start: '21:00', end: '22:00' }, eventZone)];
+    writeUserData(data, 0);
+    await render({ kind: 'day', dateKey: '2026-08-12' });
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    await click(weekButton());
+  }
+
+  const stored = () => JSON.parse(window.localStorage.getItem('daypop.user-data')!).data;
+  const block = () => container.querySelector<HTMLElement>('.cal-week-event')!;
+  async function drag(dx = 0, resize = false) {
+    const element = resize ? block().querySelector('.cal-week-event-resize')! : block();
+    await act(async () => element.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 })));
+    await act(async () => window.dispatchEvent(new MouseEvent('pointermove', { clientX: 100 + dx, clientY: 144 })));
+    await act(async () => window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100 + dx, clientY: 144 })));
+  }
+
+  it('asks before writing; cancel and Escape preserve bytes and restore block focus', async () => {
+    await setup();
+    const original = window.localStorage.getItem('daypop.user-data');
+    await drag();
+    expect(container.querySelector('.cal-scope-card')).not.toBeNull();
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(original);
+    expect(document.activeElement).toBe(container.querySelector('.cal-scope-this'));
+    await click(container.querySelector('.cal-scope-cancel'));
+    expect(document.activeElement).toBe(block());
+    await drag();
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(container.querySelector('.cal-scope-card')).toBeNull();
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(original);
+  });
+
+  it('moves only the dragged occurrence through the existing exception mutation', async () => {
+    await setup();
+    await drag(60);
+    await click(container.querySelector('.cal-scope-this'));
+    const data = stored();
+    expect(data.events).toHaveLength(2);
+    expect(data.events[0].startsAt).toBe('2026-07-29T13:00:00.000Z');
+    expect(data.events[1].startsAt).toBe('2026-08-13T14:00:00.000Z');
+    expect(data.eventExceptions[0].occurrence.startsAt).toBe('2026-08-12T13:00:00.000Z');
+    expect(data.eventExceptions[0].replacementEventId).toBe(data.events[1].id);
+  });
+
+  it('changes the whole series clock without re-anchoring it to the later occurrence', async () => {
+    await setup();
+    await drag();
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events).toHaveLength(1);
+    expect(stored().events[0].startsAt).toBe('2026-07-29T14:00:00.000Z');
+    expect(stored().eventExceptions).toEqual([]);
+  });
+
+  it('shifts the series anchor by the column displacement', async () => {
+    await setup();
+    await drag(60);
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events[0].startsAt).toBe('2026-07-30T14:00:00.000Z');
+  });
+
+  it('reads the series anchor in the display zone and preserves the event timezone', async () => {
+    // NY July 29 21:00 is Taipei July 30 09:00. An event-zone anchor
+    // would move the series back one day even for a vertical-only drag.
+    await setup('Asia/Taipei', 'America/New_York');
+    await drag();
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events[0].startsAt).toBe('2026-07-30T02:00:00.000Z');
+    expect(stored().events[0].timezone).toBe('America/New_York');
+  });
+
+  it('resizes just one occurrence without changing the series duration', async () => {
+    await setup();
+    await drag(0, true);
+    await click(container.querySelector('.cal-scope-this'));
+    expect(stored().events[0].endsAt).toBe('2026-07-29T14:00:00.000Z');
+    expect(stored().events[1].startsAt).toBe('2026-08-12T13:00:00.000Z');
+    expect(stored().events[1].endsAt).toBe('2026-08-12T15:00:00.000Z');
+  });
+
+  it('preserves the requested series clock change when the anchor has a different DST offset', async () => {
+    await setup('Asia/Taipei', 'America/New_York', '2026-01-28');
+    // August 21:00 NY is 09:00 Taipei. A one-hour grid drag makes it
+    // 22:00 NY; January's anchor must also become 22:00, not stay 21:00.
+    await drag();
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events[0].startsAt).toBe('2026-01-29T03:00:00.000Z');
+    expect(stored().events[0].endsAt).toBe('2026-01-29T04:00:00.000Z');
+    expect(stored().events[0].timezone).toBe('America/New_York');
+  });
+});
 
 function weekLabelFor(dateKey: string): string {
   const start = startOfWeek(new Date(`${dateKey}T00:00:00`), 0);
