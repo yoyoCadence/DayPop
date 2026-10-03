@@ -82,9 +82,11 @@ function spanning(
 }
 
 const onOpenEvent = vi.fn();
+const onDragEvent = vi.fn();
 
 function render(events: CalendarEvent[]) {
   onOpenEvent.mockClear();
+  onDragEvent.mockClear();
   act(() =>
     root.render(
       <WeekView
@@ -94,7 +96,7 @@ function render(events: CalendarEvent[]) {
         todayKey={CURSOR}
         resolveOccurrences={occurrenceResolver(events)}
         calendars={[]}
-        onDragEvent={vi.fn()}
+        onDragEvent={onDragEvent}
         onOpenEvent={onOpenEvent}
       />,
     ),
@@ -136,6 +138,71 @@ function gridHeightPx(): number {
 }
 
 describe('WeekView cross-midnight segments', () => {
+  function pointer(element: HTMLElement | Window, type: string, x: number, y: number, pointerId = 1) {
+    act(() => {
+      const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+      Object.defineProperty(event, 'pointerId', { value: pointerId });
+      element.dispatchEvent(event);
+    });
+  }
+  it('re-cuts the complete interval during a drag before sending any mutation', () => {
+    render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
+    pointer(blocksByColumn()[3]![0]!.element, 'pointerdown', 100, 100);
+    pointer(window, 'pointermove', 100, 144);
+    expect(blocksByColumn()[3]).toHaveLength(0);
+    expect(blocksByColumn()[4]![0]!.label).toBe('00:00–01:30 夜班');
+    expect(onDragEvent).not.toHaveBeenCalled();
+    pointer(window, 'pointerup', 100, 144);
+    expect(onDragEvent).toHaveBeenCalledWith(expect.objectContaining({ sourceEventId: 'overnight' }), {
+      timedInterval: { startsAt: '2026-08-12T16:00:00.000Z', endsAt: '2026-08-12T17:30:00.000Z' },
+    });
+  });
+  it('treats a 24:00 endpoint as a full interval even when only one day is occupied', () => {
+    render([timed('midnight', '夜班', { date: CURSOR, start: '23:00', end: '00:00' })]);
+    pointer(blocksByColumn()[3]![0]!.element, 'pointerdown', 100, 100);
+    pointer(window, 'pointermove', 100, 144);
+    pointer(window, 'pointerup', 100, 144);
+    expect(onDragEvent.mock.calls[0]![1]).toEqual({ timedInterval: {
+      startsAt: '2026-08-12T16:00:00.000Z', endsAt: '2026-08-12T17:00:00.000Z',
+    } });
+  });
+  it('moves both endpoints when a continuation is dragged to another column', () => {
+    render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
+    pointer(blocksByColumn()[4]![0]!.element, 'pointerdown', 100, 100);
+    pointer(window, 'pointermove', 160, 144);
+    pointer(window, 'pointerup', 160, 144);
+    expect(onDragEvent.mock.calls[0]![1]).toEqual({
+      timedInterval: { startsAt: '2026-08-13T16:00:00.000Z', endsAt: '2026-08-13T17:30:00.000Z' },
+    });
+  });
+  it('resizes the true ending endpoint from the final handle', () => {
+    render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
+    pointer(blocksByColumn()[4]![0]!.element.querySelector<HTMLElement>('.cal-week-event-resize')!, 'pointerdown', 100, 100);
+    pointer(window, 'pointermove', 100, 144);
+    pointer(window, 'pointerup', 100, 144);
+    expect(onDragEvent.mock.calls[0]![1]).toEqual({
+      timedInterval: { startsAt: '2026-08-12T15:00:00.000Z', endsAt: '2026-08-12T17:30:00.000Z' },
+    });
+  });
+  it('pointercancel restores segments and a different pointer cannot commit the gesture', () => {
+    render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
+    pointer(blocksByColumn()[3]![0]!.element, 'pointerdown', 100, 100);
+    pointer(window, 'pointermove', 100, 144);
+    pointer(window, 'pointerup', 100, 144, 2);
+    expect(onDragEvent).not.toHaveBeenCalled();
+    pointer(window, 'pointercancel', 100, 144);
+    pointer(window, 'pointerup', 100, 144);
+    expect(onDragEvent).not.toHaveBeenCalled();
+    expect(blocksByColumn()[3]![0]!.label).toBe('23:00–24:00 夜班');
+    expect(blocksByColumn()[4]![0]!.label).toBe('續 00:00–00:30 夜班');
+  });
+  it('a tap opens the occurrence and does not submit an interval', () => {
+    render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
+    pointer(blocksByColumn()[4]![0]!.element, 'pointerdown', 100, 100);
+    pointer(window, 'pointerup', 100, 100);
+    expect(onOpenEvent).toHaveBeenCalledWith(expect.objectContaining({ sourceEventId: 'overnight' }));
+    expect(onDragEvent).not.toHaveBeenCalled();
+  });
   it('draws a block on both days, the second marked as a continuation', () => {
     render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
 
@@ -187,17 +254,17 @@ describe('WeekView cross-midnight segments', () => {
     expect(block.time).toBe('09:00');
   });
 
-  it('opens the event from a continuation block, which cannot be dragged', () => {
+  it('offers resize only on the final continuation, and keyboard opens its occurrence (DP-072)', () => {
     render([timed('overnight', '夜班', { date: CURSOR, start: '23:00', end: '00:30' })]);
 
     const columns = blocksByColumn();
-    // A drag rewrites one wall-clock range on one day, so neither block of a
-    // multi-day occurrence offers one (DP-072).
+    // Complete interval drags can move either segment, but resize is only at
+    // the actual endpoint, not the first segment's midnight cut.
     expect(columns[3]![0]!.hasResizeHandle).toBe(false);
-    expect(columns[4]![0]!.hasResizeHandle).toBe(false);
+    expect(columns[4]![0]!.hasResizeHandle).toBe(true);
 
     act(() => {
-      columns[4]![0]!.element.click();
+      columns[4]![0]!.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
     // DP-082: 帶回的是被點到的那一次 occurrence，不再只是事件 id。
     expect(onOpenEvent).toHaveBeenCalledWith(

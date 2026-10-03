@@ -80,6 +80,27 @@ describe.each(adapters)('%s adapter preserves multi-day timed data (DP-112)', (_
     imported = loaded;
   });
 
+  it('persists a complete dragged interval through reload (DP-072)', async () => {
+    const timedInterval = { startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-10T15:00:00.000Z' };
+    await repository.updateEvent(imported.id, { timedInterval });
+    expect((await repository.load()).events[0]).toMatchObject({ ...timedInterval, timezone: imported.timezone });
+  });
+  it('rejects a reversed interval without altering durable rows (DP-072)', async () => {
+    const before = await repository.load();
+    await expect(repository.updateEvent(imported.id, { timedInterval: {
+      startsAt: imported.endsAt, endsAt: imported.startsAt,
+    } })).rejects.toThrow();
+    expect(await repository.load()).toEqual(before);
+  });
+  it('replaces one occurrence with a full interval without changing the base (DP-072)', async () => {
+    await repository.updateEvent(imported.id, { recurrenceRule: 'FREQ=DAILY;COUNT=3' });
+    const timedInterval = { startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-10T15:00:00.000Z' };
+    await repository.replaceEventOccurrence(imported.id, { kind: 'timed', startsAt: '2026-08-07T01:00:00.000Z' }, { timedInterval });
+    const data = await repository.load();
+    expect(data.events.find((event) => event.id === imported.id)).toMatchObject({ startsAt: imported.startsAt, endsAt: imported.endsAt });
+    expect(data.events.find((event) => event.id !== imported.id)).toMatchObject({ ...timedInterval, recurrence: null, timezone: imported.timezone });
+    expect(data.eventExceptions).toHaveLength(1);
+  });
   it('persists a rename with its original multi-day endpoints and seconds', async () => {
     await repository.updateEvent(imported.id, { title: '改名', date: '2026-08-06', start: '09:00', end: '10:00' });
     expect((await repository.load()).events[0]).toMatchObject({ title: '改名', startsAt: imported.startsAt, endsAt: imported.endsAt });

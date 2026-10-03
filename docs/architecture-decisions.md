@@ -280,7 +280,14 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 一般同日／隔夜事件仍依既有開始、結束時鐘推導，以免跨時區系列拖曳把 1 小時夜班誤拉成 25 小時。sheet 的操作時區是來源 `event.timezone`（顯式換時區後在新時區重錨）；grid 的操作時區是 display timezone，保存時仍保留事件自身的 timezone。這項修正不新增 patch 形狀或 UI，真正在格線拖曳跨午夜片段仍屬 DP-072。時間變更與 occurrence expansion 的分鐘精度維持既有契約。
 
+### 決策（DP-072，2026-10-03）— 跨午夜週格拖曳
+
+依持續自主開發委託採用 agent 建議：從任何片段拖曳都移動完整 occurrence 的兩端；最後一段底緣只調整結束，其他片段沒有 resize 把手。位移按 display timezone 的日曆日期與牆上分鐘解析，每端各帶完整日期，DST 不使用固定 instant delta；仍保留事件 timezone 與單一 domain event。跨欄以被拖片段所在日為基準夾在可見週，完整事件的其他端點可在週外。單日拖曳維持原推導。
+
+新增 `EventPatch.timedInterval` 帶已解析的完整 instant 起訖，與單日期時鐘／換時區欄位互斥，只適用 timed event。區間為正且有效才可預覽／提交；resize 短於 15 分鐘時拒絕保存，保留未動起點的精確 instant。未移動／取消／pointercancel 不寫入。重複事件沿 DP-083 scope，套用全部將新區間換成事件時區的牆上起訖與日數，再以該次的日期位移重錨到系列，兩端分別解析系列錨點上的 DST。這是新產品能力，原稿不能完整表示這些區間；DP-077 真機視覺回饋的驗證限制維持。
+
 ## 7. 工程治理
+
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。
 - CI 同時固定 Node major version；`package.json#engines` 與版本檔應保持一致。DP-086 起 runner 映像也固定為 `ubuntu-26.04`，不用 `ubuntu-latest`：後者會在沒有任何 PR 的情況下換作業系統，而 Playwright 的系統依賴與 Supabase 的 Docker 流程都依賴 OS。升級視為一次需要完整 CI 驗證的變更。

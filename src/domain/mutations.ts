@@ -10,6 +10,7 @@ import {
   wallTimeToInstant,
 } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
+import { DomainValidationError, isIsoInstant } from './validation';
 import type {
   Calendar,
   CalendarEvent,
@@ -96,6 +97,12 @@ export interface EventPatch {
    * combination has a defined result rather than an accidental one.
    */
   wallTimeZone?: string;
+  /**
+   * Complete resolved grid interval — DP-072. Only for timed events; mutually
+   * exclusive with date/start/end/allDay/timezone/wallTimeZone. Resolving grid
+   * wall coordinates happens before this seam, preserving the event's zone.
+   */
+  timedInterval?: { startsAt: string; endsAt: string };
 }
 
 export interface NewCalendarInput {
@@ -301,6 +308,15 @@ export function applyEventPatch(
     updatedAt,
   };
   const date = patch.date ?? previous.date;
+  if (patch.timedInterval) {
+    const { startsAt, endsAt } = patch.timedInterval;
+    if (event.allDay || [patch.date, patch.start, patch.end, patch.allDay, patch.timezone, patch.wallTimeZone]
+      .some((value) => value !== undefined) || !isIsoInstant(startsAt) || !isIsoInstant(endsAt)
+      || Date.parse(endsAt) <= Date.parse(startsAt)) {
+      throw new DomainValidationError(['timedInterval requires one valid positive interval and no competing wall-time fields.']);
+    }
+    return { ...common, allDay: false, startsAt, endsAt, timezone: event.timezone };
+  }
   if (allDay) {
     // `endDate` is inclusive and may be later than `startDate`, so both ends
     // have to move together. Deriving them from one date instead would shorten

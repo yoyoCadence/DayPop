@@ -149,6 +149,26 @@ describe('recurring week drags (DP-083)', () => {
     });
   });
 
+  it('moves a complete overnight occurrence and replaces only that occurrence (DP-072)', async () => {
+    await setup('Asia/Taipei', 'Asia/Taipei', '2026-07-29', { start: '21:30', end: '00:30' });
+    const original = window.localStorage.getItem('daypop.user-data');
+    await drag(60);
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(original);
+    await click(container.querySelector('.cal-scope-this'));
+    expect(stored().events[0]).toMatchObject({ startsAt: '2026-07-29T13:30:00.000Z', endsAt: '2026-07-29T16:30:00.000Z' });
+    expect(stored().events[1]).toMatchObject({ startsAt: '2026-08-13T14:30:00.000Z', endsAt: '2026-08-13T17:30:00.000Z', recurrence: null });
+    expect(stored().eventExceptions[0].occurrence.startsAt).toBe('2026-08-12T13:30:00.000Z');
+  });
+
+  it('maps a complete overnight drag back to the original series anchor (DP-072)', async () => {
+    await setup('Asia/Taipei', 'Asia/Taipei', '2026-07-29', { start: '21:30', end: '00:30' });
+    await drag(60);
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events).toHaveLength(1);
+    expect(stored().events[0]).toMatchObject({ startsAt: '2026-07-30T14:30:00.000Z', endsAt: '2026-07-30T17:30:00.000Z', timezone: 'Asia/Taipei' });
+    expect(stored().eventExceptions).toEqual([]);
+  });
+
   it('asks before writing; cancel and Escape preserve bytes and restore block focus', async () => {
     await setup();
     const original = window.localStorage.getItem('daypop.user-data');

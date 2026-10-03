@@ -1,12 +1,13 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { addDays, daysBetween, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { instantDateInZone, instantTimeInZone } from '../../domain/eventTime';
 import {
   eventDisplaySegments,
@@ -31,8 +32,9 @@ import {
 } from '../../domain/timeGrid';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
-import type { Calendar } from '../../domain/types';
+import type { Calendar, TimedCalendarEvent } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
+import { draggedInterval, type TimedInterval } from '../../domain/weekDrag';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -71,6 +73,9 @@ interface DragState {
   startY: number;
   origin: DragRange;
   moved: boolean;
+  pointerId: number;
+  /** Only multi-day blocks use complete endpoints; single-day maths stays put. */
+  intervalEvent?: TimedCalendarEvent;
 }
 
 /**
@@ -83,7 +88,8 @@ interface DragState {
  *
  * DP-083 lets recurring blocks drag and resize, handing the concrete occurrence
  * to the screen's 單次／全部 dialog. Unlike the原檔's silent split, no mutation
- * happens until scope is chosen. Cross-midnight blocks remain tap-only (DP-072).
+ * happens until scope is chosen. DP-072 moves complete cross-midnight intervals
+ * from any segment; only their final segment exposes the resize handle.
  */
 export function WeekView({
   weekStartsOn,
@@ -97,11 +103,22 @@ export function WeekView({
 }: WeekViewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const blockRefs = useRef(new Map<string, HTMLElement>());
+  const pendingFocus = useRef<string | null>(null);
   // Keyed by occurrence, not by event id — DP-081. Every occurrence of one
   // series shares an event id, so an id-keyed preview would drag all of them at
   // once on screen.
   const [preview, setPreview] = useState<{ key: string } & DragRange | null>(null);
+  const [intervalPreview, setIntervalPreview] = useState<{ key: string; interval: TimedInterval } | null>(null);
   const [now, setNow] = useState(() => new Date());
+
+  // A preview can remove the grabbed day. Restore its committed block before
+  // ScopeDialog captures return focus in its passive effect.
+  useLayoutEffect(() => {
+    if (intervalPreview || !pendingFocus.current) return;
+    blockRefs.current.get(pendingFocus.current)?.focus();
+    pendingFocus.current = null;
+  }, [intervalPreview]);
 
   // The current-time line only needs minute resolution.
   useEffect(() => {
@@ -151,10 +168,29 @@ export function WeekView({
     return byDate;
   }, [displayTimezone, occurrences, weekEndKey, weekStartKey]);
 
+  // Re-cut all segments of the dragged occurrence, including horizontal moves.
+  // The rail below still reads committed segments so it cannot jump mid-gesture.
+  const drawnSegmentsByDate = useMemo(() => {
+    if (!intervalPreview) return segmentsByDate;
+    const byDate = new Map<string, DisplaySegment[]>();
+    for (const { key, event } of occurrences) {
+      if (event.allDay) continue;
+      const drawn = key === intervalPreview.key ? { ...event, ...intervalPreview.interval } : event;
+      for (const segment of eventDisplaySegments(drawn, key, displayTimezone, {
+        startDateKey: weekStartKey, endDateKey: weekEndKey,
+      })) {
+        const list = byDate.get(segment.dateKey) ?? [];
+        list.push(segment);
+        byDate.set(segment.dateKey, list);
+      }
+    }
+    return byDate;
+  }, [displayTimezone, intervalPreview, occurrences, segmentsByDate, weekEndKey, weekStartKey]);
+
   // The rail is derived from what this week actually contains, so a 23:00 event
   // is drawn at 23:00 instead of being clamped onto the 22:00 line — DP-064 §9.
-  // A drag preview is deliberately left out: it is bounded by the day rather
-  // than by the rail, and growing the range mid-drag would slide every block
+  // A drag preview is deliberately left out: single-day drags are bounded by
+  // the day, and growing the range mid-drag would slide every block
   // out from under the pointer. The range settles when the drag commits.
   const range = useMemo(
     () => hourRangeForSegments([...segmentsByDate.values()].flat()),
@@ -165,13 +201,14 @@ export function WeekView({
     return Array.from({ length: 7 }, (_, index) => {
       const date = addDays(weekStart, index);
       const key = toDateKey(date);
-      const blocks = (segmentsByDate.get(key) ?? [])
+      const blocks = (drawnSegmentsByDate.get(key) ?? [])
         .slice()
         .sort((left, right) => left.startMinutes - right.startMinutes)
         .map((segment) => {
-          const dragging = preview?.key === segment.key;
-          const startMinutes = dragging ? preview.startMinutes : segment.startMinutes;
-          const endMinutes = dragging ? preview.endMinutes : segment.endMinutes;
+          const singlePreview = preview?.key === segment.key ? preview : null;
+          const dragging = singlePreview !== null || intervalPreview?.key === segment.key;
+          const startMinutes = singlePreview?.startMinutes ?? segment.startMinutes;
+          const endMinutes = singlePreview?.endMinutes ?? segment.endMinutes;
           return {
             segment,
             dragging,
@@ -181,16 +218,13 @@ export function WeekView({
               ? `${CONTINUATION_LABEL} ${segmentClock(startMinutes)}`
               : segmentClock(startMinutes),
             rangeLabel: segmentTimeRange({ ...segment, startMinutes, endMinutes }),
-            // A drag rewrites one wall-clock range on one day, which cannot
-            // express an occurrence that spans several — see the ADR §6 note on
-            // 跨午夜拖曳 and DP-072. Those blocks open the event instead.
-            draggable: !segment.isContinuation && !segment.continuesNextDay,
+            resizable: !segment.continuesNextDay,
             ...blockGeometry(startMinutes, endMinutes, range),
           };
         });
       return { key, date, isToday: key === todayKey, blocks };
     });
-  }, [preview, range, segmentsByDate, todayKey, weekStart]);
+  }, [drawnSegmentsByDate, intervalPreview, preview, range, todayKey, weekStart]);
 
   // Both the "is now inside this week" test and the line's height are read in
   // the display zone — the columns are, so the line has to be too (DP-064).
@@ -221,6 +255,7 @@ export function WeekView({
     segment: DisplaySegment,
     mode: 'move' | 'resize',
   ) {
+    if (domEvent.button !== 0 || dragRef.current) return;
     domEvent.preventDefault();
     if (mode === 'resize') domEvent.stopPropagation();
     domEvent.currentTarget.closest<HTMLElement>('.cal-week-event')?.focus();
@@ -230,10 +265,13 @@ export function WeekView({
       mode,
       startX: domEvent.clientX,
       startY: domEvent.clientY,
-      // The segment's minutes, which for a draggable block are the whole
-      // occurrence's — the grid and the drag then start from one reading.
+      // Single-day drags use this visible range. Multi-day drags ignore it
+      // and carry both complete endpoints in intervalEvent below.
       origin: { startMinutes: segment.startMinutes, endMinutes: segment.endMinutes },
       moved: false,
+      pointerId: domEvent.pointerId,
+      ...(instantDateInZone(segment.event.startsAt, displayTimezone) !== instantDateInZone(segment.event.endsAt, displayTimezone)
+        ? { intervalEvent: segment.event } : {}),
     };
   }
 
@@ -248,7 +286,7 @@ export function WeekView({
 
     function onMove(domEvent: PointerEvent) {
       const drag = dragRef.current;
-      if (!drag) return;
+      if (!drag || domEvent.pointerId !== drag.pointerId) return;
       const factor = scale();
       if (
         Math.abs(domEvent.clientX - drag.startX) + Math.abs(domEvent.clientY - drag.startY) >
@@ -257,6 +295,13 @@ export function WeekView({
         drag.moved = true;
       }
       const delta = snapMinutes((domEvent.clientY - drag.startY) / factor);
+      if (drag.intervalEvent) {
+        const from = daysBetween(weekStart, fromDateKey(drag.dateKey));
+        const to = columnShift((domEvent.clientX - drag.startX) / factor, from);
+        const interval = draggedInterval(drag.intervalEvent, displayTimezone, delta, to - from, drag.mode);
+        setIntervalPreview(interval ? { key: drag.key, interval } : null);
+        return;
+      }
       const range =
         drag.mode === 'move' ? moveRange(drag.origin, delta) : resizeRange(drag.origin, delta);
       setPreview({ key: drag.key, ...range });
@@ -264,13 +309,27 @@ export function WeekView({
 
     function onUp(domEvent: PointerEvent) {
       const drag = dragRef.current;
-      if (!drag) return;
+      if (!drag || domEvent.pointerId !== drag.pointerId) return;
       dragRef.current = null;
+      if (drag.intervalEvent) pendingFocus.current = `${drag.key}-${drag.dateKey}`;
       const range = preview?.key === drag.key ? preview : null;
       setPreview(null);
+      setIntervalPreview(null);
 
       if (!drag.moved) {
         if (drag.mode === 'move') openOccurrence(drag.key);
+        return;
+      }
+      if (drag.intervalEvent) {
+        const factor = scale();
+        const from = daysBetween(weekStart, fromDateKey(drag.dateKey));
+        const to = columnShift((domEvent.clientX - drag.startX) / factor, from);
+        const interval = draggedInterval(drag.intervalEvent, displayTimezone,
+          snapMinutes((domEvent.clientY - drag.startY) / factor), to - from, drag.mode);
+        const target = targetsByOccurrence.get(drag.key);
+        if (target && interval && (interval.startsAt !== drag.intervalEvent.startsAt || interval.endsAt !== drag.intervalEvent.endsAt)) {
+          onDragEvent(target, { timedInterval: interval });
+        }
         return;
       }
       if (!range) return;
@@ -284,9 +343,7 @@ export function WeekView({
       };
 
       const factor = scale();
-      const fromIndex = Math.round(
-        (fromDateKey(drag.dateKey).getTime() - weekStart.getTime()) / 86_400_000,
-      );
+      const fromIndex = daysBetween(weekStart, fromDateKey(drag.dateKey));
       const toIndex = columnShift((domEvent.clientX - drag.startX) / factor, fromIndex);
       // Always include the displayed day: a recurring target is a later
       // occurrence, not the series anchor, even for a vertical-only drag.
@@ -296,11 +353,21 @@ export function WeekView({
       if (target) onDragEvent(target, patch);
     }
 
+    function onCancel(domEvent: PointerEvent) {
+      if (domEvent.pointerId !== dragRef.current?.pointerId) return;
+      if (dragRef.current?.intervalEvent) pendingFocus.current = `${dragRef.current.key}-${dragRef.current.dateKey}`;
+      dragRef.current = null;
+      setPreview(null);
+      setIntervalPreview(null);
+    }
+
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
     };
   }, [displayTimezone, openOccurrence, onDragEvent, preview, targetsByOccurrence, weekStart]);
 
@@ -349,20 +416,15 @@ export function WeekView({
                       // Keyed by day as well: one occurrence draws a block in
                       // every column it crosses.
                       key={`${block.segment.key}-${block.segment.dateKey}`}
+                      ref={(element) => {
+                        const key = `${block.segment.key}-${block.segment.dateKey}`;
+                        if (element) blockRefs.current.set(key, element);
+                        else blockRefs.current.delete(key);
+                      }}
                       role="button"
                       tabIndex={0}
                       aria-label={`${block.segment.isContinuation ? `${CONTINUATION_LABEL} ` : ''}${block.rangeLabel} ${block.segment.event.title}`}
-                      onPointerDown={
-                        block.draggable
-                          ? (domEvent) => beginDrag(domEvent, block.segment, 'move')
-                          : undefined
-                      }
-                      // A block with no drag handler needs its own way to open:
-                      // the draggable ones open from the pointerup that turned
-                      // out not to be a drag.
-                      onClick={
-                        block.draggable ? undefined : () => openOccurrence(block.segment.key)
-                      }
+                      onPointerDown={(domEvent) => beginDrag(domEvent, block.segment, 'move')}
                       onKeyDown={(domEvent) => {
                         if (domEvent.key === 'Enter' || domEvent.key === ' ') {
                           domEvent.preventDefault();
@@ -378,7 +440,7 @@ export function WeekView({
                     >
                       <div className="cal-week-event-time">{block.timeLabel}</div>
                       <div className="cal-week-event-title">{block.segment.event.title}</div>
-                      {block.draggable && (
+                      {block.resizable && (
                         <div
                           className="cal-week-event-resize"
                           onPointerDown={(domEvent) => beginDrag(domEvent, block.segment, 'resize')}
