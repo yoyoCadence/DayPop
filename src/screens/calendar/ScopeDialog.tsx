@@ -26,12 +26,27 @@ export function ScopeDialog({ mode, onThis, onAll, onCancel }: ScopeDialogProps)
   const firstButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (mode) firstButton.current?.focus();
+    if (!mode) return;
+    const previousFocus = document.activeElement;
+    firstButton.current?.focus();
+    return () => {
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    };
   }, [mode]);
 
   useEffect(() => {
     if (!mode) return;
     function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Tab') {
+        const buttons = firstButton.current?.parentElement?.querySelectorAll<HTMLButtonElement>('button');
+        if (!buttons?.length) return;
+        const edge = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+        if (document.activeElement === edge) {
+          event.preventDefault();
+          (event.shiftKey ? buttons[buttons.length - 1] : buttons[0])?.focus();
+        }
+        return;
+      }
       if (event.key !== 'Escape') return;
       // Stops the event sheet underneath from closing on the same keypress —
       // Escape here means "I did not mean to save", not "throw away my edits".

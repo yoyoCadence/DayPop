@@ -56,7 +56,8 @@ export interface WeekViewProps {
    */
   resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   calendars: Calendar[];
-  onUpdateEvent(id: string, patch: EventPatch): void;
+  /** The screen asks for scope before persisting a recurring drag — DP-083. */
+  onDragEvent(target: OccurrenceTarget, patch: EventPatch): void;
   /** A press that did not turn into a drag opens the event, as in the原檔. */
   onOpenEvent(target: OccurrenceTarget): void;
 }
@@ -64,8 +65,6 @@ export interface WeekViewProps {
 interface DragState {
   /** Occurrence key — what the preview lights up. */
   key: string;
-  /** Base event id — what the patch and 開啟事件 address. */
-  id: string;
   dateKey: string;
   mode: 'move' | 'resize';
   startX: number;
@@ -80,19 +79,11 @@ interface DragState {
  *
  * Events can be dragged to another time or another day and resized from the
  * bottom edge, snapping to 15 minutes. All-day events are not drawn on the grid
- * in the原檔 either; the 全天 row is part of DP-014's remaining work.
+ * in the原檔 either (DP-015).
  *
- * DP-081 draws every occurrence of a recurring series, but those blocks are
- * **not draggable or resizable**: a drag sends an `EventPatch` for the base
- * event, so dragging the third occurrence of a weekly series would silently
- * move the whole series. DP-082 gave the event sheet the 單次／全部 dialog and
- * the repository the occurrence-scoped writes a drag would need, so the
- * plumbing now exists — but unlocking the drag is a **product decision that has
- * not been made**. The原檔's `wkUp` (`:917`) splits the dragged occurrence into
- * a standalone event *without asking*, which would contradict the dialog the
- * sheet just started showing for the same series. Until that is settled a
- * recurring block only opens on tap. Blocks of non-recurring events drag and
- * resize exactly as before.
+ * DP-083 lets recurring blocks drag and resize, handing the concrete occurrence
+ * to the screen's 單次／全部 dialog. Unlike the原檔's silent split, no mutation
+ * happens until scope is chosen. Cross-midnight blocks remain tap-only (DP-072).
  */
 export function WeekView({
   weekStartsOn,
@@ -101,7 +92,7 @@ export function WeekView({
   todayKey,
   resolveOccurrences,
   calendars,
-  onUpdateEvent,
+  onDragEvent,
   onOpenEvent,
 }: WeekViewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -193,18 +184,7 @@ export function WeekView({
             // A drag rewrites one wall-clock range on one day, which cannot
             // express an occurrence that spans several — see the ADR §6 note on
             // 跨午夜拖曳 and DP-072. Those blocks open the event instead.
-            //
-            // A recurring occurrence is excluded for a different reason: the
-            // patch addresses the base event, so dragging one occurrence would
-            // move the entire series with nothing on screen saying so. DP-082
-            // built both halves this would need — the dialog and
-            // `replaceEventOccurrence()` — but whether a drag should ask, or
-            // split silently as the原檔 does, is still undecided. See the
-            // component docstring.
-            draggable:
-              !segment.isContinuation &&
-              !segment.continuesNextDay &&
-              segment.event.recurrence === null,
+            draggable: !segment.isContinuation && !segment.continuesNextDay,
             ...blockGeometry(startMinutes, endMinutes, range),
           };
         });
@@ -243,9 +223,9 @@ export function WeekView({
   ) {
     domEvent.preventDefault();
     if (mode === 'resize') domEvent.stopPropagation();
+    domEvent.currentTarget.closest<HTMLElement>('.cal-week-event')?.focus();
     dragRef.current = {
       key: segment.key,
-      id: segment.event.id,
       dateKey: segment.dateKey,
       mode,
       startX: domEvent.clientX,
@@ -308,9 +288,12 @@ export function WeekView({
         (fromDateKey(drag.dateKey).getTime() - weekStart.getTime()) / 86_400_000,
       );
       const toIndex = columnShift((domEvent.clientX - drag.startX) / factor, fromIndex);
-      if (toIndex !== fromIndex) patch.date = toDateKey(addDays(weekStart, toIndex));
+      // Always include the displayed day: a recurring target is a later
+      // occurrence, not the series anchor, even for a vertical-only drag.
+      patch.date = toDateKey(addDays(weekStart, toIndex));
 
-      onUpdateEvent(drag.id, patch);
+      const target = targetsByOccurrence.get(drag.key);
+      if (target) onDragEvent(target, patch);
     }
 
     window.addEventListener('pointermove', onMove);
@@ -319,7 +302,7 @@ export function WeekView({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [displayTimezone, openOccurrence, onUpdateEvent, preview, weekStart]);
+  }, [displayTimezone, openOccurrence, onDragEvent, preview, targetsByOccurrence, weekStart]);
 
   const rail = hourRail(range);
 

@@ -94,7 +94,7 @@ function render(events: CalendarEvent[]) {
         todayKey={CURSOR}
         resolveOccurrences={occurrenceResolver(events)}
         calendars={[]}
-        onUpdateEvent={vi.fn()}
+        onDragEvent={vi.fn()}
         onOpenEvent={onOpenEvent}
       />,
     ),
@@ -247,14 +247,13 @@ describe('WeekView 重複事件（DP-081）', () => {
     expect(columns[3]![0]!.label).toBe('09:00–10:00 週會');
   });
 
-  it('重複事件的色塊不可拖曳也沒有縮放把手，但仍可點開', () => {
+  it('重複事件提供拖曳與縮放，也可用鍵盤開啟那一次', () => {
     render([weekly()]);
 
     const block = blocksByColumn()[3]![0]!;
-    // 沒有縮放把手 = 這個色塊不是 draggable 的。
-    expect(block.hasResizeHandle).toBe(false);
+    expect(block.hasResizeHandle).toBe(true);
 
-    act(() => block.element.click());
+    act(() => block.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     // 點開的是 08-12 那一次，不是系列本身 —— 這正是範圍對話框要用的資訊（DP-082）。
     expect(onOpenEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -294,7 +293,7 @@ describe('WeekView 重複事件（DP-081）', () => {
             return [];
           }}
           calendars={[]}
-          onUpdateEvent={vi.fn()}
+          onDragEvent={vi.fn()}
           onOpenEvent={vi.fn()}
         />,
       ),

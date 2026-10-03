@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { addDays, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
+import { addDays, daysBetween, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { eventWallTime, instantDateInZone } from '../../domain/eventTime';
 import { visibleOccurrences } from '../../domain/calendars';
 import type { OccurrenceWindow } from '../../domain/recurrence';
@@ -12,6 +12,8 @@ import { EventSheet, type EventDraft } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
 import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
+import { ScopeDialog } from './ScopeDialog';
+import { applyEventPatch, type EventPatch } from '../../domain/mutations';
 import '../screens.css';
 import './calendar.css';
 import { type OccurrenceTarget } from './occurrenceTarget';
@@ -122,6 +124,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
    * result *is* the series and editing the whole series is the right thing.
    */
   const [editingTarget, setEditingTarget] = useState<OccurrenceTarget | null>(null);
+  const [weekDrag, setWeekDrag] = useState<{ target: OccurrenceTarget; patch: EventPatch } | null>(null);
   /**
    * The target only counts while `editingId` still names it — DP-082 review fix.
    *
@@ -201,6 +204,40 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // DP-064: one grid, one timezone. Placement and clock labels in every pane
   // read this; the event sheet keeps editing in the event's own zone.
   const displayTimezone = data.preferences.timezone;
+
+  function dragEvent(target: OccurrenceTarget, patch: EventPatch) {
+    if (target.event.recurrence) setWeekDrag({ target, patch });
+    else updateEvent(target.event.id, patch);
+  }
+
+  function applyWeekDrag(scope: 'this' | 'all') {
+    if (!weekDrag) return;
+    const { target, patch } = weekDrag;
+    setWeekDrag(null);
+    if (scope === 'this') {
+      replaceEventOccurrence(target.sourceEventId, target.occurrence, patch);
+      return;
+    }
+    const series = data.events.find((event) => event.id === target.sourceEventId);
+    if (!series || series.allDay || target.event.allDay || !patch.date) return;
+    // First resolve the dragged coordinates in the display zone, as for a
+    // single occurrence. Then read that result in the series' own zone: its
+    // RRULE shares one wall clock, even when this occurrence and the anchor
+    // have different DST offsets. Copying the display clock onto the anchor
+    // would accidentally add or subtract an hour in that case.
+    const moved = applyEventPatch(target.event, patch, displayTimezone, target.event.updatedAt);
+    const before = eventWallTime(target.event);
+    const after = eventWallTime(moved);
+    const anchorDate = eventWallTime(series).date;
+    const shift = daysBetween(fromDateKey(before.date), fromDateKey(after.date));
+    updateEvent(series.id, {
+      ...patch,
+      date: toDateKey(addDays(fromDateKey(anchorDate), shift)),
+      start: after.start,
+      end: after.end,
+      wallTimeZone: series.timezone,
+    });
+  }
 
   const todayFull = useMemo(
     () =>
@@ -378,7 +415,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
             todayKey={todayKey}
             resolveOccurrences={resolveOccurrences}
             calendars={data.calendars}
-            onUpdateEvent={updateEvent}
+            onDragEvent={dragEvent}
             onOpenEvent={openEvent}
           />
         )}
@@ -467,6 +504,12 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         onUploadAttachment={uploadEventAttachment}
         onDeleteAttachment={deleteEventAttachment}
         onOpenAttachment={createEventAttachmentUrl}
+      />
+      <ScopeDialog
+        mode={weekDrag ? 'save' : null}
+        onThis={() => applyWeekDrag('this')}
+        onAll={() => applyWeekDrag('all')}
+        onCancel={() => setWeekDrag(null)}
       />
     </div>
   );

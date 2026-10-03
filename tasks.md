@@ -1,4 +1,4 @@
-# 日蹦 DayPop — Tasks
+﻿# 日蹦 DayPop — Tasks
 
 本檔案是專案的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全完整 Claude Design → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。目前已進入實作階段。
 
@@ -71,6 +71,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > 進入 MCP 階段後仍禁止透過 MCP 直接執行 DDL、禁止 remote reset，也不得查改正式使用者資料。MCP 只用於任務必要的專案狀態檢查、read-only schema／advisor 驗證與安全測試；所有 schema 變更必須先存在於 migration 檔並由可追蹤的 migration workflow 套用。
 
 ## Next
+
+> **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
 >
@@ -189,7 +191,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   >
   > **原條目：** 原稿 `:598` 的「重複」select 與 `:430-439` 的範圍選擇對話框（`scopeThis`／`scopeAll`／`scopeCancel`，標題與說明依情境變動）。**原本卡在兩件事**：(1) ~~DP-081 必須先完成~~ —— **已於 2026-08-27 完成**，重複事件現在四個檢視都畫得出來，這一項不再阻塞；(2) `cancelEventOccurrence()` 與 `replaceEventOccurrence()`（[`mutations.ts:368`](src/domain/mutations.ts#L368)、[`:398`](src/domain/mutations.ts#L398)）雖然 DP-027 已經寫好且有測試，但**`DayPopRepository` 契約上完全沒有 occurrence／exception 方法**，所以要新增契約方法並在 local、supabase 與 cached 三個 adapter 都實作。DB 的 `event_exceptions` 表 DP-027 已建好，預期不需要新 migration，但要確認 RLS 與既有 policy 涵蓋新的寫入路徑 —— 這一段會動到資料邊界，屬高風險區，應獨立成一個 PR 並在動手前先確認是否需要 Supabase MCP 驗證。
   > **DP-081 留給這一段的兩個接點**：(1) 週檢視的重複 occurrence 目前 `draggable` 為 false，範圍對話框做好後才解開（`WeekView.tsx` 的 `draggable` 判斷）；(2) 點一次 occurrence 開啟事件 sheet 時，目前編輯的是**整個系列**，畫面上還沒有任何說明 —— 這一段必須同時補上單次／全部的選擇，或至少講清楚修改的範圍。
-- [ ] **DP-083 — 週檢視的重複事件色塊要不要能拖曳（產品決策，不是缺能力）：** DP-082 之後，拖曳一次 occurrence 所需的東西**都已經有了** —— `replaceEventOccurrence()` 在契約與三個 adapter 上，`WeekView` 也已經拿得到被拖的是哪一次（`targetsByOccurrence`）。擋住的是**語意還沒定**：原稿 `wkUp`（[`:917`](日曆桌寵%20Calendar%20Pet.dc.html)）拖曳重複事件時是**不問就把那一次拆成獨立事件**，但同一個系列在事件 sheet 裡按儲存，DP-082 剛開始會跳出「只改這一次／套用全部」。同一個系列、兩種互相矛盾的行為，使用者會覺得是 bug。**要決定的是**：(a) 忠實照原稿，拖曳直接拆、不問；(b) 拖曳也跳同一個對話框；(c) 拖曳只允許非重複事件（現況）。選 (a) 要接受它和 sheet 不一致，選 (b) 是偏離原稿的新決策。決定之前 `draggable` 維持 `false`，非重複事件的拖曳不受影響。**與 DP-072 不同**：DP-072 卡的是 patch 形狀表達不出跨午夜位移，這一條的 patch 形狀沒有問題。
+- [x] **DP-083 — 已完成（見 Done）；原決策問題保留：週檢視的重複事件色塊要不要能拖曳（產品決策，不是缺能力）：** DP-082 之後，拖曳一次 occurrence 所需的東西**都已經有了** —— `replaceEventOccurrence()` 在契約與三個 adapter 上，`WeekView` 也已經拿得到被拖的是哪一次（`targetsByOccurrence`）。擋住的是**語意還沒定**：原稿 `wkUp`（[`:917`](日曆桌寵%20Calendar%20Pet.dc.html)）拖曳重複事件時是**不問就把那一次拆成獨立事件**，但同一個系列在事件 sheet 裡按儲存，DP-082 剛開始會跳出「只改這一次／套用全部」。同一個系列、兩種互相矛盾的行為，使用者會覺得是 bug。**要決定的是**：(a) 忠實照原稿，拖曳直接拆、不問；(b) 拖曳也跳同一個對話框；(c) 拖曳只允許非重複事件（現況）。選 (a) 要接受它和 sheet 不一致，選 (b) 是偏離原稿的新決策。決定之前 `draggable` 維持 `false`，非重複事件的拖曳不受影響。**與 DP-072 不同**：DP-072 卡的是 patch 形狀表達不出跨午夜位移，這一條的 patch 形狀沒有問題。
 - [ ] **DP-072 — 讓跨午夜事件在週格也能拖曳：** DP-064 把週格改成畫 display segments 後，跨午夜事件在每一個它經過的欄位都有一個色塊，但**這些色塊不提供拖曳與拉長度**（點擊改為開啟事件；單日事件的拖曳完全不變）。原因是拖曳送出的 `EventPatch` 是「單一天的 `date` ＋ `start`／`end` 牆上時間」，而 `moveRange()`／`resizeRange()` 依 ADR §6 只處理 0–1440 的日內邊界 —— 把它套到 23:00–00:30 的第一段，patch 會把事件截成 60 分鐘，等於靜默刪掉使用者的資料，所以現階段寧可不提供。要真的支援需要新的 patch 形狀（以 instant delta 表示位移，或讓起訖各自帶日期），連帶要定義跨欄拖曳對多日事件的語意（移動整段？只改起點？），屬新的產品決策。決策背景記在 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §6 落點的實作註記。
 
 - [ ] **DP-077 — 週檢視拖曳在真機觸控上沒有即時視覺回饋：** iPhone 15 Pro Max、iOS Safari 與加到主畫面兩種模式都一樣：按住色塊拖動時**色塊不跟著手指**，放開手指才突然跳到新位置。**存下來的時間是正確的**（專案擁有者實測確認），也**不會誤觸整頁捲動**，所以這是回饋問題不是資料問題 —— 但使用者在放手前看不到自己在做什麼。**模擬環境三條路徑都重現不了**：桌面滑鼠（色塊 top 651→706、標籤 `15:00`→`16:15`，放開前就更新）與 Chromium 模擬觸控（CDP `Input.dispatchTouchEvent`，584→639，同樣放開前就更新）**都正常**。這也解釋了為什麼 6 個 Playwright e2e 從來沒抓到 —— 合成觸控事件不會走 iOS 的手勢仲裁與 implicit pointer capture。**已經可以從程式碼證明的部分**：`onUp` 要走到 `onUpdateEvent()` 必須 `drag.moved === true`（只有 `onMove` 會設）**且** `preview` 已設成該事件（[`WeekView.tsx:215-228`](src/screens/calendar/WeekView.tsx#L215-L228)）；既然時間有正確改變，代表 **`pointermove` 有觸發、`setPreview` 有跑**。若完全收不到移動事件，`drag.moved` 會是 false，結果會是「開啟事件」而不是改時間。**所以壞的不是事件傳遞，是畫面沒有在手勢進行中重繪。****成因未在真機確認**，最合理的候選是預覽以 inline `style={{ top, height }}` 上到 DOM（[`WeekView.tsx:319-324`](src/screens/calendar/WeekView.tsx#L319-L324)）—— 那是 layout 屬性，iOS Safari 在觸控手勢進行中通常沿用手勢開始前的合成圖層、要等手勢結束才重繪 layout 變更，而 `transform` 走合成路徑才會即時更新。**動手前要先在真機證實這個候選**（例如用 instrumented build 記錄 `pointermove` 次數與每次 `setPreview` 後的實際 `getBoundingClientRect()`），不要直接改成 `transform` 就宣稱修好 —— 這條的整個難處就在於本機三種路徑都是綠的。**第二個值得一併查的**：`WeekView` 完全沒有 `pointercancel` handler，而 `useEffect` 的依賴含 `preview`，因此每一次 `onMove` 都會把 window 的 `pointermove`／`pointerup` listener 拆掉重掛；這兩件事在桌面無害，在 iOS 的 implicit pointer capture 下值得一起看。發現於 DP-032 第二輪，記於 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md) §2.4。
@@ -259,6 +261,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-083 — 重複週格拖曳的範圍選擇（2026-10-03）：** 依自主開發／自行合併委託，由 Backlog 經 Next、In Progress 完成；採原條目的 (b)，單日重複事件拖曳、跨欄換日與拉長度後沿用既有單次／全部對話框。確認前不寫入，取消／Escape 保持原始 bytes 並恢復焦點，Tab 留在三個按鈕內。單次走既有 occurrence replacement；全部先按 display timezone 解析被拖那次，再換算事件時區的時鐘與日期位移套到系列錨點，保留早期 occurrence 與原 timezone，涵蓋冬／夏季偏移不同。已拆出的 replacement 仍直接編輯。刻意偏離原稿不詢問便拆單次，理由見 ADR §6；Backlog 的原問題保留作歷史，以本段為準。
+  > 驗證：lint／typecheck／build／check:build 通過；unit **55 檔 676/676**，完整 e2e **73 passed、3 skipped**，新增手機／桌面 4 項且 browser console 0 error／warning。第一次全套 unit 與 e2e 並行時，既有 MonthView 兩項 5 秒逾時；降低並行負載後原樣完整重跑通過，未放寬 timeout。Node timezone 實際為 `Etc/GMT-8`，browser 為 `Asia/Taipei`／`America/New_York`。原稿與 App 範圍對話框已用隔離 Chromium 實際渲染並目視核對，desktop 1280×900、App mobile 390×844；Browser 連線的 localhost 顯示另一個 App，因此證據採本機 repo Playwright。未改 schema、Auth、release 版號／公告或部署，未使用 Supabase MCP／正式資料；DP-072、DP-077 與 DP-034 放行仍未完成。
 
 - [x] **DP-110 — 部署前擋下已部署公告的回寫（DP-034 子項）：** 2026-10-03 完成。新增 `scripts/check-release-notes.mjs` 與 `npm run check:release-notes`，並接進 `deploy-staging.yml` 的 build job（Configure Pages 之後、上傳產物之前；線上網址取自 `actions/configure-pages` 的 `base_url` 輸出）。兩條規則都對照線上目前的 `version.json`：(1) 那一版在 `release-notes.json` 的條目必須存在且逐欄相同，這也擋下「發布新版時回頭改到上一版」；(2) 這次產物若同版號，`dist/version.json` 必須相同，同版號重新部署程式修正仍然允許。線上回 404 視為尚未部署；其他讀取失敗一律擋下部署（fail closed）。
   > **設計中途改掉的兩件事**：(a) 第一版規則會擋住 rollback —— 被還原的 tag 的 `release-notes.json` 不可能有在它之後才發布的版本。改為「這次的版號比線上舊」視為 rollback，只警告不阻擋。(b) 第一版在 404 路徑印出通過卻以結束碼 127 結束：回應還沒讀完就呼叫 `process.exit()`，Node 在 Windows 上觸發 libuv assertion，而這正是第一次部署會走的路徑。改為不在請求之後強制結束，失敗一律丟例外、最後才設定結束碼。
