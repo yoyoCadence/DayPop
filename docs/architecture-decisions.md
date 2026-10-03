@@ -268,6 +268,12 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 相對時刻（例如「差十分三點」「三點差十分」）、廿／卅與財務大寫數字不推測；無效／不支援的時刻與時段字保留在標題，以全天草稿交給使用者確認。仍保留原稿的單獨「中午」12:00、既有上午／下午換算、日期／重複／地點／提醒解析順序及 placeholder。提醒實際保存仍等待 DP-042。
 - 只有日期／時間的非空輸入也開啟新增 sheet；空標題儲存沿用 DP-076 的「新事件」。這補正 `submitQuick()` 殘留的 title guard，讓已實作的 sheet fallback 能從快速新增抵達；取消／Escape 不留資料。
 
+### 決策（DP-111，2026-10-03）— 事件時區控制項
+
+依專案擁有者自主開發委託，DP-014 的事件時區選單直接沿用原稿 :605 的五個城市／順序及現有 `.cal-field` canonical token，不需新增 scaffold token。明確更換時區沿既有 `EventPatch.timezone` contract 保留表單日期與時鐘、重新錨定 instant；取消不保存，重複事件仍問單次／全部。新建事件以 `preferences.timezone` 預選，編輯以自己的 `event.timezone` 預選，清單外的已保存 IANA 值補入，未更換時不送 `timezone` patch。
+
+選單的 GMT 偏移改按各城市對該事件日期／開始時鐘的解析結果顯示，而非複製原稿寫死的夏季偏移；表單日期或時間未填完整時只顯示城市。使用者提示說明「更換時區會保留日期與時間，並改變實際開始時刻」。全天事件與待辦沒有 canonical timezone，故不顯示不能保存的控制項，切回有時間的事件才恢復選擇。這兩處是有意的原稿差異；DP-064 的 display timezone 與週格拖曳規則維持，DP-014 其他未完成段落仍保留。
+
 ## 7. 工程治理
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。

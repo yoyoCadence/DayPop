@@ -139,6 +139,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+> **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
+
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
   > **2026-08-27 這一段完成的是事件 sheet 的 `全天` 開關**：依原稿 `:586` 從 checkbox 改為 44×25 軌道／21px 旋鈕，整列也改回原稿的「上分隔線＋左右對齊」而不是有外框的欄位。行為不變（開啟時收起開始／結束），鍵盤可 Tab 抵達、空白鍵可切換、焦點框 2px。
   > **同時查出一個未登記的缺口，已開為 DP-081**：重複事件在所有檢視只會顯示一次。這不是這一段造成的。**DP-081 已於 2026-08-27 完成並移入 Done**，剩下的 DP-082 仍在 Backlog。
@@ -261,6 +263,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-111 — 事件 sheet 時區控制項（DP-014 子項，2026-10-03）：** 依自主開發委託，由 Backlog 經 Next、In Progress 完成；DP-075 等 CI 期間先在獨立分支準備，PR #100 合併後把基底快轉到最新 main（`ce73715`）。直接沿用原稿 :605 的五個城市／順序及 `.cal-field` full-width select，不新增 scaffold token。新增事件預選 preferences timezone、編輯預選 event timezone；清單外的已保存 IANA 值保留在整次編輯內，可選回。GMT 依事件日期／開始時間解析，未填完整時只顯示城市；Intl 計算 memoize，不隨標題輸入重算。明確更換時區保留日期與時鐘，沿既有 domain contract 重新錨定 instant；未更換不送 timezone patch，重複事件仍問單次／全部。全天／待辦沒有 canonical timezone，故不顯示不能保存的控制項；選擇與切換語意見 ADR §6。
+  > **驗證：** lint、typecheck、56 檔／741 單元案例、build、check:build 通過；新增 9 項時區標籤（含同一 DST 切換日的 01:30／03:30、冬夏、半小時與 incomplete field）及 6 項 sheet 回歸，既有設定選單驗證保持。61 項針對性案例亦在有效 `America/New_York` 通過並印出 Intl；完整單元時區為 `Etc/GMT-8`。mobile 390×844／desktop 1280×900 共 4 項真實 App Playwright 驗證 Tokyo 09:00→00:00Z、UTC 09:00→09:00Z、取消原始 bytes、重新讀回與單次／整系列保存（錨點不變、preferences 不改），browser console 0 error／warning。原稿／App 已實際渲染、目視核對，新增控制項及說明在手機內且可捲動；原稿透明遮罩會攔截滑鼠，QA 改用其新增按鈕的原生 Enter 啟動（輸入框本身沒有 Enter handler）。完整 browser 與 Supabase reset／pgTAP／generated types 由本 PR CI 再驗證。未更動 CSS、schema、repository 契約、Auth、release 版號／公告或部署；DP-014 父任務其餘段落仍未完成。
 
 - [x] **DP-075 — 快速新增中文時間（2026-10-03）：** 依自主開發／自行合併委託，由 Backlog 經 Next、In Progress 完成。中文數字時分、兩／两、半／一刻／三刻與全形數字已可預填；只正規化時間 token，不改標題／地點數字。小時 0–23、分鐘 0–59，無效整段與「差十分」等相對說法保留在全天草稿，不截取合法尾段。只有日期／時間也可開 sheet，儲存沿用 DP-076「新事件」，取消／Escape 不寫入。這是刻意擴充原稿，範圍見 ADR §6；Backlog 原問題留作歷史。
   > **驗證：** lint、typecheck、55 檔／726 單元案例、build、check:build 通過；新增 45 項 parser 與 5 項真實 local repository 入口回歸。75 項針對性案例在有效 Node 時區 `Etc/GMT-8`／`America/New_York` 各通過一次，皆印出 `Intl` 佐證。新增 mobile 390×844／desktop 1280×900 共 4 項 Playwright，涵蓋預填、取消原始 bytes、中文／全形儲存與 reload、空標題 fallback、相對／無效輸入與 browser console 0 error／warning。原稿 ASCII 輸入與 App 中文輸入的 sheet 已實際渲染、目視核對；沿用既有表單且未改 CSS。完整 browser 與本機 DB reset／pgTAP／types 比對由同 PR 的 CI 閘門再驗證；未更動 schema、Auth、release 版號／公告或部署。
