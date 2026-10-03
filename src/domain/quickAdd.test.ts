@@ -65,6 +65,55 @@ describe('parseQuickAdd', () => {
   it('leaves only the title behind', () => {
     expect(parseQuickAdd('每天 早上7點 在公園 跑步 提前10分', NOW)?.title).toBe('跑步');
   });
+
+  it.each([
+    ['下午三點', '15:00'], ['下午十點', '22:00'], ['上午十二點', '00:00'],
+    ['中午十二點', '12:00'], ['兩點', '02:00'], ['下午两点', '14:00'],
+    ['二十三時五十九分', '23:59'], ['零點零五分', '00:05'], ['〇點', '00:00'],
+    ['三點半', '03:30'], ['下午3點半', '15:30'], ['三時一刻', '03:15'],
+    ['晚上八点三刻', '20:45'], ['三點十五分', '03:15'], ['三點十五', '03:15'],
+    ['三點 三十分', '03:30'], ['３點', '03:00'], ['下午３：０５', '15:05'],
+    ['十五：三十', '15:30'], ['3點２５分鐘', '03:25'], ['三點二十五分钟', '03:25'],
+  ])('recognises a complete clock %s as %s (DP-075)', (clock, start) => {
+    expect(parseQuickAdd(`明天${clock} 開會`, NOW)).toMatchObject({
+      title: '開會', date: '2026-08-07', allDay: false, start,
+    });
+  });
+
+  it('keeps recurrence/location/reminder extraction and title numerals intact', () => {
+    expect(parseQuickAdd('每週 明天下午三點半 第３次 一二三研討 @３０１教室 提前15分', NOW))
+      .toMatchObject({
+        title: '第３次 一二三研討', start: '15:30', end: '16:30',
+        location: '３０１教室', reminderMinutes: 15, repeat: 'weekly',
+      });
+  });
+
+  it.each(['三點', '3點', '三點半'])('preserves a separate numeric title after %s', (clock) => {
+    expect(parseQuickAdd(`${clock} 三個願望`, NOW)).toMatchObject({
+      title: '三個願望', allDay: false, start: clock.endsWith('半') ? '03:30' : '03:00',
+    });
+  });
+
+  it('reads attached Chinese minutes and preserves the remaining title', () => {
+    expect(parseQuickAdd('下午三點十五開會', NOW)).toMatchObject({ title: '開會', start: '15:15' });
+    expect(parseQuickAdd('下午三點十五分開會', NOW)).toMatchObject({ title: '開會', start: '15:15' });
+  });
+
+  it.each([
+    '下午二十四點', '下午25點', '下午１２３點', '下午一百三點', '下午壹點',
+    '三點六十分', '3:60', '3:100', '三點一百五分', '三點廿分', '中午廿點',
+    '3:', '3:半', '三點兩刻', '三點 兩刻', '差十分三點', '下午三點差十分', '差一刻下午三點',
+  ])('keeps an invalid/unsupported clock visible: %s', (clock) => {
+    expect(parseQuickAdd(`${clock} 開會`, NOW)).toMatchObject({
+      title: `${clock} 開會`, allDay: true, start: '09:00', end: '10:00',
+    });
+  });
+
+  it('wraps a Chinese late-night time and permits a time-only draft', () => {
+    expect(parseQuickAdd('明天二十三點半', NOW)).toMatchObject({
+      title: '', date: '2026-08-07', allDay: false, start: '23:30', end: '00:30',
+    });
+  });
 });
 
 describe('unsupportedQuickAddParts', () => {

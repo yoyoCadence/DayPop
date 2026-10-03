@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **中文快速新增（DP-075）：** 依 2026-10-03 自主開發委託，在原稿時刻語法上加入中文數字時分、兩／两、半／一刻／三刻與全形數字。`quickAdd.ts` 只正規化 clock token，不改標題／地點中的數字；小時 0–23、分鐘 0–59，無效整段與「差十分」等相對時刻保留在全天草稿，不截取合法尾段。`CalendarScreen.submitQuick()` 非空輸入即交給 sheet，即使解析後標題為空；確認前不保存，儲存沿用 DP-076「新事件」fallback。這是刻意擴充原稿，範圍與歧義規則見 ADR §6；placeholder 與日期／地點／重複／提醒解析順序維持，提醒實際保存仍等待 DP-042。
+
 > Fill only after the project has stable facts worth preserving.
 
 - **重複週格拖曳（DP-083）：** 依 2026-10-03 專案擁有者自主開發／自行合併委託，採拖曳後詢問單次／全部的建議。單日重複色塊可拖曳與拉長度，`WeekView.onDragEvent` 帶具體 `OccurrenceTarget`，`CalendarScreen` 在確認範圍前不寫入。單次走既有 `replaceEventOccurrence()`；全部先在 display timezone 解析具體 occurrence，再換算為事件時區的起訖時鐘及日期位移套到系列，不把後面那次的日期複製成錨點，且保留原 timezone（含錨點與該次 DST offset 不同）。共用 `ScopeDialog` 將 Tab 留在按鈕內，關閉時恢復焦點。這是刻意偏離原稿 `wkUp()` 靜默拆出那一次；ADR §6 與任務板留有理由。跨午夜拖曳與 iPhone 回饋仍分別屬 DP-072／077。
