@@ -24,6 +24,7 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 - 記憶體模式的警告是版面內、不可關閉的橫幅，四個分頁與復原畫面都顯示；降級後不自動切回持久化，否則同一個 session 會半在磁碟半在記憶體。
 - write barrier 與 future-version 回歸測試已完成，schema version 提升的前置解除。
 - **DP-101（2026-10-02）補正復原閘門**：存在任意舊備份不代表目前原始資料已備份。復原畫面以 `findMatchingUserDataBackup()` 找內容逐字一致的備份；`resetUserData()` 執行前重新讀取目前 key 並套用同一檢查，資料在備份後變動即拒絕重設。較新但不相符的備份不會遮蔽較舊的相符備份。這是 §1 既有規則的修正，不提升 schema，也不提供跨分頁原子鎖；驗證與剩餘限制見 [`deployment.md`](deployment.md) §5.12。
+- **DP-106（2026-10-02）開機 probe 失敗時沿用仍可讀的內容**：原本只有「中途寫入遭拒」會把仍讀得到的 `daypop.*`／legacy key 帶進記憶體，開機 probe 失敗則從空的 `MemoryStorage` 起始。實測（原生 quota、production App）在額度已滿時開機，使用者看到的是預設空白日曆、匯出檔也是空的，壞掉的資料還會被一份空白文件蓋掉畫面上的阻擋狀態 —— 磁碟 bytes 沒有被動到，但儲存空間滿的時候匯出是唯一的出路。專案擁有者 2026-10-02 請 agent 給建議，採用的做法是讓兩條路徑一致：`createAppStorage()` 在 probe 失敗但 store 仍可觸及時，用與 `#degrade()` 同一個 `carryOwnedEntries()` 起始記憶體。**只讀不寫**：probe 失敗的 store 之後不再被寫入，釋放空間也不會在同一個 session 切回持久化。**沒有東西可讀時行為不變**：accessor 丟例外或回傳 null 就沒有 `readable`，照舊從空白起始；讀取也失敗時同樣從空白起始。`corrupt`／`future` 因此在這條路徑也維持 fail closed。不提升 schema；驗證與剩餘限制見 [`deployment.md`](deployment.md) §5.16。
 
 ## 2. Domain contract 先於 repository adapter
 

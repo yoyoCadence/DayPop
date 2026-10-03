@@ -125,6 +125,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-02 待審記憶體復原 PR 整合委託**：專案擁有者合併 PR #93 後授權繼續一項工作。開工以 `git fetch` 與 GitHub metadata 核對：PR #92（DP-103）仍為 Open、三項 CI 均為成功，但 #93 合併後 GitHub 回報 `mergeable: CONFLICTING`。Next 為空，其餘產品決策／真機依賴未解除；比照 DP-100，優先把已完成的工作恢復為可審查狀態，登記 **DP-105**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`6c9de6d`）獨立開整合分支，更新原 PR 而不建立重複 PR；DP-103 原實作與已合併的 DP-104 成果均保留，沒有新增測試情境或 runtime 變更，DP-034 父任務仍未完成。
 
+> **2026-10-02 開機額度委託**：專案擁有者合併 PR #92 後指示「繼續」，並對 DP-105 交接提出的行為問題（開機寫入被拒時要不要沿用仍可讀的資料）要求 agent 給建議。agent 的建議是「沿用」，理由與中途降級一致、且匯出是儲存空間滿時唯一的出路；據此登記 **DP-106**，由 Backlog 經 Next、In Progress 完成並移入 Done。從最新 `origin/main`（`a6c8102`）獨立開分支，開工時沒有其他 Open PR。先在未修改的 production App 重現缺口才動 runtime；沒有擴至 schema、Auth、版本或部署。**這個方向是 agent 的建議而不是專案擁有者的逐項定案**，PR 審查即是否決點。DP-034 父任務仍未完成。
+
 ## In Progress
 
 - [ ] **DP-014 — 完成其餘 canonical UI 搬移：** 2026-08-26 由專案擁有者指定接手，逐段搬移持續進行中。**這一段完成的是設定的「桌寵」與「一般」兩張卡片**（原稿 `:317-337`）：顯示桌寵開關（`petEnabled`，44×25 開關樣式同原稿，且真的關掉日曆頁的整個寵物層）、寵物名字（`petName`）、每週起始日（`weekStartsOn`）、預設時區（`timezone`，原稿 11 個選項，清單外的已保存值會被補進選項），並把既有的「月曆列數」移進原稿「月檢視週數」的位置。**沒有動 schema，四個欄位都是既有的偏好欄位。****刻意沒搬的仍留在畫面上的「尚未搬移」清單裡**：選擇夥伴品種與等級／XP（需要新偏好欄位與 DP-040／041 的規則）、左右滑動翻頁（需要新偏好欄位）、預設提醒與通知提醒（DP-042）、AI 區塊（DP-043）。
@@ -206,6 +208,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 Quota 子項進度**：DP-102 已補上正常啟動的 production guest 編輯中途原生 quota 降級、四分頁持續警告、完整記憶體匯出與 durable bytes 保護；釋放額度不自動補寫，reload 讀回原文件，見同份交接 §5.13。開機 probe 失敗、記憶體復原、實際帳號、真機／staging 與其他驗收仍未完成，父任務不結案。
   > **2026-10-02 記憶體復原子項進度**：DP-103 已補上 corrupt／future 備份遇 quota 的真實下載、記憶體重設／編輯及持續警告；釋放額度不補寫、reload 回原 blocked 文件並重新要求備份，見同份交接 §5.14。開機 probe／storage 存取封鎖、下載取消、多分頁競態、實際帳號及真機／staging 仍未完成，父任務不結案。
   > **2026-10-02 開機儲存子項進度**：DP-104 已補上原生 localStorage 為 null 時的 production 開機記憶體模式、四分頁持續警告、跨分頁編輯／真實 JSON 匯出與 reload 回預設，見同份交接 §5.15。SecurityError、初始 quota、實際政策封鎖、帳號、真機／staging 及其他驗收仍未完成，父任務不結案。
+  > **2026-10-02 開機額度子項進度**：DP-106 重現並修正「額度已滿時開機顯示空白預設資料、匯出為空」，改為沿用仍可讀的內容並持續警告；補上 production 回歸與 9 個單元案例，見同份交接 §5.16。SecurityError／實際政策封鎖、開機額度滿＋不可讀資料的瀏覽器流程、帳號快取、Chromium 以外的瀏覽器、真機／staging 及其他驗收仍未完成，父任務不結案。
 
 ### 原型假功能與待補能力
 
@@ -247,6 +250,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-106 — 開機寫入被拒時沿用仍可讀的資料（DP-034 子項）：** 2026-10-02 完成。先在未修改的 production App 重現：App 啟動前把原生 localStorage 填到連開機 probe 都寫不進去，開機後版本公告重跳、主題與寵物名字回到預設、列表 0 筆、真實 JSON 匯出只有一個新建日曆，磁碟原始 envelope 逐字不變 —— 資料沒遺失，但看不到也匯不出來。修正在 `src/storage/browserStorage.ts`：probe 失敗但 store 仍可觸及時回傳只供讀取的 `readable`，新的 `createAppStorage()` 以它起始記憶體；複製邏輯抽成與中途降級共用的 `carryOwnedEntries()`。沒有 store 可讀（accessor 丟例外或為 null）時行為不變，probe 失敗的 store 之後不再被寫入。警告文案、版面與 schema 不變。
+  > **實際驗證**：新增 `e2e/production-startup-quota.spec.ts`（mobile／desktop 各一例，targeted **2/2**）：開機即四分頁持續警告、不跳公告、顯示磁碟上的偏好與 occurrence，真實匯出為完整資料，磁碟所有 key 與長度不變且無 probe 殘留，釋放填充後 reload 恢復保存並讀回原始資料。新增 9 個單元案例；把修正暫時還原後 3 個變紅（含「不可讀資料被空白文件取代」），放回後全綠。lint、typecheck、unit **55 檔 669/669**（`--maxWorkers=2`）、build、check:build 通過。完整 e2e 兩輪：**第一輪 68 passed、1 failed、3 skipped**（整輪第一個案例 `account-ics-transfer` 手機版在 fixture 的 `page.goto` 逾時，未執行到 App 斷言），**第二輪 69 passed、3 skipped、無 flaky**；該逾時成因未查證、重跑未重現，不宣稱已排除。browser timezone 印出並斷言 `Asia/Taipei`，Node 為 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。
+  > **限制與交接**：方向是 agent 應專案擁有者要求給的建議，不是逐項定案，PR 審查即是否決點；決策記於 [`docs/architecture-decisions.md`](docs/architecture-decisions.md) §1。只在 Chromium 以原生 quota 驗證；iOS Safari／Firefox／真機、SecurityError 與實際政策封鎖、「開機額度已滿＋不可讀資料」的瀏覽器流程、帳號快取、大量資料的記憶體用量、staging 均未驗。未使用 Supabase MCP／正式帳號／正式資料，不改 schema／Auth／worker template／release／版號／部署；**修正尚未發布，待後續 release**。詳見 [`docs/deployment.md`](docs/deployment.md) §5.16；DP-034 父任務及上線放行仍未完成。
 
 - [x] **DP-105 — 更新待審記憶體復原 PR 至最新基線：** 2026-10-02 完成。由最新 `origin/main`（`6c9de6d`）建立獨立整合分支，整合 PR #92 原 commit `d623033`。衝突只在 `tasks.md`、`docs/deployment.md` 與 `docs/prototype-behavior-baseline.md` 共五處，都是 DP-103 與 DP-104 在同一位置各自新增紀錄；解法是兩側全留，依章節／時間順序排列（§5.14 在 §5.15 之前），沒有改寫任一側的文字或數字。DP-103 的 quota fixture 與兩個 storage spec 相對 PR head 的差異為空；`src`、DP-104 的 `e2e/production-unavailable-storage.spec.ts`、其餘 e2e 支援檔、`package.json`／lockfile、release assets、worker template、`supabase`、workflow 與 scripts 相對 `origin/main` 的差異亦為空。
   > **實際驗證**：整合後 lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **67 passed、3 skipped**、無 flaky／重試，是第一次把 DP-103 的 4 個記憶體復原案例與 DP-104 的 2 個開機案例放在同一輪跑（兩側條目的 65 與 63 各自量於不含對方的分支，照留不回寫）。跳過的仍是原有 3 個桌面不適用的橫向／短視窗案例。Node 實際 timezone 印出 `Etc/GMT-8`，browser 印出 `Asia/Taipei`／`America/New_York`；build 保留既有 >500 kB chunk 提示。build 產生的 `public/version.json` 只有換行差異、內容相同，未納入提交。

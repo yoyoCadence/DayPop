@@ -490,6 +490,8 @@ PR #93（DP-104）合併後，GitHub 回報仍為 Open 的 PR #92 `mergeable: CO
 
 **下一步的候選（只從程式碼讀出、未實測，不是結論）**：§5.15 留下的「初始 quota」值得先做。`getAppStorage()` 在開機 probe 失敗時是以**空的** `MemoryStorage` 起始，而中途降級的 `#degrade()` 會把仍讀得到的 `daypop.*`／legacy key 帶進記憶體。若開機當下只是寫入被拒（例如額度剛好滿）、既有資料其實仍可讀，這條路徑可能讓使用者看到空白預設資料、匯出也拿不到原本的內容 —— 磁碟上的 bytes 不會被動到，但看起來像資料不見。要先以原生 quota 在 production App 重現並確認實際行為；若成立，開機時是否沿用可讀內容屬於行為決策，應另立任務，不要當成測試補強順手改。
 
+> **2026-10-02 更新**：上面的候選已由 DP-106 實測成立，並依專案擁有者要求的建議修正，見 §5.16。
+
 ### 5.15 Production 開機 localStorage 不可用（DP-104，2026-10-02）
 
 承接 DP-017／102 的開機交接，從實際最新 `origin/main`（`09f7166`）獨立開分支。開工核對 PR #92（DP-103）仍為 Open，本項不依賴或搬入其 quota helper／案例；§5.14 保留給該待審 PR 的記憶體復原交接。
@@ -507,3 +509,37 @@ PR #93（DP-104）合併後，GitHub 回報仍為 Open 的 PR #92 `mergeable: CO
 重跑：`npm run test:e2e -- e2e/production-unavailable-storage.spec.ts`。本機 Windows／Node 24.14.1 的 lint、typecheck、unit **55 檔 660/660**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **63 passed、3 skipped**（原有桌面不適用案例）。Node 實際 timezone 印出 `Etc/GMT-8`，build 保留既有 >500 kB chunk 提示。
 
 **限制與下一步**：這只證明原生 API 缺少／null 時的開機記憶體模式，不等於驗證 `SecurityError`、初始 quota、瀏覽器 cookie／隱私政策封鎖、已存在但不可讀的 durable bytes、下載取消、真正多分頁競態、實際帳號快取、真機或 staging。未改 runtime、schema、Auth、worker template、release／版號或部署，未使用 Supabase MCP／正式帳號／正式資料。後續可獨立補初始 quota 或下載失敗回饋；DP-034 父任務及上線放行仍未完成。
+
+### 5.16 Production 開機時額度已滿（DP-106，2026-10-02）
+
+PR #92 合併後，從最新 `origin/main`（`a6c8102`）獨立開分支，承接 §5.14.1／§5.15 留下的「初始 quota」。專案擁有者要求 agent 對「開機寫入被拒時要不要沿用仍可讀的資料」給建議；建議是沿用，理由與決策界線記於 [`architecture-decisions.md`](architecture-decisions.md) §1 的 DP-106 條目。**方向是 agent 的建議，PR 審查即是否決點。**
+
+**先重現，後修正。** 在未修改的 production App 上，App 啟動前就把原生 localStorage 填到連 22 個字元的開機 probe 都寫不進去，再載入 App，實測得到：
+
+| 修正前觀察到的 | 值 |
+| --- | --- |
+| 版本公告 | 重新跳出（磁碟上的「已看過」標記沒有進到 session） |
+| 主題／寵物名字 | 漫畫／「摩卡」（磁碟上是暖陽／「備份夥伴」） |
+| 列表中的行程 | 0 筆（磁碟上有 4 個事件、2 列例外） |
+| 真實 JSON 匯出 | 0 行程、0 待辦，只有一個新建的「我的日曆」 |
+| 磁碟上的原始 envelope | 逐字不變 |
+
+也就是資料沒有遺失，但使用者看不到、也匯不出來，而儲存空間滿的時候匯出是唯一的出路。
+
+**修正**在 `src/storage/browserStorage.ts`：`probeStorage()` 失敗但 store 仍可觸及時，結果多帶一個只供讀取的 `readable`；新的 `createAppStorage()` 以它起始記憶體，`getAppStorage()` 改為呼叫它。複製邏輯從 `#degrade()` 抽成兩條路徑共用的 `carryOwnedEntries()`，只帶 `daypop.*` 與 legacy key，並略過 probe 自己的 key。accessor 丟例外或回傳 null 時沒有 `readable`，行為與修正前相同（§5.15 的 `--disable-local-storage` 案例不變）。probe 失敗的 store 之後不再被寫入。警告文案、版面、canonical UI 與 schema 都沒有動。
+
+`e2e/production-startup-quota.spec.ts` 沿用隔離 loopback production fixture、真實 App／generated worker 與完整 schema-v4 synthetic 資料，Auth 公開設定為空。資料只在 setup page 寫一次；`e2e/fixtures/storageQuota.ts` 新增 `exhaustLocalStorageQuota()`，在既有三階段填充後以單一 key 逐字補滿（64 → 1 字元，每階段最多 128 次，要求真正的 `DOMException`／`QuotaExceededError`）。既有的 `fillLocalStorageQuota()` 與使用它的兩個 spec 沒有改。不替換 Storage 方法、不以 init script 注入模式。
+
+| 驗證路徑 | 通過條件 |
+| --- | --- |
+| 啟動前 | 與 App probe 等長（20 字元 key＋`ok`）的原生寫入丟 `QuotaExceededError`，印出填充字元數。 |
+| 額度已滿時開機 | 四分頁皆有不可關閉的 `role=status` 警告，原因為「儲存空間已經滿了」；不跳版本公告；偏好與 occurrence 列表與磁碟一致。 |
+| 真實 JSON 匯出 | 完整可攜資料（日曆、事件、重複例外、待辦、貼圖、偏好）；再改寵物名字後第二份匯出只多這一項修改。 |
+| 磁碟 | 開機後仍然寫不進去；所有 key 與長度和啟動前相同，受保護的 guest envelope／backup／legacy／synthetic account cache／其他 key 逐字不變，沒有留下 probe key。 |
+| 只移除本次填充 → reload | 新 document 重新 probe 成功：警告消失、讀回原始資料、記憶體修改消失，localStorage 全部 entries 等於原始文件。 |
+
+新增 9 個單元案例（`browserStorage.test.ts` 14 → 23）：可用 store 直接使用、`readable` 何時存在、只帶 DayPop／legacy key、恢復可寫後仍不寫回、`readUserData()` 讀到原文件而非空白、不可讀資料維持 `corrupt`、probe key 不帶入、無 store 可讀時從空白起始、讀取也失敗時從空白起始。把修正暫時還原後有 3 個變紅（含「不可讀資料被空白文件取代」），放回後全綠。
+
+本機 Windows／Node 24.14.1：lint、typecheck、unit **55 檔 669/669**（`--maxWorkers=2`）、build、check:build 通過，targeted **2/2**（mobile 390×844、desktop 1280×900）。完整 e2e 跑了兩輪：**第一輪 68 passed、1 failed、3 skipped**，失敗的是整輪第一個案例（`account-ics-transfer` 手機版）在 fixture 開啟 dev harness 頁面時 `page.goto` 逾時（`net::ERR_ABORTED`），尚未執行任何 App 斷言，同案例桌面版與其餘案例通過；**第二輪 69 passed、3 skipped、無 flaky／重試**。成因未查證，只能說它發生在 build 之後第一次冷啟動 dev server、且重跑未重現，不宣稱已排除。跳過的仍是原有 3 個桌面不適用案例。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-startup-quota.spec.ts`。
+
+**限制與下一步**：只在 Chromium 以原生 quota 驗證「開機寫入被拒、讀取正常」這一種狀態；iOS Safari、Firefox 與真機在同狀態下的實際行為未驗。`SecurityError`／實際隱私政策封鎖只有單元層的「沒有 `readable`」，沒有瀏覽器層證據。「開機額度已滿＋不可讀資料」只有單元層確認維持 `corrupt`，production 復原畫面在這個組合下的流程未跑（§5.14 驗的是備份當下才遇到 quota）。帳號快取同樣會被帶進記憶體，但未以登入 harness 或真實帳號驗證。記憶體會複製全部 `daypop.*` key（含備份），與中途降級相同，未量測大量資料時的記憶體用量。下載取消／OS 封鎖、多分頁競態、staging 仍未驗證。未使用 Supabase MCP／正式帳號／正式資料，未改 schema／Auth／worker template／release assets／版號或部署；**修正尚未發布，待後續 release**。DP-034 父任務及上線放行仍未完成。
