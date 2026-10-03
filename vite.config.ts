@@ -73,6 +73,14 @@ export default defineConfig(({ mode }) => {
     // would resolve those against the domain root. See docs/deployment.md.
     base: './',
     plugins: [react(), contentSecurityPolicy(env.VITE_SUPABASE_URL)],
+    server: {
+      // DP-108: Playwright writes tens of thousands of generated files under
+      // output/playwright/ (production fixture builds, reports, traces). The
+      // dev watcher walks every watched file at startup on the main thread, so
+      // with that tree in scope module requests stalled for minutes and the
+      // first dev-harness e2e timed out. Nothing there is source.
+      watch: { ignored: ['**/output/playwright/**'] },
+    },
     define: {
       __APP_VERSION__: JSON.stringify(packageJson.version),
       __DATA_SCHEMA_VERSION__: '4',
