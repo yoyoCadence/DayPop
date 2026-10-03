@@ -274,6 +274,12 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 
 選單的 GMT 偏移改按各城市對該事件日期／開始時鐘的解析結果顯示，而非複製原稿寫死的夏季偏移；表單日期或時間未填完整時只顯示城市。使用者提示說明「更換時區會保留日期與時間，並改變實際開始時刻」。全天事件與待辦沒有 canonical timezone，故不顯示不能保存的控制項，切回有時間的事件才恢復選擇。這兩處是有意的原稿差異；DP-064 的 display timezone 與週格拖曳規則維持，DP-014 其他未完成段落仍保留。
 
+### 保存修正（DP-112，2026-10-03）— 編輯既有多日時間區間
+
+DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或原樣送出 sheet 的日期／時鐘也會被壓成 1 小時。`applyEventPatch()` 現在於時間未變動時保留原起訖 instant，包括秒數與 DST 回撥後一次的讀法；未變動的時區標籤也以該 instant 的實際偏移顯示。真正變更日期／時鐘／時區時，若來源區間的日數跨度超出一般同日或隔夜時鐘所能推導的最小跨度，保留那些額外日數，按操作時區解析新的結束日；不得用固定毫秒數跨過 DST。
+
+一般同日／隔夜事件仍依既有開始、結束時鐘推導，以免跨時區系列拖曳把 1 小時夜班誤拉成 25 小時。sheet 的操作時區是來源 `event.timezone`（顯式換時區後在新時區重錨）；grid 的操作時區是 display timezone，保存時仍保留事件自身的 timezone。這項修正不新增 patch 形狀或 UI，真正在格線拖曳跨午夜片段仍屬 DP-072。時間變更與 occurrence expansion 的分鐘精度維持既有契約。
+
 ## 7. 工程治理
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。

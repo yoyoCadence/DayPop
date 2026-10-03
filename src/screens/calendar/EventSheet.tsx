@@ -183,10 +183,11 @@ function EventSheetForm({
   const [start, setStart] = useState(editingWallTime?.start || seed?.start || '09:00');
   const [end, setEnd] = useState(editingWallTime?.end || seed?.end || '10:00');
   const initialTimezone = editing && !editing.allDay ? editing.timezone : defaultTimezone;
+  const originalStartsAt = editing && !editing.allDay ? editing.startsAt : undefined;
   const [timezone, setTimezone] = useState(initialTimezone);
   const timezoneOptionsForDraft = useMemo(
-    () => eventTimezoneOptions(initialTimezone, date, start),
-    [initialTimezone, date, start],
+    () => eventTimezoneOptions(initialTimezone, date, start, originalStartsAt),
+    [initialTimezone, date, start, originalStartsAt],
   );
   const [location, setLocation] = useState(editing?.location ?? seed?.location ?? '');
   // `null` while editing an event whose stored rule is none of the six presets;

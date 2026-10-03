@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { DayPopUserData } from '../domain/types';
+import type { DayPopUserData, TimedCalendarEvent } from '../domain/types';
 import { MemoryStorage } from '../storage/browserStorage';
 import { LocalDayPopRepository } from '../storage/localRepository';
 import { FakeSupabase, type FakeRow } from '../test/fakeSupabase';
@@ -61,6 +61,59 @@ const adapters = [
   ['guest local', localAdapter],
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
+
+describe.each(adapters)('%s adapter preserves multi-day timed data (DP-112)', (_name, create) => {
+  let repository: DayPopRepository;
+  let imported: TimedCalendarEvent;
+  beforeEach(async () => {
+    repository = await create();
+    const data = await repository.load();
+    const event: TimedCalendarEvent = {
+      id: '11200000-0000-4000-8000-000000000001', calendarId: data.calendars[0]!.id,
+      title: '多日會議', allDay: false, startsAt: '2026-08-06T01:00:13.000Z', endsAt: '2026-08-08T02:00:37.000Z',
+      timezone: 'Asia/Taipei', location: null, notes: null, reminderMinutes: [], recurrence: null,
+      sharingScope: 'inherit', createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+    };
+    const saved = await repository.importData({ kind: 'appendIcs', events: [event], eventExceptions: [] });
+    const loaded = saved.events[0]!;
+    if (loaded.allDay) throw new Error('expected imported timed fixture');
+    imported = loaded;
+  });
+
+  it('persists a rename with its original multi-day endpoints and seconds', async () => {
+    await repository.updateEvent(imported.id, { title: '改名', date: '2026-08-06', start: '09:00', end: '10:00' });
+    expect((await repository.load()).events[0]).toMatchObject({ title: '改名', startsAt: imported.startsAt, endsAt: imported.endsAt });
+  });
+
+  it('persists shifted dates and a reanchored timezone without dropping extra days', async () => {
+    await repository.updateEvent(imported.id, { date: '2026-08-07', timezone: 'UTC', start: '09:00', end: '10:00' });
+    expect((await repository.load()).events[0]).toMatchObject({
+      startsAt: '2026-08-07T09:00:00.000Z', endsAt: '2026-08-09T10:00:00.000Z', timezone: 'UTC',
+    });
+  });
+
+  it('replaces one multi-day occurrence without shortening it or rewriting the series', async () => {
+    await repository.updateEvent(imported.id, { recurrenceRule: 'FREQ=DAILY;COUNT=3' });
+    await repository.replaceEventOccurrence(imported.id, { kind: 'timed', startsAt: '2026-08-07T01:00:00.000Z' }, { title: '這次改名' });
+    const data = await repository.load();
+    expect(data.events.find((event) => event.id === imported.id)).toMatchObject({ startsAt: imported.startsAt, endsAt: imported.endsAt });
+    const replacement = data.events.find((event) => event.title === '這次改名');
+    // Recurrence expansion already resolves minute wall clocks (DP-027).
+    // Preserve that concrete occurrence's 49-hour span and the exact base row.
+    expect(replacement).toMatchObject({ startsAt: '2026-08-07T01:00:00.000Z', endsAt: '2026-08-09T02:00:00.000Z', recurrence: null });
+    expect(data.eventExceptions).toHaveLength(1);
+    expect(data.eventExceptions[0]!.replacementEventId).toBe(replacement!.id);
+  });
+
+  it('keeps a later DST fold instant after an untouched-clock save and reload', async () => {
+    const event = { ...imported, id: '11200000-0000-4000-8000-000000000002', timezone: 'America/New_York',
+      startsAt: '2026-11-01T06:15:00.000Z', endsAt: '2026-11-01T06:45:00.000Z' };
+    await repository.importData({ kind: 'appendIcs', events: [event], eventExceptions: [] });
+    const saved = (await repository.load()).events[1]!;
+    await repository.updateEvent(saved.id, { title: '改名', date: '2026-11-01', start: '01:15', end: '01:45' });
+    expect((await repository.load()).events[1]).toMatchObject({ startsAt: event.startsAt, endsAt: event.endsAt, timezone: event.timezone });
+  });
+});
 
 /** Keeps what the contract promises and drops what is allowed to differ. */
 function shape(data: DayPopUserData) {

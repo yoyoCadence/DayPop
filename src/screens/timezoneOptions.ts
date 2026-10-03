@@ -1,4 +1,4 @@
-import { wallTimeToInstant } from '../domain/eventTime';
+import { instantDateInZone, instantTimeInZone, wallTimeToInstant } from '../domain/eventTime';
 import { isDateKey } from '../domain/validation';
 
 /**
@@ -71,11 +71,18 @@ export function timezoneOptions(current: string, at: Date): TimezoneOption[] {
 }
 
 /** Labels use each candidate city's reading of the draft's own wall clock. */
-export function eventTimezoneOptions(current: string, date: string, start: string): TimezoneOption[] {
+export function eventTimezoneOptions(current: string, date: string, start: string, originalStartsAt?: string): TimezoneOption[] {
   const complete = isDateKey(date) && /^([01]\d|2[0-3]):[0-5]\d$/.test(start);
   return optionsFor(EVENT_TIMEZONE_CITIES, current, (zone) => {
     if (!complete) return null;
     try {
+      // An unchanged imported clock may be the later reading of a DST fold.
+      // Its selected label must describe that actual instant, not reparse it.
+      if (zone === current && originalStartsAt
+        && instantDateInZone(originalStartsAt, zone) === date
+        && instantTimeInZone(originalStartsAt, zone) === start) {
+        return zoneOffsetLabel(zone, new Date(originalStartsAt));
+      }
       return zoneOffsetLabel(zone, new Date(wallTimeToInstant(date, start, zone)));
     } catch {
       return null;

@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **多日 timed event 保存（DP-112）：** `applyEventPatch()` 在未變動日期／時鐘／timezone 時保留精確起訖 instant（秒數與 DST 回撥後一次也不重算）。真正變更時間時，保留來源在操作時區超出一般同日／隔夜推導的日數跨度，結束日重新解析而非固定 `+24h`；一般隔夜推導仍保留，不能把跨時區系列拖曳後的 1 小時夜班拉成 25 小時。sheet 讀事件自身時區，grid 讀 display timezone，顯式換時區仍沿重錨契約。`eventTimezoneOptions()` 接收原 startsAt，未變動的回撥讀法顯示實際偏移。未新增 patch／schema；跨午夜格線拖曳仍屬 DP-072，真正時間變更與 occurrence expansion 維持既有分鐘精度。具體規則見 ADR §6。
+
 - **事件時區控制項（DP-111／DP-014 子項）：** `EventSheet` 的 timed event 使用原稿五個城市／順序的 `.cal-field` select，新建由 `preferences.timezone` 預選、編輯用 `event.timezone`。`eventTimezoneOptions()` 依事件日期／開始時鐘讀取各城市 GMT（含 DST），不完整欄位只顯示城市，清單外已保存值在整次編輯內保留；Intl 計算以 `useMemo` 只隨時鐘／日期／初始時區重算。更換時區保留日期與時鐘，送既有 `EventPatch.timezone` 重新錨定 instant，未更換不送；單次／全部仍經 scope。全天／待辦沒有 timezone，控制項隱藏且不送值。選擇語意／原稿差異見 ADR §6，DP-014 其餘段落仍未結案。
 
 - **中文快速新增（DP-075）：** 依 2026-10-03 自主開發委託，在原稿時刻語法上加入中文數字時分、兩／两、半／一刻／三刻與全形數字。`quickAdd.ts` 只正規化 clock token，不改標題／地點中的數字；小時 0–23、分鐘 0–59，無效整段與「差十分」等相對時刻保留在全天草稿，不截取合法尾段。`CalendarScreen.submitQuick()` 非空輸入即交給 sheet，即使解析後標題為空；確認前不保存，儲存沿用 DP-076「新事件」fallback。這是刻意擴充原稿，範圍與歧義規則見 ADR §6；placeholder 與日期／地點／重複／提醒解析順序維持，提醒實際保存仍等待 DP-042。

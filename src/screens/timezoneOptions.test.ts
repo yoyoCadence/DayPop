@@ -23,6 +23,10 @@ describe('eventTimezoneOptions (DP-111)', () => {
     expect(options).toHaveLength(6);
     expect(options[5]).toEqual({ value: 'Asia/Kolkata', label: 'Asia/Kolkata (GMT+5:30)' });
   });
+  it('uses the actual later DST fold offset for an unchanged saved clock', () => {
+    expect(eventTimezoneOptions('America/New_York', '2026-11-01', '01:15', '2026-11-01T06:15:00.000Z').at(-1)?.label)
+      .toBe('America/New_York (GMT-5)');
+  });
   it.each([['', '09:00'], ['2026-02-30', '09:00'], ['2026-08-13', '']])(
     'does not guess an offset while the date/time is incomplete: %s %s', (date, start) => {
       expect(eventTimezoneOptions('UTC', date, start).map((option) => option.label))
