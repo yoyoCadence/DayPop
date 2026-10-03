@@ -1,3 +1,6 @@
+import { instantDateInZone, instantTimeInZone, wallTimeToInstant } from '../domain/eventTime';
+import { isDateKey } from '../domain/validation';
+
 /**
  * 設定「預設時區」的選項清單。
  *
@@ -20,6 +23,15 @@ const TIMEZONE_CITIES: { value: string; city: string }[] = [
   { value: 'Europe/London', city: '倫敦' },
   { value: 'Australia/Sydney', city: '雪梨' },
   // 原稿的 UTC 選項本來就沒有 offset 後綴，維持原樣。
+  { value: 'UTC', city: 'UTC' },
+];
+
+/** 原稿 :605 的事件選單，與設定 :332 的 11 個選項不同。 */
+const EVENT_TIMEZONE_CITIES = [
+  { value: 'Asia/Taipei', city: '台北' },
+  { value: 'Asia/Tokyo', city: '東京' },
+  { value: 'America/Los_Angeles', city: '洛杉磯' },
+  { value: 'Europe/London', city: '倫敦' },
   { value: 'UTC', city: 'UTC' },
 ];
 
@@ -55,12 +67,40 @@ export function zoneOffsetLabel(zone: string, at: Date): string | null {
  * 變更時把它默默改掉。
  */
 export function timezoneOptions(current: string, at: Date): TimezoneOption[] {
-  const known = TIMEZONE_CITIES.map(({ value, city }) => {
+  return optionsFor(TIMEZONE_CITIES, current, (zone) => zoneOffsetLabel(zone, at));
+}
+
+/** Labels use each candidate city's reading of the draft's own wall clock. */
+export function eventTimezoneOptions(current: string, date: string, start: string, originalStartsAt?: string): TimezoneOption[] {
+  const complete = isDateKey(date) && /^([01]\d|2[0-3]):[0-5]\d$/.test(start);
+  return optionsFor(EVENT_TIMEZONE_CITIES, current, (zone) => {
+    if (!complete) return null;
+    try {
+      // An unchanged imported clock may be the later reading of a DST fold.
+      // Its selected label must describe that actual instant, not reparse it.
+      if (zone === current && originalStartsAt
+        && instantDateInZone(originalStartsAt, zone) === date
+        && instantTimeInZone(originalStartsAt, zone) === start) {
+        return zoneOffsetLabel(zone, new Date(originalStartsAt));
+      }
+      return zoneOffsetLabel(zone, new Date(wallTimeToInstant(date, start, zone)));
+    } catch {
+      return null;
+    }
+  });
+}
+
+function optionsFor(
+  cities: { value: string; city: string }[],
+  current: string,
+  offsetFor: (zone: string) => string | null,
+): TimezoneOption[] {
+  const known = cities.map(({ value, city }) => {
     if (value === 'UTC') return { value, label: city };
-    const offset = zoneOffsetLabel(value, at);
+    const offset = offsetFor(value);
     return { value, label: offset ? `${city} (${offset})` : city };
   });
   if (known.some((option) => option.value === current)) return known;
-  const offset = zoneOffsetLabel(current, at);
+  const offset = offsetFor(current);
   return [...known, { value: current, label: offset ? `${current} (${offset})` : current }];
 }

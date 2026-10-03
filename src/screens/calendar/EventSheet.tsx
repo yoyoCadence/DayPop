@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   EVENT_ATTACHMENT_MIME_TYPES,
   eventAttachmentFileIssue,
@@ -19,6 +19,7 @@ import type {
   EventOccurrence,
 } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
+import { eventTimezoneOptions } from '../timezoneOptions';
 import { ScopeDialog, type ScopeMode } from './ScopeDialog';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
 
@@ -68,6 +69,8 @@ export interface EventSheetProps {
   open: boolean;
   /** Day the calendar currently has selected; the default for a new entry. */
   defaultDate: string;
+  /** Canonical preferences timezone, used only when no timed event is edited. */
+  defaultTimezone: string;
   /** Set to edit an existing event instead of creating one. */
   editing?: CalendarEvent | null;
   /** Pre-filled values from quick add; ignored while editing. */
@@ -114,7 +117,7 @@ type SheetMode = 'event' | 'todo';
  * The bottom sheet for creating and editing an event.
  *
  * Carries the原檔's fields that DayPop can actually store today: 標題, 日曆,
- * 全天, 日期, 開始／結束, 地點 and 備註.
+ * 全天, 日期, 開始／結束, 地點, 時區 and 備註.
  *
  * DP-082 adds 重複 on top: the原檔's six presets, writing the RRULE that DP-027
  * already knew how to expand and DP-081 already draws in all four views.
@@ -123,9 +126,8 @@ type SheetMode = 'event' | 'todo';
  * recurring event asks which occurrences it is for, instead of silently
  * rewriting the whole series.
  *
- * The rest stay listed but unbuilt on purpose. DP-027 completed recurrence,
- * exception, timezone and DST domain behaviour; the timezone control remains
- * canonical UI work. 提醒 needs a
+ * DP-111 connects the timezone control to DP-027's existing domain behaviour.
+ * The rest stay listed but unbuilt on purpose. 提醒 needs a
  * delivery mechanism (DP-042) or it is a reminder that never fires, and
  * 邀請對象 has no domain type at all yet. DP-028 supplies real private
  * attachment upload/download/delete only after the event exists.
@@ -143,6 +145,7 @@ export function EventSheet({ open, ...rest }: EventSheetProps) {
 
 function EventSheetForm({
   defaultDate,
+  defaultTimezone,
   editing,
   draft,
   calendars,
@@ -179,6 +182,13 @@ function EventSheetForm({
   const [pendingPatch, setPendingPatch] = useState<EventPatch | null>(null);
   const [start, setStart] = useState(editingWallTime?.start || seed?.start || '09:00');
   const [end, setEnd] = useState(editingWallTime?.end || seed?.end || '10:00');
+  const initialTimezone = editing && !editing.allDay ? editing.timezone : defaultTimezone;
+  const originalStartsAt = editing && !editing.allDay ? editing.startsAt : undefined;
+  const [timezone, setTimezone] = useState(initialTimezone);
+  const timezoneOptionsForDraft = useMemo(
+    () => eventTimezoneOptions(initialTimezone, date, start, originalStartsAt),
+    [initialTimezone, date, start, originalStartsAt],
+  );
   const [location, setLocation] = useState(editing?.location ?? seed?.location ?? '');
   // `null` while editing an event whose stored rule is none of the six presets;
   // the select then shows CUSTOM_RULE_VALUE and the rule is left alone on save.
@@ -349,6 +359,7 @@ function EventSheetForm({
         ...(chosen ? { calendarId: chosen } : {}),
         location,
         notes,
+        ...(!allDay && (editing.allDay || editing.timezone !== timezone) ? { timezone } : {}),
         ...recurrence,
       };
       // The原檔's `saveEvent()` (`:912`): a repeating event asks which
@@ -369,6 +380,7 @@ function EventSheetForm({
         location,
         notes,
         recurrenceRule: repeat === null ? null : recurrenceRuleForPreset(repeat),
+        ...(!allDay ? { timezone } : {}),
       });
     } else {
       onAddTodo({ title: trimmed, date, calendarId: chosen });
@@ -554,6 +566,20 @@ function EventSheetForm({
                   />
                 </div>
 
+                {!allDay && (
+                  <div className="cal-field" style={{ marginTop: 11 }}>
+                    <div className="cal-field-label">時區</div>
+                    <select value={timezone} onChange={(event) => setTimezone(event.target.value)} aria-label="時區">
+                      {/* Retain a saved non-menu zone even after picking another,
+                          so the user can undo the choice before saving. */}
+                      {timezoneOptionsForDraft.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                    <small className="cal-field-note">更換時區會保留日期與時間，並改變實際開始時刻。</small>
+                  </div>
+                )}
+
                 <div className="cal-field" style={{ marginTop: 11 }}>
                   <div className="cal-field-label">備註</div>
                   <textarea
@@ -637,7 +663,6 @@ function EventSheetForm({
 
                 <div className="cal-sheet-pending">
                   <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
-                  時區的底層行為已由 DP-027 完成，控制項仍待依原稿接回；
                   提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
                   邀請對象目前連 domain 型別都還沒有。
                 </div>

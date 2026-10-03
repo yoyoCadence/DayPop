@@ -7,6 +7,7 @@ import {
   eventWallTime,
   instantDateInZone,
   timedEventFromWallTime,
+  wallTimeToInstant,
 } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
 import type {
@@ -319,38 +320,44 @@ export function applyEventPatch(
   // An all-day event has no timezone of its own to keep.
   const ownTimezone = patch.timezone ?? (event.allDay ? defaultTimezone : event.timezone);
 
-  // `timezone` wins over `wallTimeZone`; see the field's contract above.
-  if (patch.wallTimeZone && patch.timezone === undefined && !event.allDay) {
-    // Read *and* write the wall clock in the patch's zone, then put the event's
-    // own zone back: the instants move by what the user dragged, and the event
-    // keeps the zone it was created in.
-    const zone = patch.wallTimeZone;
-    const seen = {
-      date: eventDateInZone(event, zone),
-      start: eventStartTimeInZone(event, zone),
-      end: eventEndTimeInZone(event, zone),
-    };
-    const moved = timedEventFromWallTime(
-      common,
-      {
-        date: patch.date ?? seen.date,
-        start: (patch.start ?? seen.start) || '09:00',
-        end: (patch.end ?? seen.end) || '10:00',
-      },
-      zone,
-    );
-    return { ...moved, timezone: ownTimezone };
+  // `timezone` wins over `wallTimeZone`. A sheet reads the event's own clock
+  // before reanchoring in a newly selected zone; a grid reads display clocks
+  // and writes in that frame while preserving the event's timezone identity.
+  const displayFrame = patch.wallTimeZone && patch.timezone === undefined && !event.allDay;
+  const readingZone = displayFrame ? patch.wallTimeZone! : event.allDay ? defaultTimezone : event.timezone;
+  const writingZone = displayFrame ? readingZone : ownTimezone;
+  const seen = displayFrame ? {
+    date: eventDateInZone(event, readingZone),
+    start: eventStartTimeInZone(event, readingZone),
+    end: eventEndTimeInZone(event, readingZone),
+  } : previous;
+  const wall = {
+    date: patch.date ?? seen.date,
+    start: (patch.start ?? seen.start) || '09:00',
+    end: (patch.end ?? seen.end) || '10:00',
+  };
+  // DP-112: a metadata edit or an untouched sheet must preserve exact instants,
+  // including seconds and the later reading of a repeated DST clock.
+  if (!event.allDay && ownTimezone === event.timezone
+    && wall.date === seen.date && wall.start === seen.start && wall.end === seen.end) {
+    return { ...common, allDay: false, startsAt: event.startsAt, endsAt: event.endsAt, timezone: ownTimezone };
   }
-
-  return timedEventFromWallTime(
-    common,
-    {
-      date,
-      start: (patch.start ?? previous.start) || '09:00',
-      end: (patch.end ?? previous.end) || '10:00',
-    },
-    ownTimezone,
+  const spanDays = event.allDay ? 0 : daysBetween(
+    fromDateKey(seen.date), fromDateKey(instantDateInZone(event.endsAt, readingZone)),
   );
+  const moved = timedEventFromWallTime(
+    common,
+    wall,
+    writingZone,
+  );
+  // Ordinary clocks still infer same-day/overnight as before (DP-064/083).
+  // A longer imported interval carries extra days that two clocks cannot
+  // express: keep its end-day span. Re-resolve that day's clock across DST.
+  const minimumSpanDays = seen.end <= seen.start ? 1 : 0;
+  const endsAt = spanDays > minimumSpanDays
+    ? wallTimeToInstant(toDateKey(addDays(fromDateKey(wall.date), spanDays)), wall.end, writingZone)
+    : moved.endsAt;
+  return { ...moved, endsAt, timezone: ownTimezone };
 }
 
 export interface OccurrenceMutationContext {

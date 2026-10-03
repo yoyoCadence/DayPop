@@ -115,7 +115,7 @@ describe('quick-add confirmation (DP-075)', () => {
 });
 
 describe('recurring week drags (DP-083)', () => {
-  async function setup(displayZone = 'Asia/Taipei', eventZone = displayZone, anchor = '2026-07-29') {
+  async function setup(displayZone = 'Asia/Taipei', eventZone = displayZone, anchor = '2026-07-29', clock = { start: '21:00', end: '22:00' }) {
     const data = createEmptyUserData();
     data.preferences.timezone = displayZone;
     data.preferences.petEnabled = false;
@@ -124,7 +124,7 @@ describe('recurring week drags (DP-083)', () => {
       title: '週會', location: null, notes: null, reminderMinutes: [],
       recurrence: { rule: 'FREQ=WEEKLY;COUNT=52' }, sharingScope: 'inherit',
       createdAt: '2026-07-01T00:00:00.000Z', updatedAt: '2026-07-01T00:00:00.000Z',
-    }, { date: anchor, start: '21:00', end: '22:00' }, eventZone)];
+    }, { date: anchor, ...clock }, eventZone)];
     writeUserData(data, 0);
     await render({ kind: 'day', dateKey: '2026-08-12' });
     await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
@@ -139,6 +139,15 @@ describe('recurring week drags (DP-083)', () => {
     await act(async () => window.dispatchEvent(new MouseEvent('pointermove', { clientX: 100 + dx, clientY: 144 })));
     await act(async () => window.dispatchEvent(new MouseEvent('pointerup', { clientX: 100 + dx, clientY: 144 })));
   }
+
+  it('keeps an ordinary own-zone overnight series one hour when an all-scope drag crosses its midnight (DP-112)', async () => {
+    await setup('Asia/Taipei', 'America/New_York', '2026-07-29', { start: '23:30', end: '00:30' });
+    await drag();
+    await click(container.querySelector('.cal-scope-all'));
+    expect(stored().events[0]).toMatchObject({
+      startsAt: '2026-07-30T04:30:00.000Z', endsAt: '2026-07-30T05:30:00.000Z', timezone: 'America/New_York',
+    });
+  });
 
   it('asks before writing; cancel and Escape preserve bytes and restore block focus', async () => {
     await setup();

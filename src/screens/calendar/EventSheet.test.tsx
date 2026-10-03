@@ -65,6 +65,7 @@ function render(overrides: Partial<EventSheetProps> = {}) {
   const props: EventSheetProps = {
     open: true,
     defaultDate: '2026-08-06',
+    defaultTimezone: 'Asia/Taipei',
     editing: null,
     draft: null,
     calendars: CALENDARS,
@@ -108,6 +109,85 @@ const submit = () =>
   });
 
 const chips = () => [...container.querySelectorAll('.cal-cal-chip')];
+
+describe('EventSheet timezone (DP-111)', () => {
+  const zoneSelect = () => container.querySelector<HTMLSelectElement>('[aria-label="時區"]');
+  function choose(zone: string) {
+    act(() => {
+      zoneSelect()!.value = zone;
+      zoneSelect()!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  it('creates a timed event in preferences timezone and leaves date/time intact', () => {
+    const props = render({ defaultTimezone: 'UTC' });
+    expect(zoneSelect()!.value).toBe('UTC');
+    choose('Asia/Tokyo');
+    submit();
+    expect(props.onAddEvent).toHaveBeenCalledWith(expect.objectContaining({
+      timezone: 'Asia/Tokyo', date: '2026-08-06', start: '09:00', end: '10:00',
+    }));
+  });
+
+  it('edits in the event own timezone and sends only an explicit zone change', () => {
+    const props = render({ defaultTimezone: 'UTC', editing: timedEvent() });
+    expect(zoneSelect()!.value).toBe('Asia/Taipei');
+    choose('UTC');
+    expect(container.textContent).toContain('更換時區會保留日期與時間');
+    submit();
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(timedEvent().id, expect.objectContaining({
+      timezone: 'UTC', date: '2026-08-06', start: '09:00', end: '10:00',
+    }));
+  });
+
+  it('preserves an existing non-menu zone and omits timezone when unchanged', () => {
+    const event = timedEvent();
+    if (event.allDay) throw new Error('expected timed fixture');
+    const props = render({ editing: { ...event, timezone: 'Asia/Kolkata' } });
+    expect(zoneSelect()!.value).toBe('Asia/Kolkata');
+    choose('UTC');
+    expect([...zoneSelect()!.options].map((option) => option.value)).toContain('Asia/Kolkata');
+    choose('Asia/Kolkata');
+    submit();
+    expect(vi.mocked(props.onUpdateEvent).mock.calls[0]![1]).not.toHaveProperty('timezone');
+  });
+
+  it('hides the control for all-day/todo and retains the selection when toggled back', () => {
+    const props = render();
+    choose('UTC');
+    click('.cal-allday-toggle');
+    expect(zoneSelect()).toBeNull();
+    submit();
+    expect(vi.mocked(props.onAddEvent).mock.calls[0]![0]).not.toHaveProperty('timezone');
+    click('.cal-allday-toggle');
+    expect(zoneSelect()!.value).toBe('UTC');
+    click('[aria-label="新增類型"] button:last-child');
+    expect(zoneSelect()).toBeNull();
+  });
+
+  it.each(['this', 'all'] as const)('includes the explicit change only after scope %s', (scope) => {
+    const event = timedEvent();
+    const occurrence = { kind: 'timed' as const, startsAt: '2026-08-06T01:00:00.000Z' };
+    const props = render({
+      editing: { ...event, recurrence: { rule: 'FREQ=WEEKLY' } },
+      occurrence, seriesEventId: event.id, seriesDate: '2026-07-30',
+    });
+    choose('UTC');
+    submit();
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    click(`.cal-scope-${scope}`);
+    if (scope === 'this') {
+      expect(props.onReplaceOccurrence).toHaveBeenCalledWith(event.id, occurrence, expect.objectContaining({
+        date: '2026-08-06', timezone: 'UTC', start: '09:00',
+      }));
+    } else {
+      expect(props.onUpdateEvent).toHaveBeenCalledWith(event.id, expect.objectContaining({
+        date: '2026-07-30', timezone: 'UTC', start: '09:00',
+      }));
+    }
+  });
+});
 
 describe('EventSheet fields', () => {
   it('offers one chip per calendar and preselects the default', () => {

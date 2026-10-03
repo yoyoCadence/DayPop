@@ -486,6 +486,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       <EventSheet
         open={sheetOpen}
         defaultDate={selected}
+        defaultTimezone={displayTimezone}
         editing={editingEvent}
         draft={quickDraft}
         calendars={data.calendars}

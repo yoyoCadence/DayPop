@@ -184,6 +184,54 @@ describe('optional text fields', () => {
 });
 
 describe('applyEventPatch', () => {
+  it.each([
+    { title: '多日會議（改名）' },
+    { title: '多日會議（表單）', date: '2026-08-06', allDay: false, start: '09:00', end: '10:00' },
+  ])('keeps a multi-day timed event intact for an unchanged clock (DP-112): %j', (patch) => {
+    const event = timedEvent(baseData());
+    if (event.allDay) throw new Error('expected timed fixture');
+    const multiDay = { ...event, startsAt: '2026-08-06T01:00:13.000Z', endsAt: '2026-08-08T02:00:37.000Z' };
+    expect(applyEventPatch(multiDay, patch, 'Asia/Taipei', NOW)).toMatchObject({
+      startsAt: multiDay.startsAt, endsAt: multiDay.endsAt, timezone: 'Asia/Taipei',
+    });
+  });
+
+  it.each([
+    [{ date: '2026-08-07' }, '2026-08-07T01:00:00.000Z', '2026-08-09T02:00:00.000Z', 'Asia/Taipei'],
+    [{ start: '11:00', end: '12:00' }, '2026-08-06T03:00:00.000Z', '2026-08-08T04:00:00.000Z', 'Asia/Taipei'],
+    [{ timezone: 'UTC' }, '2026-08-06T09:00:00.000Z', '2026-08-08T10:00:00.000Z', 'UTC'],
+  ] as const)('keeps the extra day span when date/time/zone changes: %j', (patch, startsAt, endsAt, timezone) => {
+    const event = timedEvent(baseData());
+    if (event.allDay) throw new Error('expected timed fixture');
+    expect(applyEventPatch({ ...event, endsAt: '2026-08-08T02:00:00.000Z' }, patch, 'Asia/Taipei', NOW))
+      .toMatchObject({ startsAt, endsAt, timezone });
+  });
+
+  it('resolves a moved multi-day end on its own calendar day across DST', () => {
+    const event = timedEvent(baseData());
+    if (event.allDay) throw new Error('expected timed fixture');
+    const source = { ...event, timezone: 'America/New_York', startsAt: '2026-03-06T14:00:00.000Z', endsAt: '2026-03-08T14:00:00.000Z' };
+    expect(applyEventPatch(source, { date: '2026-03-09' }, 'Asia/Taipei', NOW)).toMatchObject({
+      startsAt: '2026-03-09T13:00:00.000Z', endsAt: '2026-03-11T14:00:00.000Z', timezone: 'America/New_York',
+    });
+  });
+
+  it('reads the multi-day span in display timezone without changing timezone identity', () => {
+    const event = timedEvent(baseData());
+    if (event.allDay) throw new Error('expected timed fixture');
+    const source = { ...event, timezone: 'America/New_York', startsAt: '2026-08-06T13:00:00.000Z', endsAt: '2026-08-08T14:00:00.000Z' };
+    expect(applyEventPatch(source, { date: '2026-08-07', start: '22:00', end: '23:00', wallTimeZone: 'Asia/Taipei' }, 'Asia/Taipei', NOW))
+      .toMatchObject({ startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-09T15:00:00.000Z', timezone: 'America/New_York' });
+  });
+
+  it('preserves the later DST clock reading when sheet clocks are unchanged', () => {
+    const event = timedEvent(baseData());
+    if (event.allDay) throw new Error('expected timed fixture');
+    const source = { ...event, timezone: 'America/New_York', startsAt: '2026-11-01T06:15:00.000Z', endsAt: '2026-11-01T06:45:00.000Z' };
+    expect(applyEventPatch(source, { title: '改名', date: '2026-11-01', start: '01:15', end: '01:45' }, 'Asia/Taipei', NOW))
+      .toMatchObject({ startsAt: source.startsAt, endsAt: source.endsAt });
+  });
+
   it('keeps createdAt and only moves updatedAt', () => {
     const data = baseData();
     const event = timedEvent(data);
