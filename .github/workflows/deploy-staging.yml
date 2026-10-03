@@ -101,7 +101,24 @@ jobs:
           echo "Base path ${BASE_PATH} is present in the built output."
 
       - name: Configure Pages
+        id: pages
         uses: actions/configure-pages@v6
+
+      # DP-110：已部署版本的公告不可回寫（AGENTS.md）。在上傳產物之前，
+      # 拿線上目前的 version.json 比對這次要發布的內容：線上那一版在
+      # release-notes.json 的條目必須原封不動；同版號重新部署時，產出的
+      # version.json 也必須相同。線上回 404 視為尚未部署；其他讀取失敗一律
+      # 擋下部署。版號比線上舊視為 rollback，只警告不阻擋。
+      #
+      # 這一步在加入當下還沒在 runner 上實際跑過 —— 部署會真的發布，不能
+      # 拿來探測。若第一次部署失敗在這裡而公告其實沒有被改，先看錯誤訊息
+      # 是讀不到線上檔案還是內容不同。
+      - name: Refuse to rewrite deployed release notes
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          [ -n "$PAGES_BASE_URL" ] || { echo "::error::configure-pages 沒有提供 base_url，無法確認線上版本。"; exit 1; }
+          npm run check:release-notes -- "${PAGES_BASE_URL}/version.json"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

@@ -119,6 +119,8 @@ Repository → **Actions → Deploy staging → Run workflow**，選要部署的
 
 部署只由人工觸發，不掛在 `push` 上 —— 發布是對外公開的動作，時機應由專案擁有者決定。
 
+**DP-110 起，build job 在上傳產物前會比對線上的公告。** 它讀取站台目前的 `version.json`，要求「線上那一版在 `release-notes.json` 的條目原封不動」，且「同版號重新部署時，這次產出的 `version.json` 內容相同」；不符合就讓部署失敗，錯誤訊息會列出是哪個欄位不同。本機可用 `npm run build` 之後的 `npm run check:release-notes -- <線上 version.json 網址>` 先跑一次。規則與驗證見 §5.17。
+
 ---
 
 ## 4. Rollback
@@ -167,6 +169,7 @@ git push origin rollback/staging
 
 - **service worker 快取名稱帶版本**（`daypop-app-shell-<version>`）。回到舊版後，使用者手上的新版 service worker 仍在，直到它抓到舊的 `version.json` 才會回退。使用者端可能需要重新載入一次。
 - **已部署版本的 release note 不可回寫修改**（AGENTS.md）。rollback 不等於可以改寫那一版的公告內容。
+- **DP-110 的公告檢查不會擋 rollback**：這次要部署的版號比線上舊時，檢查只印出警告就放行 —— 被還原的 tag 不可能認得在它之後才發布的版本。回到「同版號、較舊的 commit」則照常比對，公告不同會失敗。DP-110 之前的 commit 沒有這一步。
 
 ---
 
@@ -543,3 +546,19 @@ PR #92 合併後，從最新 `origin/main`（`a6c8102`）獨立開分支，承�
 本機 Windows／Node 24.14.1：lint、typecheck、unit **55 檔 669/669**（`--maxWorkers=2`）、build、check:build 通過，targeted **2/2**（mobile 390×844、desktop 1280×900）。完整 e2e 跑了兩輪：**第一輪 68 passed、1 failed、3 skipped**，失敗的是整輪第一個案例（`account-ics-transfer` 手機版）在 fixture 開啟 dev harness 頁面時 `page.goto` 逾時（`net::ERR_ABORTED`），尚未執行任何 App 斷言，同案例桌面版與其餘案例通過；**第二輪 69 passed、3 skipped、無 flaky／重試**。成因未查證，只能說它發生在 build 之後第一次冷啟動 dev server、且重跑未重現，不宣稱已排除。**2026-10-03 更新**：成因已由 DP-108 查明並修正 —— dev server 啟動時，檔案監看器在主執行緒走訪 `output/playwright/` 底下的數萬個 Playwright 產物，模組請求因此排不到；與 DP-106 的修改無關。細節見 `tasks.md` 的 DP-108。跳過的仍是原有 3 個桌面不適用案例。新增案例要求 console warning／error、pageerror、意外失敗 request 與對外 request 為 0；browser 實際 timezone 印出並斷言 `Asia/Taipei`，Node 印出 `Etc/GMT-8`；build 保留既有 >500 kB chunk 提示。重跑：`npm run test:e2e -- e2e/production-startup-quota.spec.ts`。
 
 **限制與下一步**：只在 Chromium 以原生 quota 驗證「開機寫入被拒、讀取正常」這一種狀態；iOS Safari、Firefox 與真機在同狀態下的實際行為未驗。`SecurityError`／實際隱私政策封鎖只有單元層的「沒有 `readable`」，沒有瀏覽器層證據。「開機額度已滿＋不可讀資料」只有單元層確認維持 `corrupt`，production 復原畫面在這個組合下的流程未跑（§5.14 驗的是備份當下才遇到 quota）。帳號快取同樣會被帶進記憶體，但未以登入 harness 或真實帳號驗證。記憶體會複製全部 `daypop.*` key（含備份），與中途降級相同，未量測大量資料時的記憶體用量。下載取消／OS 封鎖、多分頁競態、staging 仍未驗證。未使用 Supabase MCP／正式帳號／正式資料，未改 schema／Auth／worker template／release assets／版號或部署；**修正尚未發布，待後續 release**。DP-034 父任務及上線放行仍未完成。
+
+### 5.17 部署前的公告不可回寫檢查（DP-110，2026-10-03）
+
+DP-034 清單裡的「確認已部署 release note 不再被同版號改寫」原本只靠人記得。DP-110 把它變成部署流程的一步：`scripts/check-release-notes.mjs`（`npm run check:release-notes -- <線上 version.json 網址或檔案>`），由 `deploy-staging.yml` 的 build job 在 Configure Pages 之後、上傳產物之前執行，網址取自 `actions/configure-pages` 的 `base_url` 輸出，不寫死站台位置。
+
+| 規則 | 判定 |
+| --- | --- |
+| 線上那一版在 `release-notes.json` 的條目 | 必須存在且逐欄相同（欄位順序與空白不算內容）；被改或被刪都失敗。這也涵蓋「發布 0.4.2 時回頭改到 0.4.1」。 |
+| 這次產物與線上同版號 | `dist/version.json` 必須與線上相同；同版號重新部署程式修正仍然允許。 |
+| 這次的版號比線上舊 | 視為 rollback，印出警告後放行（§4）。 |
+| 線上回 404 | 視為尚未部署，通過。 |
+| 其他讀取失敗（網路錯誤、非 2xx、不是 JSON、沒有 `version` 欄位） | 失敗；無法確認線上版本時不部署。 |
+
+**驗證**（本機 Windows／Node 24.14.1，`npm run build` 之後）：16 個情境全部符合預期 —— 對真實 staging（線上 0.4.0、本次 0.4.1）通過；已部署條目被改、同版號標題不同、已部署版本不在 `release-notes.json`、不是 JSON、沒有 `version`、HTTP 500、HTTP 200 但回傳 HTML、連不上主機、`dist/version.json` 沒有重新 build 都以結束碼 1 失敗並指出原因；同版號內容相同、欄位重排且壓縮的 JSON、rollback、HTTP 404、HTTP 200 的有效內容都通過；沒給參數為結束碼 2。真實 GitHub Pages 的 404 也另外驗過。第一版在 404 路徑印出通過訊息卻以 127 結束（回應尚未讀完就 `process.exit()`，Node 在 Windows 上觸發 libuv assertion），改為不在請求之後強制結束、失敗一律丟例外後才設定結束碼。workflow 檔以 YAML parser 解析確認步驟順序與 `id: pages`，`base_url` 輸出名稱對照 `actions/configure-pages@v6` 的 `action.yml`。lint、typecheck、unit **55 檔 669/669**、build、check:build 通過，完整 e2e **69 passed、3 skipped、無 flaky**。
+
+**限制與下一步**：**這一步還沒在 runner 上實際跑過** —— 部署會真的發布，不能拿來探測；第一次由專案擁有者部署 0.4.1 時才會執行（線上 0.4.0 的條目未變，預期通過）。只看得到「此刻線上的那一版」：更早的版本（例如 0.4.1 上線後的 0.3.0、0.4.0）沒有任何地方還在提供，改到它們的條目這個檢查抓不到，仍靠審查。檢查只在部署時跑，不在 PR 的 CI：PR CI 不依賴外部站台，代價是違規要到部署才被擋下。比對的是 `version.json` 與 `release-notes.json` 條目逐欄相同，若日後讓 generator 在 `version.json` 多寫欄位，要同步調整這個檢查。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號。DP-034 父任務及上線放行仍未完成。
