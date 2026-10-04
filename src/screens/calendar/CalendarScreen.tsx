@@ -4,6 +4,7 @@ import { eventWallTime, instantDateInZone } from '../../domain/eventTime';
 import { visibleOccurrences } from '../../domain/calendars';
 import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
+import { topLevelTodos } from '../../domain/todos';
 import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
 import { AgendaView } from './AgendaView';
@@ -260,7 +261,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     return `${start.getMonth() + 1}/${start.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`;
   }, [cursor, monthLabel, view, weekStartsOn]);
 
-  const openTodoCount = data.todos.filter(
+  // The原檔 badge counts top-level todos only; its subtasks live inside them
+  // (`:1304`). DayPop stores them as rows, so drop those — DP-121.
+  const openTodoCount = topLevelTodos(data.todos).filter(
     (todo) => todo.completedAt === null && todo.dueDate !== null && todo.dueDate <= todayKey,
   ).length;
 
