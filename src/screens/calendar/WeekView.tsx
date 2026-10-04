@@ -10,6 +10,7 @@ import {
 import { addDays, daysBetween, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
 import { instantDateInZone, instantTimeInZone } from '../../domain/eventTime';
 import {
+  allDayDisplaySegments,
   eventDisplaySegments,
   hourRangeForSegments,
   segmentClock,
@@ -155,12 +156,10 @@ export function WeekView({
     const byDate = new Map<string, ResolvedEventOccurrence[]>();
     for (const resolved of occurrences) {
       if (!resolved.event.allDay) continue;
-      const from = resolved.event.startDate > weekStartKey ? resolved.event.startDate : weekStartKey;
-      const to = resolved.event.endDate < weekEndKey ? resolved.event.endDate : weekEndKey;
-      for (let key = from; key <= to; key = toDateKey(addDays(fromDateKey(key), 1))) {
-        const list = byDate.get(key) ?? [];
+      for (const { dateKey } of allDayDisplaySegments(resolved.event, { startDateKey: weekStartKey, endDateKey: weekEndKey })) {
+        const list = byDate.get(dateKey) ?? [];
         list.push(resolved);
-        byDate.set(key, list);
+        byDate.set(dateKey, list);
       }
     }
     return byDate;

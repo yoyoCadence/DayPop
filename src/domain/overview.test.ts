@@ -84,6 +84,31 @@ function sticker(id: string, date: string, glyph: string): Sticker {
  * places cells. When these disagreed, one event showed a different date in 綜覽
  * than it did in 日曆.
  */
+describe('multi-day all-day events (DP-126)', () => {
+  const travel: CalendarEvent = {
+    ...event('travel', '2026-07-31', '', true),
+    allDay: true, startDate: '2026-07-31', endDate: '2026-08-02',
+  };
+  it('clips a previous-month start to the current period, keeps inclusive days and counts once', () => {
+    const groups = buildOverviewGroups(input({
+      occurrences: occurrencesOf([travel]), period: 'month', displayTimezone: 'Pacific/Honolulu',
+    }));
+    expect(groups.flatMap((group) => group.days).map((day) => ({ dateKey: day.dateKey, time: day.items[0]?.time }))).toEqual([
+      { dateKey: '2026-08-01', time: '續 全天' },
+      { dateKey: '2026-08-02', time: '續 全天' },
+    ]);
+    expect(countOverviewOccurrences(groups)).toBe(1);
+  });
+  it('keeps monthly counts and the year total distinct across month boundaries', () => {
+    const groups = buildOverviewGroups(input({ occurrences: occurrencesOf([travel]), period: 'year' }));
+    expect(groups.map((group) => ({ title: group.title, count: group.count, dates: group.days.map((day) => day.dateKey) }))).toEqual([
+      { title: '7月', count: 1, dates: ['2026-07-31'] },
+      { title: '8月', count: 1, dates: ['2026-08-01', '2026-08-02'] },
+    ]);
+    expect(countOverviewOccurrences(groups)).toBe(1);
+  });
+});
+
 describe('display timezone', () => {
   // 20:00 on the 6th in New York is 08:00 on the 7th in Taipei.
   const crossZone: CalendarEvent = {

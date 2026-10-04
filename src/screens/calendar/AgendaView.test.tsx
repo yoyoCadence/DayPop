@@ -89,6 +89,22 @@ function dayRows(): Record<string, string> {
   return result;
 }
 
+describe('AgendaView all-day spans (DP-126)', () => {
+  it('lists a trip already in progress through its inclusive last day', () => {
+    const travel: CalendarEvent = {
+      id: 'travel', calendarId: CALENDAR, title: '三天旅行', location: null, notes: null,
+      reminderMinutes: [], recurrence: null, sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: true, startDate: '2026-08-05', endDate: '2026-08-07',
+    };
+    render([travel], '2026-08-06');
+    const cards = [...container.querySelectorAll('.cal-agenda-day')];
+    expect(cards[0]?.textContent).toContain('續 全天三天旅行');
+    expect(cards[1]?.textContent).toContain('續 全天三天旅行');
+    expect(cards).toHaveLength(2);
+  });
+});
+
 describe('AgendaView cross-midnight events', () => {
   it('lists the second day as a continuation, not as empty', () => {
     const todayKey = toDateKey(new Date());

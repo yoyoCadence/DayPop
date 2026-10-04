@@ -99,6 +99,26 @@ function todayStickerRow(): HTMLElement | null {
   return cell?.querySelector('.cal-cell-stickers') ?? null;
 }
 
+describe('MonthView all-day spans (DP-126)', () => {
+  it('keeps inclusive continuation cells, including an occurrence starting outside the visible month', () => {
+    const travel: CalendarEvent = {
+      id: 'travel', calendarId: 'calendar', title: '長假', location: null, notes: null,
+      reminderMinutes: [], recurrence: null, sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+      allDay: true, startDate: '2026-01-01', endDate: '2026-08-07',
+    };
+    act(() => root.render(<MonthView
+      weekStartsOn={0} displayTimezone="Pacific/Honolulu" calendarGridMode="fixed-six"
+      resolveOccurrences={occurrenceResolver([travel])} stickers={[]} calendars={[]}
+      selectedDate="2026-08-06" todayKey="2026-08-06" flashToday={false}
+      onSelectDate={vi.fn()} onPeriodLabelChange={vi.fn()}
+    />));
+    expect(cell('2026-08-06')?.textContent).toContain('續 長假');
+    expect(cell('2026-08-07')?.textContent).toContain('續 長假');
+    expect(cell('2026-08-08')?.textContent).not.toContain('長假');
+  });
+});
+
 describe('MonthView stickers', () => {
   it('renders no sticker row for a day without stickers', () => {
     render([]);

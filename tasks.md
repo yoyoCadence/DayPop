@@ -150,6 +150,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-04 持續開發委託**：專案擁有者要求完善本專案，逐段開 PR 並自主合併後繼續。PR #112 已驗收並合併；承接剩餘驗收問題，依 DP-125 → DP-124 → DP-122 順序開獨立、依序合併的 PR。公告最後整理以涵蓋最終內容；DP-122 仍為 0.4.2 部署前閘門，agent 不觸發部署。
 
+> **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
+
 ## In Progress
 
 
@@ -292,6 +294,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-126 — 多日全天行程跨檢視一致呈現（2026-10-05）：** 修正前回歸重現日詳情第二／三天找不到行程；現在月曆、週、列表、日詳情與綜覽共用 `allDayDisplaySegments()`，先裁切 visible window，再按 inclusive 日期展開，續日標「續」。日期算術不依裝置時區；跨月、閏日、DST／日期變更與最終有效日期皆覆蓋。續日仍開完整 occurrence，單次取消／替換保留其他 occurrence；綜覽每月／全年總數去重。19 個新單元案例，全套 **886／60 檔＋7 個 Node posttest** 通過；相關 browser **8／8**（4 個新案例＋既有 DP-114）通過，新案例實際印出 America/New_York、display timezone 為 Asia/Taipei，另以 Pacific/Apia 實跑日期 helper。lint／typecheck／build／check:build 通過；production 390×844／1280×900 月格與日詳情已查看，無水平溢出，console error／warning 0，圖留於本機 `output/playwright/dp126-qa/`。ADR §6 與原型 baseline 留有擴充理由；沿既有 token，沒有 schema、repository、release 或部署變更，真機／staging 與 DP-034 父項未由此結案。
 
 > **DP-122 結案補正（2026-10-05）：** 承接 #113 的 DP-125，由 Backlog 經 Next、In Progress 完成。0.4.2 部署前公告由 8 條合併為 6 條／162 個 Unicode code point，補上隱私說明、待辦改名及標題限制，所有歷史公告不變。真正 staging 最後一版 0.3.0（5891034）的 production build 保留原 CSS，先以未變 0.4.0 公告校準至 15..418/430，再量五種尺寸，完整對話框與兩顆按鈕均在 viewport；最終橫向 15..418.5/430，小手機 90.1..576.9/667。已目視確認、可按稍後關閉且 guest bytes 不變，console／水平溢出皆 0，實際 Intl Asia/Taipei。lint、typecheck（隨 build）、build、check:build、線上 check:release-notes 與公告／production 更新 browser 14／14 通過。方法與尺寸表見部署交接 §5.19；暫存舊 source／node_modules／dist 已清理，release 仍 0.4.2、schema／worker 不變、未部署。#114 等 CI 時先從當時最新 main 準備，開 PR 前會接入其合併結果。
 
