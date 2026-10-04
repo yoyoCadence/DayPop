@@ -83,8 +83,8 @@ interface DragState {
  * `日曆桌寵 Calendar Pet.dc.html`.
  *
  * Events can be dragged to another time or another day and resized from the
- * bottom edge, snapping to 15 minutes. All-day events are not drawn on the grid
- * in the原檔 either (DP-015).
+ * bottom edge, snapping to 15 minutes. DP-114 adds an all-day strip above the
+ * rail, deliberately extending the原檔 which omitted all-day events (DP-015).
  *
  * DP-083 lets recurring blocks drag and resize, handing the concrete occurrence
  * to the screen's 單次／全部 dialog. Unlike the原檔's silent split, no mutation
@@ -149,10 +149,27 @@ export function WeekView({
     return byKey;
   }, [occurrences]);
 
+  // All-day dates are inclusive and timezone-free. Bound even a years-long
+  // occurrence to seven visible days; do not feed it into the timed rail.
+  const allDayByDate = useMemo(() => {
+    const byDate = new Map<string, ResolvedEventOccurrence[]>();
+    for (const resolved of occurrences) {
+      if (!resolved.event.allDay) continue;
+      const from = resolved.event.startDate > weekStartKey ? resolved.event.startDate : weekStartKey;
+      const to = resolved.event.endDate < weekEndKey ? resolved.event.endDate : weekEndKey;
+      for (let key = from; key <= to; key = toDateKey(addDays(fromDateKey(key), 1))) {
+        const list = byDate.get(key) ?? [];
+        list.push(resolved);
+        byDate.set(key, list);
+      }
+    }
+    return byDate;
+  }, [occurrences, weekEndKey, weekStartKey]);
+
   const segmentsByDate = useMemo(() => {
     const byDate = new Map<string, DisplaySegment[]>();
     for (const { key: occurrenceKey, event } of occurrences) {
-      // All-day events are not drawn on the grid in the原檔 either (DP-015).
+      // DP-114 draws these in a separate strip, never on the timed rail.
       if (event.allDay) continue;
       // The occurrence key, not the event id — DP-081. Two occurrences of one
       // series in the same week need separate blocks.
@@ -394,6 +411,32 @@ export function WeekView({
             </div>
           ))}
         </div>
+
+        {allDayByDate.size > 0 && (
+          <section className="cal-week-all-day" aria-label="本週全天事件">
+            <div className="cal-week-all-day-label">全天</div>
+            {columns.map((column) => (
+              <div className="cal-week-all-day-col" key={column.key} role="group" aria-label={`${column.key} 全天事件`}>
+                {(allDayByDate.get(column.key) ?? []).map(({ key, event }) => {
+                  const continuation = event.allDay && column.key > event.startDate;
+                  return (
+                    <button
+                      type="button"
+                      className="cal-week-all-day-event"
+                      key={key}
+                      aria-label={`${column.key} ${continuation ? `${CONTINUATION_LABEL} ` : ''}全天 ${event.title}`}
+                      title={event.title}
+                      onClick={() => openOccurrence(key)}
+                      style={{ background: calendarColor(calendars, event.calendarId), color: CALENDAR_TEXT_COLOR }}
+                    >
+                      {continuation ? `${CONTINUATION_LABEL} ` : ''}{event.title}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </section>
+        )}
 
         <div className="cal-week-body">
           <div className="cal-week-rail">

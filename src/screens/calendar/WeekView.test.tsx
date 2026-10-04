@@ -6,7 +6,7 @@ import {
   resolveEventOccurrences,
   type OccurrenceWindow,
 } from '../../domain/recurrence';
-import type { CalendarEvent, TimedCalendarEvent } from '../../domain/types';
+import type { AllDayCalendarEvent, CalendarEvent, TimedCalendarEvent } from '../../domain/types';
 import { WeekView } from './WeekView';
 /**
  * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
@@ -136,6 +136,53 @@ function gridHeightPx(): number {
   const grid = container.querySelector<HTMLElement>('.cal-week-grid');
   return Number.parseInt(grid?.style.height ?? '0', 10);
 }
+
+function allDay(id: string, title: string, startDate: string, endDate = startDate): AllDayCalendarEvent {
+  return {
+    id, title, calendarId: CALENDAR, location: null, notes: null,
+    reminderMinutes: [], recurrence: null, sharingScope: 'inherit',
+    createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+    allDay: true, startDate, endDate,
+  };
+}
+
+describe('WeekView 全天列（DP-114）', () => {
+  it('inclusive 多日事件只走本週七天，後續日標續，全天不延長 timed rail', () => {
+    render([allDay('trip', '長假', '2020-01-01', '2030-12-31'), allDay('day', '週三休假', CURSOR)]);
+    const cols = Array.from(container.querySelectorAll('.cal-week-all-day-col'));
+    expect(cols.map((col) => col.querySelectorAll('button').length)).toEqual([1, 1, 1, 2, 1, 1, 1]);
+    expect(cols[0]!.textContent).toBe('續 長假');
+    expect(cols[3]!.querySelectorAll('button')[1]!.getAttribute('aria-label')).toBe('2026-08-12 全天 週三休假');
+    expect(blocksByColumn().flat()).toHaveLength(0);
+    expect(railLabels()[0]).toBe('07:00');
+    expect(railLabels().at(-1)).toBe('22:00');
+  });
+
+  it('首日到 inclusive 結束日各出現一次，前後日不出現', () => {
+    render([allDay('trip', '旅行', '2026-08-10', '2026-08-12')]);
+    const cols = Array.from(container.querySelectorAll('.cal-week-all-day-col'));
+    expect(cols.map((col) => col.querySelectorAll('button').length)).toEqual([0, 1, 1, 1, 0, 0, 0]);
+    expect(cols[1]!.textContent).toBe('旅行');
+    expect(cols[3]!.textContent).toBe('續 旅行');
+    act(() => cols[3]!.querySelector<HTMLButtonElement>('button')!.click());
+    expect(onOpenEvent).toHaveBeenCalledWith(expect.objectContaining({ sourceEventId: 'trip', event: expect.objectContaining({ startDate: '2026-08-10', endDate: '2026-08-12' }) }));
+    expect(onDragEvent).not.toHaveBeenCalled();
+  });
+
+  it('同週多個 occurrence 分別開啟其日期，不使用系列錨點', () => {
+    render([{ ...allDay('series', '休息日', '2026-08-07'), recurrence: { rule: 'FREQ=DAILY;INTERVAL=3;COUNT=4' } }]);
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('.cal-week-all-day-event'));
+    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual(['2026-08-10 全天 休息日', '2026-08-13 全天 休息日']);
+    act(() => buttons[1]!.click());
+    expect(onOpenEvent).toHaveBeenCalledWith(expect.objectContaining({ sourceEventId: 'series', occurrence: { kind: 'all-day', date: '2026-08-13' } }));
+  });
+
+  it('沒有當週全天事件時不畫額外列，timed 格線仍存在', () => {
+    render([allDay('outside', '下週休假', '2026-08-16'), timed('meeting', '會議', { date: CURSOR, start: '09:00', end: '10:00' })]);
+    expect(container.querySelector('.cal-week-all-day')).toBeNull();
+    expect(blocksByColumn()[3]![0]!.label).toBe('09:00–10:00 會議');
+  });
+});
 
 describe('WeekView cross-midnight segments', () => {
   function pointer(element: HTMLElement | Window, type: string, x: number, y: number, pointerId = 1) {

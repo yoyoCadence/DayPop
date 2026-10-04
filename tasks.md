@@ -73,6 +73,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## Next
 
 
+
 > **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
@@ -140,6 +141,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -153,6 +155,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
+- [ ] **DP-115 — 刪除父待辦時清除子孫 snapshot：** DP-114 期間為待辦子項盤點前置，發現 `withoutTodo()` 只刪單列，而 PostgreSQL parent FK 已是 `ON DELETE CASCADE`。guest 會留下缺失 parent 的文件，authenticated snapshot 會與已 cascade 的 DB 不一致；先以雙 adapter／瀏覽器回歸重現，修正完整子樹與 FakeSupabase 的 FK 模擬，再接子項新增 UI。沒有新 schema、RPC 或遠端正式資料操作。
+
 
 
 ### Foundation / maintainable frontend
@@ -267,6 +272,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-114 — 週檢視顯示全天事件（2026-10-04）：** 從最新 main（`7974e5c`）独立分支，依日常使用優先委託由 Backlog → Next → In Progress 完成。週日期下方新增七欄全天列，inclusive 多日後續日標「續」，每個 occurrence 各有 target，點擊／Enter／Space 沿既有單次／全部編輯與刪除；沒有全天事件時不畫額外列。迴圈只走當週七天，原始事件保持一筆；全天不影響 timed rail、now line、drag 或 resize。這是新產品決策，原稿其餘格線／欄寬／tokens 維持，ADR §6 與兩份設計基準同步；未動 schema、repository、release 或部署。
+  > **驗證：** lint／typecheck／build／check:build 通過，Vitest **802／57 檔**，實際 process timezone 印出 `America/New_York` 的週檢視 **21／21**。手機／桌面新增 4 個 browser cases 全過，連同原有重複與跨午夜拖曳共 **14／14**（browser 實際 `Asia/Taipei` 印出）。實際渲染原稿週格及手機漫畫淺／深色、桌面像素深色，七欄對齊、不溢出，console 0 error／warning；Chrome localhost 連到其他 App，依既有允許採 repo Playwright 備援。第一輪新測試的按鈕名稱／all-day 字串期望錯字已修正；最早 Vitest worker 啟動逾時、尚無測試執行，後續完整重跑通過，未提高 timeout。真機 iOS、實際 provider 與 staging 未由本項驗證，DP-077／034 不結案。下一步先修 DP-115 的子項刪除資料一致性，再搬待辦子項 UI。
 
 - [x] **DP-113 — 帳號與版本畫面沿用 canonical 主題（DP-014 子項，2026-10-04）：** 依持續開發／自行合併委託，經 Backlog → Next → In Progress 完成。從當時最新 main（`3c0e77c`）獨立開工，PR #102 通過 CI 並合併後，保留未完成變更、將 main 與本分支快轉到 `df33695` 才續驗。`accountAndDialogs.css` 讓帳號／版本卡片、Auth、更新提示／公告使用既有 canonical palette、shape、欄位與 scope 按鈕 token；移除 `shell.css` 紫色 bridge、wrapper 改為 `.dp-account-blocks`。保留文案與操作、登入／更新的既有寬度，錯誤／成功用文字加 neutral token 呈現，焦點採 fg 描邊，dialog 受限於 App viewport 並自行捲動、卡片可換行。原稿沒有 Auth／PWA 畫面，以實際渲染的設定卡片及日曆編輯 dialog 作控制項依據而不是宣稱逐像素還原；palette 不改，原稿 accent 對比限制保留，決策見 ADR §3。
   > **驗證：** lint、typecheck、798 單元案例（57 檔）、build、check:build 通過，Intl 印出 `Etc/GMT-8`。初次滿載並行有月格／日曆案例逾時，未改時限或斷言，以 `--maxWorkers=2` 完整重跑 798／798。新增 6 項 Playwright 通過（桌面另跳過 2 項手機短螢幕），在手機／桌面逐一核對六主題 × 淺／深色的實際卡片／dialog／欄位／按鈕配色與描邊、錯誤、忘記密碼、公告、鍵盤焦點與 viewport 邊界；375×667、932×430 可捲至關閉按鈕並以畫面座標關閉。與既有 Auth／附件、版本公告、長更新對話框相關的 20 案例為 16 通過／4 跳過（含上述新增案例）。漫畫手機淺／深色、桌面漫畫／像素深色的帳號、登入、錯誤與公告已 screenshot／目視核對，無 framework overlay，console error／warning 0，browser Intl 為 `Asia/Taipei`。Chrome 的 localhost 原先連到另一個 App，依 AGENTS fallback 用 repo Playwright 驗證；harness 使用 FakeSupabase，沒有正式資料或真實 provider 登入。完整 browser 與 DB 閘門由本 PR CI 再驗證。未改 Auth 邏輯、schema、資料、release 或部署；DP-014 父項仍有未完成段落。

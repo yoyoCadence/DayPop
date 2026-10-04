@@ -257,6 +257,10 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 - 跨午夜的**提醒**時間點屬 DP-042。
 - 這條決策不改變資料模型：`events` 仍是單一 instant 區間，不新增「片段」資料表或欄位。
 
+### 決策（DP-114，2026-10-04）— 週檢視顯示全天事件
+
+依專案擁有者「可開始日常使用優先、持續開 PR／自行合併」委託，採 agent 建議在週檢視日期欄頭下方加入全天列。這是刻意擴充原稿（原稿略過全天事件），避免當週安排消失；上方 DP-064「全天呈現不變」只描述當時範圍，現由本決策補充。七欄保持 60px、時刻軌 36px，沿用日曆色塊／canonical token；沒有全天事件時不佔額外空間。有事件時逐欄列出所有項目、不以固定高度隱藏，沿週 pane 捲動。多日事件使用 inclusive startDate/endDate，在每個佔用日出現，後續日標「續」，不拆 domain event。全部資料仍由週 window 的既有 occurrence resolver（含日曆可見性、取消及 replacement）取得，點擊／Enter／Space 開啟具體 occurrence 並沿既有單次／全部編輯流程。全天日期沒有 timezone，不套 timed display segment／instant 換日；全天列不參與時刻軌範圍、now line、拖曳或 resize。沒有 schema／repository／release／部署變更。
+
 ### 決策（DP-083，2026-10-03）— 重複週格拖曳沿用單次／全部選擇
 
 專案擁有者委託 agent 對未定事項提出建議並直接執行，再以 PR 自行合併。採 DP-083 的 (b)：單日重複 occurrence 在週格可拖曳、跨欄換日與拉長度，放開後沿用事件 sheet 的「只改這一次／套用全部／取消」對話框。這是刻意偏離原稿 `wkUp()` 不詢問便拆成獨立事件的行為，目的為讓同一系列在兩個入口的修改範圍一致；決策可由後續 PR 修訂。

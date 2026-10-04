@@ -368,6 +368,53 @@
   padding-top: 4px;
 }
 
+/* DP-114: same seven columns and calendar colours as the timed grid.
+   Let the strip grow to show every item; the week pane owns scrolling. */
+.cal-week-all-day {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.cal-week-all-day-label {
+  width: 36px;
+  flex: none;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.cal-week-all-day-col {
+  display: flex;
+  width: 60px;
+  flex: none;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  padding: 3px 2px;
+  gap: 3px;
+}
+
+.cal-week-all-day-event {
+  min-height: 32px;
+  border: 0;
+  border-left: 3px solid rgba(0, 0, 0, 0.22);
+  border-radius: 5px;
+  padding: 4px 3px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cal-week-all-day-event:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
+}
+
 .cal-week-rail {
   position: relative;
   width: 36px;
