@@ -184,6 +184,33 @@ describe('optional text fields', () => {
 });
 
 describe('applyEventPatch', () => {
+  it('accepts a full multi-day interval while retaining timezone identity', () => {
+    const source = timedEvent(baseData());
+    const timedInterval = { startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-10T15:00:00.000Z' };
+    expect(applyEventPatch(source, { title: '移動', timedInterval }, 'UTC', NOW)).toMatchObject({
+      ...timedInterval, title: '移動', timezone: 'Asia/Taipei',
+    });
+  });
+  it.each([
+    { date: '2026-08-07' }, { start: '09:00' }, { end: '10:00' },
+    { allDay: false }, { timezone: 'UTC' }, { wallTimeZone: 'UTC' },
+  ])('rejects competing fields with a full interval: %j', (patch) => {
+    expect(() => applyEventPatch(timedEvent(baseData()), {
+      ...patch, timedInterval: { startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-08T15:00:00.000Z' },
+    }, 'UTC', NOW)).toThrow();
+  });
+  it.each([
+    ['invalid', '2026-08-08T15:00:00.000Z'],
+    ['2026-08-07T14:00:00.000Z', '2026-08-07T14:00:00.000Z'],
+    ['2026-08-07T14:00:00.000Z', '2026-08-07T13:00:00.000Z'],
+    ['2026-08-07T14:00:00', '2026-08-08T15:00:00'],
+  ])('rejects invalid or nonpositive intervals (%s → %s)', (startsAt, endsAt) => {
+    expect(() => applyEventPatch(timedEvent(baseData()), { timedInterval: { startsAt, endsAt } }, 'UTC', NOW)).toThrow();
+  });
+  it('rejects applying a timed interval to an all-day event', () => {
+    const source = { ...timedEvent(baseData()), allDay: true as const, startDate: '2026-08-07', endDate: '2026-08-08' };
+    expect(() => applyEventPatch(source, { timedInterval: { startsAt: '2026-08-07T14:00:00.000Z', endsAt: '2026-08-08T15:00:00.000Z' } }, 'UTC', NOW)).toThrow();
+  });
   it.each([
     { title: '多日會議（改名）' },
     { title: '多日會議（表單）', date: '2026-08-06', allDay: false, start: '09:00', end: '10:00' },

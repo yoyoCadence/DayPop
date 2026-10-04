@@ -14,6 +14,7 @@ import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
 import { ScopeDialog } from './ScopeDialog';
 import { applyEventPatch, type EventPatch } from '../../domain/mutations';
+import { seriesIntervalForDrag } from '../../domain/weekDrag';
 import '../screens.css';
 import './calendar.css';
 import { type OccurrenceTarget } from './occurrenceTarget';
@@ -219,7 +220,12 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       return;
     }
     const series = data.events.find((event) => event.id === target.sourceEventId);
-    if (!series || series.allDay || target.event.allDay || !patch.date) return;
+    if (!series || series.allDay || target.event.allDay) return;
+    if (patch.timedInterval) {
+      updateEvent(series.id, { timedInterval: seriesIntervalForDrag(series, target.event, patch.timedInterval) });
+      return;
+    }
+    if (!patch.date) return;
     // First resolve the dragged coordinates in the display zone, as for a
     // single occurrence. Then read that result in the series' own zone: its
     // RRULE shares one wall clock, even when this occurrence and the anchor
