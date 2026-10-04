@@ -52,8 +52,8 @@ const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
  *
  * The 外觀主題、我的日曆、桌寵 and 一般 sections are ported from the原檔 設定
  * screen. Account and version blocks are the DP-010/DP-011/DP-023 capabilities
- * kept working inside the canonical shell; they still carry scaffold styling
- * and are redesigned in a later DP-014 segment.
+ * kept working inside the canonical shell. DP-113 applies the same card and
+ * control tokens to those DayPop-owned surfaces without changing their flows.
  *
  * 桌寵與一般只搬移現有偏好模型撐得起的控制項。原稿的「選擇夥伴」與
  * 「左右滑動翻頁」需要新的偏好欄位與 migration，等級／XP 需要 DP-041 的規則，
@@ -359,7 +359,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
         <div className="dp-section-label" style={{ marginTop: 18 }}>
           帳號
         </div>
-        <div className="dp-legacy-scaffold">
+        <div className="dp-account-blocks">
           <section className={`storage-scope-banner${auth.user ? ' authenticated' : ''}`} aria-live="polite">
             <div>
               <strong>{auth.user ? '帳號已登入' : '目前是遊客模式'}</strong>
@@ -588,7 +588,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
         ) : null}
 
         <div className="dp-section-label">版本與更新</div>
-        <div className="dp-legacy-scaffold">
+        <div className="dp-account-blocks">
           <section className="release-panel">
             <div>
               <h2>版本與更新</h2>

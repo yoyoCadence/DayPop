@@ -109,6 +109,12 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 - Domain 使用 `calendarGridMode = adaptive | fixed-six`；DB 使用 `fixed_six_week_grid boolean`。連續捲動月格在 adaptive 模式依目前月份顯示 4–6 列，fixed-six 一律顯示六列。
 - 本機 user-data envelope 升到 schema v3；保留 v1 fixture，另新增 v2 fixture，v2→v3 只補上當時不存在的 `themeId = manga`，其餘已保存偏好與 revision／timestamp 原樣保留。future／corrupt write barrier 不變。
 
+### 決策（DP-113，2026-10-04）— DayPop 自有帳號與版本畫面
+
+依持續開發委託採用 agent 建議：帳號、版本、登入、更新提示與版本公告沿用原稿設定卡片、日曆編輯 dialog 與 scope 按鈕的既有 theme token；不再固定紫色骨架 palette，也不新增另一套配色。卡片取 surface／fg／muted／border／bd／radius／shadow，dialog 取 surface／radius-lg 與 font-head／title-ls，欄位取 bg／fg，主操作取 accent／accent-fg、次操作取 surface-2／fg。焦點用 fg 描邊，錯誤與成功訊息維持文字與語意，放在 surface-2／fg 上；不依賴紅／綠顏色辨識結果。既有六主題 palette 完全不改，未宣稱所有原稿 accent 組合符合文字對比規範。
+
+原稿沒有 Auth 或 PWA 更新畫面，本項是自有畫面採用 canonical 控制項，不是逐像素還原不存在的原稿。保留現有資訊架構、文案、Auth／更新操作與較寬的 dialog（登入 440px、更新 480px 上限）；遮罩沿原稿 50% 黑色、留在 App viewport 內，dialog 自身最多佔可用高度並可捲動。短螢幕可觸及關閉按鈕，桌面不得逸出展示框。帳號／版本卡片可換行，長 Email 與公告文字可折行。`accountAndDialogs.css` 只作用於這些自有畫面；移除 `shell.css` 原紫色 bridge，其他舊樣式的清理不併入。本項不改 Auth、儲存、schema、版本、公告內容或部署，DP-014 父項仍有未完成段落。
+
 ## 4. App 內浮動寵物
 
 寵物是 App viewport 內的 floating companion，不是作業系統桌面程式。現有 React `<aside class="pet-helper">` 只是正常文件流中的摘要佔位；未來 DP-040 才會建立浮動層、七個動畫狀態與拖曳。

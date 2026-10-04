@@ -4,6 +4,7 @@ import { TabBar } from './TabBar';
 import type { ShellTab } from './tabs';
 import { AppViewportContext } from './viewportContext';
 import './shell.css';
+import './accountAndDialogs.css';
 
 export interface AppShellProps {
   tab: ShellTab;
