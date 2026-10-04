@@ -143,6 +143,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## In Progress
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -273,6 +274,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-119 — 可執行的 JS／CSS 產物大小 budget（2026-10-04）：** 由 Backlog → Next → In Progress 完成，從 `d253696` 獨立開分支，DP-118 合併後接到最新 main（`5e0e060`）。performance-budget.json 設 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip；check:build 按 Buffer bytes 與逐檔 gzip 加總所有 JS／MJS／CSS（含 worker），配置缺漏／無效、讀取失敗或任一超限皆拒絕。CI 三種 base 與 deploy 既有閘門沿用，未改 workflow；基線與調整規則見 docs/performance-budget.md／ADR §7。七項 Node 回歸由 npm test 的 posttest 執行，保留 Vitest 選檔。另對真正 dist 加入各自可單獨通過的小 chunk，驗證 JS／CSS raw／gzip 四種總量超限均使 CLI exit 1，另一指標仍低於上限；壞 JSON／缺漏 limits 亦拒絕，所有測試產物還原後通過。
+  > **驗證：** lint、typecheck、830/830 Vitest（59 檔）＋7/7 Node、三種 base build／check:build、production guest CRUD／真實 SW 更新 10/10 e2e 均通過，browser Intl 為 Asia/Taipei、console 0。首次預設並行的全套有兩個既有畫面案例 5 秒逾時，限制本機 maxWorkers=4 後全套通過，未延長 timeout、改斷言或 CI；PR CI 另驗預設環境。Vite >500 kB chunk 警告維持。本項不改 App／schema／release／部署，不代表首屏下載量、實機效能或 DP-034 父項完成。
 
 - [x] **DP-118 — 設定中的資料與隱私說明（2026-10-04）：** 依日常使用優先委託由 Backlog → Next → In Progress 完成，從 `fbbec4f` 獨立開分支，DP-117 合併後接到最新 main（`d253696`）。`DataPrivacyCard` 在備份後以 native details／summary 預設收合，沿 canonical 卡片與 2px 焦點框。文案核對 guest／account 分離、Supabase Auth／Google、私人附件、未加密且不含附件的備份、登出不清雲端／cache、逐筆及子樹刪除、刪日曆搬移內容與副本自行管理，並明示尚無一鍵清空／帳號刪除；事實表在 docs/data-and-privacy.md，決策見 ADR §3。沒有 repository／storage／Auth handler、外部 link、追蹤、同意流程、新 schema、release 或部署，不宣稱正式政策或 DP-034 父項完成。
   > 最新基線完整 lint／typecheck／unit **830／830（59 檔）**／build／check:build 通過，保留既有 >500kB chunk 提示。既有 responsive shell／canonical account e2e **9 passed、3 skipped**（桌面不適用的短視窗案例）；沒有新增與靜態文案鏡像的單元案例。實際原稿設定卡片已渲染核對，六套主題 × 淺／深色共 12 組在 375×667 token 與 2px 焦點正確、全文可捲動且不被 tab bar 擋住、無水平溢出；390×844／1280×900 留有截圖。Guest bytes 全程不變，另一次 dev-only FakeSupabase 登入 smoke 確認 guest 與 account cache 逐字不變，實際 Intl 印出 Asia/Taipei，console 0 error／warning。

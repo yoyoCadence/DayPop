@@ -316,6 +316,12 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 ## 7. 工程治理
 
+### 決策（DP-119，2026-10-04）— 可執行的產物大小上限
+
+依持續自主開發委託採用 agent 建議：在 `performance-budget.json` 保存 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip 的總量上限。`check:build` 加總 production 所有 `.js`／`.mjs`（包含 worker）與 `.css`，逐檔 gzip 後加總；配置缺漏／無效、讀取失敗或任一超限都走既有失敗流程。既有 CI 三種 base 與 staging 部署閘門自動沿用，不改 workflow。限制依 DP-118 後 main 的實測基線保留約 18–31% 空間，後續調整須在 PR 說明原因；Vite 單一 chunk 的 500 kB 警告保留。
+
+這是 aggregate artifact 大小限制，不代表首屏下載量或實機效能。`npm run test` 的 posttest 執行獨立 Node 回歸，保留既有 Vitest 選檔與環境；計量範圍、基線和限制見 `docs/performance-budget.md`，DP-034 父項仍未完成。
+
 
 - 最小 CI 已建立：`npm ci` → lint → typecheck → unit test → build → build asset check；DP-030 另以獨立 job 跑 Playwright mobile／desktop Chromium，失敗才保存 browser diagnostics。CI 不使用任何 secret；Supabase local reset／pgTAP 原本留待有 Docker 的受控環境，DP-084 起改由第三個 job 在 GitHub runner 內實跑（只啟動本機 Postgres，不 link 遠端專案），DP-085 再讓同一個 job 重新產生 `database.types.ts` 並與提交的版本比對。這個 job 也經由 `deploy-staging.yml` 的 `uses:` 成為部署閘門的一部分。
 - CI 同時固定 Node major version；`package.json#engines` 與版本檔應保持一致。DP-086 起 runner 映像也固定為 `ubuntu-26.04`，不用 `ubuntu-latest`：後者會在沒有任何 PR 的情況下換作業系統，而 Playwright 的系統依賴與 Supabase 的 Docker 流程都依賴 OS。升級視為一次需要完整 CI 驗證的變更。

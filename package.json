@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
+    "posttest": "node --test scripts/build-performance-budget.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
