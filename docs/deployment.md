@@ -562,3 +562,15 @@ DP-034 清單裡的「確認已部署 release note 不再被同版號改寫」�
 **驗證**（本機 Windows／Node 24.14.1，`npm run build` 之後）：16 個情境全部符合預期 —— 對真實 staging（線上 0.4.0、本次 0.4.1）通過；已部署條目被改、同版號標題不同、已部署版本不在 `release-notes.json`、不是 JSON、沒有 `version`、HTTP 500、HTTP 200 但回傳 HTML、連不上主機、`dist/version.json` 沒有重新 build 都以結束碼 1 失敗並指出原因；同版號內容相同、欄位重排且壓縮的 JSON、rollback、HTTP 404、HTTP 200 的有效內容都通過；沒給參數為結束碼 2。真實 GitHub Pages 的 404 也另外驗過。第一版在 404 路徑印出通過訊息卻以 127 結束（回應尚未讀完就 `process.exit()`，Node 在 Windows 上觸發 libuv assertion），改為不在請求之後強制結束、失敗一律丟例外後才設定結束碼。workflow 檔以 YAML parser 解析確認步驟順序與 `id: pages`，`base_url` 輸出名稱對照 `actions/configure-pages@v6` 的 `action.yml`。lint、typecheck、unit **55 檔 669/669**、build、check:build 通過，完整 e2e **69 passed、3 skipped、無 flaky**。
 
 **限制與下一步**：**這一步還沒在 runner 上實際跑過** —— 部署會真的發布，不能拿來探測；第一次由專案擁有者部署 0.4.1 時才會執行（線上 0.4.0 的條目未變，預期通過）。只看得到「此刻線上的那一版」：更早的版本（例如 0.4.1 上線後的 0.3.0、0.4.0）沒有任何地方還在提供，改到它們的條目這個檢查抓不到，仍靠審查。檢查只在部署時跑，不在 PR 的 CI：PR CI 不依賴外部站台，代價是違規要到部署才被擋下。比對的是 `version.json` 與 `release-notes.json` 條目逐欄相同，若日後讓 generator 在 `version.json` 多寫欄位，要同步調整這個檢查。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號。DP-034 父任務及上線放行仍未完成。
+
+### 5.18 v0.4.2 日常功能發布候選（DP-117，2026-10-04）
+
+依持續開發／日常使用優先委託整理近期已合併功能。開工直接讀取 `https://yoyocadence.github.io/DayPop/version.json`（加唯一 query、HTTP 200），得到 **0.4.1「更新提示與資料保護」／2026-10-03**，與 repo 0.4.1 條目逐欄相同。因此前述「線上仍為 0.4.0／0.4.1 未發布」的歷史狀態已過時；0.4.1 公告也不可回寫。此次只新增 **0.4.2「日常安排更完整」**，保留所有舊公告，package／lock 版號一致，version.json／sw.js 由既有 generator 產生。user-data schema v4、worker template、migrations、Auth 與部署 workflow 不變。
+
+公告涵蓋 DP-083 重複週格拖曳範圍、DP-072 整筆跨午夜移動／最後片段 resize、DP-075 中文時刻、DP-111 事件時區、DP-112 多日時間保存、DP-113 帳號／更新主題、DP-114 全天週列，以及 DP-115／116 完整待辦子樹刪除與子項操作。沒有把 AI、可靠背景通知、家庭分享或 DP-077 真機即時回饋寫成已完成。
+
+本機 production preview 實際顯示本版 8 條公告，375×667 小手機、932×430 橫放與 1280×900 桌面全部在 viewport 內；以畫面座標按「知道了」可關閉，reload 不重複顯示、guest envelope 逐字不變。console warning／error、pageerror 與水平溢出皆為 0，瀏覽器實際 Intl 印出 Asia/Taipei。截圖與 QA 腳本在系統暫存 `daypop-dp117-proof/`／`daypop-dp117-visual.mjs`，未放進 repo；第一輪 QA 腳本誤用「主要分頁」定位，改為既有「主導覽」後通過，未改 App 或放寬斷言。worker 的內容只換版號（CRLF 正規化後核對），所有歷史公告逐欄相同；`npm run check:release-notes -- https://yoyocadence.github.io/DayPop/version.json` 明確回報 **0.4.2 replaces 0.4.1, whose notes are unchanged**。
+
+**發布交接**：這份 PR 合併只代表 main 上的候選完成，**agent 未觸發部署**；沿 §3.4 由專案擁有者選擇時機，執行 **Actions → Deploy staging → Run workflow → main**。上傳前依現有流程重跑三項 CI 與線上公告比對；發布後核對站台 `version.json`／設定為 0.4.2、PWA 更新後資料保全，以及新全天週列與子項。DP-077 的實體 iPhone 觸控回饋、DP-034 的資料刪除／隱私說明／錯誤監控／效能 budget 等仍未全部驗收，不宣稱已達完整日常使用放行點。
+
+**最新基線驗證**：接入 DP-116 的 merge `fbbec4f` 後，完整 lint／typecheck／unit **830／830、59 檔**／build／check:build／線上 check:release-notes 通過；targeted `release-notice`、`production-update`、`todo-subtasks` **18／18**（mobile＋desktop）。production 更新驗證真正 generated worker 的稍後／立即、等待 install、下載或安裝失敗後重試，以及 App 自動 reload 後的 guest 資料保全；子項驗證的實際裝置 Intl 為 America/New_York，display Asia/Taipei，其餘印出 Asia/Taipei。沒有新增測試檔或放寬舊斷言。build 保留既有 >500kB chunk 提示；帳號案例仍為 dev-only FakeSupabase，production 更新只用隔離 loopback 遊客 App。未使用 Supabase MCP／正式帳號／正式資料、未觸發 staging。

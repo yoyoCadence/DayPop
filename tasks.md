@@ -274,6 +274,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-117 — v0.4.2 日常使用功能發布準備（2026-10-04）：** 依持續開發委託由 Backlog → Next → In Progress 完成，從 `5ee8246` 獨立開分支，DP-116 合併後接到最新 main（`fbbec4f`）。直接讀線上 version.json 確認已部署 0.4.1，因此開新版本 **0.4.2「日常安排更完整」**；8 條公告涵蓋 DP-072／075／083／111–116，所有歷史條目逐欄不變。package／lock、generated version.json／sw.js 同步；schema v4、worker template、migrations、Auth／workflow 不變。
+  > 最新基線完整 lint／typecheck／unit **830／830（59 檔）**／build／check:build 通過，實際線上 check:release-notes 通過；既有 >500kB chunk 提示保留。公告、真實 production worker 更新及子項 targeted e2e **18／18**，browser 實際時區印出 Asia/Taipei 或子項的 America/New_York；production preview 375×667／932×430／1280×900 的真實 8 條公告皆能關閉，reload 不重複且 guest 文件逐字不變，console 0、無水平溢出。QA 腳本第一輪導覽名稱誤寫，改為現有「主導覽」後通過；worker 比對只排除 CRLF 差異，未改 template。
+  > 發布候選與步驟見 docs/deployment.md §5.18；**agent 未觸發部署**，沿 owner 手動 Actions → Deploy staging → main。main 已合併不等於 staging 已更新；DP-077 真機回饋與 DP-034 資料刪除／隱私／監控／效能等仍未全部完成，不宣稱完整日常使用放行。下一步補齊使用者能在 App 內看到的資料與隱私說明，另拆任務。
+
 - [x] **DP-116 — 日詳情待辦子項 UI（2026-10-04）：** 依日常使用優先委託由 Backlog → Next → In Progress 完成，最初從 `c97da70` 獨立開分支，DP-115 合併後接到最新 main（`5ee8246`），保留兩項 ADR／任務成果。原稿 :561 的展開／收合、完成比例、子項新增／勾選／刪除沿 canonical token；native button／form 支援 Enter／Space。新子項繼承父日期（含 null）／日曆／分享範圍，只新增一層，父與子完成獨立。迭代分組保留既有多層、跨日期與循環匯入列的可見性，不改文件；刪除共用 DP-115。
   > 新競態回歸先重現：queued delete 父項後 add 子項原本令整個 App 進 failed。`TodoInputError` 僅代表新增的輸入拒絕，現在保留 ready snapshot、提示未保存並繼續 queue；真正文件驗證失敗仍 fail closed。完整 lint／typecheck／Vitest **830／830（59 檔）**／build／check:build 通過，build 仍有既有 >500kB chunk 提示。新增 17 個單元案例；瀏覽器新增 mobile／desktop 共 4 個子項案例，加 DP-115 的 4 個刪除回歸共 **8／8**。裝置實際 Intl 時區印出 America/New_York，display 為 Asia/Taipei，驗證兩地日期不同時仍繼承正確日期；涵蓋鍵盤、reload、清 fake account cache 重登及 guest 隔離。
   > 原稿實際渲染後與漫畫淺／深色、桌面像素深色比對，390×844／1280×900 無水平溢出，sheet 在 viewport 內，console 0 error／warning。Chrome 的 localhost 顯示不相關 App，依現行例外改用 repo Playwright；證據在系統暫存 `daypop-dp116-proof/`。帳號使用 dev-only FakeSupabase，不宣稱真實 Auth、RLS、真機或 staging；排序／優先度／日期移動／寵物 XP 與 DP-014 父任務仍未完成。沒有 schema、RPC、release、部署或 Supabase MCP 操作；下一步優先整理日常使用的發布交接與剩餘編輯能力。

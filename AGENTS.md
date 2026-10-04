@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **日常功能發布準備（DP-117）：** 2026-10-04 直接讀取 staging `version.json` 確認線上已是 v0.4.1「更新提示與資料保護」，因此 0.4.1 公告自此也不可回寫（下方「0.4.1 尚未部署」是歷史）。本次將 App release 升為 v0.4.2「日常安排更完整」，只更新 package／lock 版號、新增公告並以既有 generator 產生 version.json／sw.js；schema 仍為 v4、worker template 不變。公告涵蓋 DP-072／075／083／111–116，不保證 DP-077 真機拖曳回饋。`check:release-notes` 對實際線上 0.4.1 通過，歷史條目逐欄不變。這是發布候選準備，未觸發 owner 手動部署，不能把 main 已合併視為 staging 已更新；DP-034 父任務仍未完成，交接見 docs/deployment.md §5.18。
+
 - **日詳情待辦子項（DP-116）：** `DayTodoCard` 依原稿 :561 接回展開／收合、完成比例、新增／勾選／刪除；native button／form 支援鍵盤。`NewTodoInput.parentId` 沿既有欄位，新增僅一層，繼承父項日期（含 null）／日曆／分享範圍，完成狀態各自獨立。`todoGroupsOn()` 只分組原本在該日期可見的列，以 sortOrder／迭代遍歷保留多層與跨日期匯入資料；不改持久化文件或綜覽統計。DP-115 的子樹刪除仍為唯一邊界。父項被前一個 queued delete 移除等輸入拒絕用 `TodoInputError`，DataProvider 保留 ready snapshot、提示未保存並繼續 queue；不可把其他資料驗證錯誤一起視為可恢復。拖曳 handle、優先度與寵物 XP 仍未接，未新增 schema／RPC／部署。830 個單元案例／59 檔通過；4 個新 browser cases 以 America/New_York 裝置時區＋Asia/Taipei display timezone 驗證，帳號仍用 dev-only FakeSupabase。
 
 - **週檢視全天列（DP-114）：** 依 2026-10-04 持續開發／日常使用優先委託，週格在日期下方顯示全天 occurrence；沒有全天事件時不佔列。沿週 window resolver 的可見性／例外結果，inclusive 多日每個佔用日各畫一次、後续日標「續」，只走當週七天、不拆 domain event。點擊／Enter／Space 開啟具體 occurrence，編輯／刪除沿既有 scope。日期沒有 timezone，不參與 timed rail／now line／drag／resize。這是刻意擴充原稿，取代下方歷史「週檢視不顯示全天事件」的現況；決策見 ADR §6。未新增 schema 或部署。
