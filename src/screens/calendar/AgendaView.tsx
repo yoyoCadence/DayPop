@@ -4,6 +4,7 @@ import { calendarColor } from '../../domain/calendars';
 import { eventDisplaySegments } from '../../domain/displaySegments';
 import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
+import { topLevelTodos } from '../../domain/todos';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
@@ -116,6 +117,8 @@ export function AgendaView({
       isToday: boolean;
       items: AgendaItem[];
     }[] = [];
+    // Subtasks stay inside their parent's card in the day sheet — DP-121.
+    const listedTodos = topLevelTodos(todos);
 
     for (let offset = 0; offset < LOOKAHEAD_DAYS; offset += 1) {
       const date = addDays(today, offset);
@@ -139,7 +142,7 @@ export function AgendaView({
           color: calendarColor(calendars, row.event.calendarId),
         }));
 
-      const todoItems: AgendaItem[] = todos
+      const todoItems: AgendaItem[] = listedTodos
         .filter((todo) => todo.dueDate === key)
         .map((todo) => ({
           kind: 'todo',

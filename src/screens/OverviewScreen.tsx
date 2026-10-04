@@ -11,6 +11,7 @@ import {
   type OverviewPeriod,
   type OverviewType,
 } from '../domain/overview';
+import { topLevelTodos } from '../domain/todos';
 import { useDayPopData } from '../data/dataContext';
 import './screens.css';
 import './overview.css';
@@ -78,7 +79,9 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
           type === 'events'
             ? visibleOccurrences(data, occurrenceWindow, data.preferences.timezone)
             : [],
-        todos: data.todos,
+        // Top-level only, as in the原檔 where subtasks live inside their
+        // parent — DP-121. Their completion stays visible in the day sheet.
+        todos: type === 'todos' ? topLevelTodos(data.todos) : [],
         stickers: data.stickers,
         type,
         period,

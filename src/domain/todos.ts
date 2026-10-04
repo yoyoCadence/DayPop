@@ -13,6 +13,32 @@ export interface DayTodoGroup {
   subtasks: { todo: TodoItem; depth: number }[];
 }
 
+/**
+ * The todos that stand on their own outside the day sheet — DP-121.
+ *
+ * The原檔 keeps subtasks inside their parent (`t.subs`), so its list view,
+ * overview and pet badge only ever count top-level todos. DayPop stores a
+ * subtask as its own row, so those screens must drop the ones the day sheet
+ * draws under a parent. Decided by `todoGroupsOn` itself, per date, so every
+ * row they show is a card the day sheet shows too — including a subtask due on
+ * another day than its parent, and one member of an imported cycle. Undated
+ * todos have no day sheet; there only real subtasks are dropped.
+ */
+export function topLevelTodos(todos: TodoItem[]): TodoItem[] {
+  const byDate = new Map<string, TodoItem[]>();
+  for (const todo of todos) {
+    if (todo.dueDate === null) continue;
+    const dated = byDate.get(todo.dueDate) ?? [];
+    dated.push(todo);
+    byDate.set(todo.dueDate, dated);
+  }
+  const roots = new Set<string>();
+  for (const [date, dated] of byDate) {
+    for (const group of todoGroupsOn(dated, date)) roots.add(group.todo.id);
+  }
+  return todos.filter((todo) => (todo.dueDate === null ? todo.parentId === null : roots.has(todo.id)));
+}
+
 /** Groups only the rows already visible on this date; never changes persisted data. */
 export function todoGroupsOn(todos: TodoItem[], date: string): DayTodoGroup[] {
   const ordered = todos.filter((todo) => todo.dueDate === date).sort((a, b) => a.sortOrder - b.sortOrder);

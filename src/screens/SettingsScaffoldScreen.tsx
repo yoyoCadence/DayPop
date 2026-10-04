@@ -108,10 +108,13 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
       : null;
   // The原檔 keeps the delete option away from the last remaining calendar.
   const canDelete = editing !== 'new' && editingCalendar !== null && calendars.length > 1;
+  // A refused command changed nothing, so the account is still in sync — DP-123.
+  const syncProblem =
+    dataState.status === 'ready' && dataState.warning !== undefined && dataState.warning.kind !== 'refused';
   const syncLabel =
     dataState.status !== 'ready'
       ? '檢查中'
-      : dataState.warning
+      : syncProblem
         ? '尚未同步'
         : dataState.saving
           ? '同步中…'
@@ -374,7 +377,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               {auth.user ? (
                 <span
                   className={`account-sync-status${
-                    dataState.status === 'ready' && !dataState.warning && !dataState.saving
+                    dataState.status === 'ready' && !syncProblem && !dataState.saving
                       ? ' synced'
                       : ''
                   }`}

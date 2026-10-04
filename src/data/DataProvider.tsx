@@ -231,9 +231,7 @@ function toWriteFailureState(error: unknown, current: DataState): DataState {
   if (error instanceof DataTransferError && current.status === 'ready') {
     return current;
   }
-  // A queued subtask can find that an earlier delete removed its parent. This
-  // is a refused command, not corrupt stored data: retain the live App.
-  if ((error instanceof RemoteDataError || error instanceof TodoInputError) && current.status === 'ready') {
+  if (error instanceof RemoteDataError && current.status === 'ready') {
     return {
       ...current,
       warning: {
@@ -241,6 +239,13 @@ function toWriteFailureState(error: unknown, current: DataState): DataState {
         message: '剛才的變更沒有保存。' + error.message,
       },
     };
+  }
+  // A queued subtask can find that an earlier delete removed its parent. This
+  // is a refused command, not corrupt stored data: retain the live App. It is
+  // not a sync failure either (DP-123), and must not hide one that is.
+  if (error instanceof TodoInputError && current.status === 'ready') {
+    if (current.warning && current.warning.kind !== 'refused') return current;
+    return { ...current, warning: { kind: 'refused', message: error.message } };
   }
   return toFailureState(error);
 }

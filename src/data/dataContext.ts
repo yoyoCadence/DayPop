@@ -15,9 +15,15 @@ import type { StorageReadResult } from '../storage/versionedStorage';
 /** The non-`ready` half of a local read — what the recovery screen works on. */
 export type BlockedRead = Exclude<StorageReadResult, { status: 'ready' }>;
 
+/**
+ * `refused` is a command the domain turned down before any write, such as a
+ * subtask whose parent was just deleted. Nothing is out of sync, so it must not
+ * read as a sync failure — a guest has nothing to sync at all (DP-123).
+ */
 export type DataWarning =
   | { kind: 'cached'; message: string }
-  | { kind: 'write-failed'; message: string };
+  | { kind: 'write-failed'; message: string }
+  | { kind: 'refused'; message: string };
 
 /**
  * `blocked` is the DP-016 fail-closed state: the stored bytes could not be

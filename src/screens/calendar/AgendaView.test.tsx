@@ -7,7 +7,7 @@ import {
   resolveEventOccurrences,
   type OccurrenceWindow,
 } from '../../domain/recurrence';
-import type { CalendarEvent } from '../../domain/types';
+import type { CalendarEvent, TodoItem } from '../../domain/types';
 import { AgendaView } from './AgendaView';
 /**
  * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
@@ -120,5 +120,46 @@ describe('AgendaView cross-midnight events', () => {
     // Today and tomorrow always render; the third card only appears when it has
     // something on it, so an untouched day means no further cards.
     expect(labels.length).toBe(2);
+  });
+});
+
+describe('AgendaView todos (DP-121)', () => {
+  function todo(id: string, title: string, dueDate: string, parentId: string | null = null): TodoItem {
+    return {
+      id, calendarId: CALENDAR, parentId, title, dueDate, priority: 'none', completedAt: null, sortOrder: 0,
+      sharingScope: 'inherit', createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+    };
+  }
+
+  it('lists a parent once and leaves its subtasks to the day sheet', () => {
+    const todayKey = toDateKey(new Date());
+    const tomorrow = toDateKey(addDays(fromDateKey(todayKey), 1));
+    const todos = [
+      todo('p', '準備旅行', todayKey),
+      todo('s1', '訂車票', todayKey, 'p'),
+      todo('s2', '換外幣', todayKey, 'p'),
+      todo('other', '買牛奶', todayKey),
+      // An imported subtask due on another day is its own card there.
+      todo('moved', '取回護照', tomorrow, 'p'),
+    ];
+    act(() =>
+      root.render(
+        <AgendaView
+          resolveOccurrences={occurrenceResolver([])}
+          displayTimezone={ZONE}
+          todayKey={todayKey}
+          todos={todos}
+          calendars={[]}
+          onOpenEvent={vi.fn()}
+          onToggleTodo={vi.fn()}
+        />,
+      ),
+    );
+
+    const titles = [...container.querySelectorAll('.cal-agenda-item')].map((row) => row.textContent ?? '');
+    expect(titles.filter((text) => text.includes('準備旅行'))).toHaveLength(1);
+    expect(titles.some((text) => text.includes('訂車票') || text.includes('換外幣'))).toBe(false);
+    expect(titles.some((text) => text.includes('買牛奶'))).toBe(true);
+    expect(titles.some((text) => text.includes('取回護照'))).toBe(true);
   });
 });

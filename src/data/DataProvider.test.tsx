@@ -90,7 +90,7 @@ describe('DataProvider', () => {
     const refused = latest().state;
     expect(refused.status).toBe('ready');
     expect(refused.status === 'ready' ? refused.data.todos : null).toEqual([]);
-    expect(refused.status === 'ready' ? refused.warning?.kind : null).toBe('write-failed');
+    expect(refused.status === 'ready' ? refused.warning?.kind : null).toBe('refused');
     await act(async () => { latest().actions.addTodo({ title: '後續正常', date: '2026-08-08' }); });
     const saved = latest().state;
     expect(saved.status === 'ready' ? saved.data.todos[0]?.title : null).toBe('後續正常');
