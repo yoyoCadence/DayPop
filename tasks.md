@@ -228,8 +228,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Quality / release
 
-- [ ] **DP-122 — 0.4.2 公告補列 DP-118／DP-120，並以 0.3.0 對話框重新量測（2026-10-04 驗收發現，0.4.2 部署前必做）：** DP-117（#107）在 `d253696` 寫好 0.4.2 公告後，#108（資料與隱私說明）與 #110（待辦改名）才合併，兩項都沒列入。0.4.2 尚未部署（線上為 0.4.1），依規則仍可修改。**限制**：#107 沒有照 AGENTS.md §0.1 用 0.3.0 的不可捲動對話框量長度；補量結果是現行 8 條在 932×430 橫向已超出 9px（`15..439/430`，按鈕 `369..415` 仍可按），其他四種尺寸都放得下。再加一行按鈕就會被推出畫面，所以要合併條目而不是追加。**驗收條件**：0.4.2 公告涵蓋這兩項；在 staging 最後一版 0.3.0（`5891034`）的真實 build 下，五種尺寸的兩顆按鈕都在畫面內，最好整個對話框也放得下；0.4.1 以前的條目不變。量測方法見同份報告 §3.3。
-
 
 - [ ] **DP-032 — 行動裝置 QA 與無障礙（2026-08-26 由 In Progress 移回 Backlog）：** 專案擁有者決定移回，理由是剩下的三項（Android Chrome、螢幕閱讀器、實體鍵盤）對自己的實際使用情境用不太到。**已完成的兩輪結果仍然有效，下方原文照留未刪**；未測的三項仍如實記為未測，不得視為通過。要重啟時由專案擁有者指定移回 Next。
   > **DP-032 — 行動裝置 QA 與無障礙：** **第一輪（模擬環境）已完成**，報告見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)。以 Playwright Chromium 在 393×852 觸控、412×915 觸控與 1280×900 三種 viewport 對 staging 實測。**通過**：3 viewport × 4 分頁水平溢出全部 0px、沒有小於 24×24 的互動元素、實際按 Tab 走訪的 30 個元素全部有 `2px solid` 焦點框且 `:focus-visible` 成立、sheet 有 `role=dialog`／`aria-modal`／`aria-label` 且開啟後 focus 在內、Escape 可關閉、viewport meta 沒有封鎖縮放、`env(safe-area-inset-*)` 與 `@media (prefers-reduced-motion: reduce)` 都有實作、console 全程 0 error／0 warning。**發現三項**：日期格佔滿 tab 順序（DP-069，高）、農曆 8px 對比 2.81:1（DP-070，中，屬原稿逐行移植故另立決策）、沒有 h1 與 `main` landmark（DP-071，低）。**剩下的是真實裝置**，agent 無法涵蓋、需要專案擁有者操作實體裝置：iOS Safari 的瀏海／home indicator safe area 與加到主畫面後的外觀（含 DP-019 圖示）、Android Chrome 的安裝橫幅與 maskable 裁切、週檢視在真實觸控下的拖曳手感、VoiceOver／TalkBack 走訪，以及外接鍵盤。清單見報告 §4；完成前本任務不結案。
@@ -294,6 +292,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+> **DP-122 結案補正（2026-10-05）：** 承接 #113 的 DP-125，由 Backlog 經 Next、In Progress 完成。0.4.2 部署前公告由 8 條合併為 6 條／162 個 Unicode code point，補上隱私說明、待辦改名及標題限制，所有歷史公告不變。真正 staging 最後一版 0.3.0（5891034）的 production build 保留原 CSS，先以未變 0.4.0 公告校準至 15..418/430，再量五種尺寸，完整對話框與兩顆按鈕均在 viewport；最終橫向 15..418.5/430，小手機 90.1..576.9/667。已目視確認、可按稍後關閉且 guest bytes 不變，console／水平溢出皆 0，實際 Intl Asia/Taipei。lint、typecheck（隨 build）、build、check:build、線上 check:release-notes 與公告／production 更新 browser 14／14 通過。方法與尺寸表見部署交接 §5.19；暫存舊 source／node_modules／dist 已清理，release 仍 0.4.2、schema／worker 不變、未部署。#114 等 CI 時先從當時最新 main 準備，開 PR 前會接入其合併結果。
+
+- [x] **DP-122 — 0.4.2 公告補列 DP-118／DP-120，並以 0.3.0 對話框重新量測（2026-10-04 驗收發現，0.4.2 部署前必做）：** DP-117（#107）在 `d253696` 寫好 0.4.2 公告後，#108（資料與隱私說明）與 #110（待辦改名）才合併，兩項都沒列入。0.4.2 尚未部署（線上為 0.4.1），依規則仍可修改。**限制**：#107 沒有照 AGENTS.md §0.1 用 0.3.0 的不可捲動對話框量長度；補量結果是現行 8 條在 932×430 橫向已超出 9px（`15..439/430`，按鈕 `369..415` 仍可按），其他四種尺寸都放得下。再加一行按鈕就會被推出畫面，所以要合併條目而不是追加。**驗收條件**：0.4.2 公告涵蓋這兩項；在 staging 最後一版 0.3.0（`5891034`）的真實 build 下，五種尺寸的兩顆按鈕都在畫面內，最好整個對話框也放得下；0.4.1 以前的條目不變。量測方法見同份報告 §3.3。
 
 > **DP-124 結案（2026-10-04）：** 由 Backlog 經 Next、In Progress 完成。唯讀核對部署 run／head／job 第 10 步與 decoded log，於 DP-034 進度、DP-110 Done 與部署交接 §5.17 三處新增證據；保留原文，不修改 workflow。`git diff --check` 通過，PR 僅 tasks.md 與 docs/deployment.md；未觸發部署。
 

@@ -576,3 +576,25 @@ DP-034 清單裡的「確認已部署 release note 不再被同版號改寫」�
 **發布交接**：這份 PR 合併只代表 main 上的候選完成，**agent 未觸發部署**；沿 §3.4 由專案擁有者選擇時機，執行 **Actions → Deploy staging → Run workflow → main**。上傳前依現有流程重跑三項 CI 與線上公告比對；發布後核對站台 `version.json`／設定為 0.4.2、PWA 更新後資料保全，以及新全天週列與子項。DP-077 的實體 iPhone 觸控回饋、DP-034 的資料刪除／隱私說明／錯誤監控／效能 budget 等仍未全部驗收，不宣稱已達完整日常使用放行點。
 
 **最新基線驗證**：接入 DP-116 的 merge `fbbec4f` 後，完整 lint／typecheck／unit **830／830、59 檔**／build／check:build／線上 check:release-notes 通過；targeted `release-notice`、`production-update`、`todo-subtasks` **18／18**（mobile＋desktop）。production 更新驗證真正 generated worker 的稍後／立即、等待 install、下載或安裝失敗後重試，以及 App 自動 reload 後的 guest 資料保全；子項驗證的實際裝置 Intl 為 America/New_York，display Asia/Taipei，其餘印出 Asia/Taipei。沒有新增測試檔或放寬舊斷言。build 保留既有 >500kB chunk 提示；帳號案例仍為 dev-only FakeSupabase，production 更新只用隔離 loopback 遊客 App。未使用 Supabase MCP／正式帳號／正式資料、未觸發 staging。
+
+### 5.19 0.4.2 公告補正與舊版對話框（DP-122，2026-10-05）
+
+0.4.2 部署前補上 DP-118「資料與隱私說明」、DP-120 待辦改名，以及後續 DP-125 的標題上限與草稿保留。沿前述已合併功能，將 8 條合併成 **6 條、162 個 Unicode code point**，保留子項新增／展開／勾選／完成比例與父項刪除、週全天列、重複／跨午夜拖曳與結束調整、中文時刻、時區／多日時間，以及帳號／登入／更新主題。release 仍為 0.4.2、releasedAt 仍為 2026-10-04；generator 只改 `public/version.json`，worker 與所有歷史公告逐欄不變。
+
+直接 GET staging（唯一 query、HTTP 200）仍為 0.4.1「更新提示與資料保護」／2026-10-03，故 0.4.2 尚可修訂；`check:release-notes` 對線上 0.4.1 通過。歷史 §5.18 的 8 條／本版可捲動 dialog 量測保留，但發布時以本節的最終 6 條與舊版驗證為準。
+
+**真實舊版量測**：隔離 worktree 取 staging 最後一版 0.3.0 的 `5891034`；以該 commit 的 lockfile 離線 `npm ci --ignore-scripts`，Node 24.14.1、`npm run build -- --base=/DayPop/` 建立 production App。保留其原始 CSS／不可捲動 `.update-dialog`，Playwright `page.route` 只替換新版本 `version.json`；逐尺寸開獨立 mobile Chromium context，等待 fonts ready 並印出實際 Intl **Asia/Taipei**。先用未變的 0.4.0 公告校準：932×430 的對話框 `15..418.5`、兩顆按鈕 `348.5..394.5`，與 DP-089 的 `15..418/430` 一致。
+
+| 尺寸 | 0.4.2 對話框 top..bottom | 兩顆按鈕 top..bottom | 完整放得下 |
+| --- | --- | --- | --- |
+| 430×932 | 233.0..699.0 | 629.0..675.0 | 是 |
+| 390×844 | 178.6..665.4 | 595.4..641.4 | 是 |
+| 375×667 | 90.1..576.9 | 506.9..552.9 | 是 |
+| 360×640 | 76.6..563.4 | 493.4..539.4 | 是 |
+| 932×430 | 15.0..418.5 | 348.5..394.5 | 是 |
+
+五種尺寸均斷言完整 dialog 與兩顆按鈕的四邊在 viewport 內、無水平溢出；「稍後提醒」可點擊並關閉，guest 原始 envelope 逐字不變。console error／warning 與 pageerror 皆 0。375×667 與 932×430 最終截圖已目視確認；QA 腳本、量測 JSON 與截圖位於系統暫存 `daypop-dp122-qa.mjs`／`daypop-dp122-proof/`，未放入 repo，舊 source／node_modules／dist 於驗證後清理。
+
+lint、typecheck（隨 build）、build、check:build、線上 check:release-notes 通過；既有 `release-notice`／`production-update` browser **14／14**（mobile＋desktop，production 實際 Intl Asia/Taipei）亦通過，涵蓋首次公告／看過後 reload、手動檢查、等待 install、失敗後重試及更新後 guest 資料保存。未新增測試檔或放寬斷言。
+
+本項只完成發布前公告閘門，未觸發部署。0.4.2 的實際發布仍由擁有者執行 §3.4；DP-077 真機觸控、DP-034 其餘驗收與日常使用放行仍待完成。

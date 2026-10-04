@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.4.2 公告補正（DP-122，2026-10-05）：** 尚未部署的 0.4.2 公告合併成 6 條，補上隱私說明／待辦改名／標題上限，保留已合併日常功能與全部歷史公告。真正 staging 最後一版 0.3.0（5891034）production build、原始不可捲動 dialog 以 0.4.0 校準後，五種尺寸的完整 dialog 與兩顆按鈕均在 viewport；932×430 為 15..418.5，375×667 為 90.1..576.9。方法與發布交接見 docs/deployment.md §5.19。release／schema／worker template 不變，agent 未部署。
+
 - **標題上限與舊遊客資料（DP-125）：** 事件／待辦新標題限制 300 Unicode code point，`domain/titles.ts` 共用於 validation、mutation 與四處輸入；native maxlength 為 UTF-16 外圍 600，真正上限用 code point 判斷，超限提示並保留草稿。TitleInputError 沿 refused 保持 ready／繼續 queue。舊遊客 v1–v4 超長標題仍可讀／備份，不裁切；本機寫入只保留同種類同 id 未變的超長標題，編輯須縮短，JSON 取代與新 ICS 列保持嚴格、ICS 附加保留既有列。帳號快取含 v3 migration 皆嚴格。規則見 ADR §2；未改 schema／release／部署。
 
 - **待辦標題編輯（DP-120）：** 日詳情父待辦與已顯示子項的 EditableTodoTitle 提供 inline form，24×24 編輯按鈕／16px 輸入沿現有卡片欄位 token。Enter 保存，空白拒絕，未變更／取消／Escape 不寫入、還原焦點，Escape 不關外層 sheet；awaited 保存防重複提交，可恢復失敗保持草稿。renamedTodo 保留日期／完成／階層／排序／日曆／分享範圍；renameTodo 經既有單一 queue，guest write barrier、account title-only owner update／single，不 upsert 已刪除列，成功才更新 snapshot／cache且不自動重送。corrupt／future 復原與帳號切換仍優先。新產品決策見 ADR §2；日期／優先度／排序仍未接，未新增 schema／RPC／release／部署。
