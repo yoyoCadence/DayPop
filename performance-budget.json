@@ -1,0 +1,10 @@
+{
+  "javascript": {
+    "maxRawBytes": 819200,
+    "maxGzipBytes": 225280
+  },
+  "css": {
+    "maxRawBytes": 131072,
+    "maxGzipBytes": 32768
+  }
+}

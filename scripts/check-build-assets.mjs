@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkPerformanceBudget, measureBuildAssets } from './build-performance-budget.mjs';
 
 /**
  * Fails the build if the production output would reach the network at runtime,
@@ -125,6 +126,23 @@ if (emittedBase) {
  */
 const distFiles = [];
 for await (const file of walk(dist)) distFiles.push(relative(dist, file).replaceAll('\\', '/'));
+
+// DP-119: include every emitted chunk and sw.js; report raw and per-file gzip
+// totals. This is an artifact budget, not a measurement of real device speed.
+try {
+  const budget = JSON.parse(await readFile(resolve(root, 'performance-budget.json'), 'utf8'));
+  const totals = await measureBuildAssets(distFiles.map((file) => resolve(dist, file)));
+  problems.push(...checkPerformanceBudget(totals, budget));
+  for (const kind of ['javascript', 'css']) {
+    console.log(
+      `Asset budget ${kind}: ${totals[kind].count} files, ` +
+        `${totals[kind].rawBytes} raw / ${totals[kind].gzipBytes} gzip bytes; ` +
+        `limits ${budget?.[kind]?.maxRawBytes} / ${budget?.[kind]?.maxGzipBytes} bytes`,
+    );
+  }
+} catch (error) {
+  problems.push(`performance budget could not be checked: ${error.message}`);
+}
 
 for (const file of distFiles) {
   if (file === 'auth.html' || file.startsWith('e2e/')) {
