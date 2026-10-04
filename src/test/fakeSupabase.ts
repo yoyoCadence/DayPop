@@ -69,6 +69,22 @@ export class FakeSupabase {
     );
   }
 
+  /** Models the existing composite todos parent FK, independently of domain edits. */
+  cascadeDeletedTodos(removed: FakeRow[]) {
+    const rows = this.rows('todos');
+    const deleted = new Set<FakeRow>();
+    const queue = [...removed];
+    for (let index = 0; index < queue.length; index += 1) {
+      const parent = queue[index]!;
+      for (const row of rows) {
+        if (deleted.has(row) || row.parent_id !== parent.id || row.owner_id !== parent.owner_id || row.calendar_id !== parent.calendar_id) continue;
+        deleted.add(row);
+        queue.push(row);
+      }
+    }
+    this.tables.set('todos', rows.filter((row) => !deleted.has(row)));
+  }
+
   from(table: string) {
     return new FakeQuery(this, table);
   }
@@ -448,6 +464,7 @@ class FakeQuery implements PromiseLike<QueryResult> {
       if (this.table === 'events') {
         this.db.cascadeDeletedEvents(new Set(removed.map((row) => String(row.id))));
       }
+      if (this.table === 'todos') this.db.cascadeDeletedTodos(removed);
       return { data: null, error: null };
     }
 

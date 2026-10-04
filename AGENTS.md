@@ -28,6 +28,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 - **週檢視全天列（DP-114）：** 依 2026-10-04 持續開發／日常使用優先委託，週格在日期下方顯示全天 occurrence；沒有全天事件時不佔列。沿週 window resolver 的可見性／例外結果，inclusive 多日每個佔用日各畫一次、後续日標「續」，只走當週七天、不拆 domain event。點擊／Enter／Space 開啟具體 occurrence，編輯／刪除沿既有 scope。日期沒有 timezone，不參與 timed rail／now line／drag／resize。這是刻意擴充原稿，取代下方歷史「週檢視不顯示全天事件」的現況；決策見 ADR §6。未新增 schema 或部署。
 
+- **待辦子樹刪除（DP-115）：** `withoutTodo()` 對齊既有 PostgreSQL parent composite FK 的 ON DELETE CASCADE，以 parent index／迭代遍歷清除完整子孫、保留其他待辦；guest 文件與 authenticated snapshot 共用此邊界，遠端仍只發一個 owner-scoped delete，由 DB 原子 cascade。不能退回只過濾單列或並行發子項 delete。FakeSupabase 獨立模擬該 FK，雙 adapter reload 與 UI 已覆蓋匯入的子項／孫項；不新增 schema／RPC 或實際雲端驗收。子項新增 UI 為後續任務。
+
 - **帳號與版本主題（DP-113）：** `src/shell/accountAndDialogs.css` 讓設定的帳號／版本（`.dp-account-blocks`）與 Auth、更新提示／公告吃既有 canonical 卡片／dialog／欄位／按鈕 token，已移除 `shell.css` 紫色 scaffold bridge。原稿無 Auth／PWA 畫面，依自主開發委託採用原稿控制項而保留自有資訊架構與 dialog 寬度，不宣稱逐像素還原。遮罩留在 viewport 內，dialog 本身可捲動且最多佔可用高度，帳號卡片可換行。舊 `styles.css` 仍有其他歷史樣式，不在本次廣泛清理；不得重新加回固定紫色變數。六套主題 palette、Auth／更新行為、資料、版本與部署不變；DP-014 父項仍未結案，決策見 ADR §3。
 
 - **跨午夜週格拖曳（DP-072）：** `weekDrag.ts` 以完整起訖在 display timezone 逐端做日曆日／牆上分鐘位移，`EventPatch.timedInterval` 是純領域資料邊界，不送新 DB 欄位或 RPC 參數；與舊 date/start/end/allDay/timezone/wallTimeZone 互斥，僅適用 timed event 且正區間。任一片段移動整筆，最後片段才能 resize；24:00 結束也用完整區間，resize 保留起點精確 instant、短於 15 分鐘拒絕。`WeekView` 重切所有預覽片段但不變動 rail；pointercancel 與不同 pointer id 不可提交，重新掛回原 block 後在 scope 捕捉焦點前還原。全部 scope 以 `seriesIntervalForDrag()` 按事件時區的時鐘／日數套回系列錨點（含 DST），不複製 occurrence 的日期，也不拆 domain event。ADR §6 的舊「跨午夜不可拖曳」註記已由此決策取代；DP-077 真機即時回饋仍未驗證。

@@ -5,6 +5,7 @@ import { LocalDayPopRepository } from '../storage/localRepository';
 import { FakeSupabase, type FakeRow } from '../test/fakeSupabase';
 import type { DayPopRepository } from './repository';
 import { SupabaseDayPopRepository } from './supabaseRepository';
+import { todoTree } from '../test/todoTree';
 
 /**
  * The guest and authenticated adapters must be interchangeable behind
@@ -61,6 +62,31 @@ const adapters = [
   ['guest local', localAdapter],
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
+
+describe.each(adapters)('%s adapter deletes todo descendants (DP-115)', (_name, create) => {
+  let repository: DayPopRepository;
+  let before: DayPopUserData;
+  beforeEach(async () => {
+    repository = await create();
+    const data = await repository.load();
+    before = await repository.importData({ kind: 'replace', data: {
+      calendars: data.calendars, events: [], eventExceptions: [], stickers: [],
+      preferences: data.preferences, todos: todoTree(data.calendars[0]!.id),
+    } });
+  });
+
+  it('deleting the root removes children from the returned document and durable reload', async () => {
+    const next = await repository.deleteTodo('11500000-0000-4000-8000-000000000001');
+    expect(next.todos).toEqual([before.todos.find((todo) => todo.title === '保留待辦')]);
+    expect(await repository.load()).toEqual(next);
+  });
+
+  it('deleting an intermediate node preserves its parent, sibling, and unrelated row', async () => {
+    const next = await repository.deleteTodo('11500000-0000-4000-8000-000000000002');
+    expect(next.todos.map((todo) => todo.title).sort()).toEqual(['保留待辦', '已完成子項', '父待辦'].sort());
+    expect(await repository.load()).toEqual(next);
+  });
+});
 
 describe.each(adapters)('%s adapter preserves multi-day timed data (DP-112)', (_name, create) => {
   let repository: DayPopRepository;

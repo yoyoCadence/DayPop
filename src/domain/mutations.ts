@@ -660,7 +660,25 @@ export function withTodo(data: DayPopUserData, todo: TodoItem): DayPopUserData {
 }
 
 export function withoutTodo(data: DayPopUserData, id: string): DayPopUserData {
-  return { ...data, todos: data.todos.filter((todo) => todo.id !== id) };
+  // Match the existing PostgreSQL ON DELETE CASCADE for both adapters' snapshots.
+  // Index once and walk iteratively: imported trees need not be ordered or shallow.
+  const children = new Map<string, string[]>();
+  for (const todo of data.todos) {
+    if (todo.parentId === null) continue;
+    const siblings = children.get(todo.parentId) ?? [];
+    siblings.push(todo.id);
+    children.set(todo.parentId, siblings);
+  }
+  const deleted = new Set([id]);
+  const queue = [id];
+  for (let index = 0; index < queue.length; index += 1) {
+    for (const child of children.get(queue[index]!) ?? []) {
+      if (deleted.has(child)) continue;
+      deleted.add(child);
+      queue.push(child);
+    }
+  }
+  return { ...data, todos: data.todos.filter((todo) => !deleted.has(todo.id)) };
 }
 
 export function withSticker(data: DayPopUserData, sticker: Sticker): DayPopUserData {

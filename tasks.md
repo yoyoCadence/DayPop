@@ -156,7 +156,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Backlog
 
-- [ ] **DP-115 — 刪除父待辦時清除子孫 snapshot：** DP-114 期間為待辦子項盤點前置，發現 `withoutTodo()` 只刪單列，而 PostgreSQL parent FK 已是 `ON DELETE CASCADE`。guest 會留下缺失 parent 的文件，authenticated snapshot 會與已 cascade 的 DB 不一致；先以雙 adapter／瀏覽器回歸重現，修正完整子樹與 FakeSupabase 的 FK 模擬，再接子項新增 UI。沒有新 schema、RPC 或遠端正式資料操作。
+
 
 
 
@@ -272,6 +272,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-115 — 刪除父待辦時清除子孫 snapshot（2026-10-04）：** 依持續開發／日常使用委託由 Backlog → Next → In Progress 完成，最初從 `7974e5c` 獨立開分支，DP-114 合併後接到最新 main（`c97da70`），兩份任務交接衝突已保留双方成果。修改前 6 個新回歸重現：guest 被完整資料驗證拒絕，authenticated 在遠端 delete 後 snapshot 因缺失 parent 驗證失敗；未宣稱 guest 原始文件已被破壞。`withoutTodo()` 改成 parent index／迭代遍歷清除全部子孫（含已完成、亂序、多層），保留其他待辦／資料。遠端仍只有一個 owner-scoped delete，由既有 composite FK 原子 cascade；FakeSupabase 獨立補 FK 模擬。沒有新 schema、RPC、Auth、release、部署或 MCP 操作。
+  > **驗證：** lint／typecheck／build／check:build 通過；最新 main **813 個單元／58 檔**，涵蓋雙 adapter 回傳 snapshot／durable reload、15,000 層匯入鏈與 remote rejection／transport error 保留整樹。mobile／desktop 共 **4／4** browser cases，驗證遊客 delete／reload／繼續勾選、帳號 JSON 匯入／delete／同步／登出隔離／清測試快取後重登入讀回，實際 browser timezone `Asia/Taipei` 印出，console 0 error／warning。Chrome localhost 連到別的 App，採 repo Playwright 備援；帳號證據使用同頁 FakeSupabase，不等同真實服務 durability、RLS、Auth session restore、真機或 staging。下一段接日詳情的待辦子項 UI；DP-034 不由此結案。
 
 - [x] **DP-114 — 週檢視顯示全天事件（2026-10-04）：** 從最新 main（`7974e5c`）独立分支，依日常使用優先委託由 Backlog → Next → In Progress 完成。週日期下方新增七欄全天列，inclusive 多日後續日標「續」，每個 occurrence 各有 target，點擊／Enter／Space 沿既有單次／全部編輯與刪除；沒有全天事件時不畫額外列。迴圈只走當週七天，原始事件保持一筆；全天不影響 timed rail、now line、drag 或 resize。這是新產品決策，原稿其餘格線／欄寬／tokens 維持，ADR §6 與兩份設計基準同步；未動 schema、repository、release 或部署。
   > **驗證：** lint／typecheck／build／check:build 通過，Vitest **802／57 檔**，實際 process timezone 印出 `America/New_York` 的週檢視 **21／21**。手機／桌面新增 4 個 browser cases 全過，連同原有重複與跨午夜拖曳共 **14／14**（browser 實際 `Asia/Taipei` 印出）。實際渲染原稿週格及手機漫畫淺／深色、桌面像素深色，七欄對齊、不溢出，console 0 error／warning；Chrome localhost 連到其他 App，依既有允許採 repo Playwright 備援。第一輪新測試的按鈕名稱／all-day 字串期望錯字已修正；最早 Vitest worker 啟動逾時、尚無測試執行，後續完整重跑通過，未提高 timeout。真機 iOS、實際 provider 與 staging 未由本項驗證，DP-077／034 不結案。下一步先修 DP-115 的子項刪除資料一致性，再搬待辦子項 UI。

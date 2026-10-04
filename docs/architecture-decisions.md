@@ -28,6 +28,10 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 待辦刪除一致性（DP-115，2026-10-04）
+
+既有 `todos_parent_owner_calendar_fk` 是 ON DELETE CASCADE；`withoutTodo()` 原本只移除 id 那一列，留下缺失 parent 的子項。回歸確認 guest 因完整文件驗證而拒絕保存（原資料沒有被覆寫），authenticated 則可能在遠端刪除成功後，因 snapshot 驗證失敗而回報錯誤。共用 domain 函式改成清除完整子樹，包含已完成、亂序與多層匯入的後代，保留不相關待辦／其他資料；parent index 加迭代遍歷避免資料量或深度造成遞迴堆疊問題。兩個 adapter 都沿現有 seam；authenticated 仍是一個 owner-scoped delete，由既有 DB FK 原子 cascade，不分別送出多個 delete。遠端拒絕／transport rejection 保留整棵 snapshot，不樂觀移除。測試用 FakeSupabase 獨立模擬既有 composite FK；不修改 schema、RPC、Auth、release 或部署，也不把 harness 證據當成真實 RLS／服務 durability 驗收。先完成這個子項 UI 前置，再開放建立子项。
+
 Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 canonical domain contract；不能讓 UI 同時理解本機簡化模型與資料庫模型。
 
 | 領域 | Canonical contract |

@@ -13,10 +13,12 @@ import {
   withSticker,
   withTodo,
   withoutEvent,
+  withoutTodo,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
+import { todoTree } from '../test/todoTree';
 
 const NOW = '2026-08-04T00:00:00.000Z';
 const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
@@ -24,6 +26,33 @@ const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
 function baseData(): DayPopUserData {
   return createEmptyUserData({ now: NOW });
 }
+
+describe('withoutTodo cascade (DP-115)', () => {
+  it('removes every descendant even when grandchildren precede their parents', () => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const before = structuredClone(data);
+    const next = withoutTodo(data, '11500000-0000-4000-8000-000000000001');
+    expect(next.todos).toEqual([data.todos[1]]);
+    expect(data).toEqual(before);
+    expect(next.events).toBe(data.events);
+    expect(next.preferences).toBe(data.preferences);
+  });
+
+  it('deleting a child removes its descendants but keeps parent and siblings', () => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    expect(withoutTodo(data, '11500000-0000-4000-8000-000000000002').todos.map((todo) => todo.title)).toEqual(['保留待辦', '已完成子項', '父待辦']);
+    expect(withoutTodo(data, 'missing')).toEqual(data);
+  });
+
+  it('deletes a deep imported chain without depending on JS recursion depth', () => {
+    const data = baseData();
+    const root = todoTree(data.calendars[0]!.id).at(-1)!;
+    data.todos = Array.from({ length: 15_000 }, (_, index) => ({ ...root, id: String(index), parentId: index === 0 ? null : String(index - 1) })).reverse();
+    expect(withoutTodo(data, '0').todos).toEqual([]);
+  });
+});
 
 function timedEvent(data: DayPopUserData): CalendarEvent {
   return createEventFromInput(
