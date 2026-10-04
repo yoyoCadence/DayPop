@@ -77,6 +77,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
+
 > **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
@@ -154,6 +156,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -225,7 +229,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ### Quality / release
 
 - [ ] **DP-122 — 0.4.2 公告補列 DP-118／DP-120，並以 0.3.0 對話框重新量測（2026-10-04 驗收發現，0.4.2 部署前必做）：** DP-117（#107）在 `d253696` 寫好 0.4.2 公告後，#108（資料與隱私說明）與 #110（待辦改名）才合併，兩項都沒列入。0.4.2 尚未部署（線上為 0.4.1），依規則仍可修改。**限制**：#107 沒有照 AGENTS.md §0.1 用 0.3.0 的不可捲動對話框量長度；補量結果是現行 8 條在 932×430 橫向已超出 9px（`15..439/430`，按鈕 `369..415` 仍可按），其他四種尺寸都放得下。再加一行按鈕就會被推出畫面，所以要合併條目而不是追加。**驗收條件**：0.4.2 公告涵蓋這兩項；在 staging 最後一版 0.3.0（`5891034`）的真實 build 下，五種尺寸的兩顆按鈕都在畫面內，最好整個對話框也放得下；0.4.1 以前的條目不變。量測方法見同份報告 §3.3。
-- [ ] **DP-124 — 更正 DP-110「尚未在 runner 上跑過」的過時紀錄（2026-10-04 驗收發現，低）：** DP-110 的 Done 條目、DP-034 的 DP-110 子項進度與 `docs/deployment.md` §5.17 都寫著部署 workflow 的公告檢查還沒實際執行過；2026-10-03 部署 0.4.1 時（run `37132293407`，head `d713b52`）已執行並通過（`0.4.1 replaces 0.4.0, whose notes are unchanged`）。`deploy-staging.yml` 註解寫的是「在加入當下」，不用改。**驗收條件**：三處補上實際執行結果，不刪原文。見同份報告 §3.5。
+
 
 - [ ] **DP-032 — 行動裝置 QA 與無障礙（2026-08-26 由 In Progress 移回 Backlog）：** 專案擁有者決定移回，理由是剩下的三項（Android Chrome、螢幕閱讀器、實體鍵盤）對自己的實際使用情境用不太到。**已完成的兩輪結果仍然有效，下方原文照留未刪**；未測的三項仍如實記為未測，不得視為通過。要重啟時由專案擁有者指定移回 Next。
   > **DP-032 — 行動裝置 QA 與無障礙：** **第一輪（模擬環境）已完成**，報告見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)。以 Playwright Chromium 在 393×852 觸控、412×915 觸控與 1280×900 三種 viewport 對 staging 實測。**通過**：3 viewport × 4 分頁水平溢出全部 0px、沒有小於 24×24 的互動元素、實際按 Tab 走訪的 30 個元素全部有 `2px solid` 焦點框且 `:focus-visible` 成立、sheet 有 `role=dialog`／`aria-modal`／`aria-label` 且開啟後 focus 在內、Escape 可關閉、viewport meta 沒有封鎖縮放、`env(safe-area-inset-*)` 與 `@media (prefers-reduced-motion: reduce)` 都有實作、console 全程 0 error／0 warning。**發現三項**：日期格佔滿 tab 順序（DP-069，高）、農曆 8px 對比 2.81:1（DP-070，中，屬原稿逐行移植故另立決策）、沒有 h1 與 `main` landmark（DP-071，低）。**剩下的是真實裝置**，agent 無法涵蓋、需要專案擁有者操作實體裝置：iOS Safari 的瀏海／home indicator safe area 與加到主畫面後的外觀（含 DP-019 圖示）、Android Chrome 的安裝橫幅與 maskable 裁切、週檢視在真實觸控下的拖曳手感、VoiceOver／TalkBack 走訪，以及外接鍵盤。清單見報告 §4；完成前本任務不結案。
@@ -248,6 +252,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 開機儲存子項進度**：DP-104 已補上原生 localStorage 為 null 時的 production 開機記憶體模式、四分頁持續警告、跨分頁編輯／真實 JSON 匯出與 reload 回預設，見同份交接 §5.15。SecurityError、初始 quota、實際政策封鎖、帳號、真機／staging 及其他驗收仍未完成，父任務不結案。
   > **2026-10-02 開機額度子項進度**：DP-106 重現並修正「額度已滿時開機顯示空白預設資料、匯出為空」，改為沿用仍可讀的內容並持續警告；補上 production 回歸與 9 個單元案例，見同份交接 §5.16。SecurityError／實際政策封鎖、開機額度滿＋不可讀資料的瀏覽器流程、帳號快取、Chromium 以外的瀏覽器、真機／staging 及其他驗收仍未完成，父任務不結案。
   > **2026-10-03 公告不可回寫子項進度**：DP-110 把本條的「確認已部署 release note 不再被同版號改寫」做成部署 workflow 的一步，上傳產物前比對線上 `version.json`，見同份交接 §5.17。這一步尚未在 runner 上實際跑過，也只看得到此刻線上的那一版；資料刪除、隱私說明、錯誤監控、效能 budget、真機／staging 等其餘驗收仍未完成，父任務不結案。
+  > **2026-10-04 部署證據補正（DP-124）**：上述「尚未在 runner 上實際跑過」是加入當下的歷史。2026-10-03 部署 0.4.1 的 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407)，head `d713b52b48765bb1ba6db89fb065388e134ed5e5`，Build for Pages job `111230422331` 的「Refuse to rewrite deployed release notes」成功。log 在 `2026-10-03T15:15:14.9411837Z` 明確回報 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`；整個部署成功。仍只比對當時線上的版本，DP-034 其他驗收與父任務不因此結案。
 
 ### 原型假功能與待補能力
 
@@ -289,6 +294,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+> **DP-124 結案（2026-10-04）：** 由 Backlog 經 Next、In Progress 完成。唯讀核對部署 run／head／job 第 10 步與 decoded log，於 DP-034 進度、DP-110 Done 與部署交接 §5.17 三處新增證據；保留原文，不修改 workflow。`git diff --check` 通過，PR 僅 tasks.md 與 docs/deployment.md；未觸發部署。
+
+- [x] **DP-124 — 更正 DP-110「尚未在 runner 上跑過」的過時紀錄（2026-10-04 驗收發現，低）：** DP-110 的 Done 條目、DP-034 的 DP-110 子項進度與 `docs/deployment.md` §5.17 都寫著部署 workflow 的公告檢查還沒實際執行過；2026-10-03 部署 0.4.1 時（run `37132293407`，head `d713b52`）已執行並通過（`0.4.1 replaces 0.4.0, whose notes are unchanged`）。`deploy-staging.yml` 註解寫的是「在加入當下」，不用改。**驗收條件**：三處補上實際執行結果，不刪原文。見同份報告 §3.5。
 
 > **DP-125 結案補正（2026-10-04）：** 由 Backlog 經 Next、In Progress 完成。新增／改名採 300 Unicode code point 上限，domain 與事件／待辦／子項／改名四處 UI 共用；301 字拒絕並保留草稿，300 emoji 可以保存。舊 guest v1–v4 超長標題完整保留／備份，後續只准同種類同 id 未变的標題沿用，修改須縮短；匯入新資料與 account cache 保持嚴格。規則見 ADR §2。完整 unit 867／867、60 檔與 7 個 posttest 通過；新 browser cases 4／4（mobile＋desktop、Intl Asia/Taipei），既有待辦改名 4／4（Intl America/New_York）；lint／typecheck／build／check:build 通過。帳號使用 dev-only FakeSupabase，清快取重登驗證遠端列；guest 驗證 reload。無 schema／RPC／release／部署變更。最後保存邊界另外跑 targeted storage／雙 adapter 回歸。
 
@@ -342,6 +351,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > 驗證：lint／typecheck／build／check:build 通過；unit **55 檔 676/676**，完整 e2e **73 passed、3 skipped**，新增手機／桌面 4 項且 browser console 0 error／warning。第一次全套 unit 與 e2e 並行時，既有 MonthView 兩項 5 秒逾時；降低並行負載後原樣完整重跑通過，未放寬 timeout。Node timezone 實際為 `Etc/GMT-8`，browser 為 `Asia/Taipei`／`America/New_York`。原稿與 App 範圍對話框已用隔離 Chromium 實際渲染並目視核對，desktop 1280×900、App mobile 390×844；Browser 連線的 localhost 顯示另一個 App，因此證據採本機 repo Playwright。未改 schema、Auth、release 版號／公告或部署，未使用 Supabase MCP／正式資料；DP-072、DP-077 與 DP-034 放行仍未完成。
 
 - [x] **DP-110 — 部署前擋下已部署公告的回寫（DP-034 子項）：** 2026-10-03 完成。新增 `scripts/check-release-notes.mjs` 與 `npm run check:release-notes`，並接進 `deploy-staging.yml` 的 build job（Configure Pages 之後、上傳產物之前；線上網址取自 `actions/configure-pages` 的 `base_url` 輸出）。兩條規則都對照線上目前的 `version.json`：(1) 那一版在 `release-notes.json` 的條目必須存在且逐欄相同，這也擋下「發布新版時回頭改到上一版」；(2) 這次產物若同版號，`dist/version.json` 必須相同，同版號重新部署程式修正仍然允許。線上回 404 視為尚未部署；其他讀取失敗一律擋下部署（fail closed）。
+  > **2026-10-04 補正（DP-124）**：下方「尚未在 runner 跑過」為加入當下的歷史。2026-10-03 0.4.1 部署 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407)，head `d713b52b48765bb1ba6db89fb065388e134ed5e5`，Build for Pages job `111230422331` 的公告不可回寫步驟成功；`2026-10-03T15:15:14.9411837Z` log 明確回報 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`，部署整體成功。原文字保留，詳見部署交接 §5.17 的補正。
   > **設計中途改掉的兩件事**：(a) 第一版規則會擋住 rollback —— 被還原的 tag 的 `release-notes.json` 不可能有在它之後才發布的版本。改為「這次的版號比線上舊」視為 rollback，只警告不阻擋。(b) 第一版在 404 路徑印出通過卻以結束碼 127 結束：回應還沒讀完就呼叫 `process.exit()`，Node 在 Windows 上觸發 libuv assertion，而這正是第一次部署會走的路徑。改為不在請求之後強制結束，失敗一律丟例外、最後才設定結束碼。
   > **實際驗證**：`npm run build` 後跑 16 個情境，全部符合預期：真實 staging（線上 0.4.0、本次 0.4.1）通過；條目被改／同版號標題不同／已部署版本不在 `release-notes.json`／不是 JSON／沒有 `version`／HTTP 500／HTTP 200 但回傳 HTML／連不上主機／`dist/version.json` 未重新 build 皆以結束碼 1 失敗並指出原因；同版號相同、欄位重排且壓縮、rollback、HTTP 404、HTTP 200 有效內容皆通過；未給參數為 2。真實 GitHub Pages 的 404 另外驗過。workflow 以 YAML parser 解析確認步驟順序，`base_url` 對照 `actions/configure-pages@v6` 的 `action.yml`。lint、typecheck、unit **55 檔 669/669**（`--maxWorkers=2`）、build、check:build 通過；完整 e2e **69 passed、3 skipped、無 flaky**（本項沒有改 runtime 或 e2e 檔案，跑它是確認沒有弄壞別的）。
   > **限制與交接**：**workflow 的這一步還沒在 runner 上實際跑過**，部署會真的發布、不能拿來探測；第一次由專案擁有者部署 0.4.1 時才會執行，線上 0.4.0 的條目未變，預期通過。只看得到此刻線上的那一版，更早版本的條目被改抓不到，仍靠審查。只在部署時檢查、不在 PR CI，避免 PR CI 依賴外部站台。驗證情境的腳本只放在 agent 的暫存目錄，沒有提交。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號。規則與細節見 [`docs/deployment.md`](docs/deployment.md) §3.4、§4 與 §5.17；DP-034 父任務及上線放行仍未完成。

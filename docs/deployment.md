@@ -563,6 +563,8 @@ DP-034 清單裡的「確認已部署 release note 不再被同版號改寫」�
 
 **限制與下一步**：**這一步還沒在 runner 上實際跑過** —— 部署會真的發布，不能拿來探測；第一次由專案擁有者部署 0.4.1 時才會執行（線上 0.4.0 的條目未變，預期通過）。只看得到「此刻線上的那一版」：更早的版本（例如 0.4.1 上線後的 0.3.0、0.4.0）沒有任何地方還在提供，改到它們的條目這個檢查抓不到，仍靠審查。檢查只在部署時跑，不在 PR 的 CI：PR CI 不依賴外部站台，代價是違規要到部署才被擋下。比對的是 `version.json` 與 `release-notes.json` 條目逐欄相同，若日後讓 generator 在 `version.json` 多寫欄位，要同步調整這個檢查。未使用 Supabase MCP／正式帳號／正式資料，不改 runtime／schema／Auth／worker template／release／版號。DP-034 父任務及上線放行仍未完成。
 
+**2026-10-04 補正（DP-124）**：上段「還沒在 runner 上實際跑過」描述加入當下。2026-10-03 專案擁有者部署 0.4.1 的 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407) 已實際執行，head 為 `d713b52b48765bb1ba6db89fb065388e134ed5e5`。Build for Pages 的 [job 111230422331](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407/job/111230422331) 第 10 步「Refuse to rewrite deployed release notes」成功；log 在 `2026-10-03T15:15:14.9411837Z` 顯示 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`，後續 artifact 上傳與 Publish to Pages 也成功。本次只唯讀核對既有 run／job／log，沒有觸發新部署；只比對當時線上版本等原有限制仍有效。
+
 ### 5.18 v0.4.2 日常功能發布候選（DP-117，2026-10-04）
 
 依持續開發／日常使用優先委託整理近期已合併功能。開工直接讀取 `https://yoyocadence.github.io/DayPop/version.json`（加唯一 query、HTTP 200），得到 **0.4.1「更新提示與資料保護」／2026-10-03**，與 repo 0.4.1 條目逐欄相同。因此前述「線上仍為 0.4.0／0.4.1 未發布」的歷史狀態已過時；0.4.1 公告也不可回寫。此次只新增 **0.4.2「日常安排更完整」**，保留所有舊公告，package／lock 版號一致，version.json／sw.js 由既有 generator 產生。user-data schema v4、worker template、migrations、Auth 與部署 workflow 不變。
