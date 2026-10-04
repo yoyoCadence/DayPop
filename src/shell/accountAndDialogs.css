@@ -1,0 +1,200 @@
+/* DP-113: DayPop-owned account/release surfaces use the existing canonical
+ * settings card, calendar editor field and scope-dialog button tokens.
+ * The source has no Auth or PWA dialog. Preserve those flows and their widths,
+ * with a scrolling body that fits inside the actual App viewport (DP-089).
+ * Scope the rules so the rest of the original calendar UI is unaffected.
+ */
+.dp-screen .dp-account-blocks {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  color: var(--fg);
+}
+
+.dp-screen .dp-account-blocks :is(.storage-scope-banner, .release-panel) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px 13px;
+  color: var(--fg);
+  box-shadow: var(--shadow);
+  backdrop-filter: none;
+}
+
+.dp-account-blocks :is(.storage-scope-banner, .release-panel) > div {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dp-account-blocks :is(.storage-scope-banner strong, .release-panel h2) {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.dp-account-blocks :is(.storage-scope-banner p, .release-panel p, .current-release) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.dp-account-blocks :is(.current-release summary, .account-sync-status) {
+  color: var(--fg);
+}
+
+.dp-account-blocks :is(.auth-action-error, .update-error) {
+  border-left: var(--bd) solid var(--accent);
+  padding-left: 8px;
+  color: var(--fg) !important;
+}
+
+/* The source's scope-dialog backdrop is black at 50%, without a blur. Keeping
+ * it inside the viewport also keeps the desktop preview frame unchanged. */
+.dp-viewport .dialog-backdrop {
+  position: absolute;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--fg);
+  font-family: var(--font-body);
+  backdrop-filter: none;
+}
+
+.dp-viewport .dialog-backdrop :is(.auth-dialog, .update-dialog) {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 20px 18px 16px;
+  color: var(--fg);
+  box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+}
+
+.dp-viewport .dialog-backdrop :is(.auth-dialog, .update-dialog) h2 {
+  color: var(--fg);
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: var(--title-ls);
+  text-transform: var(--title-tt);
+}
+
+.dp-viewport .auth-dialog h2 {
+  padding-right: 30px;
+}
+
+.dp-viewport :is(.dialog-eyebrow, .update-kicker) {
+  color: var(--muted);
+}
+
+.dp-viewport .auth-close {
+  top: 10px;
+  right: 10px;
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.dp-viewport .auth-tabs {
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.dp-viewport .auth-tabs button {
+  border-radius: calc(var(--radius) - 4px);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.dp-viewport .auth-tabs button.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+  box-shadow: none;
+}
+
+.dp-viewport :is(.google-auth-button, .auth-guest-button) {
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.dp-viewport .auth-provider-note {
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.dp-viewport .auth-form label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dp-viewport .auth-form input {
+  min-width: 0;
+  border: var(--bd) solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.dp-viewport .auth-dialog :is(.auth-feedback, .auth-feedback.error, .auth-feedback.success) {
+  border: 1px solid var(--border);
+  border-left: var(--bd) solid var(--accent);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.dp-viewport .auth-text-button {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dp-viewport .update-dialog .update-error {
+  border-left: var(--bd) solid var(--accent);
+  padding-left: 8px;
+  color: var(--fg) !important;
+}
+
+:is(.dp-account-blocks, .dialog-backdrop) .button {
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+:is(.dp-account-blocks, .dialog-backdrop) .button.primary {
+  border: var(--bd) solid var(--border);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+:is(.dp-account-blocks, .dialog-backdrop) .button.secondary {
+  border: var(--bd) solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+:is(.dp-account-blocks, .dialog-backdrop) :is(button, input, summary):focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.dp-viewport .dialog-actions {
+  flex-wrap: wrap;
+}

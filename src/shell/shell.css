@@ -289,50 +289,6 @@ body {
   }
 }
 
-/* ---------- transitional bridge for the not-yet-migrated scaffold ----------
- *
- * The calendar scaffold is gone (DP-051). What is left are the account and
- * version blocks on the 設定 screen plus the auth/update dialogs, which still
- * use the purple prototype tokens declared in `styles.css :root`. Those names
- * collide with the canonical theme tokens on an ancestor, so they are pinned
- * back here rather than by editing `styles.css`. Deleted with the last of the
- * scaffold in DP-014.
- */
-
-.dp-screen .dp-legacy-scaffold,
-.dp-viewport .dialog-backdrop {
-  --ink: #2e2a3b;
-  --muted: #756f83;
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-soft: #faf8ff;
-  --line: #e8e0f3;
-  --primary: #7356d8;
-  --primary-dark: #5d40bf;
-  --primary-soft: #eee8ff;
-  --accent: #ff8da1;
-  --success: #388f70;
-  --shadow: 0 16px 42px rgba(74, 53, 116, 0.12);
-  color: #2e2a3b;
-  font-family:
-    Inter, ui-rounded, "SF Pro Rounded", "Noto Sans TC", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-/* Preserved-but-not-yet-redesigned blocks embedded in a canonical screen. */
-.dp-screen .dp-legacy-scaffold {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-/* Dialogs are rendered inside the App viewport, so keep their backdrop inside
-   it — a `position: fixed` backdrop breaks out of the desktop preview frame.
-   z-index clears the tab bar (35) and the floating overlay layer (40). */
-.dp-viewport .dialog-backdrop {
-  position: absolute;
-  z-index: 90;
-}
-
 /* ---------- short viewports (phone landscape) — DP-078 ----------
  *
  * Companion to the block at the end of `calendar.css`; see that comment for

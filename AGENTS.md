@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **帳號與版本主題（DP-113）：** `src/shell/accountAndDialogs.css` 讓設定的帳號／版本（`.dp-account-blocks`）與 Auth、更新提示／公告吃既有 canonical 卡片／dialog／欄位／按鈕 token，已移除 `shell.css` 紫色 scaffold bridge。原稿無 Auth／PWA 畫面，依自主開發委託採用原稿控制項而保留自有資訊架構與 dialog 寬度，不宣稱逐像素還原。遮罩留在 viewport 內，dialog 本身可捲動且最多佔可用高度，帳號卡片可換行。舊 `styles.css` 仍有其他歷史樣式，不在本次廣泛清理；不得重新加回固定紫色變數。六套主題 palette、Auth／更新行為、資料、版本與部署不變；DP-014 父項仍未結案，決策見 ADR §3。
+
 - **跨午夜週格拖曳（DP-072）：** `weekDrag.ts` 以完整起訖在 display timezone 逐端做日曆日／牆上分鐘位移，`EventPatch.timedInterval` 是純領域資料邊界，不送新 DB 欄位或 RPC 參數；與舊 date/start/end/allDay/timezone/wallTimeZone 互斥，僅適用 timed event 且正區間。任一片段移動整筆，最後片段才能 resize；24:00 結束也用完整區間，resize 保留起點精確 instant、短於 15 分鐘拒絕。`WeekView` 重切所有預覽片段但不變動 rail；pointercancel 與不同 pointer id 不可提交，重新掛回原 block 後在 scope 捕捉焦點前還原。全部 scope 以 `seriesIntervalForDrag()` 按事件時區的時鐘／日數套回系列錨點（含 DST），不複製 occurrence 的日期，也不拆 domain event。ADR §6 的舊「跨午夜不可拖曳」註記已由此決策取代；DP-077 真機即時回饋仍未驗證。
 
 - **多日 timed event 保存（DP-112）：** `applyEventPatch()` 在未變動日期／時鐘／timezone 時保留精確起訖 instant（秒數與 DST 回撥後一次也不重算）。真正變更時間時，保留來源在操作時區超出一般同日／隔夜推導的日數跨度，結束日重新解析而非固定 `+24h`；一般隔夜推導仍保留，不能把跨時區系列拖曳後的 1 小時夜班拉成 25 小時。sheet 讀事件自身時區，grid 讀 display timezone，顯式換時區仍沿重錨契約。`eventTimezoneOptions()` 接收原 startsAt，未變動的回撥讀法顯示實際偏移。未新增 patch／schema；跨午夜格線拖曳仍屬 DP-072，真正時間變更與 occurrence expansion 維持既有分鐘精度。具體規則見 ADR §6。
