@@ -11,7 +11,7 @@
   color: var(--fg);
 }
 
-.dp-screen .dp-account-blocks :is(.storage-scope-banner, .release-panel) {
+.dp-screen .dp-account-blocks :is(.storage-scope-banner, .release-panel, .data-privacy-card) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -44,6 +44,34 @@
 
 .dp-account-blocks :is(.current-release summary, .account-sync-status) {
   color: var(--fg);
+}
+
+/* DP-118: native disclosure in the same canonical settings card. */
+.dp-screen .dp-account-blocks .data-privacy-card {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.data-privacy-card summary {
+  min-height: 24px;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.data-privacy-card h3 {
+  margin: 12px 0 4px;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.data-privacy-card p {
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .dp-account-blocks :is(.auth-action-error, .update-error) {

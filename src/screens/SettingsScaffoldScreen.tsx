@@ -21,6 +21,7 @@ import { THEMES, THEME_IDS } from '../theme/themes';
 import { CalendarEditDialog } from './CalendarEditDialog';
 import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
+import { DataPrivacyCard } from './DataPrivacyCard';
 import './screens.css';
 import './calendarManage.css';
 import './dataTransfer.css';
@@ -586,6 +587,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             }}
           />
         ) : null}
+
+        <DataPrivacyCard />
 
         <div className="dp-section-label">版本與更新</div>
         <div className="dp-account-blocks">
