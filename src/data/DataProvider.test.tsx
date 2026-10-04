@@ -65,6 +65,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
     replaceEventOccurrence: respond,
     addTodo: respond,
     toggleTodo: respond,
+    renameTodo: respond,
     deleteTodo: respond,
     addSticker: respond,
     deleteSticker: respond,
@@ -77,6 +78,24 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('serializes deletion before awaited rename, reports refusal and continues the queue', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '先刪除', date: '2026-08-08' })).todos[0]!;
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    await act(async () => {
+      latest().actions.deleteTodo(todo.id);
+      await expect(latest().actions.renameTodo(todo.id, '不能復活')).rejects.toThrow('找不到待辦');
+    });
+    const refused = latest().state;
+    expect(refused.status).toBe('ready');
+    expect(refused.status === 'ready' ? refused.data.todos : null).toEqual([]);
+    expect(refused.status === 'ready' ? refused.warning?.kind : null).toBe('write-failed');
+    await act(async () => { latest().actions.addTodo({ title: '後續正常', date: '2026-08-08' }); });
+    const saved = latest().state;
+    expect(saved.status === 'ready' ? saved.data.todos[0]?.title : null).toBe('後續正常');
+    expect(saved.status === 'ready' ? saved.warning : null).toBeUndefined();
+  });
   it('paints the first frame with real data instead of a loading state', async () => {
     await render(
       <DataProvider>

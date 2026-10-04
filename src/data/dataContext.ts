@@ -56,6 +56,8 @@ export interface DataActions {
     patch: EventPatch,
   ): void;
   addTodo(input: NewTodoInput): void;
+  /** Awaited so an inline editor keeps its draft if the write is refused. */
+  renameTodo(id: string, title: string): Promise<void>;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;
   addSticker(input: NewStickerInput): void;

@@ -67,6 +67,7 @@ export interface DayPopRepository {
     patch: EventPatch,
   ): Promise<DayPopUserData>;
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
+  renameTodo(id: string, title: string): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
   addSticker(input: NewStickerInput): Promise<DayPopUserData>;

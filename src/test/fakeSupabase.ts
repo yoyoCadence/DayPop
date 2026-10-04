@@ -452,7 +452,7 @@ class FakeQuery implements PromiseLike<QueryResult> {
           return next;
         }),
       );
-      return { data: updated, error: null };
+      return { data: this.#single ? (updated[0] ?? null) : updated, error: null };
     }
 
     if (this.#mode === 'delete') {

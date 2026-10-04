@@ -112,6 +112,30 @@ function bootstrapped() {
 }
 
 describe('SupabaseDayPopRepository load', () => {
+  it('title edit sends only the title, keeps the snapshot on failure and never recreates missing rows', async () => {
+    const { db, repository } = bootstrapped();
+    const before = await repository.load();
+    db.failures.set('todos', 'network failed');
+    await expect(repository.renameTodo(TODO, '新標題')).rejects.toThrow(RemoteDataError);
+    db.failures.delete('todos');
+    expect(await repository.load()).toEqual(before);
+    const saved = await repository.renameTodo(TODO, '  新標題  ');
+    expect(db.writes.at(-1)).toEqual({ table: 'todos', row: { title: '新標題' } });
+    expect(saved.todos[0]!.title).toBe('新標題');
+    db.tables.set('todos', []);
+    await expect(repository.renameTodo(TODO, '不能重建')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')).toEqual([]);
+    expect(saved.todos[0]!.title).toBe('新標題');
+  });
+
+  it('owner-filtered title update refuses a row whose ownership changed after load', async () => {
+    const { db, repository } = bootstrapped();
+    await repository.load();
+    db.seed('todos', [todoRow({ owner_id: OTHER_OWNER })]);
+    await expect(repository.renameTodo(TODO, '不能改別人')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')[0]!.title).toBe('既有待辦');
+    expect(db.writes).toEqual([]);
+  });
   it('builds a validated document out of the account rows', async () => {
     const { repository } = bootstrapped();
 

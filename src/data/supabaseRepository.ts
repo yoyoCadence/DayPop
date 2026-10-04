@@ -39,6 +39,7 @@ import {
   findEvent,
   findEventException,
   findTodo,
+  renamedTodo,
   replaceEventOccurrence,
   toggleTodoCompletion,
   withEvent,
@@ -402,6 +403,18 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     if (!todo) return data;
     const draft = toggleTodoCompletion(todo, new Date().toISOString());
     return this.#commit(withTodo(data, await this.#upsertTodo(draft)));
+  }
+
+  async renameTodo(id: string, title: string): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = renamedTodo(data, id, title, new Date().toISOString());
+    const { data: row, error } = await requestRemote(
+      '修改待辦標題',
+      this.client.from('todos').update({ title: draft.title })
+        .eq('id', id).eq('owner_id', this.userId).select('*').single(),
+    );
+    if (error || !row) throw new RemoteDataError('修改待辦標題', error ?? '待辦已不存在或無法存取');
+    return this.#commit(withTodo(data, todoFromRow(row)));
   }
 
   async deleteTodo(id: string): Promise<DayPopUserData> {

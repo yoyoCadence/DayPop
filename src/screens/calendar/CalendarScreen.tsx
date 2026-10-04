@@ -59,6 +59,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     replaceEventOccurrence,
     addTodo,
     toggleTodo,
+    renameTodo,
     deleteTodo,
     addSticker,
     deleteSticker,
@@ -485,6 +486,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         onAddTodo={addTodo}
         onToggleTodo={toggleTodo}
         onDeleteTodo={deleteTodo}
+        onRenameTodo={renameTodo}
         onAddSticker={addSticker}
         onDeleteSticker={deleteSticker}
       />

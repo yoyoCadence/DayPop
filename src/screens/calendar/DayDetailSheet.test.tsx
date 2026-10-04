@@ -88,6 +88,7 @@ function render(overrides: Partial<DayDetailSheetProps> = {}) {
     onAddTodo: vi.fn(),
     onToggleTodo: vi.fn(),
     onDeleteTodo: vi.fn(),
+    onRenameTodo: vi.fn().mockResolvedValue(undefined),
     onAddSticker: vi.fn(),
     onDeleteSticker: vi.fn(),
     ...overrides,
@@ -107,6 +108,55 @@ const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
 
 describe('DayDetailSheet subtasks (DP-116)', () => {
+  function changeTitle(value: string) {
+    const input = container.querySelector<HTMLInputElement>('[aria-label="待辦標題"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    return input;
+  }
+  it('parent edit cancels with Escape, keeps the day sheet and restores focus without writing', () => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('button[aria-label="修改 旅行 的標題"]'));
+    const input = changeTitle('取消的草稿');
+    expect(document.activeElement).toBe(input);
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(container.querySelector('[aria-label="待辦標題"]')).toBeNull();
+    expect(document.activeElement).toBe(container.querySelector('button[aria-label="修改 旅行 的標題"]'));
+    expect(props.onRenameTodo).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
+  it('child edit rejects blanks, trims the title and waits for confirmation before closing', async () => {
+    let finish!: () => void;
+    const rename = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)], onRenameTodo: rename });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    click(container.querySelector('button[aria-label="修改 訂房 的標題"]'));
+    let input = changeTitle('  ');
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(rename).not.toHaveBeenCalled();
+    input = changeTitle('  預訂飯店  ');
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(rename).toHaveBeenCalledExactlyOnceWith('child', '預訂飯店');
+    expect(input.disabled).toBe(true);
+    expect(container.querySelector('.cal-day-sub-count')?.textContent).toContain('1/1');
+    await act(async () => { finish(); });
+    expect(container.querySelector('[aria-label="待辦標題"]')).toBeNull();
+  });
+  it('failed title edit keeps the draft and can retry once the repository recovers', async () => {
+    const rename = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+    render({ todos: [todo('parent', null, '旅行')], onRenameTodo: rename });
+    click(container.querySelector('button[aria-label="修改 旅行 的標題"]'));
+    const input = changeTitle('新標題');
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(input.value).toBe('新標題');
+    expect(input.disabled).toBe(false);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('尚未保存');
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(rename).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('[aria-label="待辦標題"]')).toBeNull();
+  });
   function todo(id: string, parentId: string | null, title: string, done = false): TodoItem {
     return { id, parentId, title, calendarId: CALENDAR, dueDate: DATE, priority: 'none', completedAt: done ? '2026-08-01T00:00:00.000Z' : null, sortOrder: id === 'parent' ? 0 : 1, sharingScope: 'inherit', createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z' };
   }

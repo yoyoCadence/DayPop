@@ -74,6 +74,7 @@ const AUTH_INITIALIZING_REPOSITORY: DayPopRepository = {
   replaceEventOccurrence: unavailable,
   addTodo: unavailable,
   toggleTodo: unavailable,
+  renameTodo: unavailable,
   deleteTodo: unavailable,
   addSticker: unavailable,
   deleteSticker: unavailable,

@@ -1,4 +1,4 @@
-﻿# 日蹦 DayPop — Tasks
+# 日蹦 DayPop — Tasks
 
 本檔案是專案的輕量任務板。任務依賴順序為：確認產品與 repo 基線 → 保全完整 Claude Design → 建立可維護前端 → 建立 Supabase schema／RLS → 登入與資料遷移 → 帳號資料保存 → 品質與部署。目前已進入實作階段。
 
@@ -274,6 +274,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-120 — 待辦與子項標題編輯（2026-10-04）：** 由 Backlog → Next → In Progress 完成，從 `5e0e060` 獨立開分支，DP-119 合併後接最新 main（`0579e28`）。日詳情父待辦／顯示中的子項有 inline 改名；24×24 編輯按鈕、16px native input 沿原稿卡片／欄位 token，不改原展開／勾選／刪除。Enter 保存，空白拒絕、未變更／取消／Escape 不寫入並還原焦點，Escape 不關外層 sheet；awaited 保存防重複，可恢復失敗保留草稿重試。共用 renamedTodo 只改 title／timestamp、其他欄位全保留；guest write barrier、account title-only owner update／single 經既有 queue，成功才更新 snapshot／cache、不 upsert 已刪除列。FakeSupabase 的 update/single 回傳形狀補正，仍只用 dev harness；corrupt／future 復原與帳號切換優先。
+  > **驗證與界線：** lint、typecheck、843/843 Vitest（59 檔）＋7/7 Node、build／check:build 通過。13 個新單元案例涵蓋資料保留、blank／missing、owner 範圍、失敗不改 durable data／cache、不重建、queue 復原、取消／焦點／等待／重試；4 個新 browser cases（與原子項案例共 8/8）涵蓋取消／空白／未變更不寫入、父與完成子項保存、reload、清 cache 重登與 guest bytes 保留，Intl 為 America/New_York、display Asia/Taipei、console 0。原稿實際渲染只核對卡片，沒有改名能力及 canonical 日期依據；375×667 漫畫淺／深色、1280×900 像素深色的最終欄位無溢出、2px 焦點、sheet 在 viewport 內並保留截圖。資料範圍與設計差異見 ADR §2／source-of-truth／baseline；日期／優先度／排序未接，未新增 schema／RPC／release／部署，staging 仍直接確認為 0.4.1。
 
 - [x] **DP-119 — 可執行的 JS／CSS 產物大小 budget（2026-10-04）：** 由 Backlog → Next → In Progress 完成，從 `d253696` 獨立開分支，DP-118 合併後接到最新 main（`5e0e060`）。performance-budget.json 設 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip；check:build 按 Buffer bytes 與逐檔 gzip 加總所有 JS／MJS／CSS（含 worker），配置缺漏／無效、讀取失敗或任一超限皆拒絕。CI 三種 base 與 deploy 既有閘門沿用，未改 workflow；基線與調整規則見 docs/performance-budget.md／ADR §7。七項 Node 回歸由 npm test 的 posttest 執行，保留 Vitest 選檔。另對真正 dist 加入各自可單獨通過的小 chunk，驗證 JS／CSS raw／gzip 四種總量超限均使 CLI exit 1，另一指標仍低於上限；壞 JSON／缺漏 limits 亦拒絕，所有測試產物還原後通過。
   > **驗證：** lint、typecheck、830/830 Vitest（59 檔）＋7/7 Node、三種 base build／check:build、production guest CRUD／真實 SW 更新 10/10 e2e 均通過，browser Intl 為 Asia/Taipei、console 0。首次預設並行的全套有兩個既有畫面案例 5 秒逾時，限制本機 maxWorkers=4 後全套通過，未延長 timeout、改斷言或 CI；PR CI 另驗預設環境。Vite >500 kB chunk 警告維持。本項不改 App／schema／release／部署，不代表首屏下載量、實機效能或 DP-034 父項完成。

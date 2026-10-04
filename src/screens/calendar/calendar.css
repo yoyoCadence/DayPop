@@ -1135,6 +1135,64 @@ button.cal-day-todo-title {
   overflow-wrap: anywhere;
 }
 
+.cal-day-editable-title {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-day-rename {
+  min-width: 24px;
+  min-height: 24px;
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.cal-day-title-editor {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px;
+}
+
+.cal-day-title-editor input,
+.cal-day-title-editor button {
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px 6px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+}
+
+.cal-day-title-editor button {
+  background: var(--surface-2);
+}
+
+.cal-day-title-editor input {
+  font-size: 16px;
+}
+
+.cal-day-title-editor button:disabled {
+  opacity: .5;
+}
+
+.cal-day-title-error {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .cal-day-sub-delete {
   border: 0;
   background: none;

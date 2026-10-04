@@ -124,6 +124,10 @@ export class CachedSupabaseDayPopRepository
     return this.#persist(await this.#remote.toggleTodo(id));
   }
 
+  async renameTodo(id: string, title: string): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.renameTodo(id, title));
+  }
+
   async deleteTodo(id: string): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.deleteTodo(id));
   }

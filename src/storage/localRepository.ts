@@ -15,6 +15,7 @@ import {
   createTodoFromInput,
   findEvent,
   findTodo,
+  renamedTodo,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
@@ -158,6 +159,11 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   deleteTodo(id: string): Promise<DayPopUserData> {
     return this.#mutate((data) => withoutTodo(data, id));
+  }
+
+  renameTodo(id: string, title: string): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => withTodo(data, renamedTodo(data, id, title, now)));
   }
 
   toggleTodo(id: string): Promise<DayPopUserData> {
