@@ -142,7 +142,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-04 驗收委託**：專案擁有者要求驗收最近 10 個 PR（#101–#110），之後指示「先把結果開 PR，我後續修」。agent 只記錄發現、**不改程式碼**：結果與證據見 [`docs/review-2026-10-04-recent-prs.md`](docs/review-2026-10-04-recent-prs.md)，問題登記為 Backlog 的 **DP-121–DP-125**，由專案擁有者指定後才開工。沒有發現會損壞或遺失資料的錯誤；`main`（`793d4f1`）本機完整驗證通過。建議順序：DP-121（使用者每天看得到）→ DP-123／DP-124（小修）→ DP-122（0.4.2 部署前必做）→ DP-125（既有落差）。
 
-> **2026-10-04 驗收修正委託**：專案擁有者合併 PR #111 後指示「你繼續完成吧」（先前已說「都修」）。agent 依序完成 DP-121、DP-123、DP-125、DP-124、DP-122，由 Backlog 經 Next、In Progress 移入 Done。五項都要改本檔相鄰的 Backlog 段落，拆成平行 PR 必定互相衝突，所以從最新 `origin/main`（`9c4c0c2`）開**一個** PR、每項一個 commit。公告（DP-122）放在最後，才能涵蓋最終內容。agent 不觸發部署。
+> **2026-10-04 驗收修正委託**：專案擁有者合併 PR #111 後指示「你繼續完成吧」（先前已說「都修」）。agent 預計依序處理 DP-121、DP-123、DP-125、DP-124、DP-122。**本輪因 agent 額度考量，專案擁有者指示先告一段落：只完成 DP-121 與 DP-123，DP-125、DP-124、DP-122 仍留在 Backlog**（DP-122 仍是 0.4.2 部署前必做）。五項都要改本檔相鄰的 Backlog 段落，拆成平行 PR 必定互相衝突，所以從最新 `origin/main`（`9c4c0c2`）開**一個** PR、每項一個 commit。公告（DP-122）放在最後，才能涵蓋最終內容。agent 不觸發部署。
 
 ## In Progress
 
@@ -168,7 +168,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-123 — 遊客模式的待辦輸入錯誤不應顯示「資料尚未同步」（2026-10-04 驗收發現，低）：** DP-116 在 `DataProvider.tsx:236` 把 `TodoInputError` 併進 `RemoteDataError` 的分支，產生 `write-failed` warning，`RemoteDataWarningBanner.tsx:27` 因此對遊客也顯示「資料尚未同步」；DP-120 的改名同樣會走到。只有在刪除之後、畫面更新之前送出子項或改名才會觸發，下一次寫入成功即清除。**驗收條件**：輸入錯誤的提示不提「同步」，或依是否為帳號 session 決定標題；補回歸。見同份報告 §3.4。
 - [ ] **DP-125 — 標題 300 字上限只有資料庫在擋（既有落差，低）：** `events_title_length` 與 `todos_title_length` 都是 1–300 字，但 domain validation 只要求非空且已 trim，輸入框也沒有 `maxLength`：遊客可存超過 300 字，登入帳號同樣內容會寫入失敗。不是 #101–#110 引入的，但 DP-120 的改名框（`EditableTodoTitle.tsx:69`）讓它更容易碰到。**驗收條件**：domain 與輸入框都限制 300 字，並決定遊客既有超長資料的處理方式。見同份報告 §3.6。
 
 - [x] **DP-082 — 事件 sheet 的「重複」控制項與單次／全部範圍選擇：2026-08-31 完成，分三個 PR（#71 重複 select／#72 repository 契約與 RPC／#73 範圍對話框）。**
@@ -284,6 +283,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-123 — 待辦輸入被拒不再顯示成「資料尚未同步」（2026-10-04 驗收發現，低）：** 2026-10-04 完成。新增 warning 類型 `refused`（`dataContext.ts`）：`TodoInputError` 改用它，橫幅標題為「剛才的變更沒有套用」，不提同步；帳號的同步狀態不受它影響（`SettingsScaffoldScreen` 的 `syncProblem`）。原本已有 `cached`／`write-failed` 時保留原警告，不讓被拒的指令蓋掉真正的同步問題。`RemoteDataError` 仍是 `write-failed`。**驗證**：既有兩個被拒案例改為斷言 `refused` 且訊息不含「同步」；`src/data`、`src/shell`、`src/screens` 18 檔 293/293，lint、typecheck 通過。完整 e2e 以 CI 為準。
 
 - [x] **DP-121 — 子項只在日詳情的父待辦下出現（2026-10-04 驗收發現，中）：** 2026-10-04 完成。新增 `topLevelTodos()`（`src/domain/todos.ts`），判定直接重用日詳情的 `todoGroupsOn()`、逐日計算，所以列表、寵物徽章與綜覽顯示的每一筆，都是日詳情裡的一張卡片：與父項不同天的子項、匯入資料裡的循環成員都仍看得到；沒有日期的待辦只拿掉真正的子項。`AgendaView`、`CalendarScreen` 的 `openTodoCount` 與 `OverviewScreen`（只在「待辦」分頁計算）改用它。日詳情與資料模型都沒改。這是還原原稿：原稿子項在 `t.subs` 裡，列表（`:690`）、徽章（`:1304-1306`）與綜覽（`:1253`）只看最上層。
   > **驗證**：`todos.test.ts` 新增 5 個案例（含「與每天的日詳情卡片完全相同」與循環），`AgendaView.test.tsx` 新增 1 個；新 e2e `e2e/todo-subtask-listing.spec.ts` 在 mobile／desktop 確認徽章 `2`、列表兩筆、綜覽「共 2 筆」，且日詳情仍顯示 `▸ 1/2` 與兩個子項的完成狀態，browser timezone 印出並斷言 `Asia/Taipei`。拿掉修正時 e2e 在徽章失敗（`3`），只拿掉綜覽那處時失敗在「共 4 筆」，元件測試也會變紅；放回後全綠。完整驗證結果見本 PR 的最後一個 commit 與 PR 描述。

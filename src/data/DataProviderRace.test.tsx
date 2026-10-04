@@ -57,7 +57,8 @@ describe('DataProvider concurrent writes', () => {
     expect(state.status).toBe('ready');
     if (state.status !== 'ready') throw new Error('App must remain ready');
     expect(state.data.todos).toEqual([]);
-    expect(state.warning?.kind).toBe('write-failed');
+    expect(state.warning?.kind).toBe('refused');
+    expect(state.warning?.message).not.toContain('同步');
     expect(state.warning?.message).toContain('父待辦');
     await act(async () => latest().actions.addTodo({ title: '新的待辦', date: '2026-08-06' }));
     const resumed = latest().state;
