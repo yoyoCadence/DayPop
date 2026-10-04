@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **日詳情待辦子項（DP-116）：** `DayTodoCard` 依原稿 :561 接回展開／收合、完成比例、新增／勾選／刪除；native button／form 支援鍵盤。`NewTodoInput.parentId` 沿既有欄位，新增僅一層，繼承父項日期（含 null）／日曆／分享範圍，完成狀態各自獨立。`todoGroupsOn()` 只分組原本在該日期可見的列，以 sortOrder／迭代遍歷保留多層與跨日期匯入資料；不改持久化文件或綜覽統計。DP-115 的子樹刪除仍為唯一邊界。父項被前一個 queued delete 移除等輸入拒絕用 `TodoInputError`，DataProvider 保留 ready snapshot、提示未保存並繼續 queue；不可把其他資料驗證錯誤一起視為可恢復。拖曳 handle、優先度與寵物 XP 仍未接，未新增 schema／RPC／部署。830 個單元案例／59 檔通過；4 個新 browser cases 以 America/New_York 裝置時區＋Asia/Taipei display timezone 驗證，帳號仍用 dev-only FakeSupabase。
+
 - **週檢視全天列（DP-114）：** 依 2026-10-04 持續開發／日常使用優先委託，週格在日期下方顯示全天 occurrence；沒有全天事件時不佔列。沿週 window resolver 的可見性／例外結果，inclusive 多日每個佔用日各畫一次、後续日標「續」，只走當週七天、不拆 domain event。點擊／Enter／Space 開啟具體 occurrence，編輯／刪除沿既有 scope。日期沒有 timezone，不參與 timed rail／now line／drag／resize。這是刻意擴充原稿，取代下方歷史「週檢視不顯示全天事件」的現況；決策見 ADR §6。未新增 schema 或部署。
 
 - **待辦子樹刪除（DP-115）：** `withoutTodo()` 對齊既有 PostgreSQL parent composite FK 的 ON DELETE CASCADE，以 parent index／迭代遍歷清除完整子孫、保留其他待辦；guest 文件與 authenticated snapshot 共用此邊界，遠端仍只發一個 owner-scoped delete，由 DB 原子 cascade。不能退回只過濾單列或並行發子項 delete。FakeSupabase 獨立模擬該 FK，雙 adapter reload 與 UI 已覆蓋匯入的子項／孫項；不新增 schema／RPC 或實際雲端驗收。子項新增 UI 為後續任務。

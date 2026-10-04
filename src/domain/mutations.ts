@@ -11,6 +11,7 @@ import {
 } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
 import { DomainValidationError, isIsoInstant } from './validation';
+import { TodoInputError } from './todos';
 import type {
   Calendar,
   CalendarEvent,
@@ -54,6 +55,8 @@ export interface NewTodoInput {
   title: string;
   date: string;
   calendarId?: string;
+  /** One-level subtasks inherit the existing root's date, calendar and sharing. */
+  parentId?: string;
 }
 
 export interface NewStickerInput {
@@ -493,16 +496,25 @@ export function createTodoFromInput(
   input: NewTodoInput,
   context: CreateContext,
 ): TodoItem {
+  const parent = input.parentId === undefined ? undefined : findTodo(data, input.parentId);
+  if (input.parentId !== undefined) {
+    if (!parent) throw new TodoInputError('找不到父待辦，請重新開啟待辦清單。');
+    if (parent.parentId !== null) throw new TodoInputError('子項不能再新增子項。');
+    if (parent.id === context.id) throw new TodoInputError('待辦不能是自己的子項。');
+    if (input.calendarId !== undefined && input.calendarId !== parent.calendarId) {
+      throw new TodoInputError('子項必須與父待辦屬於同一日曆。');
+    }
+  }
   return {
     id: context.id,
-    calendarId: input.calendarId ?? resolveDefaultCalendarId(data),
-    parentId: null,
+    calendarId: parent ? parent.calendarId : input.calendarId ?? resolveDefaultCalendarId(data),
+    parentId: parent?.id ?? null,
     title: input.title.trim(),
-    dueDate: input.date,
+    dueDate: parent ? parent.dueDate : input.date,
     priority: 'none',
     completedAt: null,
-    sortOrder: nextSortOrder(data.todos),
-    sharingScope: 'inherit',
+    sortOrder: nextSortOrder(parent ? data.todos.filter((todo) => todo.parentId === parent.id) : data.todos),
+    sharingScope: parent?.sharingScope ?? 'inherit',
     createdAt: context.now,
     updatedAt: context.now,
   };

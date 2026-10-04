@@ -74,6 +74,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
@@ -272,6 +273,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-116 — 日詳情待辦子項 UI（2026-10-04）：** 依日常使用優先委託由 Backlog → Next → In Progress 完成，最初從 `c97da70` 獨立開分支，DP-115 合併後接到最新 main（`5ee8246`），保留兩項 ADR／任務成果。原稿 :561 的展開／收合、完成比例、子項新增／勾選／刪除沿 canonical token；native button／form 支援 Enter／Space。新子項繼承父日期（含 null）／日曆／分享範圍，只新增一層，父與子完成獨立。迭代分組保留既有多層、跨日期與循環匯入列的可見性，不改文件；刪除共用 DP-115。
+  > 新競態回歸先重現：queued delete 父項後 add 子項原本令整個 App 進 failed。`TodoInputError` 僅代表新增的輸入拒絕，現在保留 ready snapshot、提示未保存並繼續 queue；真正文件驗證失敗仍 fail closed。完整 lint／typecheck／Vitest **830／830（59 檔）**／build／check:build 通過，build 仍有既有 >500kB chunk 提示。新增 17 個單元案例；瀏覽器新增 mobile／desktop 共 4 個子項案例，加 DP-115 的 4 個刪除回歸共 **8／8**。裝置實際 Intl 時區印出 America/New_York，display 為 Asia/Taipei，驗證兩地日期不同時仍繼承正確日期；涵蓋鍵盤、reload、清 fake account cache 重登及 guest 隔離。
+  > 原稿實際渲染後與漫畫淺／深色、桌面像素深色比對，390×844／1280×900 無水平溢出，sheet 在 viewport 內，console 0 error／warning。Chrome 的 localhost 顯示不相關 App，依現行例外改用 repo Playwright；證據在系統暫存 `daypop-dp116-proof/`。帳號使用 dev-only FakeSupabase，不宣稱真實 Auth、RLS、真機或 staging；排序／優先度／日期移動／寵物 XP 與 DP-014 父任務仍未完成。沒有 schema、RPC、release、部署或 Supabase MCP 操作；下一步優先整理日常使用的發布交接與剩餘編輯能力。
 
 - [x] **DP-115 — 刪除父待辦時清除子孫 snapshot（2026-10-04）：** 依持續開發／日常使用委託由 Backlog → Next → In Progress 完成，最初從 `7974e5c` 獨立開分支，DP-114 合併後接到最新 main（`c97da70`），兩份任務交接衝突已保留双方成果。修改前 6 個新回歸重現：guest 被完整資料驗證拒絕，authenticated 在遠端 delete 後 snapshot 因缺失 parent 驗證失敗；未宣稱 guest 原始文件已被破壞。`withoutTodo()` 改成 parent index／迭代遍歷清除全部子孫（含已完成、亂序、多層），保留其他待辦／資料。遠端仍只有一個 owner-scoped delete，由既有 composite FK 原子 cascade；FakeSupabase 獨立補 FK 模擬。沒有新 schema、RPC、Auth、release、部署或 MCP 操作。
   > **驗證：** lint／typecheck／build／check:build 通過；最新 main **813 個單元／58 檔**，涵蓋雙 adapter 回傳 snapshot／durable reload、15,000 層匯入鏈與 remote rejection／transport error 保留整樹。mobile／desktop 共 **4／4** browser cases，驗證遊客 delete／reload／繼續勾選、帳號 JSON 匯入／delete／同步／登出隔離／清測試快取後重登入讀回，實際 browser timezone `Asia/Taipei` 印出，console 0 error／warning。Chrome localhost 連到別的 App，採 repo Playwright 備援；帳號證據使用同頁 FakeSupabase，不等同真實服務 durability、RLS、Auth session restore、真機或 staging。下一段接日詳情的待辦子項 UI；DP-034 不由此結案。

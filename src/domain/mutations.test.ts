@@ -4,6 +4,7 @@ import {
   cancelEventOccurrence,
   createCalendarFromInput,
   createEventFromInput,
+  createTodoFromInput,
   createStickerFromInput,
   resolveDefaultCalendarId,
   replaceEventOccurrence,
@@ -75,6 +76,38 @@ function multiDayEvent(): CalendarEvent {
   );
   return { ...event, allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' };
 }
+
+describe('createTodoFromInput subtasks (DP-116)', () => {
+  function parentData() {
+    const data = baseData();
+    const parent = createTodoFromInput(data, { title: '旅行', date: '2026-08-06' }, { id: 'parent', now: NOW });
+    data.todos = [{ ...parent, sharingScope: 'private' }];
+    return data;
+  }
+  it('inherits parent date, calendar and privacy, and appends after siblings', () => {
+    const data = parentData();
+    const first = createTodoFromInput(data, { title: '訂房', date: '2026-08-20', parentId: 'parent' }, { id: 'child', now: NOW });
+    data.todos.push({ ...first, sortOrder: 4 });
+    const second = createTodoFromInput(data, { title: '  訂車  ', date: '2026-08-20', parentId: 'parent' }, { id: 'next', now: NOW });
+    expect(second).toMatchObject({ parentId: 'parent', dueDate: '2026-08-06', calendarId: data.calendars[0]!.id, sharingScope: 'private', title: '訂車', completedAt: null, sortOrder: 5 });
+  });
+  it('preserves a null parent due date instead of substituting the UI date', () => {
+    const data = parentData();
+    data.todos[0]!.dueDate = null;
+    expect(createTodoFromInput(data, { title: '細項', date: '2026-08-20', parentId: 'parent' }, { id: 'child', now: NOW }).dueDate).toBeNull();
+  });
+  it('rejects missing, nested, self or cross-calendar parents without changing data', () => {
+    const data = parentData();
+    const child = createTodoFromInput(data, { title: '細項', date: '2026-08-06', parentId: 'parent' }, { id: 'child', now: NOW });
+    data.todos.push(child);
+    const before = structuredClone(data);
+    expect(() => createTodoFromInput(data, { title: '細項', date: '2026-08-06', parentId: 'missing' }, { id: 'new', now: NOW })).toThrow('父待辦');
+    expect(() => createTodoFromInput(data, { title: '細項', date: '2026-08-06', parentId: 'child' }, { id: 'new', now: NOW })).toThrow('子項不能');
+    expect(() => createTodoFromInput(data, { title: '細項', date: '2026-08-06', parentId: 'parent', calendarId: OTHER_CALENDAR }, { id: 'new', now: NOW })).toThrow('同一日曆');
+    expect(() => createTodoFromInput(data, { title: '細項', date: '2026-08-06', parentId: 'parent' }, { id: 'parent', now: NOW })).toThrow('自己的子項');
+    expect(data).toEqual(before);
+  });
+});
 
 describe('resolveDefaultCalendarId', () => {
   it('prefers the flagged default over the first calendar', () => {

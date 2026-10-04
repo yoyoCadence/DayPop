@@ -1041,12 +1041,15 @@
 }
 
 .cal-day-todo {
-  display: flex;
-  align-items: center;
   margin-bottom: 5px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg);
+}
+
+.cal-day-todo-row {
+  display: flex;
+  align-items: center;
   padding: 8px 10px;
   gap: 8px;
 }
@@ -1066,9 +1069,104 @@
 }
 
 .cal-day-todo-title {
+  display: flex;
+  min-width: 0;
   flex: 1;
+  align-items: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  gap: 7px;
+  font: inherit;
   font-size: 13px;
   font-weight: 600;
+  text-align: left;
+}
+
+button.cal-day-todo-title {
+  cursor: pointer;
+}
+
+.cal-day-todo-title-text {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.cal-day-sub-count {
+  flex: none;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cal-day-subtasks {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px 8px 36px;
+  gap: 4px;
+}
+
+.cal-day-subtask {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cal-day-sub-check {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.cal-day-sub-title {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.cal-day-sub-delete {
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.cal-day-sub-add {
+  display: flex;
+  margin-top: 2px;
+  gap: 5px;
+}
+
+.cal-day-sub-add input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 6px 9px;
+  color: var(--fg);
+  font-size: 12px;
+}
+
+.cal-day-sub-add button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 0 11px;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .cal-day-overdue {

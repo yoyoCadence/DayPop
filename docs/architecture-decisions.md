@@ -32,6 +32,14 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 既有 `todos_parent_owner_calendar_fk` 是 ON DELETE CASCADE；`withoutTodo()` 原本只移除 id 那一列，留下缺失 parent 的子項。回歸確認 guest 因完整文件驗證而拒絕保存（原資料沒有被覆寫），authenticated 則可能在遠端刪除成功後，因 snapshot 驗證失敗而回報錯誤。共用 domain 函式改成清除完整子樹，包含已完成、亂序與多層匯入的後代，保留不相關待辦／其他資料；parent index 加迭代遍歷避免資料量或深度造成遞迴堆疊問題。兩個 adapter 都沿現有 seam；authenticated 仍是一個 owner-scoped delete，由既有 DB FK 原子 cascade，不分別送出多個 delete。遠端拒絕／transport rejection 保留整棵 snapshot，不樂觀移除。測試用 FakeSupabase 獨立模擬既有 composite FK；不修改 schema、RPC、Auth、release 或部署，也不把 harness 證據當成真實 RLS／服務 durability 驗收。先完成這個子項 UI 前置，再開放建立子项。
 
+### 待辦子項操作（DP-116，2026-10-04）
+
+日詳情沿原稿 :561 的卡片／展開／完成比例／細項輸入。父與子完成狀態獨立（原稿 `toggleTodo()`／`toggleSub()` 也是各自保存），勾完子項不自動勾父項；刪除父項則沿 DP-115 清除全部後代。`NewTodoInput.parentId` 為可選的純領域欄位，沿既有 `todos.parent_id` mapping／repository queue；新子項繼承已存在 root 的 calendarId、dueDate 與 sharingScope，sortOrder 依同父的兄弟序列新增。不存在的 parent、對子項繼續新增、不同 calendar 的輸入與 self parent 在任何遠端寫入前拒絕；原始 root 新增契約不變。不新增 DB 欄位／RPC／schema version。
+
+畫面只分組當日 dueDate 的列，按既有 sortOrder 呈現；多層匯入的後代以可捲動子項列表與有限縮排保留，不提供新多層建立。跨日期子項在自己日期以獨立卡片呈現，維持原先可見性；無日期待辦仍沿原有日期篩選，不由此重新安排。遍歷用 visited 防止既有異常 parent cycle 卡住畫面。拖曳排序控制與優先度等後續搬移仍明示，沒有假拖曳把手；列表／綜覽現有逐列統計維持，寵物 XP 屬 DP-041。
+
+接入子項後新增回歸重現「先刪父項、再從尚未重繪的表單排入新增子項」會被 DataProvider 視為致命錯誤。此類輸入拒絕使用獨立 `TodoInputError`，保留 ready snapshot、顯示 write-failed 訊息且 queue 可繼續；不得廣泛吞掉 persisted domain validation 或 storage write barrier 錯誤。
+
 Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 canonical domain contract；不能讓 UI 同時理解本機簡化模型與資料庫模型。
 
 | 領域 | Canonical contract |

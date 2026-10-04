@@ -63,6 +63,42 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter creates subtasks (DP-116)', (_name, create) => {
+  let repository: DayPopRepository;
+  let parentId: string;
+  beforeEach(async () => {
+    repository = await create();
+    const data = await repository.addTodo({ title: '準備旅行', date: '2026-08-06' });
+    parentId = data.todos[0]!.id;
+  });
+  it('persists a child with inherited date/calendar through reload', async () => {
+    const data = await repository.addTodo({ title: '  訂房  ', date: '2026-08-20', parentId });
+    expect(data.todos[1]).toMatchObject({ title: '訂房', parentId, dueDate: '2026-08-06', calendarId: data.todos[0]!.calendarId, completedAt: null });
+    expect(await repository.load()).toEqual(data);
+  });
+  it('keeps parent and child completion independent', async () => {
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-08-06', parentId })).todos[1]!;
+    let data = await repository.toggleTodo(child.id);
+    expect(data.todos[0]!.completedAt).toBeNull();
+    expect(data.todos[1]!.completedAt).not.toBeNull();
+    data = await repository.toggleTodo(parentId);
+    expect(data.todos[0]!.completedAt).not.toBeNull();
+    expect(data.todos[1]!.completedAt).not.toBeNull();
+    data = await repository.toggleTodo(child.id);
+    expect(data.todos[0]!.completedAt).not.toBeNull();
+    expect(data.todos[1]!.completedAt).toBeNull();
+    expect(await repository.load()).toEqual(data);
+  });
+  it('refuses missing, nested and cross-calendar parents without durable writes', async () => {
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-08-06', parentId })).todos[1]!;
+    const before = await repository.load();
+    await expect(repository.addTodo({ title: '拒絕', date: '2026-08-06', parentId: '11600000-0000-4000-8000-000000000099' })).rejects.toThrow('父待辦');
+    await expect(repository.addTodo({ title: '拒絕', date: '2026-08-06', parentId: child.id })).rejects.toThrow('子項不能');
+    await expect(repository.addTodo({ title: '拒絕', date: '2026-08-06', parentId, calendarId: '11600000-0000-4000-8000-000000000098' })).rejects.toThrow('同一日曆');
+    expect(await repository.load()).toEqual(before);
+  });
+});
+
 describe.each(adapters)('%s adapter deletes todo descendants (DP-115)', (_name, create) => {
   let repository: DayPopRepository;
   let before: DayPopUserData;
