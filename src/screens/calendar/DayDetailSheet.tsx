@@ -6,6 +6,8 @@ import {
   segmentTimeRange,
 } from '../../domain/displaySegments';
 import { eventDateInZone } from '../../domain/eventTime';
+import { todoGroupsOn } from '../../domain/todos';
+import { DayTodoCard } from './DayTodoCard';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
@@ -52,8 +54,8 @@ export interface DayDetailSheetProps {
  * 日詳情 sheet, ported from the `dayOpen` block of
  * `日曆桌寵 Calendar Pet.dc.html`. Opened by tapping a month cell.
  *
- * Todo subtasks and drag ordering exist in the domain but still have no visual
- * controls — that remains DP-014.
+ * DP-116 connects the original expandable subtask cards. Drag ordering and
+ * priority controls remain DP-014.
  */
 export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
   if (!dateKey) return null;
@@ -152,14 +154,8 @@ function DayDetailSheetBody({
   );
 
   const dayTodos = useMemo(
-    () =>
-      todos
-        .filter((todo) => todo.dueDate === dateKey)
-        .map((todo) => ({
-          todo,
-          overdue: todo.completedAt === null && todo.dueDate !== null && todo.dueDate < todayKey,
-        })),
-    [dateKey, todayKey, todos],
+    () => todoGroupsOn(todos, dateKey),
+    [dateKey, todos],
   );
 
   function submitTodo(event: FormEvent<HTMLFormElement>) {
@@ -261,40 +257,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-section">待辦清單</div>
           {dayTodos.map((row) => (
-            <div className="cal-day-todo" key={row.todo.id}>
-              <button
-                className="cal-day-check"
-                type="button"
-                aria-pressed={row.todo.completedAt !== null}
-                aria-label={`完成 ${row.todo.title}`}
-                onClick={() => onToggleTodo(row.todo.id)}
-                style={{ background: row.todo.completedAt ? 'var(--accent)' : 'transparent' }}
-              >
-                {row.todo.completedAt ? '✓' : ''}
-              </button>
-              <span
-                className="cal-day-todo-title"
-                style={{
-                  color: row.todo.completedAt ? 'var(--faint)' : 'var(--fg)',
-                  textDecoration: row.todo.completedAt ? 'line-through' : 'none',
-                }}
-              >
-                {row.todo.title}
-              </span>
-              {row.overdue && (
-                <span className="cal-day-overdue">
-                  逾期・原{date.getMonth() + 1}/{date.getDate()}
-                </span>
-              )}
-              <button
-                className="cal-day-delete"
-                type="button"
-                aria-label={`刪除 ${row.todo.title}`}
-                onClick={() => onDeleteTodo(row.todo.id)}
-              >
-                ×
-              </button>
-            </div>
+            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />
           ))}
 
           <form className="cal-day-todo-add" onSubmit={submitTodo}>
@@ -311,7 +274,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-pending">
             <span className="dp-note-task">DP-014</span>
-            待辦子項、拖曳排序與優先度已可保存，後續依原稿補上操作介面。
+            拖曳排序與優先度已可保存，後續依原稿補上操作介面。
           </div>
         </div>
       </div>

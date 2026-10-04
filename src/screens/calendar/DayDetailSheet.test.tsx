@@ -7,7 +7,7 @@ import {
   resolveEventOccurrences,
   type OccurrenceWindow,
 } from '../../domain/recurrence';
-import type { CalendarEvent, Sticker } from '../../domain/types';
+import type { CalendarEvent, Sticker, TodoItem } from '../../domain/types';
 import { DayDetailSheet, type DayDetailSheetProps } from './DayDetailSheet';
 /**
  * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
@@ -105,6 +105,51 @@ function click(element: Element | null | undefined) {
 
 const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
+
+describe('DayDetailSheet subtasks (DP-116)', () => {
+  function todo(id: string, parentId: string | null, title: string, done = false): TodoItem {
+    return { id, parentId, title, calendarId: CALENDAR, dueDate: DATE, priority: 'none', completedAt: done ? '2026-08-01T00:00:00.000Z' : null, sortOrder: id === 'parent' ? 0 : 1, sharingScope: 'inherit', createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z' };
+  }
+  it('groups child rows, shows progress, expands and toggles only the named child', () => {
+    const props = render({ todos: [todo('parent', null, '旅行'), todo('a', 'parent', '訂房'), todo('b', 'parent', '訂票', true)] });
+    expect(container.querySelectorAll('.cal-day-todo')).toHaveLength(1);
+    expect(container.querySelector('.cal-day-sub-count')?.textContent).toContain('1/2');
+    expect(container.querySelector('.cal-day-subtasks')).toBeNull();
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    click(container.querySelector('[aria-label="完成 訂房"]'));
+    expect(props.onToggleTodo).toHaveBeenCalledWith('a');
+    expect(props.onToggleTodo).toHaveBeenCalledTimes(1);
+    click(container.querySelector('[aria-label="刪除 訂票"]'));
+    expect(props.onDeleteTodo).toHaveBeenCalledWith('b');
+    click(container.querySelector('[aria-label="收合 旅行 的子項"]'));
+    expect(container.querySelector('.cal-day-subtasks')).toBeNull();
+  });
+  it('creates a trimmed child for its root and clears the draft; blank submissions do nothing', () => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    const input = container.querySelector<HTMLInputElement>('[aria-label="新增 旅行 的細項"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '  訂房  ');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(props.onAddTodo).toHaveBeenCalledWith({ title: '訂房', date: DATE, parentId: 'parent' });
+    expect(input.value).toBe('');
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(props.onAddTodo).toHaveBeenCalledTimes(1);
+  });
+  it('resets expansion when switching dates and keeps imported nested children operable', () => {
+    const props = render({ todos: [todo('parent', null, '旅行'), todo('a', 'parent', '訂房'), todo('b', 'a', '付訂金')] });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    expect(container.querySelectorAll('.cal-day-subtask')).toHaveLength(2);
+    expect(container.querySelectorAll('.cal-day-sub-add')).toHaveLength(1);
+    click(container.querySelector('[aria-label="完成 付訂金"]'));
+    expect(props.onToggleTodo).toHaveBeenCalledWith('b');
+    act(() => root.render(<DayDetailSheet {...props} dateKey="2026-08-07" />));
+    act(() => root.render(<DayDetailSheet {...props} />));
+    expect(container.querySelector('.cal-day-subtasks')).toBeNull();
+  });
+});
 
 /**
  * DP-064. The month cell for the second day of an overnight event says 「續」;

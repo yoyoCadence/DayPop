@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { DataTransferError } from '../domain/dataTransfer';
+import { TodoInputError } from '../domain/todos';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { CachedRemoteLoadError } from './cachedSupabaseRepository';
@@ -227,7 +228,9 @@ function toWriteFailureState(error: unknown, current: DataState): DataState {
   if (error instanceof DataTransferError && current.status === 'ready') {
     return current;
   }
-  if (error instanceof RemoteDataError && current.status === 'ready') {
+  // A queued subtask can find that an earlier delete removed its parent. This
+  // is a refused command, not corrupt stored data: retain the live App.
+  if ((error instanceof RemoteDataError || error instanceof TodoInputError) && current.status === 'ready') {
     return {
       ...current,
       warning: {

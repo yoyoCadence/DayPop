@@ -43,6 +43,27 @@ function latest() {
 }
 
 describe('DataProvider concurrent writes', () => {
+  it('keeps the App ready when a queued child creation finds its parent already deleted (DP-116)', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const parent = (await repository.addTodo({ title: '準備旅行', date: '2026-08-06' })).todos[0]!;
+    seen.length = 0;
+    await act(async () => root.render(<DataProvider repository={repository}><Probe /></DataProvider>));
+    await act(async () => {
+      latest().actions.deleteTodo(parent.id);
+      latest().actions.addTodo({ title: '訂房', date: '2026-08-06', parentId: parent.id });
+    });
+    const state = latest().state;
+    expect(state.status).toBe('ready');
+    if (state.status !== 'ready') throw new Error('App must remain ready');
+    expect(state.data.todos).toEqual([]);
+    expect(state.warning?.kind).toBe('write-failed');
+    expect(state.warning?.message).toContain('父待辦');
+    await act(async () => latest().actions.addTodo({ title: '新的待辦', date: '2026-08-06' }));
+    const resumed = latest().state;
+    expect(resumed.status === 'ready' ? resumed.data.todos.map((todo) => todo.title) : []).toEqual(['新的待辦']);
+  });
+
   it('starts and applies writes in UI call order', async () => {
     const base = await new LocalDayPopRepository(new MemoryStorage()).load();
     const withTitle = (title: string): DayPopUserData => ({
