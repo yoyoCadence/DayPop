@@ -75,6 +75,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
+
 > **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
@@ -144,7 +146,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-04 驗收修正委託**：專案擁有者合併 PR #111 後指示「你繼續完成吧」（先前已說「都修」）。agent 預計依序處理 DP-121、DP-123、DP-125、DP-124、DP-122。**本輪因 agent 額度考量，專案擁有者指示先告一段落：只完成 DP-121 與 DP-123，DP-125、DP-124、DP-122 仍留在 Backlog**（DP-122 仍是 0.4.2 部署前必做）。五項都要改本檔相鄰的 Backlog 段落，拆成平行 PR 必定互相衝突，所以從最新 `origin/main`（`9c4c0c2`）開**一個** PR、每項一個 commit。公告（DP-122）放在最後，才能涵蓋最終內容。agent 不觸發部署。
 
+> **2026-10-04 持續開發委託**：專案擁有者要求完善本專案，逐段開 PR 並自主合併後繼續。PR #112 已驗收並合併；承接剩餘驗收問題，依 DP-125 → DP-124 → DP-122 順序開獨立、依序合併的 PR。公告最後整理以涵蓋最終內容；DP-122 仍為 0.4.2 部署前閘門，agent 不觸發部署。
+
 ## In Progress
+
+
 
 
 
@@ -168,7 +174,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Foundation / maintainable frontend
 
-- [ ] **DP-125 — 標題 300 字上限只有資料庫在擋（既有落差，低）：** `events_title_length` 與 `todos_title_length` 都是 1–300 字，但 domain validation 只要求非空且已 trim，輸入框也沒有 `maxLength`：遊客可存超過 300 字，登入帳號同樣內容會寫入失敗。不是 #101–#110 引入的，但 DP-120 的改名框（`EditableTodoTitle.tsx:69`）讓它更容易碰到。**驗收條件**：domain 與輸入框都限制 300 字，並決定遊客既有超長資料的處理方式。見同份報告 §3.6。
+
 
 - [x] **DP-082 — 事件 sheet 的「重複」控制項與單次／全部範圍選擇：2026-08-31 完成，分三個 PR（#71 重複 select／#72 repository 契約與 RPC／#73 範圍對話框）。**
   > **2026-08-31 第三段：原稿 `:430-439` 的範圍對話框已接上，本項結案。**
@@ -283,6 +289,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+> **DP-125 結案補正（2026-10-04）：** 由 Backlog 經 Next、In Progress 完成。新增／改名採 300 Unicode code point 上限，domain 與事件／待辦／子項／改名四處 UI 共用；301 字拒絕並保留草稿，300 emoji 可以保存。舊 guest v1–v4 超長標題完整保留／備份，後續只准同種類同 id 未变的標題沿用，修改須縮短；匯入新資料與 account cache 保持嚴格。規則見 ADR §2。完整 unit 867／867、60 檔與 7 個 posttest 通過；新 browser cases 4／4（mobile＋desktop、Intl Asia/Taipei），既有待辦改名 4／4（Intl America/New_York）；lint／typecheck／build／check:build 通過。帳號使用 dev-only FakeSupabase，清快取重登驗證遠端列；guest 驗證 reload。無 schema／RPC／release／部署變更。最後保存邊界另外跑 targeted storage／雙 adapter 回歸。
+
+- [x] **DP-125 — 標題 300 字上限只有資料庫在擋（既有落差，低）：** `events_title_length` 與 `todos_title_length` 都是 1–300 字，但 domain validation 只要求非空且已 trim，輸入框也沒有 `maxLength`：遊客可存超過 300 字，登入帳號同樣內容會寫入失敗。不是 #101–#110 引入的，但 DP-120 的改名框（`EditableTodoTitle.tsx:69`）讓它更容易碰到。**驗收條件**：domain 與輸入框都限制 300 字，並決定遊客既有超長資料的處理方式。見同份報告 §3.6。
 
 - [x] **DP-123 — 待辦輸入被拒不再顯示成「資料尚未同步」（2026-10-04 驗收發現，低）：** 2026-10-04 完成。新增 warning 類型 `refused`（`dataContext.ts`）：`TodoInputError` 改用它，橫幅標題為「剛才的變更沒有套用」，不提同步；帳號的同步狀態不受它影響（`SettingsScaffoldScreen` 的 `syncProblem`）。原本已有 `cached`／`write-failed` 時保留原警告，不讓被拒的指令蓋掉真正的同步問題。`RemoteDataError` 仍是 `write-failed`。**驗證**：既有兩個被拒案例改為斷言 `refused` 且訊息不含「同步」；`src/data`、`src/shell`、`src/screens` 18 檔 293/293，lint、typecheck 通過。完整 e2e 以 CI 為準。
 

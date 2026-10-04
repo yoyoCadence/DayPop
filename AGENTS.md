@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **標題上限與舊遊客資料（DP-125）：** 事件／待辦新標題限制 300 Unicode code point，`domain/titles.ts` 共用於 validation、mutation 與四處輸入；native maxlength 為 UTF-16 外圍 600，真正上限用 code point 判斷，超限提示並保留草稿。TitleInputError 沿 refused 保持 ready／繼續 queue。舊遊客 v1–v4 超長標題仍可讀／備份，不裁切；本機寫入只保留同種類同 id 未變的超長標題，編輯須縮短，JSON 取代與新 ICS 列保持嚴格、ICS 附加保留既有列。帳號快取含 v3 migration 皆嚴格。規則見 ADR §2；未改 schema／release／部署。
+
 - **待辦標題編輯（DP-120）：** 日詳情父待辦與已顯示子項的 EditableTodoTitle 提供 inline form，24×24 編輯按鈕／16px 輸入沿現有卡片欄位 token。Enter 保存，空白拒絕，未變更／取消／Escape 不寫入、還原焦點，Escape 不關外層 sheet；awaited 保存防重複提交，可恢復失敗保持草稿。renamedTodo 保留日期／完成／階層／排序／日曆／分享範圍；renameTodo 經既有單一 queue，guest write barrier、account title-only owner update／single，不 upsert 已刪除列，成功才更新 snapshot／cache且不自動重送。corrupt／future 復原與帳號切換仍優先。新產品決策見 ADR §2；日期／優先度／排序仍未接，未新增 schema／RPC／release／部署。
 
 - **JS／CSS 產物大小上限（DP-119）：** 根目錄 performance-budget.json 保存 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip 的總量上限；check:build 計算 dist 全部 JS／MJS（含 worker）與 CSS，按 bytes 與逐檔 gzip 加總，配置缺漏／無效、讀取失敗或超限皆拒絕。既有 CI 三種 base 與 deploy 閘門沿用，不改 workflow；調高上限須在 PR 解釋原因，不能移除限制。npm test 成功後的 posttest 跑七項 Node 回歸，不改 Vitest 選檔；詳見 docs/performance-budget.md。Vite 500 kB chunk 警告維持，本項不代表首屏下載或實機效能、DP-034 父項未完成。

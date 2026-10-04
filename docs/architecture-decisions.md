@@ -28,6 +28,12 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 標題長度與舊遊客資料（DP-125，2026-10-04）
+
+事件與待辦（含子項）的新標題最多 300 個 Unicode code point，與 PostgreSQL `char_length` 一致；emoji 的 surrogate pair 算一字，組合 emoji 與結合符號按實際 code point 計。輸入沿原稿控制項，native `maxLength=600` 只作 UTF-16 外圍上限，真正的 300 字閘門由共用 domain helper、輸入提示／儲存按鈕與 submit guard 執行。超限顯示「標題最多 300 字，請縮短後再儲存」，保留草稿，不截短標題；直接 repository 命令也會在遠端 request 前拒絕，DataProvider 保持 ready 並沿 DP-123 的 refused 提示繼續 queue。
+
+舊遊客 schema v1–v4 的超長標題仍完整可讀，不因此進入 corrupt、裁切或自動改名；讀取 v4 不改原始 bytes，既有 migration 保留完整標題。後續本機寫入只允許同一種類、同一 id 且完全未變的超長標題原樣保留，其他待辦勾選、設定、刪除與合法新增不被阻擋。編輯該標題須先縮到上限；事件其他欄位的 repository patch 可保持原標題，sheet 編輯則提示先縮短。JSON／ICS 匯出保留完整標題，JSON 取代匯入與新 ICS 列嚴格驗證（超長備份須先修正標題才可匯入）；ICS 附加可保留既有超長列。登入快取（含 v3 migration）保持嚴格，不能把遊客相容規則套到帳號。未提升 schema／release、修改 DB 約束或部署。
+
 ### 待辦標題編輯（DP-120，2026-10-04）
 
 依日常使用優先與持續自主開發委託，採用 agent 建議，在日詳情的父待辦與任何已顯示子項加入標題編輯。原稿 :561 沒有此能力；保留既有展開／勾選／刪除意義，增加 24×24 編輯按鈕與 native inline form，沿原稿卡片、欄位與 surface／surface-2／fg／muted／border，輸入採 16px。這是新產品決策，不宣稱逐像素搬移。

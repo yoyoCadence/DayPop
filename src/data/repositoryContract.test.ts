@@ -63,6 +63,21 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter title limits (DP-125)', (_name, create) => {
+  it('accepts 300 emoji and rejects 301 before changing durable data', async () => {
+    const repository = await create();
+    const title = '😀'.repeat(300);
+    const todo = (await repository.addTodo({ title, date: '2026-10-04' })).todos[0]!;
+    const event = (await repository.addEvent({ title, date: '2026-10-04', allDay: true, start: '09:00', end: '10:00' })).events[0]!;
+    const before = await repository.load();
+    await expect(repository.addTodo({ title: title + '😀', date: '2026-10-04' })).rejects.toThrow('最多 300');
+    await expect(repository.renameTodo(todo.id, title + '😀')).rejects.toThrow('最多 300');
+    await expect(repository.addEvent({ title: title + '😀', date: '2026-10-04', allDay: true, start: '09:00', end: '10:00' })).rejects.toThrow('最多 300');
+    await expect(repository.updateEvent(event.id, { title: title + '😀' })).rejects.toThrow('最多 300');
+    expect(await repository.load()).toEqual(before);
+  });
+});
+
 describe.each(adapters)('%s adapter renames todos (DP-120)', (_name, create) => {
   it('renames parent and completed child without changing relationships through reload', async () => {
     const repository = await create();

@@ -78,6 +78,15 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('refuses an overlong command while retaining the app and allowing the next write', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    const before = latest().state;
+    await act(async () => { latest().actions.addTodo({ title: '字'.repeat(301), date: '2026-10-04' }); });
+    expect(latest().state).toMatchObject({ ...before, warning: { kind: 'refused', message: expect.stringContaining('最多 300') } });
+    await act(async () => { latest().actions.addTodo({ title: '正常', date: '2026-10-04' }); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ title: '正常' }] } });
+  });
   it('serializes deletion before awaited rename, reports refusal and continues the queue', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await repository.load();

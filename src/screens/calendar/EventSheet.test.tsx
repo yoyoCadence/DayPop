@@ -110,6 +110,23 @@ const submit = () =>
 
 const chips = () => [...container.querySelectorAll('.cal-cal-chip')];
 
+describe('EventSheet title limits (DP-125)', () => {
+  it.each([null, { ...timedEvent(), title: '字'.repeat(301) }])('retains an overlong draft and requires shortening before saving', (editing) => {
+    const props = render({ editing });
+    type('[aria-label="標題"]', '字'.repeat(301));
+    submit();
+    expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('字'.repeat(301));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('最多 300');
+    expect(props.onAddEvent).not.toHaveBeenCalled();
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    type('[aria-label="標題"]', '😀'.repeat(300));
+    submit();
+    expect(editing ? props.onUpdateEvent : props.onAddEvent).toHaveBeenCalled();
+    expect(props.onClose).toHaveBeenCalled();
+  });
+});
+
 describe('EventSheet timezone (DP-111)', () => {
   const zoneSelect = () => container.querySelector<HTMLSelectElement>('[aria-label="時區"]');
   function choose(zone: string) {
