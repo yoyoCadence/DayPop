@@ -14,6 +14,11 @@ import {
   isEventAttachmentMimeType,
 } from './attachments';
 import { isRecurrenceRule } from './recurrence';
+import { isTitleTooLong, MAX_TITLE_LENGTH } from './titles';
+
+type TitleCompatibility =
+  | { allowLegacyTitles: true }
+  | { existingTitles: Pick<DayPopUserData, 'events' | 'todos'> };
 
 export const MAX_REMINDER_COUNT = 10;
 export const MAX_REMINDER_MINUTES = 7 * 24 * 60;
@@ -59,12 +64,20 @@ export function isIanaTimezone(value: unknown): value is string {
   }
 }
 
-export function validateDayPopUserData(value: unknown): ValidationResult<DayPopUserData> {
+export function validateDayPopUserData(value: unknown, compatibility?: TitleCompatibility): ValidationResult<DayPopUserData> {
   const issues: string[] = [];
   if (!isRecord(value)) return failure('data must be an object');
 
   const calendars = validateArray(value.calendars, 'calendars', validateCalendar, issues);
-  const events = validateArray(value.events, 'events', validateEvent, issues);
+  const eventTitles = new Map(compatibility && 'existingTitles' in compatibility
+    ? compatibility.existingTitles.events.map((item) => [item.id, item.title]) : []);
+  const todoTitles = new Map(compatibility && 'existingTitles' in compatibility
+    ? compatibility.existingTitles.todos.map((item) => [item.id, item.title]) : []);
+  const acceptsLegacy = (item: unknown, titles: Map<string, string>) =>
+    compatibility && ('allowLegacyTitles' in compatibility ||
+      (isRecord(item) && typeof item.id === 'string' && titles.get(item.id) === item.title));
+  const events = validateArray(value.events, 'events',
+    (item, path, errors) => validateEvent(item, path, errors, !!acceptsLegacy(item, eventTitles)), issues);
   const attachments = validateArray(
     value.eventAttachments,
     'eventAttachments',
@@ -77,7 +90,8 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
     validateEventException,
     issues,
   );
-  const todos = validateArray(value.todos, 'todos', validateTodo, issues);
+  const todos = validateArray(value.todos, 'todos',
+    (item, path, errors) => validateTodo(item, path, errors, !!acceptsLegacy(item, todoTitles)), issues);
   const stickers = validateArray(value.stickers, 'stickers', validateSticker, issues);
   const preferences = validatePreferences(value.preferences, 'preferences', issues);
 
@@ -173,8 +187,8 @@ export function validateDayPopUserData(value: unknown): ValidationResult<DayPopU
   };
 }
 
-export function parseDayPopUserData(value: unknown): DayPopUserData {
-  const result = validateDayPopUserData(value);
+export function parseDayPopUserData(value: unknown, compatibility?: TitleCompatibility): DayPopUserData {
+  const result = validateDayPopUserData(value, compatibility);
   if (!result.success) throw new DomainValidationError(result.issues);
   return result.data;
 }
@@ -227,12 +241,12 @@ function validateCalendar(value: unknown, path: string, issues: string[]): Calen
   return valid ? (value as unknown as Calendar) : null;
 }
 
-function validateEvent(value: unknown, path: string, issues: string[]): CalendarEvent | null {
+function validateEvent(value: unknown, path: string, issues: string[], allowLegacyTitle = false): CalendarEvent | null {
   if (!isRecord(value)) return invalidObject(path, issues);
   let valid =
     validateId(value.id, `${path}.id`, issues) &&
     validateId(value.calendarId, `${path}.calendarId`, issues) &&
-    validateTrimmedString(value.title, `${path}.title`, issues) &&
+    validateTitle(value.title, `${path}.title`, issues, allowLegacyTitle) &&
     validateNullableString(value.location, `${path}.location`, issues) &&
     validateNullableString(value.notes, `${path}.notes`, issues) &&
     validateReminderMinutes(value.reminderMinutes, `${path}.reminderMinutes`, issues) &&
@@ -364,13 +378,13 @@ function validateEventException(
   return valid ? (value as unknown as EventException) : null;
 }
 
-function validateTodo(value: unknown, path: string, issues: string[]): TodoItem | null {
+function validateTodo(value: unknown, path: string, issues: string[], allowLegacyTitle = false): TodoItem | null {
   if (!isRecord(value)) return invalidObject(path, issues);
   let valid =
     validateId(value.id, `${path}.id`, issues) &&
     validateId(value.calendarId, `${path}.calendarId`, issues) &&
     validateNullableId(value.parentId, `${path}.parentId`, issues) &&
-    validateTrimmedString(value.title, `${path}.title`, issues) &&
+    validateTitle(value.title, `${path}.title`, issues, allowLegacyTitle) &&
     validateNullableDate(value.dueDate, `${path}.dueDate`, issues) &&
     validateEnum(value.priority, ['none', 'low', 'medium', 'high'], `${path}.priority`, issues) &&
     validateNullableInstant(value.completedAt, `${path}.completedAt`, issues) &&
@@ -495,6 +509,15 @@ function validateTrimmedString(value: unknown, path: string, issues: string[]): 
   if (typeof value === 'string' && value.length > 0 && value.trim() === value) return true;
   issues.push(`${path} must be a non-empty trimmed string`);
   return false;
+}
+
+function validateTitle(value: unknown, path: string, issues: string[], allowLegacyTitle: boolean): value is string {
+  if (!validateTrimmedString(value, path, issues)) return false;
+  if (!allowLegacyTitle && isTitleTooLong(value)) {
+    issues.push(`${path} must contain at most ${MAX_TITLE_LENGTH} Unicode characters`);
+    return false;
+  }
+  return true;
 }
 
 function validateNullableString(value: unknown, path: string, issues: string[]): boolean {

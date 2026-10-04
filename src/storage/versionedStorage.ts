@@ -116,7 +116,7 @@ export function readUserData(storage: StorageLike = getAppStorage()): StorageRea
   try {
     return {
       status: 'ready',
-      envelope: { ...parsed, data: parseDayPopUserData(parsed.data) },
+      envelope: { ...parsed, data: parseDayPopUserData(parsed.data, { allowLegacyTitles: true }) },
     };
   } catch (cause) {
     return {
@@ -131,8 +131,13 @@ export function writeUserData(
   data: DayPopUserData,
   previousRevision: number,
   storage: StorageLike = getAppStorage(),
+  existingTitles?: Pick<DayPopUserData, 'events' | 'todos'>,
 ): StoredEnvelope {
-  const envelope = createEnvelope(parseDayPopUserData(data), previousRevision + 1);
+  // Only an identical title on an existing row may keep the pre-DP-125 length.
+  // The local adapter passes its snapshot re-read at the write barrier;
+  // new documents, imported rows and changed titles use strict validation.
+  const envelope = createEnvelope(parseDayPopUserData(data,
+    existingTitles ? { existingTitles } : undefined), previousRevision + 1);
   storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
   return envelope;
 }

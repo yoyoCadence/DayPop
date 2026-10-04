@@ -108,6 +108,31 @@ const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
 
 describe('DayDetailSheet subtasks (DP-116)', () => {
+  it('keeps an overlong rename draft, then allows 300 emoji', async () => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('button[aria-label="修改 旅行 的標題"]'));
+    let input = changeTitle('字'.repeat(301));
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(input.value).toBe('字'.repeat(301));
+    expect(props.onRenameTodo).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('最多 300');
+    input = changeTitle('😀'.repeat(300));
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(props.onRenameTodo).toHaveBeenCalledExactlyOnceWith('parent', '😀'.repeat(300));
+  });
+  it.each(['新增清單項目', '新增 旅行 的細項'])('retains an overlong %s draft without creating a todo', (label) => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    const input = container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '字'.repeat(301));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(props.onAddTodo).not.toHaveBeenCalled();
+    expect(input.value).toBe('字'.repeat(301));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('最多 300');
+  });
   function changeTitle(value: string) {
     const input = container.querySelector<HTMLInputElement>('[aria-label="待辦標題"]')!;
     act(() => {

@@ -1,4 +1,5 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import {
   EVENT_ATTACHMENT_MIME_TYPES,
   eventAttachmentFileIssue,
@@ -338,6 +339,7 @@ function EventSheetForm({
     // be wrong twice over: it is not an event, and the原檔 never invents a
     // title for a todo.
     const trimmed = title.trim();
+    if (isTitleTooLong(trimmed)) return;
     if (mode !== 'event' && !editing && !trimmed) return;
     const named = trimmed || DEFAULT_EVENT_TITLE;
     const times = { start: allDay ? '09:00' : start, end: allDay ? '10:00' : end };
@@ -405,7 +407,7 @@ function EventSheetForm({
               取消
             </button>
             <strong>{heading}</strong>
-            <button type="submit">儲存</button>
+            <button type="submit" disabled={isTitleTooLong(title)}>儲存</button>
           </div>
 
           <div className="cal-sheet-body">
@@ -423,11 +425,14 @@ function EventSheetForm({
             <input
               className="cal-title-input"
               value={title}
+              maxLength={MAX_TITLE_INPUT_LENGTH}
+              aria-invalid={isTitleTooLong(title)}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="標題"
               aria-label="標題"
               autoFocus
             />
+            {isTitleTooLong(title) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
 
             {options.length > 0 && (
               <>

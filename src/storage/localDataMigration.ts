@@ -105,7 +105,7 @@ export function migrateV1UserData(value: V1UserData, migratedAt: string): DayPop
     createdAt: todo.createdAt,
     updatedAt: todo.updatedAt,
   }));
-  return parseDayPopUserData(next);
+  return parseDayPopUserData(next, { allowLegacyTitles: true });
 }
 
 /**
@@ -125,13 +125,13 @@ export function migrateV2UserData(value: unknown): DayPopUserData {
       ...value.preferences,
       themeId: value.preferences.themeId ?? 'manga',
     },
-  });
+  }, { allowLegacyTitles: true });
 }
 
 /** Schema v4 adds attachment metadata; existing v3 guest data has no blobs. */
 export function migrateV3UserData(value: unknown): DayPopUserData {
   if (!isRecord(value)) throw new Error('schema v3 資料內容不完整');
-  return parseDayPopUserData({ ...value, eventAttachments: [] });
+  return parseDayPopUserData({ ...value, eventAttachments: [] }, { allowLegacyTitles: true });
 }
 
 function isV1Event(value: unknown): value is V1CalendarEvent {

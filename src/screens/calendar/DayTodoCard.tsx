@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from 'react';
 import type { DayTodoGroup } from '../../domain/todos';
 import type { NewTodoInput } from '../../domain/mutations';
 import { EditableTodoTitle } from './EditableTodoTitle';
+import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 
 interface DayTodoCardProps extends DayTodoGroup {
   dateKey: string;
@@ -26,7 +27,7 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
 
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() || isTitleTooLong(draft)) return;
     onAddTodo({ title: draft.trim(), date: dateKey, parentId: todo.id });
     setDraft('');
   }
@@ -60,10 +61,11 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
           })}
           {canAdd && (
             <form className="cal-day-sub-add" onSubmit={add}>
-              <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="新增細項…" aria-label={`新增 ${todo.title} 的細項`} />
-              <button type="submit" aria-label={`新增 ${todo.title} 的子項`}>＋</button>
+              <input value={draft} maxLength={MAX_TITLE_INPUT_LENGTH} aria-invalid={isTitleTooLong(draft)} onChange={(event) => setDraft(event.target.value)} placeholder="新增細項…" aria-label={`新增 ${todo.title} 的細項`} />
+              <button type="submit" disabled={isTitleTooLong(draft)} aria-label={`新增 ${todo.title} 的子項`}>＋</button>
             </form>
           )}
+          {isTitleTooLong(draft) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import {
 import { resolveEventOccurrences } from './recurrence';
 import { DomainValidationError, isIsoInstant } from './validation';
 import { TodoInputError } from './todos';
+import { assertTitleLength } from './titles';
 import type {
   Calendar,
   CalendarEvent,
@@ -264,6 +265,7 @@ export function createEventFromInput(
   input: NewEventInput,
   context: CreateContext,
 ): CalendarEvent {
+  assertTitleLength(input.title);
   const common = {
     id: context.id,
     calendarId: input.calendarId ?? resolveDefaultCalendarId(data),
@@ -291,6 +293,7 @@ export function applyEventPatch(
   defaultTimezone: string,
   updatedAt: string,
 ): CalendarEvent {
+  if (patch.title !== undefined && patch.title.trim() !== event.title) assertTitleLength(patch.title);
   const previous = eventWallTime(event);
   const allDay = patch.allDay ?? event.allDay;
   const common = {
@@ -496,6 +499,7 @@ export function createTodoFromInput(
   input: NewTodoInput,
   context: CreateContext,
 ): TodoItem {
+  assertTitleLength(input.title);
   const parent = input.parentId === undefined ? undefined : findTodo(data, input.parentId);
   if (input.parentId !== undefined) {
     if (!parent) throw new TodoInputError('找不到父待辦，請重新開啟待辦清單。');
@@ -530,6 +534,7 @@ export function renamedTodo(data: DayPopUserData, id: string, title: string, now
   if (!trimmed) throw new TodoInputError('待辦標題不能空白。');
   const todo = findTodo(data, id);
   if (!todo) throw new TodoInputError('找不到待辦，請重新開啟待辦清單。');
+  assertTitleLength(trimmed);
   return { ...todo, title: trimmed, updatedAt: now };
 }
 
@@ -573,6 +578,7 @@ export function findSticker(data: DayPopUserData, id: string): Sticker | undefin
 
 /** Replaces the event with the same id, keeping its position, or appends it. */
 export function withEvent(data: DayPopUserData, event: CalendarEvent): DayPopUserData {
+  if (data.events.find((item) => item.id === event.id)?.title !== event.title) assertTitleLength(event.title);
   const exists = data.events.some((candidate) => candidate.id === event.id);
   return {
     ...data,

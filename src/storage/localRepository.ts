@@ -235,8 +235,8 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
     const current = readUserData(this.#storage);
     if (current.status !== 'ready') throw new LocalDataBlockedError(current);
 
-    const next = parseDayPopUserData(update(structuredClone(current.envelope.data)));
-    writeUserData(next, current.envelope.revision, this.#storage);
+    const next = parseDayPopUserData(update(structuredClone(current.envelope.data)), { existingTitles: current.envelope.data });
+    writeUserData(next, current.envelope.revision, this.#storage, current.envelope.data);
     return structuredClone(next);
   }
 }

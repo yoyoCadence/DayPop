@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { TodoItem } from '../../domain/types';
+import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 
 interface EditableTodoTitleProps {
   todo: TodoItem;
@@ -35,7 +36,7 @@ export function EditableTodoTitle({ todo, children, onRename }: EditableTodoTitl
 
   async function save() {
     const title = draft.trim();
-    if (!title || pending.current) return;
+    if (!title || isTitleTooLong(title) || pending.current) return;
     if (title === todo.title) {
       close();
       return;
@@ -66,10 +67,10 @@ export function EditableTodoTitle({ todo, children, onRename }: EditableTodoTitl
           event.stopPropagation();
           if (!pending.current) close();
         }}>
-          <input ref={input} aria-label="待辦標題" value={draft} disabled={saving} onChange={(event) => setDraft(event.target.value)} />
-          <button type="submit" disabled={saving || !draft.trim()}>{saving ? '保存中' : '儲存'}</button>
+          <input ref={input} aria-label="待辦標題" maxLength={MAX_TITLE_INPUT_LENGTH} aria-invalid={isTitleTooLong(draft)} value={draft} disabled={saving} onChange={(event) => setDraft(event.target.value)} />
+          <button type="submit" disabled={saving || !draft.trim() || isTitleTooLong(draft)}>{saving ? '保存中' : '儲存'}</button>
           <button type="button" disabled={saving} onClick={close}>取消</button>
-          {error && <span className="cal-day-title-error" role="alert">{error}</span>}
+          {(isTitleTooLong(draft) || error) && <span className="cal-day-title-error" role="alert">{isTitleTooLong(draft) ? TITLE_LENGTH_MESSAGE : error}</span>}
         </form>
       ) : <>
         {children}

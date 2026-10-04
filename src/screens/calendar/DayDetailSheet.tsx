@@ -7,6 +7,7 @@ import {
 } from '../../domain/displaySegments';
 import { eventDateInZone } from '../../domain/eventTime';
 import { todoGroupsOn } from '../../domain/todos';
+import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import { DayTodoCard } from './DayTodoCard';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
@@ -162,7 +163,7 @@ function DayDetailSheetBody({
 
   function submitTodo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!todoDraft.trim()) return;
+    if (!todoDraft.trim() || isTitleTooLong(todoDraft)) return;
     onAddTodo({ title: todoDraft, date: dateKey });
     setTodoDraft('');
   }
@@ -265,14 +266,18 @@ function DayDetailSheetBody({
           <form className="cal-day-todo-add" onSubmit={submitTodo}>
             <input
               value={todoDraft}
+              maxLength={MAX_TITLE_INPUT_LENGTH}
+              aria-invalid={isTitleTooLong(todoDraft)}
               onChange={(event) => setTodoDraft(event.target.value)}
               placeholder="新增清單項目…"
               aria-label="新增清單項目"
             />
-            <button type="submit" aria-label="新增待辦">
+            <button type="submit" disabled={isTitleTooLong(todoDraft)} aria-label="新增待辦">
               ＋
             </button>
           </form>
+
+          {isTitleTooLong(todoDraft) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
 
           <div className="cal-day-pending">
             <span className="dp-note-task">DP-014</span>

@@ -63,7 +63,7 @@ export function readAccountCache(
           schemaVersion: __DATA_SCHEMA_VERSION__,
           accountId,
           updatedAt: parsed.updatedAt,
-          data: migrateV3UserData(parsed.data),
+          data: parseDayPopUserData(migrateV3UserData(parsed.data)),
         },
       };
     }

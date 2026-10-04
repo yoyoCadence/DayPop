@@ -142,12 +142,12 @@ export function applyImportCommand(
     ...current,
     events: [...current.events, ...renamed.events],
     eventExceptions: [...current.eventExceptions, ...renamed.eventExceptions],
-  });
+  }, current);
 }
 
-function validated(next: DayPopUserData): DayPopUserData {
+function validated(next: DayPopUserData, current?: DayPopUserData): DayPopUserData {
   try {
-    return parseDayPopUserData(next);
+    return parseDayPopUserData(next, current ? { existingTitles: current } : undefined);
   } catch (cause) {
     throw new DataTransferError(
       `匯入後的資料無法通過驗證，沒有匯入任何資料。（${
