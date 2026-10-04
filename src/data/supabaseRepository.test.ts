@@ -195,6 +195,25 @@ describe('SupabaseDayPopRepository load', () => {
 });
 
 describe('SupabaseDayPopRepository writes', () => {
+  it.each(['failures', 'rejections'] as const)('keeps the complete todo tree after a %s deletion error (DP-115)', async (failureKind) => {
+    const { db, repository } = bootstrapped();
+    db.seed('todos', [
+      todoRow(),
+      todoRow({ id: OTHER_OWNER, parent_id: TODO, title: '子項' }),
+      todoRow({ id: IMPORT_CALENDAR, parent_id: OTHER_OWNER, title: '孫項' }),
+    ]);
+    await repository.load();
+    const rows = structuredClone(db.rows('todos'));
+    db[failureKind].set('todos', 'deletion unavailable');
+    await expect(repository.deleteTodo(TODO)).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')).toEqual(rows);
+    db[failureKind].clear();
+    // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
+    const next = await repository.toggleTodo(TODO);
+    expect(next.todos.map((todo) => todo.title)).toEqual(['既有待辦', '子項', '孫項']);
+    expect(await repository.load()).toEqual(next);
+  });
+
   it('refuses to edit before the document has been loaded', async () => {
     const { repository } = bootstrapped();
 
