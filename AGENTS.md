@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **資料與隱私說明（DP-118）：** 設定的 `DataPrivacyCard` 放在資料備份之後，預設收合，沿 canonical 卡片／native details 與既有 2px summary 焦點；Enter／Space 可操作，只有說明文字，沒有 storage／repository／Auth handler 或追蹤請求。內容交代 guest／account／Supabase Auth／Google、私人附件、未加密且不含附件的備份、登出不清雲端或 cache、逐筆／父待辦刪除與日曆內容搬移，並明示尚無一鍵清空／帳號刪除。事實對照表見 docs/data-and-privacy.md，變更能力時須同步文案；不把這張卡片當成正式政策、完整刪除能力或 DP-034 父項已完成。未改 schema／Auth／release／部署。
+
 - **日常功能發布準備（DP-117）：** 2026-10-04 直接讀取 staging `version.json` 確認線上已是 v0.4.1「更新提示與資料保護」，因此 0.4.1 公告自此也不可回寫（下方「0.4.1 尚未部署」是歷史）。本次將 App release 升為 v0.4.2「日常安排更完整」，只更新 package／lock 版號、新增公告並以既有 generator 產生 version.json／sw.js；schema 仍為 v4、worker template 不變。公告涵蓋 DP-072／075／083／111–116，不保證 DP-077 真機拖曳回饋。`check:release-notes` 對實際線上 0.4.1 通過，歷史條目逐欄不變。這是發布候選準備，未觸發 owner 手動部署，不能把 main 已合併視為 staging 已更新；DP-034 父任務仍未完成，交接見 docs/deployment.md §5.18。
 
 - **日詳情待辦子項（DP-116）：** `DayTodoCard` 依原稿 :561 接回展開／收合、完成比例、新增／勾選／刪除；native button／form 支援鍵盤。`NewTodoInput.parentId` 沿既有欄位，新增僅一層，繼承父項日期（含 null）／日曆／分享範圍，完成狀態各自獨立。`todoGroupsOn()` 只分組原本在該日期可見的列，以 sortOrder／迭代遍歷保留多層與跨日期匯入資料；不改持久化文件或綜覽統計。DP-115 的子樹刪除仍為唯一邊界。父項被前一個 queued delete 移除等輸入拒絕用 `TodoInputError`，DataProvider 保留 ready snapshot、提示未保存並繼續 queue；不可把其他資料驗證錯誤一起視為可恢復。拖曳 handle、優先度與寵物 XP 仍未接，未新增 schema／RPC／部署。830 個單元案例／59 檔通過；4 個新 browser cases 以 America/New_York 裝置時區＋Asia/Taipei display timezone 驗證，帳號仍用 dev-only FakeSupabase。

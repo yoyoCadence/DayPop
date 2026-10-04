@@ -4,6 +4,8 @@
 
 ## Canonical source set
 
+> **2026-10-04／DP-118 補充：** 設定在資料備份後加入預設收合的資料與隱私說明。原稿沒有此段資訊，沿 DP-113 自有設定卡片的 surface／fg／muted／border／bd／radius／shadow；native details／summary 沿既有 2px 焦點規則支援 Enter／Space，未新增 palette。內容依 repo 已有的保存／附件／備份／登出／逐筆刪除行為，不新增資料管理能力或同意流程。原稿設定畫面已實際渲染核對，語意／依據見 ADR §3 與 docs/data-and-privacy.md；DP-014／034 父項仍未結案。
+
 > **2026-10-04／DP-116 補充：** 日詳情子項依實際渲染的原稿 :561 搬移卡片、完成比例、36px 子清單縮排、16px 勾選框與新增欄位；改用 native button／form 支援鍵盤，未畫出尚無排序行為的 handle。既有 canonical 多層／跨日期資料保留操作能力；新增子項限定一層並繼承父日期／日曆／分享範圍，父與子完成各自獨立。390×844 淺／深色與 1280×900 像素深色無水平溢出、sheet 留在 viewport 內、console 0 error／warning。原稿示範日期及舊待辦模型未當作 canonical 資料依據；這取代下方「子項 UI 尚未搬移」的現況，排序／優先度與寵物 XP 仍待後續。決策見 ADR §2。
 
 > **2026-10-04／DP-114 補充：** 日常使用優先委託下，週檢視新增原稿沒有的全天列；七個 60px 欄位／36px 軌、日曆色塊、字級與邊框沿既有週格，inclusive 多日與重複事件仍用 canonical domain／scope。這是有意的功能擴充，不宣稱全天列有原稿逐像素依據，原稿週格其餘部分仍為基準；決策見 ADR §6。
