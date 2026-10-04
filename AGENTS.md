@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **待辦標題編輯（DP-120）：** 日詳情父待辦與已顯示子項的 EditableTodoTitle 提供 inline form，24×24 編輯按鈕／16px 輸入沿現有卡片欄位 token。Enter 保存，空白拒絕，未變更／取消／Escape 不寫入、還原焦點，Escape 不關外層 sheet；awaited 保存防重複提交，可恢復失敗保持草稿。renamedTodo 保留日期／完成／階層／排序／日曆／分享範圍；renameTodo 經既有單一 queue，guest write barrier、account title-only owner update／single，不 upsert 已刪除列，成功才更新 snapshot／cache且不自動重送。corrupt／future 復原與帳號切換仍優先。新產品決策見 ADR §2；日期／優先度／排序仍未接，未新增 schema／RPC／release／部署。
+
 - **JS／CSS 產物大小上限（DP-119）：** 根目錄 performance-budget.json 保存 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip 的總量上限；check:build 計算 dist 全部 JS／MJS（含 worker）與 CSS，按 bytes 與逐檔 gzip 加總，配置缺漏／無效、讀取失敗或超限皆拒絕。既有 CI 三種 base 與 deploy 閘門沿用，不改 workflow；調高上限須在 PR 解釋原因，不能移除限制。npm test 成功後的 posttest 跑七項 Node 回歸，不改 Vitest 選檔；詳見 docs/performance-budget.md。Vite 500 kB chunk 警告維持，本項不代表首屏下載或實機效能、DP-034 父項未完成。
 
 - **資料與隱私說明（DP-118）：** 設定的 `DataPrivacyCard` 放在資料備份之後，預設收合，沿 canonical 卡片／native details 與既有 2px summary 焦點；Enter／Space 可操作，只有說明文字，沒有 storage／repository／Auth handler 或追蹤請求。內容交代 guest／account／Supabase Auth／Google、私人附件、未加密且不含附件的備份、登出不清雲端或 cache、逐筆／父待辦刪除與日曆內容搬移，並明示尚無一鍵清空／帳號刪除。事實對照表見 docs/data-and-privacy.md，變更能力時須同步文案；不把這張卡片當成正式政策、完整刪除能力或 DP-034 父項已完成。未改 schema／Auth／release／部署。

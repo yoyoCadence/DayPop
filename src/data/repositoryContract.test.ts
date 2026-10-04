@@ -63,6 +63,31 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter renames todos (DP-120)', (_name, create) => {
+  it('renames parent and completed child without changing relationships through reload', async () => {
+    const repository = await create();
+    const parent = (await repository.addTodo({ title: '旅行', date: '2026-08-06' })).todos[0]!;
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-08-06', parentId: parent.id })).todos[1]!;
+    const before = await repository.toggleTodo(child.id);
+    await repository.renameTodo(parent.id, '  準備旅行  ');
+    const saved = await repository.renameTodo(child.id, '  預訂飯店  ');
+    expect(saved.todos).toEqual(
+      before.todos.map((todo, index) => ({ ...todo, title: index === 0 ? '準備旅行' : '預訂飯店', updatedAt: saved.todos[index]!.updatedAt })),
+    );
+    expect(await repository.load()).toEqual(saved);
+  });
+  it('rejects blank titles and a queued-after-delete edit without durable changes', async () => {
+    const repository = await create();
+    const todo = (await repository.addTodo({ title: '保留', date: '2026-08-06' })).todos[0]!;
+    const before = await repository.load();
+    await expect(repository.renameTodo(todo.id, '  ')).rejects.toThrow('不能空白');
+    expect(await repository.load()).toEqual(before);
+    const afterDelete = await repository.deleteTodo(todo.id);
+    await expect(repository.renameTodo(todo.id, '不能復活')).rejects.toThrow('找不到待辦');
+    expect(await repository.load()).toEqual(afterDelete);
+  });
+});
+
 describe.each(adapters)('%s adapter creates subtasks (DP-116)', (_name, create) => {
   let repository: DayPopRepository;
   let parentId: string;

@@ -15,6 +15,7 @@ import {
   withTodo,
   withoutEvent,
   withoutTodo,
+  renamedTodo,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
@@ -27,6 +28,23 @@ const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
 function baseData(): DayPopUserData {
   return createEmptyUserData({ now: NOW });
 }
+
+describe('renamedTodo (DP-120)', () => {
+  it('trims only the title and preserves every other field, including a completed nested row', () => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const original = structuredClone(data);
+    const todo = data.todos.find((item) => item.completedAt !== null)!;
+    expect(renamedTodo(data, todo.id, '  新標題  ', NOW)).toEqual({ ...todo, title: '新標題', updatedAt: NOW });
+    expect(data).toEqual(original);
+  });
+  it('refuses blanks and deleted ids without changing the document', () => {
+    const data = baseData();
+    expect(() => renamedTodo(data, 'missing', '標題', NOW)).toThrow('找不到待辦');
+    expect(() => renamedTodo(data, 'missing', '  ', NOW)).toThrow('不能空白');
+    expect(data.todos).toEqual([]);
+  });
+});
 
 describe('withoutTodo cascade (DP-115)', () => {
   it('removes every descendant even when grandchildren precede their parents', () => {

@@ -46,6 +46,7 @@ export interface DayDetailSheetProps {
   onAddTodo(input: NewTodoInput): void;
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
+  onRenameTodo(id: string, title: string): Promise<void>;
   onAddSticker(input: NewStickerInput): void;
   onDeleteSticker(id: string): void;
 }
@@ -78,6 +79,7 @@ function DayDetailSheetBody({
   onAddTodo,
   onToggleTodo,
   onDeleteTodo,
+  onRenameTodo,
   onAddSticker,
   onDeleteSticker,
 }: DayDetailSheetProps & { dateKey: string }) {
@@ -257,7 +259,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-section">待辦清單</div>
           {dayTodos.map((row) => (
-            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />
+            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} />
           ))}
 
           <form className="cal-day-todo-add" onSubmit={submitTodo}>

@@ -103,6 +103,7 @@ describe('DataProvider concurrent writes', () => {
         return pending();
       },
       toggleTodo: pending,
+      renameTodo: pending,
       deleteTodo: pending,
       addSticker: pending,
       deleteSticker: pending,
@@ -175,6 +176,7 @@ describe('DataProvider concurrent writes', () => {
       replaceEventOccurrence: pending,
       addTodo: pending,
       toggleTodo: pending,
+      renameTodo: pending,
       deleteTodo: pending,
       addSticker: pending,
       deleteSticker: pending,

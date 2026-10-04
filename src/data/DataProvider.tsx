@@ -131,6 +131,9 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       toggleTodo(id) {
         run(() => activeRepository.toggleTodo(id));
       },
+      async renameTodo(id, title) {
+        await enqueue(() => activeRepository.renameTodo(id, title));
+      },
       deleteTodo(id) {
         run(() => activeRepository.deleteTodo(id));
       },

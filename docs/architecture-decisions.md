@@ -28,6 +28,14 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 待辦標題編輯（DP-120，2026-10-04）
+
+依日常使用優先與持續自主開發委託，採用 agent 建議，在日詳情的父待辦與任何已顯示子項加入標題編輯。原稿 :561 沒有此能力；保留既有展開／勾選／刪除意義，增加 24×24 編輯按鈕與 native inline form，沿原稿卡片、欄位與 surface／surface-2／fg／muted／border，輸入採 16px。這是新產品決策，不宣稱逐像素搬移。
+
+共用 `renamedTodo()` 只 trim title／更新 timestamp，保留日期（含 null）、完成、排序、父子關係、日曆、分享範圍與建立時間。guest 仍經 write barrier；account 只送 `{ title }` 的 owner-filtered update／single，不能 upsert 已刪除列，timestamps 由 DB 生成；成功才更新 snapshot／cache，失敗不自動重送。DataProvider 的新 awaited action 與其他寫入共用單一 queue，missing／blank 為既有 `TodoInputError`，拒絕後 queue 繼續。
+
+Enter 保存；空白拒絕，未更改／取消／Escape 不寫入；Escape 不關閉外層日詳情，返回編輯按鈕焦點。保存中禁止重複提交與取消，等成功才關閉；仍掛載的 editor 在可恢復失敗時保留草稿並顯示重試提示。資料 corrupt／future 等 fail-closed 復原仍優先，不以 editor 草稿阻擋復原或帳號切換。只完成標題編輯；日期、優先度、排序與寵物行為仍分開處理，未新增 schema／RPC／release 或部署。
+
 ### 待辦刪除一致性（DP-115，2026-10-04）
 
 既有 `todos_parent_owner_calendar_fk` 是 ON DELETE CASCADE；`withoutTodo()` 原本只移除 id 那一列，留下缺失 parent 的子項。回歸確認 guest 因完整文件驗證而拒絕保存（原資料沒有被覆寫），authenticated 則可能在遠端刪除成功後，因 snapshot 驗證失敗而回報錯誤。共用 domain 函式改成清除完整子樹，包含已完成、亂序與多層匯入的後代，保留不相關待辦／其他資料；parent index 加迭代遍歷避免資料量或深度造成遞迴堆疊問題。兩個 adapter 都沿現有 seam；authenticated 仍是一個 owner-scoped delete，由既有 DB FK 原子 cascade，不分別送出多個 delete。遠端拒絕／transport rejection 保留整棵 snapshot，不樂觀移除。測試用 FakeSupabase 獨立模擬既有 composite FK；不修改 schema、RPC、Auth、release 或部署，也不把 harness 證據當成真實 RLS／服務 durability 驗收。先完成這個子項 UI 前置，再開放建立子项。

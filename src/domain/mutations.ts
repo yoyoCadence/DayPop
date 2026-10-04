@@ -524,6 +524,15 @@ export function toggleTodoCompletion(todo: TodoItem, now: string): TodoItem {
   return { ...todo, completedAt: todo.completedAt === null ? now : null, updatedAt: now };
 }
 
+/** A title edit must preserve the row's scheduling, hierarchy and completion. */
+export function renamedTodo(data: DayPopUserData, id: string, title: string, now: string): TodoItem {
+  const trimmed = title.trim();
+  if (!trimmed) throw new TodoInputError('待辦標題不能空白。');
+  const todo = findTodo(data, id);
+  if (!todo) throw new TodoInputError('找不到待辦，請重新開啟待辦清單。');
+  return { ...todo, title: trimmed, updatedAt: now };
+}
+
 export function createStickerFromInput(
   data: DayPopUserData,
   input: NewStickerInput,
