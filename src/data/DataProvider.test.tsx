@@ -78,6 +78,15 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('refuses an invalid all-day range without unmounting or poisoning the queue', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    const before = latest().state;
+    await act(async () => { latest().actions.addEvent({ title: '拒絕', date: '2026-08-06', endDate: '2026-08-05', allDay: true, start: '', end: '' }); });
+    expect(latest().state).toMatchObject({ ...before, warning: { kind: 'refused', message: expect.stringContaining('不能早於') } });
+    await act(async () => { latest().actions.addEvent({ title: '假期', date: '2026-08-06', endDate: '2026-08-08', allDay: true, start: '', end: '' }); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { events: [{ title: '假期', endDate: '2026-08-08' }] } });
+  });
   it('refuses an overlong command while retaining the app and allowing the next write', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await render(<DataProvider repository={repository}><Probe /></DataProvider>);

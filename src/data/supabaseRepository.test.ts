@@ -219,6 +219,19 @@ describe('SupabaseDayPopRepository load', () => {
 });
 
 describe('SupabaseDayPopRepository writes', () => {
+  it('refuses invalid all-day ranges before requests and retains the last confirmed snapshot after a failed extension (DP-127)', async () => {
+    const { db, repository } = bootstrapped();
+    db.seed('events', [eventRow({ is_all_day: true, start_date: '2026-08-06', end_date: '2026-08-09', starts_at: null, ends_at: null, timezone: null })]);
+    const before = await repository.load();
+    await expect(repository.updateEvent(EVENT, { endDate: '2026-08-05' })).rejects.toThrow('不能早於');
+    await expect(repository.addEvent({ title: '拒絕', date: '2026-08-06', endDate: '', allDay: true, start: '', end: '' })).rejects.toThrow();
+    expect(db.writes).toEqual([]);
+    expect(db.rpcCalls).toEqual([]);
+    db.failures.set('events', '拒絕保存');
+    await expect(repository.updateEvent(EVENT, { endDate: '2026-08-12' })).rejects.toBeInstanceOf(RemoteDataError);
+    db.failures.delete('events');
+    expect(await repository.load()).toEqual(before);
+  });
   it.each(['failures', 'rejections'] as const)('keeps the complete todo tree after a %s deletion error (DP-115)', async (failureKind) => {
     const { db, repository } = bootstrapped();
     db.seed('todos', [

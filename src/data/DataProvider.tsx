@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildr
 import { DataTransferError } from '../domain/dataTransfer';
 import { TodoInputError } from '../domain/todos';
 import { TitleInputError } from '../domain/titles';
+import { AllDayInputError } from '../domain/allDayDates';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
 import { CachedRemoteLoadError } from './cachedSupabaseRepository';
@@ -241,10 +242,10 @@ function toWriteFailureState(error: unknown, current: DataState): DataState {
       },
     };
   }
-  // A queued subtask can find that an earlier delete removed its parent. This
-  // is a refused command, not corrupt stored data: retain the live App. It is
+  // Input guards (title, date range, or a subtask whose parent was deleted)
+  // refuse a command, not the stored document: retain the live App. This is
   // not a sync failure either (DP-123), and must not hide one that is.
-  if ((error instanceof TodoInputError || error instanceof TitleInputError) && current.status === 'ready') {
+  if ((error instanceof TodoInputError || error instanceof TitleInputError || error instanceof AllDayInputError) && current.status === 'ready') {
     if (current.warning && current.warning.kind !== 'refused') return current;
     return { ...current, warning: { kind: 'refused', message: error.message } };
   }

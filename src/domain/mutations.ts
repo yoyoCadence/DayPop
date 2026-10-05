@@ -13,6 +13,7 @@ import { resolveEventOccurrences } from './recurrence';
 import { DomainValidationError, isIsoInstant } from './validation';
 import { TodoInputError } from './todos';
 import { assertTitleLength } from './titles';
+import { AllDayInputError, allDayDateIssue, dateKeyDaysBetween, shiftDateKey } from './allDayDates';
 import type {
   Calendar,
   CalendarEvent,
@@ -41,6 +42,8 @@ export interface NewEventInput {
   title: string;
   date: string;
   allDay: boolean;
+  /** Inclusive end date for all-day events only; omitted means one day. */
+  endDate?: string;
   start: string;
   end: string;
   calendarId?: string;
@@ -72,6 +75,8 @@ export interface EventPatch {
   title?: string;
   date?: string;
   allDay?: boolean;
+  /** Explicit inclusive end date; omitted preserves an all-day event's span. */
+  endDate?: string;
   start?: string;
   end?: string;
   calendarId?: string;
@@ -103,7 +108,7 @@ export interface EventPatch {
   wallTimeZone?: string;
   /**
    * Complete resolved grid interval — DP-072. Only for timed events; mutually
-   * exclusive with date/start/end/allDay/timezone/wallTimeZone. Resolving grid
+   * exclusive with date/endDate/start/end/allDay/timezone/wallTimeZone. Resolving grid
    * wall coordinates happens before this seam, preserving the event's zone.
    */
   timedInterval?: { startsAt: string; endsAt: string };
@@ -266,6 +271,11 @@ export function createEventFromInput(
   context: CreateContext,
 ): CalendarEvent {
   assertTitleLength(input.title);
+  if (input.endDate !== undefined && !input.allDay) throw new AllDayInputError('結束日期只適用於全天行程。');
+  if (input.allDay) {
+    const issue = allDayDateIssue(input.date, input.endDate ?? input.date);
+    if (issue) throw new AllDayInputError(issue);
+  }
   const common = {
     id: context.id,
     calendarId: input.calendarId ?? resolveDefaultCalendarId(data),
@@ -279,7 +289,7 @@ export function createEventFromInput(
     updatedAt: context.now,
   };
   return input.allDay
-    ? { ...common, allDay: true, startDate: input.date, endDate: input.date }
+    ? { ...common, allDay: true, startDate: input.date, endDate: input.endDate ?? input.date }
     : timedEventFromWallTime(
         common,
         { date: input.date, start: input.start, end: input.end },
@@ -296,6 +306,7 @@ export function applyEventPatch(
   if (patch.title !== undefined && patch.title.trim() !== event.title) assertTitleLength(patch.title);
   const previous = eventWallTime(event);
   const allDay = patch.allDay ?? event.allDay;
+  if (patch.endDate !== undefined && !allDay) throw new AllDayInputError('結束日期只適用於全天行程。');
   const common = {
     id: event.id,
     calendarId: patch.calendarId ?? event.calendarId,
@@ -316,7 +327,7 @@ export function applyEventPatch(
   const date = patch.date ?? previous.date;
   if (patch.timedInterval) {
     const { startsAt, endsAt } = patch.timedInterval;
-    if (event.allDay || [patch.date, patch.start, patch.end, patch.allDay, patch.timezone, patch.wallTimeZone]
+    if (event.allDay || [patch.date, patch.endDate, patch.start, patch.end, patch.allDay, patch.timezone, patch.wallTimeZone]
       .some((value) => value !== undefined) || !isIsoInstant(startsAt) || !isIsoInstant(endsAt)
       || Date.parse(endsAt) <= Date.parse(startsAt)) {
       throw new DomainValidationError(['timedInterval requires one valid positive interval and no competing wall-time fields.']);
@@ -327,16 +338,19 @@ export function applyEventPatch(
     // `endDate` is inclusive and may be later than `startDate`, so both ends
     // have to move together. Deriving them from one date instead would shorten
     // a multi-day all-day event to a single day on an edit that never asked to
-    // — renaming it, for example. Converting a timed event to all-day starts as
-    // one day, which is what the sheet offers.
+    // — renaming it, for example. An explicit endDate changes the duration.
+    // A timed event converted without an end date defaults to one day.
     const spanDays = event.allDay
-      ? daysBetween(fromDateKey(event.startDate), fromDateKey(event.endDate))
+      ? dateKeyDaysBetween(event.startDate, event.endDate)
       : 0;
+    const endDate = patch.endDate ?? shiftDateKey(date, spanDays);
+    const issue = allDayDateIssue(date, endDate ?? '');
+    if (issue) throw new AllDayInputError(issue);
     return {
       ...common,
       allDay: true,
       startDate: date,
-      endDate: spanDays > 0 ? toDateKey(addDays(fromDateKey(date), spanDays)) : date,
+      endDate: endDate!,
     };
   }
   // An all-day event has no timezone of its own to keep.
