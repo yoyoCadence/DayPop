@@ -17,6 +17,7 @@ import {
   findTodo,
   renamedTodo,
   todoWithPriority,
+  rescheduledTodo,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
@@ -180,6 +181,11 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
       if (!todo) return data;
       return withTodo(data, toggleTodoCompletion(todo, now));
     });
+  }
+
+  rescheduleTodo(id: string, date: string): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => withTodo(data, rescheduledTodo(data, id, date, now)));
   }
 
   addSticker(input: NewStickerInput): Promise<DayPopUserData> {

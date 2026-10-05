@@ -74,6 +74,23 @@ function appendCommand() {
 }
 
 describe('CachedSupabaseDayPopRepository', () => {
+  it('keeps account cache bytes on failed rescheduling and caches only confirmed server dates', async () => {
+    const storage = new MemoryStorage();
+    const db = bootstrapped();
+    const repository = new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage);
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '保留', date: '2026-10-06' })).todos[0]!;
+    const key = `daypop.account-cache.${OWNER}`;
+    const before = storage.getItem(key);
+    db.rejections.set('todos', 'offline');
+    await expect(repository.rescheduleTodo(todo.id, '2026-10-07')).rejects.toThrow(RemoteDataError);
+    expect(storage.getItem(key)).toBe(before);
+    db.rejections.delete('todos');
+    const saved = await repository.rescheduleTodo(todo.id, '2026-10-07');
+    const cached = readAccountCache(OWNER, storage);
+    expect(cached.status === 'ready' ? cached.envelope.data : null).toEqual(saved);
+    expect(db.writes.filter((write) => write.row.due_date === '2026-10-07')).toHaveLength(1);
+  });
   it('priority writes preserve cache on failure and cache only confirmed remote data', async () => {
     const storage = new MemoryStorage();
     const db = bootstrapped();

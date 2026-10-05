@@ -41,6 +41,7 @@ import {
   findTodo,
   renamedTodo,
   todoWithPriority,
+  rescheduledTodo,
   replaceEventOccurrence,
   toggleTodoCompletion,
   withEvent,
@@ -434,6 +435,18 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
         .eq('id', id).eq('owner_id', this.userId).select('*').single(),
     );
     if (error || !row) throw new RemoteDataError('修改待辦優先度', error ?? '待辦已不存在或無法存取');
+    return this.#commit(withTodo(data, todoFromRow(row)));
+  }
+
+  async rescheduleTodo(id: string, date: string): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = rescheduledTodo(data, id, date, new Date().toISOString());
+    const { data: row, error } = await requestRemote(
+      '修改待辦日期',
+      this.client.from('todos').update({ due_date: draft.dueDate })
+        .eq('id', id).eq('owner_id', this.userId).select('*').single(),
+    );
+    if (error || !row) throw new RemoteDataError('修改待辦日期', error ?? '待辦已不存在或無法存取');
     return this.#commit(withTodo(data, todoFromRow(row)));
   }
 

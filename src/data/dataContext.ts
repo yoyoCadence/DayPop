@@ -65,6 +65,7 @@ export interface DataActions {
   /** Awaited so an inline editor keeps its draft if the write is refused. */
   renameTodo(id: string, title: string): Promise<void>;
   setTodoPriority(id: string, priority: TodoPriority): Promise<void>;
+  rescheduleTodo(id: string, date: string): Promise<void>;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;
   addSticker(input: NewStickerInput): void;

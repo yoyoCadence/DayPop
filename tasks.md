@@ -72,6 +72,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-130 — 日詳情待辦換日介面：** 前置 DP-129 合併；父待辦與已顯示子項提供 native date 草稿、儲存／取消與 Escape，僅換這一項日期，成功才移到目標日，失敗保留草稿。沿 canonical 卡片／欄位 token，驗證焦點、鍵盤、窄螢幕、guest／account durable reload、完成子項與跨日期階層；原稿沒有此能力，記錄刻意擴充。不提供無日期管理、子樹移動、排序、schema／release 或部署。
 
 
 
@@ -297,6 +298,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-129 — 待辦換日資料契約（2026-10-06）：** 從最新 main（`38eeae6`）獨立開分支，由 Backlog 經 Next、In Progress 完成。rescheduleTodo／rescheduledTodo 接受有效日期，只改單列 dueDate／updatedAt；父子日期獨立，保留完成、優先度、排序、階層、標題與分享範圍。沿共用 domain、單一 queue、TodoInputError／refused、guest write barrier 與舊長標題相容；account 只送 owner-scoped due_date update／single，不 upsert 已刪列，成功才保存 snapshot／cache，失敗不自動重送。959 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；PowerShell 分別印出實際 America/New_York、Pacific/Apia 後，各 165 個 domain／雙 adapter 案例通過。完整 e2e 135 通過、5 個原有 desktop 尺寸案例跳過，沒有失敗；帳號仍為 dev-only FakeSupabase，不宣稱實際雲端驗收。可為既有無日期列指定日期，但拒絕清除／空白／無效日期；本項只完成資料前置，介面由 DP-130 接續。不改 schema／RPC、Auth、release 或部署，DP-014／DP-034 父項未結案；決策見 ADR §2。
 
 - [x] **DP-128 — 日詳情待辦優先度（2026-10-05）：** 接手時核對 PR #117 的 head／review／三項 CI 並完成合併，從最新 main（`8c46dc3`）獨立開分支；依持續自主開發委託，由 Backlog 經 Next、In Progress 完成本子項。父待辦與已顯示子項新增無／低／中／高 native select，父子獨立、新增維持 none；僅改 priority／updatedAt，保留日期、完成、排序、階層、標題與分享範圍。沿單一 queue、TodoInputError／refused、guest write barrier 與舊長標題相容；account 僅 owner-scoped priority-only update／single，不 upsert 已刪列，成功才更新 snapshot／cache且不自動重送。等待時防重複提交，失敗保留最後確認選項並提示重選。930 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；PowerShell 實際印出 America/New_York 後，263 個相關案例亦通過。完整 browser suite 135 通過、5 個原有 desktop 尺寸案例跳過；最後逾期版面修正後再跑本項 mobile／desktop guest／account 共 4 個案例，全部通過，實際 timezone 為 America/New_York、display 為 Asia/Taipei。正式 build 與原稿實際渲染對照，390×844／375×667／360×640／1280×900、漫畫淺／深色與像素深色均無水平溢出或 console error／warning；另驗證長標題／逾期／已完成子項，將父項逾期標記放在選單下方，避免窄螢幕擠成一字一行。圖與測量留於本機 `%TEMP%/daypop-dp128-qa/`、`%TEMP%/daypop-dp128-overdue-qa/`；重現流程見 `e2e/todo-priority.spec.ts`。原稿無選擇器，擴充決策見 ADR §2；未改 schema／release／Auth 或部署，帳號仍用 dev-only FakeSupabase，不宣稱真機或實際雲端驗收。DP-014／DP-034 父項未結案，後續可獨立推進待辦日期操作。
 
