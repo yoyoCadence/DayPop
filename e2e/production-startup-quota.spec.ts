@@ -34,7 +34,7 @@ async function assertGuestUi(page: Page) {
   await expect(agendaRow(page, '備份晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份改期晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份夜班')).toHaveCount(2);
-  await expect(agendaRow(page, '備份假期')).toHaveCount(1);
+  await expect(agendaRow(page, '備份假期')).toHaveCount(3);
 }
 
 async function downloadBackup(page: Page): Promise<DayPopBackup> {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allDayDisplaySegments,
   BASELINE_HOUR_RANGE,
   conflictingOccurrenceKeys,
   countOccurrences,
@@ -51,6 +52,44 @@ function shape(segments: DisplaySegment[]) {
     continuesNextDay: segment.continuesNextDay,
   }));
 }
+
+describe('allDayDisplaySegments (DP-126)', () => {
+  const span = (startDate: string, endDate: string): AllDayCalendarEvent => ({ ...COMMON, allDay: true, startDate, endDate });
+  const window = { startDateKey: '2026-08-01', endDateKey: '2026-08-03' };
+
+  it('keeps both inclusive ends and marks only the subsequent days', () => {
+    expect(allDayDisplaySegments(span('2026-08-01', '2026-08-03'), window)).toEqual([
+      { dateKey: '2026-08-01', isContinuation: false },
+      { dateKey: '2026-08-02', isContinuation: true },
+      { dateKey: '2026-08-03', isContinuation: true },
+    ]);
+  });
+  it('clips both ends of a centuries-long event to the visible window', () => {
+    expect(allDayDisplaySegments(span('0100-01-01', '9999-12-31'), window)).toEqual([
+      { dateKey: '2026-08-01', isContinuation: true },
+      { dateKey: '2026-08-02', isContinuation: true },
+      { dateKey: '2026-08-03', isContinuation: true },
+    ]);
+  });
+  it.each([['2026-07-30', '2026-07-31'], ['2026-08-04', '2026-08-10'], ['2026-08-03', '2026-08-01']])('does not emit an outside or reversed span %s..%s', (start, end) => {
+    expect(allDayDisplaySegments(span(start, end), window)).toEqual([]);
+  });
+  it('does not walk a reversed display window', () => {
+    expect(allDayDisplaySegments(span('2026-08-01', '2026-08-03'), { startDateKey: '2026-08-03', endDateKey: '2026-08-01' })).toEqual([]);
+  });
+  it.each([
+    ['2028-02-28', '2028-03-01', ['2028-02-28', '2028-02-29', '2028-03-01']],
+    ['2026-03-07', '2026-03-09', ['2026-03-07', '2026-03-08', '2026-03-09']],
+    ['2011-12-29', '2011-12-31', ['2011-12-29', '2011-12-30', '2011-12-31']],
+  ])('keeps calendar dates through leap days and device-zone transitions: %s..%s', (start, end, dates) => {
+    expect(allDayDisplaySegments(span(start, end), { startDateKey: start, endDateKey: end }).map((segment) => segment.dateKey)).toEqual(dates);
+  });
+  it('handles the final valid calendar date without stepping into year 10000', () => {
+    expect(allDayDisplaySegments(span('9999-12-31', '9999-12-31'), { startDateKey: '9999-12-31', endDateKey: '9999-12-31' })).toEqual([
+      { dateKey: '9999-12-31', isContinuation: false },
+    ]);
+  });
+});
 
 describe('eventDisplaySegments', () => {
   it('leaves a same-day event as one segment', () => {

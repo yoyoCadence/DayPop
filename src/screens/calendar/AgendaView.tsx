@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { addDays, fromDateKey, toDateKey } from '../../domain/date';
 import { calendarColor } from '../../domain/calendars';
-import { eventDisplaySegments } from '../../domain/displaySegments';
-import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
+import { allDayDisplaySegments, eventDisplaySegments } from '../../domain/displaySegments';
+import { eventStartTimeInZone } from '../../domain/eventTime';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import { topLevelTodos } from '../../domain/todos';
 import type { Calendar, CalendarEvent, TodoItem } from '../../domain/types';
@@ -86,9 +86,12 @@ export function AgendaView({
       const { key: occurrenceKey, event } = resolved;
       const target = occurrenceTarget(resolved);
       if (event.allDay) {
-        const dateKey = eventDateInZone(event, displayTimezone);
-        if (dateKey >= todayKey && dateKey <= lastKey) {
-          bucket(dateKey, { event, target, key: occurrenceKey, time: '全天', isContinuation: false });
+        for (const segment of allDayDisplaySegments(event, { startDateKey: todayKey, endDateKey: lastKey })) {
+          bucket(segment.dateKey, {
+            event, target, key: occurrenceKey,
+            time: segment.isContinuation ? `${CONTINUATION_LABEL} 全天` : '全天',
+            isContinuation: segment.isContinuation,
+          });
         }
         continue;
       }

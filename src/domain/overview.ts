@@ -1,6 +1,6 @@
 import { addDays, fromDateKey, startOfDay, startOfWeek, toDateKey } from './date';
-import { eventDisplaySegments, type DisplaySegmentWindow } from './displaySegments';
-import { eventDateInZone, eventStartTimeInZone } from './eventTime';
+import { allDayDisplaySegments, eventDisplaySegments, type DisplaySegmentWindow } from './displaySegments';
+import { eventStartTimeInZone } from './eventTime';
 import type { ResolvedEventOccurrence } from './recurrence';
 import type { CalendarEvent, Sticker, TodoItem } from './types';
 
@@ -252,12 +252,14 @@ function collectItemsByDate(
 
     for (const { key: occurrenceKey, event } of input.occurrences) {
       if (event.allDay) {
-        pushRow(eventDateInZone(event, input.displayTimezone), {
-          event,
-          key: occurrenceKey,
-          time: '全天',
-          isContinuation: false,
-        });
+        for (const segment of allDayDisplaySegments(event, window)) {
+          pushRow(segment.dateKey, {
+            event,
+            key: occurrenceKey,
+            time: segment.isContinuation ? `${CONTINUATION_LABEL} 全天` : '全天',
+            isContinuation: segment.isContinuation,
+          });
+        }
         continue;
       }
       // Windowed to the period: an event longer than the range is clipped to it

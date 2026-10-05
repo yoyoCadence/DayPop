@@ -19,11 +19,12 @@ import {
   weeksBetween,
 } from '../../domain/date';
 import {
+  allDayDisplaySegments,
   eventDisplaySegments,
   occurrencesConflict,
   type DisplaySegmentWindow,
 } from '../../domain/displaySegments';
-import { eventDateInZone, eventStartTimeInZone } from '../../domain/eventTime';
+import { eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
 import { lunarCell } from '../../domain/lunar';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
@@ -522,13 +523,14 @@ function groupEventsByDate(
 
   for (const { key: occurrenceKey, event } of occurrences) {
     if (event.allDay) {
-      // All-day placement is unchanged by DP-064; it has no instants to cut.
-      push(eventDateInZone(event, displayTimezone), {
-        event,
-        key: occurrenceKey,
-        isContinuation: false,
-        time: '',
-      });
+      for (const segment of allDayDisplaySegments(event, window)) {
+        push(segment.dateKey, {
+          event,
+          key: occurrenceKey,
+          isContinuation: segment.isContinuation,
+          time: segment.isContinuation ? CONTINUATION_LABEL : '',
+        });
+      }
       continue;
     }
 

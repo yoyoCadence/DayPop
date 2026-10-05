@@ -1,5 +1,7 @@
 # DayPop 原型行為與設計保全清單
 
+**DP-126（2026-10-05）更新**：多日全天行程在月曆、週、列表、日詳情與綜覽均按 inclusive 日期顯示每個佔用日，續日標「續」。`allDayDisplaySegments()` 先裁切可見 window 再以無時區日曆日期展開，不拆資料列；續日編輯／單次取消／替換仍交出完整 resolved occurrence，綜覽跨月總數沿既有去重。這是原稿單日期全天模型的刻意擴充、接續 DP-114；既有卡片／色塊／欄位 token 與控制項不變。`e2e/all-day-spans.spec.ts` 在紐約裝置時區＋台北 display timezone 的 mobile／desktop 共四個案例驗證五處呈現、續日標題編輯與 reload、單次取消及替換；沒有 schema、repository、release 或部署變更，真機／staging 未由此驗證，見 ADR §6。
+
 **DP-121（2026-10-04）更新**：列表檢視、寵物徽章與綜覽只計最上層待辦，子項只在日詳情的父待辦卡片裡出現。這是還原原稿：原稿子項存在 `t.subs` 裡，列表（`:690`）、徽章（`:1304-1306`）與綜覽（`:1253`）都只看最上層。判定重用日詳情的 `todoGroupsOn()`，所以與父項不同天的子項等匯入資料仍會出現。
 
 **DP-120（2026-10-04）更新**：日詳情父待辦及顯示中的子項可 inline 改標題，完成／日期／階層／日曆／分享範圍保留。原稿無此操作，因此記為產品擴充；native form 沿原稿卡片與欄位 token、16px 輸入，Enter 保存、取消／Escape 不寫入且還原焦點，可恢復失敗保留草稿。guest write barrier 與 account title-only owner update 共用 queue，成功才確認 snapshot／cache；排序／優先度／日期移動／寵物 XP 未接，未改 schema／RPC／release／部署，見 ADR §2。

@@ -1,11 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { fromDateKey } from '../../domain/date';
 import {
+  allDayDisplaySegments,
   conflictingOccurrenceKeys,
   eventDisplaySegments,
   segmentTimeRange,
 } from '../../domain/displaySegments';
-import { eventDateInZone } from '../../domain/eventTime';
 import { todoGroupsOn } from '../../domain/todos';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import { DayTodoCard } from './DayTodoCard';
@@ -112,8 +112,8 @@ function DayDetailSheetBody({
       const { key: occurrenceKey, event } = resolved;
       const target = occurrenceTarget(resolved);
       if (event.allDay) {
-        if (eventDateInZone(event, displayTimezone) === dateKey) {
-          rows.push({ event, target, key: occurrenceKey, time: '全天', isContinuation: false });
+        for (const segment of allDayDisplaySegments(event, window)) {
+          rows.push({ event, target, key: occurrenceKey, time: '全天', isContinuation: segment.isContinuation });
         }
         continue;
       }

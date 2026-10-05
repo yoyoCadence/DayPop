@@ -1,6 +1,6 @@
 import { addDays, fromDateKey, toDateKey } from './date';
 import { instantDateInZone, instantTimeInZone } from './eventTime';
-import type { CalendarEvent, TimedCalendarEvent } from './types';
+import type { AllDayCalendarEvent, CalendarEvent, TimedCalendarEvent } from './types';
 
 /**
  * Cross-midnight display — DP-064.
@@ -91,11 +91,32 @@ export interface DisplaySegmentWindow {
   endDateKey: string;
 }
 
+/** Inclusive, timezone-free calendar dates, clipped before walking the span. */
+export function allDayDisplaySegments(
+  event: AllDayCalendarEvent,
+  window: DisplaySegmentWindow,
+): { dateKey: string; isContinuation: boolean }[] {
+  const from = event.startDate > window.startDateKey ? event.startDate : window.startDateKey;
+  const to = event.endDate < window.endDateKey ? event.endDate : window.endDateKey;
+  const segments: { dateKey: string; isContinuation: boolean }[] = [];
+  if (from > to) return segments;
+
+  // UTC fields are only a calendar arithmetic frame. All-day dates must not
+  // skip a day because the device zone advanced its clock (or date line).
+  const cursor = new Date(`${from}T00:00:00.000Z`);
+  for (let dateKey = from; dateKey <= to; dateKey = cursor.toISOString().slice(0, 10)) {
+    segments.push({ dateKey, isContinuation: dateKey > event.startDate });
+    // Stop before incrementing the final date, including 9999-12-31.
+    if (dateKey === to) break;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return segments;
+}
+
 /**
  * Cuts one timed occurrence into the days it visibly occupies.
  *
- * All-day events are deliberately not handled here: their placement already
- * comes from `startDate`/`endDate` and DP-064 does not change it.
+ * All-day events use `allDayDisplaySegments`, with dates instead of instants.
  *
  * Views should pass `window`. Without one the whole event is cut and an absurd
  * span throws `DisplaySegmentRangeError`; with one the result is bounded by the

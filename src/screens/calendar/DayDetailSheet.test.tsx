@@ -107,6 +107,32 @@ function click(element: Element | null | undefined) {
 const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
 
+describe('DayDetailSheet all-day spans (DP-126)', () => {
+  const travel: CalendarEvent = {
+    id: 'travel', calendarId: CALENDAR, title: '三天旅行', location: null, notes: null,
+    reminderMinutes: [], recurrence: null, sharingScope: 'inherit',
+    createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+    allDay: true, startDate: '2026-08-05', endDate: '2026-08-07',
+  };
+
+  it.each(['2026-08-05', '2026-08-06', '2026-08-07'])('lists the inclusive occupied day %s and opens the complete occurrence', (dateKey) => {
+    const props = render({ dateKey, resolveOccurrences: occurrenceResolver([travel]), displayTimezone: 'Pacific/Honolulu' });
+    const row = container.querySelector('.cal-day-event');
+    expect(row?.textContent).toContain('三天旅行');
+    expect(row?.textContent).toContain(dateKey === '2026-08-05' ? '全天' : '續 全天');
+    click(row);
+    expect(props.onOpenEvent).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      event: travel,
+      occurrence: { kind: 'all-day', date: '2026-08-05' },
+    }));
+  });
+
+  it.each(['2026-08-04', '2026-08-08'])('does not list a day outside the span: %s', (dateKey) => {
+    render({ dateKey, resolveOccurrences: occurrenceResolver([travel]) });
+    expect(container.querySelector('.cal-day-event')).toBeNull();
+  });
+});
+
 describe('DayDetailSheet subtasks (DP-116)', () => {
   it('keeps an overlong rename draft, then allows 300 emoji', async () => {
     const props = render({ todos: [todo('parent', null, '旅行')] });
