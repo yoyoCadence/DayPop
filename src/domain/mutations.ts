@@ -22,6 +22,7 @@ import type {
   EventOccurrence,
   Sticker,
   TodoItem,
+  TodoPriority,
   UserPreferences,
 } from './types';
 
@@ -550,6 +551,14 @@ export function renamedTodo(data: DayPopUserData, id: string, title: string, now
   if (!todo) throw new TodoInputError('找不到待辦，請重新開啟待辦清單。');
   assertTitleLength(trimmed);
   return { ...todo, title: trimmed, updatedAt: now };
+}
+
+/** Priority belongs to one row; it never cascades to children or reorders them. */
+export function todoWithPriority(data: DayPopUserData, id: string, priority: TodoPriority, now: string): TodoItem {
+  const todo = findTodo(data, id);
+  if (!todo) throw new TodoInputError('找不到待辦，請重新開啟待辦清單。');
+  if (!['none', 'low', 'medium', 'high'].includes(priority)) throw new TodoInputError('請選擇有效的待辦優先度。');
+  return { ...todo, priority, updatedAt: now };
 }
 
 export function createStickerFromInput(

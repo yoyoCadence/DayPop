@@ -721,7 +721,7 @@ function EventSheetForm({
             {!editing && mode === 'todo' && (
               <div className="cal-sheet-pending">
                 <strong>待辦之後會搬回原稿的位置</strong>
-                原稿是從寵物對話泡泡新增待辦（DP-040），子項、排序與優先度則屬 DP-014。這裡先保留一個可用的入口，不讓現有能力消失。
+                原稿是從寵物對話泡泡新增待辦（DP-040）；子項與優先度可在日詳情操作，排序仍待 DP-014。這裡先保留一個可用的入口，不讓現有能力消失。
               </div>
             )}
           </div>

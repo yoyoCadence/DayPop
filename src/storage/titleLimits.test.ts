@@ -50,6 +50,8 @@ describe('title limits and pre-existing guest titles (DP-125)', () => {
     expect(await repository.load()).toEqual(data);
     expect(storage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
     await repository.toggleTodo(data.todos[0]!.id);
+    const reprioritized = await repository.setTodoPriority(data.todos[0]!.id, 'high');
+    expect(reprioritized.todos[0]).toMatchObject({ title: long, priority: 'high' });
     await repository.updateEvent(data.events[0]!.id, { location: '會議室' });
     await repository.addTodo({ title: '新待辦', date: '2026-10-04' });
     const saved = await repository.renameTodo(data.todos[0]!.id, '縮短');

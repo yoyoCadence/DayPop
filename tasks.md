@@ -79,6 +79,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 自主開發委託**：專案擁有者授權 agent 對未定事項給建議並直接執行，逐段開 PR／自行合併後繼續。本次先接 DP-083 的範圍選擇，再接 DP-075 的中文時間輸入；既有真機未驗與上線放行限制仍保留。下方「Next 為空、需逐項指定」的歷史限制由本次授權解除。
 
 > **2026-08-14 專案擁有者一次定案了三項**（DP-070／064／067），並指定執行順序：DP-070 立即做（**已完成**）→ DP-064 先寫 architecture decision 再實作（**已完成，四個檢視全部接線**）→ DP-067 併入下一次版本提升（~~**仍待版本提升**~~ **2026-09-30 已隨 v0.4.0 完成，見 DP-089**）。決策內容分別寫在各任務條目裡。
@@ -153,6 +154,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -295,6 +297,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-128 — 日詳情待辦優先度（2026-10-05）：** 接手時核對 PR #117 的 head／review／三項 CI 並完成合併，從最新 main（`8c46dc3`）獨立開分支；依持續自主開發委託，由 Backlog 經 Next、In Progress 完成本子項。父待辦與已顯示子項新增無／低／中／高 native select，父子獨立、新增維持 none；僅改 priority／updatedAt，保留日期、完成、排序、階層、標題與分享範圍。沿單一 queue、TodoInputError／refused、guest write barrier 與舊長標題相容；account 僅 owner-scoped priority-only update／single，不 upsert 已刪列，成功才更新 snapshot／cache且不自動重送。等待時防重複提交，失敗保留最後確認選項並提示重選。930 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；PowerShell 實際印出 America/New_York 後，263 個相關案例亦通過。完整 browser suite 135 通過、5 個原有 desktop 尺寸案例跳過；最後逾期版面修正後再跑本項 mobile／desktop guest／account 共 4 個案例，全部通過，實際 timezone 為 America/New_York、display 為 Asia/Taipei。正式 build 與原稿實際渲染對照，390×844／375×667／360×640／1280×900、漫畫淺／深色與像素深色均無水平溢出或 console error／warning；另驗證長標題／逾期／已完成子項，將父項逾期標記放在選單下方，避免窄螢幕擠成一字一行。圖與測量留於本機 `%TEMP%/daypop-dp128-qa/`、`%TEMP%/daypop-dp128-overdue-qa/`；重現流程見 `e2e/todo-priority.spec.ts`。原稿無選擇器，擴充決策見 ADR §2；未改 schema／release／Auth 或部署，帳號仍用 dev-only FakeSupabase，不宣稱真機或實際雲端驗收。DP-014／DP-034 父項未結案，後續可獨立推進待辦日期操作。
+
+  > **本輪完整 e2e 交接：** 首次為 134 通過／5 跳過／1 失敗，既有 `service-worker.spec.ts:168` 的 mobile 離線 shell 預期 `Worker fixture 0.4.2` 卻收到 `Worker fixture 999.0.0`；worker／fixture／generator 沒有差異。原碼重跑兩輪共 8 次通過，後續完整 suite 135／5 通過。原因仍未證實；若再次出現，應獨立追查 worker fixture 的離線／版本競態，不在優先度功能中改 worker 或放寬斷言。
 
 - [x] **DP-127 — 全天行程的結束日期：** 依 2026-10-05 持續自主開發委託，由 Backlog 經 Next、In Progress 完成。事件 sheet 沿 canonical 日期欄位提供 inclusive 結束日期；有效起日變更平移整段，明確結束日調整跨度，無效／空白／倒置與系列平移越界保留草稿、不寫入。NewEventInput／EventPatch 可選 endDate 只適用全天，舊呼叫保持單日新增／原跨度編輯；AllDayInputError 沿 refused 保留 snapshot／warning 並繼續 queue。單次保留整個 occurrence，全部先平移系列錨點再套明確跨度；guest／account 沿既有 mapping／RPC。916 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；完整 browser suite 131 通過、5 個原有 desktop 尺寸案例跳過，新增 8 個 mobile／desktop guest／account 案例全部執行，NY／Apia 實際 timezone 皆印出。實際渲染原稿與 production，390×844 漫畫淺／深色、375×667 漫畫淺色、1280×900 像素深色無水平溢出且 console 0 error／warning，證據在 output/playwright/dp127-qa。原稿無結束日期，刻意擴充與範圍見 ADR §6；未改 schema／release／Auth 或部署，帳號仍為 dev-only FakeSupabase，DP-034 父任務未結案。
 

@@ -9,7 +9,7 @@ import type {
   NewTodoInput,
   PreferencesPatch,
 } from '../domain/mutations';
-import type { DayPopUserData, EventOccurrence } from '../domain/types';
+import type { DayPopUserData, EventOccurrence, TodoPriority } from '../domain/types';
 import type { StorageReadResult } from '../storage/versionedStorage';
 
 /** The non-`ready` half of a local read — what the recovery screen works on. */
@@ -64,6 +64,7 @@ export interface DataActions {
   addTodo(input: NewTodoInput): void;
   /** Awaited so an inline editor keeps its draft if the write is refused. */
   renameTodo(id: string, title: string): Promise<void>;
+  setTodoPriority(id: string, priority: TodoPriority): Promise<void>;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;
   addSticker(input: NewStickerInput): void;

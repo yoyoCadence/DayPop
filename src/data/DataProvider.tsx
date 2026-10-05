@@ -136,6 +136,9 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       async renameTodo(id, title) {
         await enqueue(() => activeRepository.renameTodo(id, title));
       },
+      async setTodoPriority(id, priority) {
+        await enqueue(() => activeRepository.setTodoPriority(id, priority));
+      },
       deleteTodo(id) {
         run(() => activeRepository.deleteTodo(id));
       },

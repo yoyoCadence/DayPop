@@ -75,6 +75,7 @@ const AUTH_INITIALIZING_REPOSITORY: DayPopRepository = {
   addTodo: unavailable,
   toggleTodo: unavailable,
   renameTodo: unavailable,
+  setTodoPriority: unavailable,
   deleteTodo: unavailable,
   addSticker: unavailable,
   deleteSticker: unavailable,

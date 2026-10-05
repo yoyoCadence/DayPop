@@ -9,7 +9,7 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import type { DayPopUserData, EventOccurrence } from '../domain/types';
+import type { DayPopUserData, EventOccurrence, TodoPriority } from '../domain/types';
 import type { Database } from '../lib/database.types';
 import {
   getAppStorage,
@@ -126,6 +126,10 @@ export class CachedSupabaseDayPopRepository
 
   async renameTodo(id: string, title: string): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.renameTodo(id, title));
+  }
+
+  async setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.setTodoPriority(id, priority));
   }
 
   async deleteTodo(id: string): Promise<DayPopUserData> {

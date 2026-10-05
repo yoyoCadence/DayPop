@@ -16,6 +16,7 @@ import {
   findEvent,
   findTodo,
   renamedTodo,
+  todoWithPriority,
   toggleTodoCompletion,
   withEvent,
   withoutEvent,
@@ -33,6 +34,7 @@ import {
   createDomainId,
   type DayPopUserData,
   type EventOccurrence,
+  type TodoPriority,
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
@@ -164,6 +166,11 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
   renameTodo(id: string, title: string): Promise<DayPopUserData> {
     const now = new Date().toISOString();
     return this.#mutate((data) => withTodo(data, renamedTodo(data, id, title, now)));
+  }
+
+  setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData> {
+    const now = new Date().toISOString();
+    return this.#mutate((data) => withTodo(data, todoWithPriority(data, id, priority, now)));
   }
 
   toggleTodo(id: string): Promise<DayPopUserData> {

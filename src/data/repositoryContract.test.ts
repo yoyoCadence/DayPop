@@ -63,6 +63,27 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter todo priorities (DP-128)', (_name, create) => {
+  it('changes parent and completed child independently, preserving all other fields through reload', async () => {
+    const repository = await create();
+    const parent = (await repository.addTodo({ title: '旅行', date: '2026-08-06' })).todos[0]!;
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-08-06', parentId: parent.id })).todos[1]!;
+    const before = await repository.toggleTodo(child.id);
+    await repository.setTodoPriority(parent.id, 'high');
+    const saved = await repository.setTodoPriority(child.id, 'low');
+    expect(saved.todos).toEqual(before.todos.map((todo, index) => ({ ...todo, priority: index === 0 ? 'high' : 'low', updatedAt: saved.todos[index]!.updatedAt })));
+    expect(await repository.load()).toEqual(saved);
+    const reset = await repository.setTodoPriority(parent.id, 'none');
+    expect((await repository.load()).todos).toEqual(reset.todos);
+    expect(reset.todos[1]).toEqual(saved.todos[1]);
+    await expect(repository.setTodoPriority(parent.id, 'urgent' as never)).rejects.toThrow('有效');
+    expect(await repository.load()).toEqual(reset);
+    const removed = await repository.deleteTodo(parent.id);
+    await expect(repository.setTodoPriority(child.id, 'medium')).rejects.toThrow('找不到待辦');
+    expect(await repository.load()).toEqual(removed);
+  });
+});
+
 describe.each(adapters)('%s adapter all-day date ranges (DP-127)', (_name, create) => {
   it('creates, extends, moves and shortens a range through durable reload', async () => {
     const repository = await create();

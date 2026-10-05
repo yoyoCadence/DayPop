@@ -15,7 +15,7 @@ const CONTINUATION_LABEL = '續';
 import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
-import type { Calendar, CalendarEvent, Sticker, TodoItem } from '../../domain/types';
+import type { Calendar, CalendarEvent, Sticker, TodoItem, TodoPriority } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
@@ -48,6 +48,7 @@ export interface DayDetailSheetProps {
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
+  onSetTodoPriority(id: string, priority: TodoPriority): Promise<void>;
   onAddSticker(input: NewStickerInput): void;
   onDeleteSticker(id: string): void;
 }
@@ -56,8 +57,8 @@ export interface DayDetailSheetProps {
  * 日詳情 sheet, ported from the `dayOpen` block of
  * `日曆桌寵 Calendar Pet.dc.html`. Opened by tapping a month cell.
  *
- * DP-116 connects the original expandable subtask cards. Drag ordering and
- * priority controls remain DP-014.
+ * DP-116 connects the original expandable subtask cards; DP-128 adds priority.
+ * Drag ordering remains DP-014.
  */
 export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
   if (!dateKey) return null;
@@ -81,6 +82,7 @@ function DayDetailSheetBody({
   onToggleTodo,
   onDeleteTodo,
   onRenameTodo,
+  onSetTodoPriority,
   onAddSticker,
   onDeleteSticker,
 }: DayDetailSheetProps & { dateKey: string }) {
@@ -260,7 +262,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-section">待辦清單</div>
           {dayTodos.map((row) => (
-            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} />
+            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} onSetTodoPriority={onSetTodoPriority} />
           ))}
 
           <form className="cal-day-todo-add" onSubmit={submitTodo}>
@@ -281,7 +283,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-pending">
             <span className="dp-note-task">DP-014</span>
-            拖曳排序與優先度已可保存，後續依原稿補上操作介面。
+            拖曳排序欄位已可保存，後續依原稿補上操作介面。
           </div>
         </div>
       </div>
