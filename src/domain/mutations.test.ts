@@ -16,6 +16,7 @@ import {
   withoutEvent,
   withoutTodo,
   renamedTodo,
+  todoWithPriority,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
@@ -28,6 +29,23 @@ const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
 function baseData(): DayPopUserData {
   return createEmptyUserData({ now: NOW });
 }
+
+describe('todoWithPriority (DP-128)', () => {
+  it.each(['none', 'low', 'medium', 'high'] as const)('changes only priority to %s, including completed nested rows', (priority) => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const original = structuredClone(data);
+    const todo = data.todos.find((item) => item.completedAt !== null)!;
+    expect(todoWithPriority(data, todo.id, priority, NOW)).toEqual({ ...todo, priority, updatedAt: NOW });
+    expect(data).toEqual(original);
+  });
+  it('refuses unknown values and deleted ids', () => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    expect(() => todoWithPriority(data, data.todos[0]!.id, 'urgent' as never, NOW)).toThrow('有效');
+    expect(() => todoWithPriority(data, 'missing', 'high', NOW)).toThrow('找不到待辦');
+  });
+});
 
 describe('renamedTodo (DP-120)', () => {
   it('trims only the title and preserves every other field, including a completed nested row', () => {

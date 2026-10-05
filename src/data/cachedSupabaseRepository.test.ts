@@ -74,6 +74,23 @@ function appendCommand() {
 }
 
 describe('CachedSupabaseDayPopRepository', () => {
+  it('priority writes preserve cache on failure and cache only confirmed remote data', async () => {
+    const storage = new MemoryStorage();
+    const db = bootstrapped();
+    const repository = new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage);
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '保留', date: '2026-08-08' })).todos[0]!;
+    const key = `daypop.account-cache.${OWNER}`;
+    const before = storage.getItem(key);
+    db.failures.set('todos', 'offline');
+    await expect(repository.setTodoPriority(todo.id, 'high')).rejects.toThrow(RemoteDataError);
+    expect(storage.getItem(key)).toBe(before);
+    db.failures.delete('todos');
+    const saved = await repository.setTodoPriority(todo.id, 'high');
+    const cached = readAccountCache(OWNER, storage);
+    expect(cached.status === 'ready' ? cached.envelope.data : null).toEqual(saved);
+    expect(db.writes.filter((write) => write.row.priority === 'high')).toHaveLength(1);
+  });
   it('preserves confirmed account cache on failed rename and refreshes it only on success', async () => {
     const storage = new MemoryStorage();
     const db = bootstrapped();

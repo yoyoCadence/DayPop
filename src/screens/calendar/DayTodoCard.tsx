@@ -2,6 +2,8 @@ import { useId, useState, type FormEvent } from 'react';
 import type { DayTodoGroup } from '../../domain/todos';
 import type { NewTodoInput } from '../../domain/mutations';
 import { EditableTodoTitle } from './EditableTodoTitle';
+import { TodoPrioritySelect } from './TodoPrioritySelect';
+import type { TodoPriority } from '../../domain/types';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 
 interface DayTodoCardProps extends DayTodoGroup {
@@ -11,10 +13,11 @@ interface DayTodoCardProps extends DayTodoGroup {
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
+  onSetTodoPriority(id: string, priority: TodoPriority): Promise<void>;
 }
 
 /** Original day sheet card / sublist (:561), with native keyboard controls. */
-export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onToggleTodo, onDeleteTodo, onRenameTodo }: DayTodoCardProps) {
+export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onToggleTodo, onDeleteTodo, onRenameTodo, onSetTodoPriority }: DayTodoCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState('');
   const detailsId = useId();
@@ -44,7 +47,10 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
             {subtasks.length > 0 && <span className="cal-day-sub-count" aria-label={`${doneCount}/${subtasks.length} 子項完成`}>{expanded ? '▾' : '▸'} {doneCount}/{subtasks.length}</span>}
           </button>
         ) : <span className="cal-day-todo-title">{title}</span>}</EditableTodoTitle>
-        {overdue && <span className="cal-day-overdue">逾期・原{Number(dateKey.slice(5, 7))}/{Number(dateKey.slice(8, 10))}</span>}
+        <div className="cal-day-todo-meta">
+          <TodoPrioritySelect todo={todo} onSetPriority={onSetTodoPriority} />
+          {overdue && <span className="cal-day-overdue">逾期・原{Number(dateKey.slice(5, 7))}/{Number(dateKey.slice(8, 10))}</span>}
+        </div>
         <button className="cal-day-delete" type="button" aria-label={`刪除 ${todo.title}`} onClick={() => onDeleteTodo(todo.id)}>×</button>
       </div>
       {expanded && (
@@ -55,6 +61,7 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
               <div className="cal-day-subtask" key={sub.id} style={{ paddingLeft: `${Math.min(depth - 1, 3) * 8}px` }}>
                 <button className="cal-day-sub-check" type="button" aria-pressed={done} aria-label={`完成 ${sub.title}`} onClick={() => onToggleTodo(sub.id)} style={{ background: done ? 'var(--accent)' : 'transparent' }}>{done ? '✓' : ''}</button>
                 <EditableTodoTitle todo={sub} onRename={onRenameTodo}><span className="cal-day-sub-title" style={{ color: done ? 'var(--faint)' : 'var(--fg)', textDecoration: done ? 'line-through' : 'none' }}>{sub.title}</span></EditableTodoTitle>
+                <TodoPrioritySelect todo={sub} onSetPriority={onSetTodoPriority} />
                 <button className="cal-day-sub-delete" type="button" aria-label={`刪除 ${sub.title}`} onClick={() => onDeleteTodo(sub.id)}>×</button>
               </div>
             );

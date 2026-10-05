@@ -34,6 +34,14 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 舊遊客 schema v1–v4 的超長標題仍完整可讀，不因此進入 corrupt、裁切或自動改名；讀取 v4 不改原始 bytes，既有 migration 保留完整標題。後續本機寫入只允許同一種類、同一 id 且完全未變的超長標題原樣保留，其他待辦勾選、設定、刪除與合法新增不被阻擋。編輯該標題須先縮到上限；事件其他欄位的 repository patch 可保持原標題，sheet 編輯則提示先縮短。JSON／ICS 匯出保留完整標題，JSON 取代匯入與新 ICS 列嚴格驗證（超長備份須先修正標題才可匯入）；ICS 附加可保留既有超長列。登入快取（含 v3 migration）保持嚴格，不能把遊客相容規則套到帳號。未提升 schema／release、修改 DB 約束或部署。
 
+### 待辦優先度（DP-128，2026-10-05）
+
+依持續自主開發委託，日詳情的父待辦與已顯示子項新增 native select，對應 canonical `none`／`low`／`medium`／`high`。原稿 :561 沒有選擇器，但 seed／寵物建議已使用 priority 資料；這是刻意擴充，沿既有欄位 surface／fg／border／radius 與 2px accent 焦點，不新增 palette。16px 字級避開手機輸入縮放；不調整排序、日期、完成或父子關係，也不把父優先度套到子項。新待辦維持原先 `none`。
+
+`setTodoPriority()` 與其他 mutation 共用單一 queue。domain `todoWithPriority()` 只更新 priority／updatedAt，不存在的 id 或非法值使用既有 `TodoInputError`，request 前拒絕且不毒化 queue；guest 仍先執行 corrupt／future write barrier，舊超長標題可原樣保留。authenticated 僅發 owner-scoped、priority-only update／single，不能 upsert 已被刪除的列；timestamps 由 DB 生成，成功才更新 snapshot／account cache，失敗不自動重送。
+
+選擇即保存，等待時停用該控制項並拒絕重複提交；畫面顯示最後確認的 priority，失敗保持原值、提示重新選擇。沒有草稿保存／取消模式，不以樂觀值冒充成功。父項的選單與逾期標記上下共用一欄，避免窄螢幕將長標題擠成一字一行；子項／標題編輯／完成操作維持原有語意。未改 schema、Auth、release 或部署，DP-014 的排序與其他段落仍未結案。
+
 ### 待辦標題編輯（DP-120，2026-10-04）
 
 依日常使用優先與持續自主開發委託，採用 agent 建議，在日詳情的父待辦與任何已顯示子項加入標題編輯。原稿 :561 沒有此能力；保留既有展開／勾選／刪除意義，增加 24×24 編輯按鈕與 native inline form，沿原稿卡片、欄位與 surface／surface-2／fg／muted／border，輸入採 16px。這是新產品決策，不宣稱逐像素搬移。

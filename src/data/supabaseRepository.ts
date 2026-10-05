@@ -40,6 +40,7 @@ import {
   findEventException,
   findTodo,
   renamedTodo,
+  todoWithPriority,
   replaceEventOccurrence,
   toggleTodoCompletion,
   withEvent,
@@ -62,6 +63,7 @@ import {
   type EventException,
   type EventOccurrence,
   type TodoItem,
+  type TodoPriority,
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
@@ -421,6 +423,18 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const data = this.#requireSnapshot();
     await this.#delete('todos', id);
     return this.#commit(withoutTodo(data, id));
+  }
+
+  async setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData> {
+    const data = this.#requireSnapshot();
+    const draft = todoWithPriority(data, id, priority, new Date().toISOString());
+    const { data: row, error } = await requestRemote(
+      '修改待辦優先度',
+      this.client.from('todos').update({ priority: draft.priority })
+        .eq('id', id).eq('owner_id', this.userId).select('*').single(),
+    );
+    if (error || !row) throw new RemoteDataError('修改待辦優先度', error ?? '待辦已不存在或無法存取');
+    return this.#commit(withTodo(data, todoFromRow(row)));
   }
 
   async addSticker(input: NewStickerInput): Promise<DayPopUserData> {

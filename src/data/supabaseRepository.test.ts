@@ -112,6 +112,25 @@ function bootstrapped() {
 }
 
 describe('SupabaseDayPopRepository load', () => {
+  it('priority update sends one field, preserves confirmed data on failure and refuses missing/foreign rows', async () => {
+    const { db, repository } = bootstrapped();
+    const before = await repository.load();
+    db.failures.set('todos', 'offline');
+    await expect(repository.setTodoPriority(TODO, 'high')).rejects.toThrow(RemoteDataError);
+    db.failures.delete('todos');
+    expect(await repository.load()).toEqual(before);
+    const saved = await repository.setTodoPriority(TODO, 'high');
+    expect(db.writes.at(-1)).toEqual({ table: 'todos', row: { priority: 'high' } });
+    expect(saved.todos[0]).toEqual({ ...before.todos[0], priority: 'high', updatedAt: saved.todos[0]!.updatedAt });
+    db.tables.set('todos', []);
+    await expect(repository.setTodoPriority(TODO, 'low')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')).toEqual([]);
+    db.seed('todos', [todoRow({ owner_id: OTHER_OWNER })]);
+    db.writes.length = 0;
+    await expect(repository.setTodoPriority(TODO, 'low')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')[0]).toEqual(todoRow({ owner_id: OTHER_OWNER }));
+    expect(db.writes).toEqual([]);
+  });
   it('title edit sends only the title, keeps the snapshot on failure and never recreates missing rows', async () => {
     const { db, repository } = bootstrapped();
     const before = await repository.load();

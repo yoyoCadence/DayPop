@@ -89,6 +89,7 @@ function render(overrides: Partial<DayDetailSheetProps> = {}) {
     onToggleTodo: vi.fn(),
     onDeleteTodo: vi.fn(),
     onRenameTodo: vi.fn().mockResolvedValue(undefined),
+    onSetTodoPriority: vi.fn().mockResolvedValue(undefined),
     onAddSticker: vi.fn(),
     onDeleteSticker: vi.fn(),
     ...overrides,
@@ -134,6 +135,43 @@ describe('DayDetailSheet all-day spans (DP-126)', () => {
 });
 
 describe('DayDetailSheet subtasks (DP-116)', () => {
+  it('changes priority on the completed child only and leaves completion controls intact', async () => {
+    const props = render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)] });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    const select = container.querySelector<HTMLSelectElement>('[aria-label="訂房 的優先度"]')!;
+    await act(async () => {
+      select.value = 'low';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(props.onSetTodoPriority).toHaveBeenCalledExactlyOnceWith('child', 'low');
+    expect(props.onToggleTodo).not.toHaveBeenCalled();
+    expect(container.querySelector('.cal-day-sub-count')?.textContent).toContain('1/1');
+  });
+  it('disables pending priority edits, rejects duplicate submissions and keeps confirmed selection after failure', async () => {
+    let reject!: (error: Error) => void;
+    const save = vi.fn().mockImplementationOnce(() => new Promise<void>((_resolve, fail) => { reject = fail; })).mockResolvedValue(undefined);
+    const row = todo('parent', null, '旅行');
+    render({ todos: [row], onSetTodoPriority: save });
+    const select = container.querySelector<HTMLSelectElement>('[aria-label="旅行 的優先度"]')!;
+    act(() => {
+      select.value = 'high';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      select.value = 'low';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(save).toHaveBeenCalledExactlyOnceWith('parent', 'high');
+    expect(select.disabled).toBe(true);
+    await act(async () => { reject(new Error('offline')); });
+    expect(select.value).toBe(row.priority);
+    expect(select.disabled).toBe(false);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('尚未保存');
+    await act(async () => {
+      select.value = 'medium';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
   it('keeps an overlong rename draft, then allows 300 emoji', async () => {
     const props = render({ todos: [todo('parent', null, '旅行')] });
     click(container.querySelector('button[aria-label="修改 旅行 的標題"]'));

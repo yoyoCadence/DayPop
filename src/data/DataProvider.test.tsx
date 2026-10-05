@@ -66,6 +66,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
     addTodo: respond,
     toggleTodo: respond,
     renameTodo: respond,
+    setTodoPriority: respond,
     deleteTodo: respond,
     addSticker: respond,
     deleteSticker: respond,
@@ -78,6 +79,19 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('orders delete before priority edit, refuses it without unmounting and continues the queue', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '先刪除', date: '2026-08-08' })).todos[0]!;
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    await act(async () => {
+      latest().actions.deleteTodo(todo.id);
+      await expect(latest().actions.setTodoPriority(todo.id, 'high')).rejects.toThrow('找不到待辦');
+    });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [] }, warning: { kind: 'refused' } });
+    await act(async () => { latest().actions.addTodo({ title: '後續正常', date: '2026-08-08' }); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ title: '後續正常', priority: 'none' }] } });
+  });
   it('refuses an invalid all-day range without unmounting or poisoning the queue', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await render(<DataProvider repository={repository}><Probe /></DataProvider>);

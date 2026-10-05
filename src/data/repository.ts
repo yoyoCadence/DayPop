@@ -9,7 +9,7 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import { createDomainId, type DayPopUserData, type EventOccurrence } from '../domain/types';
+import { createDomainId, type DayPopUserData, type EventOccurrence, type TodoPriority } from '../domain/types';
 
 /**
  * The only data contract the UI is allowed to depend on.
@@ -68,6 +68,7 @@ export interface DayPopRepository {
   ): Promise<DayPopUserData>;
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
   renameTodo(id: string, title: string): Promise<DayPopUserData>;
+  setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
   addSticker(input: NewStickerInput): Promise<DayPopUserData>;

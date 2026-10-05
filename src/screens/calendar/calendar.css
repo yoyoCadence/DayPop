@@ -1187,6 +1187,41 @@ button.cal-day-todo-title {
   opacity: .5;
 }
 
+.cal-day-todo-meta {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-day-priority {
+  flex: none;
+  width: 84px;
+}
+
+.cal-day-priority select {
+  width: 100%;
+  min-height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  padding: 2px;
+  font: inherit;
+  font-size: 16px;
+}
+
+.cal-day-priority select:disabled {
+  opacity: .5;
+}
+
+.cal-day-priority small {
+  display: block;
+  color: var(--fg);
+  font-size: 11px;
+}
+
 .cal-day-title-error {
   grid-column: 1 / -1;
   color: var(--muted);
@@ -1280,6 +1315,7 @@ button.cal-day-todo-title {
 }
 
 .cal-day-sheet button:focus-visible,
+.cal-day-sheet select:focus-visible,
 .cal-day-sheet input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
