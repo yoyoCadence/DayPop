@@ -157,7 +157,7 @@ test('ICS 真實下載與取消不寫入，確認附加會重新命名碰撞 UID
   await expect(agendaRow(page, '備份晨會')).toHaveCount(2);
   await expect(agendaRow(page, '備份改期晨會')).toHaveCount(2);
   await expect(agendaRow(page, '備份夜班')).toHaveCount(4); // Two events × two display segments.
-  await expect(agendaRow(page, '備份假期')).toHaveCount(2);
+  await expect(agendaRow(page, '備份假期')).toHaveCount(6); // Two events × three inclusive all-day dates.
   await expect(agendaRow(page, '備份待辦')).toHaveCount(1);
 });
 
@@ -186,8 +186,8 @@ test('外部 ICS 的浮動時間使用偏好時區，TZID／UTC／全天與文�
   await reloadApp(page);
   expect(await storedBytes(page)).toBe(savedBytes);
   await calendarViewButton(page, '列表').click();
-  for (const title of expectedExternalEvents.map((event) => event.title)) {
-    await expect(agendaRow(page, title)).toHaveCount(1);
+  for (const event of expectedExternalEvents) {
+    await expect(agendaRow(page, event.title)).toHaveCount(event.allDay ? 3 : 1); // The imported holiday is September 30 through October 2.
   }
   await expect(agendaRow(page, '外部,浮動會議')).toContainText('13:00');
   await expect(agendaRow(page, '外部紐約夜班')).toContainText('11:00');

@@ -325,8 +325,8 @@ test('帳號 ICS 後續非法時區整份拒絕，重新選有效檔可附加並
   expect(await accountData(page)).toEqual(result);
   await tabButton(page, '日曆').click();
   await calendarViewButton(page, '列表').click();
-  for (const title of expectedExternalEvents.map((event) => event.title)) {
-    await expect(agendaRow(page, title)).toHaveCount(1);
+  for (const event of expectedExternalEvents) {
+    await expect(agendaRow(page, event.title)).toHaveCount(event.allDay ? 3 : 1); // The imported holiday is September 30 through October 2.
   }
   await expect(agendaRow(page, '帳號保留待辦')).toHaveCount(1);
   await agendaRow(page, '帳號附件行程').click();

@@ -28,7 +28,7 @@ async function assertGuestUi(page: Page, petName: string, holiday: string) {
   await expect(agendaRow(page, '備份晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份改期晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份夜班')).toHaveCount(2);
-  await expect(agendaRow(page, holiday)).toHaveCount(1);
+  await expect(agendaRow(page, holiday)).toHaveCount(3);
 }
 
 test('已快取 production 遊客 App 離線另開頁、編輯及 reload 保存，恢復連線可檢查更新', async ({ page, context, site }) => {
@@ -118,7 +118,7 @@ test('已快取 production 遊客 App 離線另開頁、編輯及 reload 保存�
     const eventDialog = coldPage.getByRole('dialog', { name: '編輯行程' });
     await eventDialog.getByLabel('標題').fill('離線假期');
     await eventDialog.getByRole('button', { name: '儲存', exact: true }).click();
-    await expect(agendaRow(coldPage, '離線假期')).toHaveCount(1);
+    await expect(agendaRow(coldPage, '離線假期')).toHaveCount(3);
     await tabButton(coldPage, '設定').click();
     await coldPage.getByLabel('寵物名字').fill('離線夥伴');
     await coldPage.getByLabel('寵物名字').blur();

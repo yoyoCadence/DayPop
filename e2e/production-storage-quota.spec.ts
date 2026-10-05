@@ -32,7 +32,7 @@ async function assertGuestUi(page: Page) {
   await expect(agendaRow(page, '備份晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份改期晨會')).toHaveCount(1);
   await expect(agendaRow(page, '備份夜班')).toHaveCount(2);
-  await expect(agendaRow(page, '備份假期')).toHaveCount(1);
+  await expect(agendaRow(page, '備份假期')).toHaveCount(3);
 }
 
 async function downloadBackup(page: Page): Promise<DayPopBackup> {
@@ -81,12 +81,12 @@ test('Production quota 中途降級保留分頁修改，釋放空間不補寫，
   console.log('Production quota native evidence:', { characters: quota.characters, failures: quota.failures });
   await expect(warning).toHaveCount(0);
 
-  await agendaRow(page, '備份假期').click();
+  await agendaRow(page, '備份假期').first().click();
   const eventDialog = page.getByRole('dialog', { name: '編輯行程' });
   await eventDialog.getByLabel('標題').fill(memoryTitle);
   await eventDialog.getByLabel('備註').fill(memoryNotes);
   await eventDialog.getByRole('button', { name: '儲存', exact: true }).click();
-  await expect(agendaRow(page, memoryTitle)).toHaveCount(1);
+  await expect(agendaRow(page, memoryTitle)).toHaveCount(3);
   for (const tab of ['日曆', '搜尋', '綜覽', '設定'] as const) {
     await tabButton(page, tab).click();
     await expect(warning).toBeVisible();
