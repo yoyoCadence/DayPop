@@ -8,6 +8,7 @@ import {
 import { sortedCalendars } from '../../domain/calendars';
 import { addDays, daysBetween, fromDateKey, toDateKey } from '../../domain/date';
 import { eventWallTime } from '../../domain/eventTime';
+import { allDayDateIssue, dateKeyDaysBetween, shiftDateKey } from '../../domain/allDayDates';
 import {
   recurrencePresetForRule,
   recurrenceRuleForPreset,
@@ -173,7 +174,20 @@ function EventSheetForm({
   const [mode, setMode] = useState<SheetMode>('event');
   const [title, setTitle] = useState(editing?.title ?? seed?.title ?? '');
   const [date, setDate] = useState(editingWallTime?.date ?? seed?.date ?? defaultDate);
+  const [endDate, setEndDate] = useState(editing?.allDay ? editing.endDate : seed?.date ?? editingWallTime?.date ?? defaultDate);
   const [allDay, setAllDay] = useState(editing?.allDay ?? seed?.allDay ?? false);
+  const [scopeDateError, setScopeDateError] = useState<string | null>(null);
+  const dateIssue = mode === 'event' && allDay ? allDayDateIssue(date, endDate) ?? scopeDateError : null;
+
+  function changeDate(next: string) {
+    setScopeDateError(null);
+    // A valid start-date move carries the whole all-day span. Invalid drafts
+    // stay visible and are never silently shortened or committed.
+    if (!allDayDateIssue(date, endDate)) {
+      setEndDate(shiftDateKey(next, dateKeyDaysBetween(date, endDate)) ?? '');
+    }
+    setDate(next);
+  }
   /**
    * The原檔's `scopeAsk` — which question the range dialog is asking, or null
    * when it is closed (DP-082).
@@ -249,6 +263,16 @@ function EventSheetForm({
    */
   function seriesPatch(patch: EventPatch): EventPatch {
     if (!seriesDate || !occurrenceDate || patch.date === undefined) return patch;
+    if (patch.allDay) {
+      const anchor = shiftDateKey(seriesDate, dateKeyDaysBetween(occurrenceDate, patch.date));
+      return {
+        ...patch,
+        date: anchor ?? '',
+        ...(patch.endDate === undefined ? {} : {
+          endDate: anchor ? shiftDateKey(anchor, dateKeyDaysBetween(patch.date, patch.endDate)) ?? '' : '',
+        }),
+      };
+    }
     const shift = daysBetween(fromDateKey(occurrenceDate), fromDateKey(patch.date));
     return { ...patch, date: toDateKey(addDays(fromDateKey(seriesDate), shift)) };
   }
@@ -262,7 +286,13 @@ function EventSheetForm({
       else onCancelOccurrence(seriesEventId, occurrence);
     } else {
       if (!pendingPatch) return;
-      if (kind === 'all') onUpdateEvent(seriesEventId, seriesPatch(pendingPatch));
+      const patch = kind === 'all' ? seriesPatch(pendingPatch) : pendingPatch;
+      if (patch.allDay && allDayDateIssue(patch.date ?? '', patch.endDate ?? '')) {
+        setScopeDateError('套用全部後的日期超出可保存範圍，請調整日期。');
+        setPendingPatch(null);
+        return;
+      }
+      if (kind === 'all') onUpdateEvent(seriesEventId, patch);
       else onReplaceOccurrence(seriesEventId, occurrence, pendingPatch);
     }
     setPendingPatch(null);
@@ -339,6 +369,7 @@ function EventSheetForm({
     // be wrong twice over: it is not an event, and the原檔 never invents a
     // title for a todo.
     const trimmed = title.trim();
+    if (dateIssue) return;
     if (isTitleTooLong(trimmed)) return;
     if (mode !== 'event' && !editing && !trimmed) return;
     const named = trimmed || DEFAULT_EVENT_TITLE;
@@ -357,6 +388,7 @@ function EventSheetForm({
         title: named,
         date,
         allDay,
+        ...(allDay ? { endDate } : {}),
         ...times,
         ...(chosen ? { calendarId: chosen } : {}),
         location,
@@ -377,6 +409,7 @@ function EventSheetForm({
         title: named,
         date,
         allDay,
+        ...(allDay ? { endDate } : {}),
         ...times,
         calendarId: chosen,
         location,
@@ -407,7 +440,7 @@ function EventSheetForm({
               取消
             </button>
             <strong>{heading}</strong>
-            <button type="submit" disabled={isTitleTooLong(title)}>儲存</button>
+            <button type="submit" disabled={isTitleTooLong(title) || dateIssue !== null}>儲存</button>
           </div>
 
           <div className="cal-sheet-body">
@@ -483,7 +516,7 @@ function EventSheetForm({
                   type="button"
                   aria-pressed={allDay}
                   aria-labelledby="event-allday-label"
-                  onClick={() => setAllDay(!allDay)}
+                  onClick={() => { setScopeDateError(null); setAllDay(!allDay); }}
                 >
                   <span className="cal-allday-knob" aria-hidden="true" />
                 </button>
@@ -491,14 +524,25 @@ function EventSheetForm({
             )}
 
             <div className="cal-field" style={{ marginTop: 11 }}>
-              <div className="cal-field-label">日期</div>
+              <div className="cal-field-label">{mode === 'event' && allDay ? '開始日期' : '日期'}</div>
               <input
                 type="date"
                 value={date}
-                onChange={(event) => setDate(event.target.value)}
+                onChange={(event) => changeDate(event.target.value)}
                 aria-label="日期"
+                aria-invalid={dateIssue !== null}
               />
             </div>
+
+            {mode === 'event' && allDay && (
+              <div className="cal-field" style={{ marginTop: 11 }}>
+                <div className="cal-field-label">結束日期</div>
+                <input type="date" aria-label="結束日期" value={endDate} min={date} max="9999-12-31"
+                  aria-invalid={dateIssue !== null} onChange={(event) => { setScopeDateError(null); setEndDate(event.target.value); }} />
+                <small className="cal-field-note">包含結束當天；修改開始日期會一起移動整段行程。</small>
+                {dateIssue && <div className="cal-day-title-error" role="alert">{dateIssue}</div>}
+              </div>
+            )}
 
             {mode === 'event' && (
               <>

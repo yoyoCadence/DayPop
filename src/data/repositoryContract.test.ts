@@ -63,6 +63,32 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter all-day date ranges (DP-127)', (_name, create) => {
+  it('creates, extends, moves and shortens a range through durable reload', async () => {
+    const repository = await create();
+    const event = (await repository.addEvent({ title: '春假', date: '2026-03-07', endDate: '2026-03-10', allDay: true, start: '', end: '', location: '家' })).events[0]!;
+    expect((await repository.load()).events).toEqual([event]);
+    await repository.updateEvent(event.id, { endDate: '2026-03-12' });
+    expect((await repository.load()).events[0]).toMatchObject({ startDate: '2026-03-07', endDate: '2026-03-12', location: '家' });
+    await repository.updateEvent(event.id, { date: '2026-03-09' });
+    expect((await repository.load()).events[0]).toMatchObject({ startDate: '2026-03-09', endDate: '2026-03-14' });
+    await repository.updateEvent(event.id, { endDate: '2026-03-09' });
+    expect((await repository.load()).events[0]).toMatchObject({ startDate: '2026-03-09', endDate: '2026-03-09' });
+    const before = await repository.load();
+    await expect(repository.updateEvent(event.id, { endDate: '2026-03-08' })).rejects.toThrow('不能早於');
+    await expect(repository.addEvent({ title: '拒絕', date: '2026-03-09', endDate: '', allDay: true, start: '', end: '' })).rejects.toThrow();
+    expect(await repository.load()).toEqual(before);
+  });
+  it('extends one occurrence while keeping the series and every other occurrence unchanged', async () => {
+    const repository = await create();
+    const event = (await repository.addEvent({ title: '週末', date: '2026-08-01', endDate: '2026-08-03', allDay: true, start: '', end: '', recurrenceRule: 'FREQ=WEEKLY;COUNT=3' })).events[0]!;
+    const next = await repository.replaceEventOccurrence(event.id, { kind: 'all-day', date: '2026-08-08' }, { endDate: '2026-08-12' });
+    expect(next.events.find((item) => item.id === event.id)).toEqual(event);
+    expect(next.events.find((item) => item.id !== event.id)).toMatchObject({ startDate: '2026-08-08', endDate: '2026-08-12', recurrence: null });
+    expect(await repository.load()).toEqual(next);
+  });
+});
+
 describe.each(adapters)('%s adapter title limits (DP-125)', (_name, create) => {
   it('accepts 300 emoji and rejects 301 before changing durable data', async () => {
     const repository = await create();

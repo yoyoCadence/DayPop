@@ -82,9 +82,8 @@ function timedEvent(data: DayPopUserData): CalendarEvent {
 }
 
 /**
- * A four-day all-day event. Nothing in the UI creates one yet, but the domain
- * contract allows it — `endDate` is inclusive — and the Supabase adapter will
- * read exactly this shape back out of `events` (DP-026).
+ * A four-day all-day event, also creatable from the sheet since DP-127.
+ * `endDate` is inclusive; the Supabase adapter reads the same canonical shape.
  */
 function multiDayEvent(): CalendarEvent {
   const event = createEventFromInput(
@@ -94,6 +93,42 @@ function multiDayEvent(): CalendarEvent {
   );
   return { ...event, allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' };
 }
+
+describe('all-day date ranges (DP-127)', () => {
+  it('creates an inclusive range and keeps single-day callers compatible', () => {
+    const data = baseData();
+    const input = { title: '假期', date: '2026-03-07', allDay: true, start: '', end: '' };
+    expect(createEventFromInput(data, { ...input, endDate: '2026-03-10' }, { id: 'new', now: NOW }))
+      .toMatchObject({ startDate: '2026-03-07', endDate: '2026-03-10' });
+    expect(createEventFromInput(data, input, { id: 'new', now: NOW }))
+      .toMatchObject({ startDate: '2026-03-07', endDate: '2026-03-07' });
+  });
+  it.each(['2026-08-05', '', '2026-02-30', '10000-01-01'])('refuses invalid ends before create or patch: %s', (endDate) => {
+    expect(() => createEventFromInput(baseData(), { title: '拒絕', date: '2026-08-06', endDate, allDay: true, start: '', end: '' }, { id: 'new', now: NOW })).toThrow();
+    expect(() => applyEventPatch(multiDayEvent(), { endDate }, 'UTC', NOW)).toThrow();
+  });
+  it('explicitly extends, shortens and converts a range without changing metadata', () => {
+    const event = multiDayEvent();
+    expect(applyEventPatch(event, { endDate: '2026-08-12' }, 'UTC', NOW))
+      .toEqual({ ...event, endDate: '2026-08-12', updatedAt: NOW });
+    expect(applyEventPatch(event, { endDate: event.allDay ? event.startDate : '' }, 'UTC', NOW))
+      .toMatchObject({ startDate: '2026-08-06', endDate: '2026-08-06' });
+    expect(applyEventPatch(timedEvent(baseData()), { allDay: true, endDate: '2026-08-09' }, 'UTC', NOW))
+      .toMatchObject({ allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' });
+  });
+  it('preserves inclusive dates when moving a range across a skipped device date', () => {
+    const event = { ...multiDayEvent(), allDay: true as const, startDate: '2011-12-29', endDate: '2011-12-31' };
+    expect(applyEventPatch(event, { date: '2011-12-30' }, 'UTC', NOW))
+      .toMatchObject({ startDate: '2011-12-30', endDate: '2012-01-01' });
+    expect(() => applyEventPatch(event, { date: '9999-12-31' }, 'UTC', NOW)).toThrow();
+  });
+  it('refuses endDate on timed events and competing timedInterval fields', () => {
+    const event = timedEvent(baseData());
+    expect(() => createEventFromInput(baseData(), { title: '拒絕', date: '2026-08-06', endDate: '2026-08-09', allDay: false, start: '09:00', end: '10:00' }, { id: 'new', now: NOW })).toThrow('只適用');
+    expect(() => applyEventPatch(event, { endDate: '2026-08-09' }, 'UTC', NOW)).toThrow('只適用');
+    expect(() => applyEventPatch(event, { allDay: true, endDate: '2026-08-09', timedInterval: { startsAt: '2026-08-06T01:00:00.000Z', endsAt: '2026-08-06T02:00:00.000Z' } }, 'UTC', NOW)).toThrow();
+  });
+});
 
 describe('createTodoFromInput subtasks (DP-116)', () => {
   function parentData() {

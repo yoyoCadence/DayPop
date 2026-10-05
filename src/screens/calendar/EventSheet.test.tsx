@@ -110,6 +110,75 @@ const submit = () =>
 
 const chips = () => [...container.querySelectorAll('.cal-cal-chip')];
 
+describe('EventSheet all-day dates (DP-127)', () => {
+  const field = (name: string) => `[aria-label="${name}"]`;
+  const allDayEvent = (): CalendarEvent => ({ ...timedEvent(), allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' });
+
+  it('creates an inclusive range after confirmation and keeps timed/todo payloads free of endDate', () => {
+    const props = render();
+    expect(container.querySelector(field('結束日期'))).toBeNull();
+    click('.cal-allday-toggle');
+    expect(container.querySelector<HTMLInputElement>(field('結束日期'))!.value).toBe('2026-08-06');
+    type(field('結束日期'), '2026-08-09');
+    expect(props.onAddEvent).not.toHaveBeenCalled();
+    submit();
+    expect(props.onAddEvent).toHaveBeenCalledWith(expect.objectContaining({ allDay: true, date: '2026-08-06', endDate: '2026-08-09' }));
+    vi.mocked(props.onAddEvent).mockClear();
+    click('.cal-allday-toggle');
+    submit();
+    expect(vi.mocked(props.onAddEvent).mock.calls[0]![0]).not.toHaveProperty('endDate');
+    click('.cal-segmented button:nth-child(2)');
+    type('.cal-title-input', '待辦');
+    submit();
+    expect(vi.mocked(props.onAddTodo).mock.calls[0]![0]).not.toHaveProperty('endDate');
+  });
+  it('moves the full imported span, then allows explicitly shortening it to one day', () => {
+    const props = render({ editing: allDayEvent() });
+    type(field('日期'), '2026-09-01');
+    expect(container.querySelector<HTMLInputElement>(field('結束日期'))!.value).toBe('2026-09-04');
+    type(field('結束日期'), '2026-09-01');
+    submit();
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(timedEvent().id, expect.objectContaining({ date: '2026-09-01', endDate: '2026-09-01' }));
+  });
+  it.each(['', '2026-08-05'])('retains a refused date draft and does not close or write: %s', (endDate) => {
+    const props = render({ editing: allDayEvent() });
+    type(field('結束日期'), endDate);
+    submit();
+    expect(container.querySelector<HTMLInputElement>(field('結束日期'))!.value).toBe(endDate);
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
+  it.each(['this', 'all'] as const)('preserves anchor and edited span when saving scope %s', (scope) => {
+    const editing = { ...allDayEvent(), startDate: '2026-08-20', endDate: '2026-08-23', recurrence: { rule: 'FREQ=WEEKLY' } };
+    const props = render({ editing, occurrence: { kind: 'all-day', date: '2026-08-20' }, seriesEventId: editing.id, seriesDate: '2026-08-06' });
+    type(field('日期'), '2026-08-21');
+    type(field('結束日期'), '2026-08-25');
+    submit();
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    click(`.cal-scope-${scope}`);
+    if (scope === 'this') expect(props.onReplaceOccurrence).toHaveBeenCalledWith(editing.id, { kind: 'all-day', date: '2026-08-20' }, expect.objectContaining({ date: '2026-08-21', endDate: '2026-08-25' }));
+    else expect(props.onUpdateEvent).toHaveBeenCalledWith(editing.id, expect.objectContaining({ date: '2026-08-07', endDate: '2026-08-11' }));
+  });
+  it('keeps a valid occurrence draft open if applying its shift to the whole series would overflow', () => {
+    const editing = { ...allDayEvent(), recurrence: { rule: 'FREQ=WEEKLY' } };
+    const props = render({ editing, occurrence: { kind: 'all-day', date: '2026-08-06' }, seriesEventId: editing.id, seriesDate: '2000-01-01' });
+    type(field('日期'), '0100-01-01');
+    submit();
+    click('.cal-scope-all');
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('超出');
+    expect(container.querySelector<HTMLInputElement>(field('日期'))!.value).toBe('0100-01-01');
+    type(field('日期'), '2026-08-07');
+    submit();
+    click('.cal-scope-all');
+    expect(props.onUpdateEvent).toHaveBeenCalledWith(editing.id, expect.objectContaining({ date: '2000-01-02', endDate: '2000-01-05' }));
+  });
+});
+
 describe('EventSheet title limits (DP-125)', () => {
   it.each([null, { ...timedEvent(), title: '字'.repeat(301) }])('retains an overlong draft and requires shortening before saving', (editing) => {
     const props = render({ editing });

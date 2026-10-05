@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **全天日期範圍（DP-127）：** EventSheet 全天模式沿既有日期欄位提供 inclusive 結束日，有效起日變更平移整段、明確結束日變更調整跨度，無效／倒置保留草稿。NewEventInput／EventPatch 可選 endDate 只適用全天，省略保持單日新增／原跨度 patch；allDayDates 的 UTC 欄位只作無時區日期算術。AllDayInputError 沿 refused／單一 queue、request 前拒絕，write barrier 不變。單次保持完整 occurrence，全部依日期位移錨點再套跨度、越界留表單；既有 DB mapping／RPC 不變。ADR §6 記錄原稿沒有此欄位的刻意擴充，未改 schema／release／部署。
+
 - **多日全天行程呈現（DP-126）：** `allDayDisplaySegments()` 在 domain 共用 inclusive 日期／可見 window，月曆、週、列表、日詳情與綜覽均顯示每個佔用日，後續日標「續」。先裁切兩端再展開，UTC 欄位只作無時區日期算術，不可轉成 timed instant 或用裝置日界漏掉日期。續日仍開完整 resolved occurrence，單次取消／替換影響該次整個跨度，綜覽保留 occurrence 去重；上游可見性／例外結果維持。原稿無多日全天模型，本項是 DP-114 的一致性擴充；ADR §6 記錄。不改 schema、repository、release 或部署。
 
 - **0.4.2 公告補正（DP-122，2026-10-05）：** 尚未部署的 0.4.2 公告合併成 6 條，補上隱私說明／待辦改名／標題上限，保留已合併日常功能與全部歷史公告。真正 staging 最後一版 0.3.0（5891034）production build、原始不可捲動 dialog 以 0.4.0 校準後，五種尺寸的完整 dialog 與兩顆按鈕均在 viewport；932×430 為 15..418.5，375×667 為 90.1..576.9。方法與發布交接見 docs/deployment.md §5.19。release／schema／worker template 不變，agent 未部署。

@@ -301,6 +301,14 @@ DP-114 的週列已呈現 inclusive 多日全天行程，但月曆、列表、�
 
 續日點擊仍交出完整 resolved occurrence，日期是該次起始日；單次取消／替換作用於整個 occurrence，不是拆掉被點到的一天。月格仍開日詳情，週／列表／日詳情仍走既有單次／全部 scope；綜覽仍以系列入口編輯，不改其範圍語意。所有顯示列保留 occurrence key，綜覽各月計數與跨月總數沿既有去重規則，同一 occurrence 可在兩個月出現但年總數只計一次。沒有 schema、repository、release 或部署變更。
 
+### 日期範圍編輯（DP-127，2026-10-05）— 全天行程的結束日期
+
+依持續自主開發委託，接續 DP-126，在事件 sheet 的全天模式補上 native 結束日期欄位。原稿 :588 只有一個日期，這是刻意擴充；沿既有 `.cal-field`／`.cal-field-note` 與 alert token，不新增 CSS 或改動 timed／待辦的欄位。開始日期保留既有「日期」accessible name，畫面標明開始／結束；說明包含結束當天。有效的開始日期變更會讓結束日期跟著移動，明確改結束日期才改變跨度；空白、倒置、無效或超出 canonical 四位年份的範圍拒絕保存並保留草稿。取消沿原有關閉流程不寫入。
+
+`NewEventInput.endDate` 與 `EventPatch.endDate` 是可選的純領域欄位，只適用全天。新建省略時仍是一日；patch 省略時保留原跨度，明確指定時採 inclusive 結束日期。timed event 不能夾帶此欄位，`timedInterval` 也保持互斥。`allDayDates.ts` 的 UTC 欄位只作無時區日期算術，移動不依裝置午夜或 DST；命令輸入錯誤以 `AllDayInputError` 在 request 前拒絕，DataProvider 沿 refused 保留 snapshot／warning 並繼續 queue，資料毀損與 future barrier 仍優先。
+
+重複事件的單次編輯保存該 occurrence 的完整範圍；全部編輯先按該次的開始日位移平移系列錨點，再將明確的新跨度套到錨點，不能把後面那次的結束日期複製到系列。若平移後超出可保存範圍，關閉範圍詢問並留在表單讓使用者調整，尚未寫入。兩種 adapter 沿既有 all-day start/end mapping 與 occurrence RPC 保存，沒有 DB schema／RPC signature、release、Auth 或部署變更；帳號瀏覽器驗證仍為 FakeSupabase，不等於真實雲端、真機或 staging 驗收。
+
 ### 決策（DP-083，2026-10-03）— 重複週格拖曳沿用單次／全部選擇
 
 專案擁有者委託 agent 對未定事項提出建議並直接執行，再以 PR 自行合併。採 DP-083 的 (b)：單日重複 occurrence 在週格可拖曳、跨欄換日與拉長度，放開後沿用事件 sheet 的「只改這一次／套用全部／取消」對話框。這是刻意偏離原稿 `wkUp()` 不詢問便拆成獨立事件的行為，目的為讓同一系列在兩個入口的修改範圍一致；決策可由後續 PR 修訂。
