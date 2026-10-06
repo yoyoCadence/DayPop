@@ -84,7 +84,7 @@ export interface EventSheetProps {
   /** A synchronous callback has already confirmed; production actions await the queue. */
   onAddEvent(input: NewEventInput): Promise<void> | void;
   onUpdateEvent(id: string, patch: EventPatch): Promise<void> | void;
-  onDeleteEvent(id: string): void;
+  onDeleteEvent(id: string): Promise<void> | void;
   /**
    * Which occurrence was tapped, when one was — DP-082.
    *
@@ -102,7 +102,7 @@ export interface EventSheetProps {
    * with the tapped occurrence's date. See `seriesPatch()`.
    */
   seriesDate?: string | null;
-  onCancelOccurrence(eventId: string, occurrence: EventOccurrence): void;
+  onCancelOccurrence(eventId: string, occurrence: EventOccurrence): Promise<void> | void;
   onReplaceOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
@@ -115,6 +115,8 @@ export interface EventSheetProps {
 }
 
 type SheetMode = 'event' | 'todo';
+/** Which confirmed write the sheet is waiting for — DP-133 saves, DP-134 deletions. */
+type WriteKind = 'save' | 'delete';
 
 /**
  * The bottom sheet for creating and editing an event.
@@ -227,9 +229,12 @@ function EventSheetForm({
   const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
   const pendingSave = useRef(false);
   const mounted = useRef(true);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingKind, setPendingKind] = useState<WriteKind | null>(null);
+  const saving = pendingKind !== null;
+  const [saveError, setSaveError] = useState<{ kind: WriteKind; message: string } | null>(null);
   const saveButton = useRef<HTMLButtonElement>(null);
+  const deleteButton = useRef<HTMLButtonElement>(null);
+  const writeAlert = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -250,15 +255,23 @@ function EventSheetForm({
   }, [saving]);
 
   useEffect(() => {
-    if (!saving && saveError && document.activeElement === document.body) {
-      saveButton.current?.focus();
+    if (saving || !saveError) return;
+    if (document.activeElement === document.body) {
+      (saveError.kind === 'delete' ? deleteButton : saveButton).current?.focus();
     }
+    // 刪除事件 sits at the bottom of a scrolled sheet, and 儲存 can be pressed
+    // after scrolling down, so reveal the explanation without moving focus.
+    writeAlert.current?.scrollIntoView?.({ block: 'nearest' });
   }, [saving, saveError]);
 
-  async function confirmSave(operation: () => Promise<void> | void) {
+  /**
+   * Closes only once the queued write confirms. Deletions share the same lock
+   * as saves (DP-134), so neither can be sent twice or dismissed mid-flight.
+   */
+  async function confirmWrite(kind: WriteKind, operation: () => Promise<void> | void) {
     if (pendingSave.current) return;
     pendingSave.current = true;
-    setSaving(true);
+    setPendingKind(kind);
     setSaveError(null);
     try {
       const result = operation();
@@ -266,12 +279,13 @@ function EventSheetForm({
       if (mounted.current) onClose();
     } catch (cause) {
       if (mounted.current) {
-        const message = cause instanceof Error ? cause.message : '未能確認保存。';
-        setSaveError(`${message} 草稿已保留；請先確認資料再重試。`);
+        const message = cause instanceof Error ? cause.message : kind === 'delete' ? '未能確認刪除。' : '未能確認保存。';
+        const kept = kind === 'delete' ? '尚未確認刪除，草稿已保留' : '草稿已保留';
+        setSaveError({ kind, message: `${message} ${kept}；請先確認資料再重試。` });
       }
     } finally {
       pendingSave.current = false;
-      if (mounted.current) setSaving(false);
+      if (mounted.current) setPendingKind(null);
     }
   }
 
@@ -333,8 +347,9 @@ function EventSheetForm({
     setScopeMode(null);
     if (!editing || !occurrence || !seriesEventId) return;
     if (mode === 'delete') {
-      if (kind === 'all') onDeleteEvent(seriesEventId);
-      else onCancelOccurrence(seriesEventId, occurrence);
+      void confirmWrite('delete', () => kind === 'all'
+        ? onDeleteEvent(seriesEventId)
+        : onCancelOccurrence(seriesEventId, occurrence));
     } else {
       if (!pendingPatch) return;
       const patch = kind === 'all' ? seriesPatch(pendingPatch) : pendingPatch;
@@ -343,14 +358,13 @@ function EventSheetForm({
         setPendingPatch(null);
         return;
       }
-      void confirmSave(() => kind === 'all'
+      void confirmWrite('save', () => kind === 'all'
         ? onUpdateEvent(seriesEventId, patch)
         : onReplaceOccurrence(seriesEventId, occurrence, pendingPatch));
       setPendingPatch(null);
       return;
     }
     setPendingPatch(null);
-    onClose();
   }
 
   async function uploadAttachment(event: ChangeEvent<HTMLInputElement>) {
@@ -458,9 +472,9 @@ function EventSheetForm({
         setScopeMode('save');
         return;
       }
-      void confirmSave(() => onUpdateEvent(editing.id, patch));
+      void confirmWrite('save', () => onUpdateEvent(editing.id, patch));
     } else if (mode === 'event') {
-      void confirmSave(() => onAddEvent({
+      void confirmWrite('save', () => onAddEvent({
         title: named,
         date,
         allDay,
@@ -473,7 +487,7 @@ function EventSheetForm({
         ...(!allDay ? { timezone } : {}),
       }));
     } else {
-      void confirmSave(() => onAddTodo({ title: trimmed, date, calendarId: chosen }));
+      void confirmWrite('save', () => onAddTodo({ title: trimmed, date, calendarId: chosen }));
     }
   }
 
@@ -494,11 +508,11 @@ function EventSheetForm({
               取消
             </button>
             <strong>{heading}</strong>
-            <button ref={saveButton} type="submit" disabled={saving || isTitleTooLong(title) || dateIssue !== null}>{saving ? '保存中…' : '儲存'}</button>
+            <button ref={saveButton} type="submit" disabled={saving || isTitleTooLong(title) || dateIssue !== null}>{pendingKind === 'save' ? '保存中…' : '儲存'}</button>
           </div>
 
           <fieldset className="cal-sheet-body" disabled={saving} style={{ border: 0, margin: 0, minWidth: 0 }}>
-            {saveError && <div className="cal-day-title-error" role="alert">{saveError}</div>}
+            {saveError?.kind === 'save' && <div ref={writeAlert} className="cal-day-title-error" role="alert">{saveError.message}</div>}
             {!editing && (
               <div className="cal-segmented" style={{ marginBottom: 12 }} role="group" aria-label="新增類型">
                 <button type="button" aria-pressed={mode === 'event'} onClick={() => setMode('event')}>
@@ -748,21 +762,26 @@ function EventSheetForm({
 
                 {editing && (
                   <button
+                    ref={deleteButton}
                     className="cal-delete-button"
                     type="button"
                     // 原稿 `:913`: a repeating event asks which occurrences to
                     // delete; a single event keeps the原檔's one-tap delete.
+                    // DP-134 closes only after the deletion is confirmed.
                     onClick={() => {
                       if (seriesScope) {
                         setScopeMode('delete');
                         return;
                       }
-                      onDeleteEvent(editing.id);
-                      onClose();
+                      void confirmWrite('delete', () => onDeleteEvent(editing.id));
                     }}
                   >
-                    刪除事件
+                    {pendingKind === 'delete' ? '刪除中…' : '刪除事件'}
                   </button>
+                )}
+                {/* Next to the control that failed, not at the top of the sheet. */}
+                {saveError?.kind === 'delete' && (
+                  <div ref={writeAlert} className="cal-day-title-error" role="alert" style={{ marginTop: 6 }}>{saveError.message}</div>
                 )}
 
                 <div className="cal-sheet-pending">

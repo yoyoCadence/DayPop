@@ -28,6 +28,18 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 行程刪除確認與回應遺失重試（DP-134，2026-10-06）
+
+DP-133 之後，行程表單的刪除仍是送出即關閉：遠端拒絕時畫面已關，使用者看不到失敗，也失去手上的草稿。依持續自主開發委託，一般刪除、重複「刪除全部」與「只刪這一次」改走 DP-133 的同一個 `confirmWrite` 等待鎖；DataActions 的 deleteEvent／cancelEventOccurrence 與 DP-133 的四支方法一樣回傳既有單一 queue 的確認 Promise，ignored rejection 有 handler，warning／saving／write barrier 分類不變。等待時 fieldset、取消、背景與 window capture Escape 都沿用同一套保護，刪除按鈕顯示「刪除中…」，儲存按鈕不顯示「保存中…」。成功才關閉；失敗保留編輯畫面與所有草稿欄位，提示「尚未確認刪除，草稿已保留；請先確認資料再重試」。重複刪除的重試要重新選範圍，不記住失敗時的選擇；settle／unmount 清理與「舊請求不能關閉新表單」不變。
+
+刪除按鈕在長表單最底部，使用者要捲到底才按得到，而 DP-133 的提示放在表單頂端，browser 驗證實測刪除失敗時提示的 viewport ratio 為 0，畫面看起來只是沒反應。因此刪除失敗的提示改放在刪除按鈕正下方；保存與刪除兩種提示出現時都以 `scrollIntoView({ block: 'nearest' })` 捲入視野，不移動焦點。只有焦點失落到 body 時才回到觸發的按鈕（保存或刪除），不搶其他控制項。
+
+驗證時在未修改的 repository 重現了第二個問題：`delete_event_with_attachment_cleanup` 已提交但回應遺失後，明確重試只會得到 `false`，而 adapter 的 `if (!deleted) return data` 原樣回傳舊 snapshot，於是那筆行程永遠留在畫面與帳號快取，再怎麼重試也刪不掉。RPC 只在「本人擁有的那一列已不存在」時回傳 `false`；snapshot 只由本人資料組成，所以收到任何 boolean 都一律移除該筆（連同其例外、替換列與附件 metadata），並沿既有的附件清理佇列 flush 第一次提交時登記的清理工作。非 boolean 的回應不算確認：adapter 拒絕，保留最後確認的 snapshot／cache。單次取消的 RPC 本來就對照已存的例外列，重試即修復，不需改動。RPC／RLS、刪除語意、schema、Auth、公告與部署均不變，也沒有自動重送。
+
+不在本項：附件刪除 `deleteEventAttachment` 有同型的 `if (!deleted) return data`，回應遺失後同樣會留下幽靈附件，已另列任務；行程表單以外的刪除入口（待辦、貼圖、日曆）仍是不等待的寫法。
+
+驗證：表單關閉與重試留下幽靈 snapshot 兩個回歸在修正前失敗；browser 的回應遺失案例在只還原 repository 修正時也失敗（重試後行程仍在日詳情）。lint、typecheck、build／check:build 與七項 posttest 通過。單元測試 999 個案例／61 檔在 `--testTimeout=30000` 下全數通過；預設 5 秒時，本機負載下 CalendarScreen／App 有數個與本項無關的逾時，未修改的基線同樣逾時，因此不視為本項回歸，以 CI 為準。PowerShell 實際 Intl America/New_York 下三個相關測試檔 132 案例通過。完整 e2e 151 通過／五項既有 desktop 跳過，其中新增六個 mobile／desktop synthetic account 案例覆蓋一般刪除失敗、回應遺失後重試、重複「只刪這一次／刪除全部」失敗後重選範圍，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。dev server 下 375×667 與 390×844 的失敗狀態：提示在刪除按鈕下方 6px、標題列仍可見、只有 sheet body 捲動 40px、焦點回刪除按鈕、無水平溢出；量測時另見 `.cal-sheet-backdrop` 在操作前就有 243px／87px 的捲動範圍，成因未查，不由本項造成也未在本項處理。仍只用 dev-only FakeSupabase，沒有真實雲端或真機證據。
+
 ### 行程表單保存確認（DP-133，2026-10-06）
 
 新增／編輯行程、重複單次／全部及同表單新增待辦，原本送出後立即關閉，遠端拒絕時草稿也消失。依持續自主開發委託，DataActions 的 addEvent／updateEvent／replaceEventOccurrence／addTodo 回傳既有單一 queue 的確認 Promise；保留原本不等待的呼叫方式，ignored rejection 有 handler，但 awaiting caller 仍取得原錯誤，DataProvider 的 warning／saving／write barrier 分類不變。Repository、owner update／RPC、snapshot／cache 成功才更新的邊界不變。

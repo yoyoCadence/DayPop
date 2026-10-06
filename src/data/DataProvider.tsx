@@ -127,10 +127,10 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         return confirmed(() => activeRepository.updateEvent(id, patch));
       },
       deleteEvent(id) {
-        run(() => activeRepository.deleteEvent(id));
+        return confirmed(() => activeRepository.deleteEvent(id));
       },
       cancelEventOccurrence(eventId, occurrence) {
-        run(() => activeRepository.cancelEventOccurrence(eventId, occurrence));
+        return confirmed(() => activeRepository.cancelEventOccurrence(eventId, occurrence));
       },
       replaceEventOccurrence(eventId, occurrence, patch) {
         return confirmed(() => activeRepository.replaceEventOccurrence(eventId, occurrence, patch));
