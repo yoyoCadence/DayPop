@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **附件按鈕焦點捲走 App（DP-136，2026-10-07）：** `.cal-attachment-picker` 加上 `position: relative`，讓視覺隱藏的檔案輸入框以 label 為 containing block。原本它一路落到 `.cal-sheet-backdrop`，留在未捲動的版面位置（畫面下方）並替 `overflow: hidden` 的 `.dp-viewport` 撐出捲動範圍；焦點一落上去（Tab，或直接按「選擇附件」）瀏覽器就捲動整個 App，375×667 的「取消／儲存」被推到 -146px 且使用者捲不回來。修正後 App 捲動範圍為 0，只有 sheet body 捲動；另以 `:has(input:focus-visible)` 在 label 顯示 2px 鍵盤焦點框（不支援 `:has` 的瀏覽器維持原樣）。**通則：`.dp-viewport` 手指捲不動但焦點捲得動，任何 `position: absolute` 的視覺隱藏元素都要有自己的定位祖先。** 這也是 DP-134 記下「backdrop 多 243px 捲動範圍、成因未查」的成因。只改這兩條 CSS；附件行為、其他 sheet、schema、Auth、公告與部署不變。Chromium 重現與驗證，iOS Safari 未驗。見 ADR §2。
+
 - **附件刪除回應遺失（DP-135）：** Supabase deleteEventAttachment 與 DP-134 的 deleteEvent 採同一契約：`delete_event_attachment_with_cleanup` 回傳任何 boolean 都移除該筆附件 metadata 的 snapshot／cache 並 flush 既有清理佇列，非 boolean 回應拒絕並保留最後確認內容。舊行為在「已提交但回應遺失」後的重試會顯示「附件已刪除」卻把附件留在清單與快取，再按也刪不掉。snapshot 已無該筆時仍不送 request。只改這個方法的結果處理；EventSheet 附件 UI、DataProvider、RPC／RLS、schema、Auth、公告與部署不變。取代下一條 DP-134 的「附件刪除的同型 `false` 處理未改」。見 ADR §2。
 
 - **行程刪除確認（DP-134）：** EventSheet 的一般刪除、重複「刪除全部」與「只刪這一次」沿 DP-133 的同一個等待鎖，確認後才關閉；失敗保留編輯畫面與草稿，提示顯示在刪除按鈕正下方並捲入視野，重複刪除重試須重新選範圍，沒有自動重送。DataActions 的 deleteEvent／cancelEventOccurrence 改回傳可等待結果。Supabase deleteEvent 收到任何 boolean 都移除該筆 snapshot／cache 並沿既有附件清理：`false` 代表已無本人擁有的那一列（常見於上次已提交但回應遺失），舊行為會留下重試也刪不掉的幽靈行程；非 boolean 回應拒絕並保留最後確認內容。RPC／RLS、刪除語意、schema、Auth、公告與部署不變。取代下一條 DP-133 的「刪除仍待後續」；其他表單仍待後續，附件刪除的同型 `false` 處理未改。見 ADR §2。
