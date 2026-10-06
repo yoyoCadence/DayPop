@@ -110,6 +110,109 @@ const submit = () =>
 
 const chips = () => [...container.querySelectorAll('.cal-cal-chip')];
 
+describe('EventSheet confirmed saves (DP-133)', () => {
+  it('keeps the draft open and locks submission, cancellation and Escape until confirmation', async () => {
+    let resolve!: () => void;
+    const onAddEvent = vi.fn(() => new Promise<void>((done) => { resolve = done; }));
+    const props = render({ onAddEvent });
+    type('[aria-label="標題"]', '等待確認');
+    submit();
+    expect(onAddEvent).toHaveBeenCalledTimes(1);
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLButtonElement>('.cal-sheet-bar button[type="submit"]')!.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>('.cal-sheet-bar button[type="button"]')!.disabled).toBe(true);
+    expect(container.querySelector<HTMLFieldSetElement>('fieldset')!.disabled).toBe(true);
+    submit();
+    click('.cal-sheet-backdrop');
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => window.dispatchEvent(escape));
+    expect(escape.defaultPrevented).toBe(true);
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(onAddEvent).toHaveBeenCalledTimes(1);
+    await act(async () => { resolve(); });
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['new', 'edit', 'this', 'all', 'todo'] as const)('retains every draft field on rejected %s save and permits an explicit retry', async (kind) => {
+    let reject!: (error: Error) => void;
+    const write = vi.fn<() => Promise<void>>()
+      .mockImplementationOnce(() => new Promise((_resolve, refused) => { reject = refused; }))
+      .mockResolvedValue(undefined);
+    const editing = timedEvent();
+    if (editing.allDay) throw new Error('expected a timed fixture');
+    const scoped = kind === 'this' || kind === 'all';
+    if (scoped) editing.recurrence = { rule: 'FREQ=DAILY' };
+    const props = render({
+      ...(kind !== 'new' && kind !== 'todo' ? { editing } : {}),
+      ...(scoped ? { occurrence: { kind: 'timed', startsAt: editing.startsAt }, seriesEventId: editing.id, seriesDate: '2026-08-06' } : {}),
+      onAddEvent: write, onUpdateEvent: write, onReplaceOccurrence: write, onAddTodo: write,
+    });
+    if (kind === 'todo') click('.cal-segmented button:nth-child(2)');
+    type('[aria-label="標題"]', '保留草稿');
+    if (kind !== 'todo') {
+      type('[aria-label="地點"]', '圖書館');
+      type('[aria-label="備註"]', '帶筆記本');
+    }
+    submit();
+    if (scoped) act(() => [...document.querySelectorAll<HTMLButtonElement>('.cal-scope-card button')].find((button) => button.textContent === (kind === 'this' ? '只改這一次' : '套用全部'))!.click());
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(props.onClose).not.toHaveBeenCalled();
+    const lostFocus = document.createElement('button');
+    document.body.append(lostFocus);
+    lostFocus.focus();
+    lostFocus.remove();
+    await act(async () => { reject(new Error('網路中斷')); });
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('保留草稿');
+    expect(container.querySelector<HTMLInputElement>('[aria-label="日期"]')!.value).toBe('2026-08-06');
+    if (kind !== 'todo') {
+      expect(container.querySelector<HTMLInputElement>('[aria-label="地點"]')!.value).toBe('圖書館');
+      expect(container.querySelector<HTMLTextAreaElement>('[aria-label="備註"]')!.value).toBe('帶筆記本');
+      expect(container.querySelector<HTMLInputElement>('[aria-label="開始"]')!.value).toBe('09:00');
+      expect(container.querySelector<HTMLInputElement>('[aria-label="結束"]')!.value).toBe('10:00');
+      expect(container.querySelector<HTMLSelectElement>('[aria-label="時區"]')!.value).toBe('Asia/Taipei');
+    }
+    expect(container.querySelector('[role="alert"]')!.textContent).toContain('草稿已保留');
+    expect(container.querySelector<HTMLFieldSetElement>('fieldset')!.disabled).toBe(false);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(container.querySelector('.cal-sheet-bar button[type="submit"]'));
+    submit();
+    if (scoped) act(() => [...document.querySelectorAll<HTMLButtonElement>('.cal-scope-card button')].find((button) => button.textContent === (kind === 'this' ? '只改這一次' : '套用全部'))!.click());
+    await act(async () => {});
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(write.mock.calls[1]).toEqual(write.mock.calls[0]);
+  });
+
+  it('does not close a newly opened sheet when an unmounted save settles', async () => {
+    let resolve!: () => void;
+    const previous = render({ onAddEvent: () => new Promise<void>((done) => { resolve = done; }) });
+    submit();
+    act(() => root.render(<EventSheet {...previous} open={false} />));
+    const next = render();
+    type('[aria-label="標題"]', '另一份草稿');
+    await act(async () => { resolve(); });
+    expect(previous.onClose).not.toHaveBeenCalled();
+    expect(next.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('另一份草稿');
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+    window.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(false);
+  });
+
+  it('does not steal focus from another control on failure', async () => {
+    let reject!: (error: Error) => void;
+    render({ onAddEvent: () => new Promise<void>((_resolve, refused) => { reject = refused; }) });
+    submit();
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    outside.focus();
+    await act(async () => { reject(new Error('無法確認')); });
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
+});
+
 describe('EventSheet all-day dates (DP-127)', () => {
   const field = (name: string) => `[aria-label="${name}"]`;
   const allDayEvent = (): CalendarEvent => ({ ...timedEvent(), allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' });

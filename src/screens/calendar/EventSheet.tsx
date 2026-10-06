@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import {
   EVENT_ATTACHMENT_MIME_TYPES,
@@ -81,8 +81,9 @@ export interface EventSheetProps {
   attachments: EventAttachment[];
   attachmentsAvailable: boolean;
   onClose(): void;
-  onAddEvent(input: NewEventInput): void;
-  onUpdateEvent(id: string, patch: EventPatch): void;
+  /** A synchronous callback has already confirmed; production actions await the queue. */
+  onAddEvent(input: NewEventInput): Promise<void> | void;
+  onUpdateEvent(id: string, patch: EventPatch): Promise<void> | void;
   onDeleteEvent(id: string): void;
   /**
    * Which occurrence was tapped, when one was — DP-082.
@@ -106,8 +107,8 @@ export interface EventSheetProps {
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
-  ): void;
-  onAddTodo(input: NewTodoInput): void;
+  ): Promise<void> | void;
+  onAddTodo(input: NewTodoInput): Promise<void> | void;
   onUploadAttachment(eventId: string, file: File): Promise<void>;
   onDeleteAttachment(id: string): Promise<void>;
   onOpenAttachment(id: string): Promise<string>;
@@ -224,6 +225,55 @@ function EventSheetForm({
   const occurrenceDate = editingWallTime?.date ?? null;
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
+  const pendingSave = useRef(false);
+  const mounted = useRef(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!saving) return;
+    // A disabled focused control can send Escape to body/window. Block it in
+    // capture before CalendarScreen's topmost-sheet close handler, anywhere.
+    const keepDraft = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener('keydown', keepDraft, true);
+    return () => window.removeEventListener('keydown', keepDraft, true);
+  }, [saving]);
+
+  useEffect(() => {
+    if (!saving && saveError && document.activeElement === document.body) {
+      saveButton.current?.focus();
+    }
+  }, [saving, saveError]);
+
+  async function confirmSave(operation: () => Promise<void> | void) {
+    if (pendingSave.current) return;
+    pendingSave.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const result = operation();
+      if (result !== undefined) await result;
+      if (mounted.current) onClose();
+    } catch (cause) {
+      if (mounted.current) {
+        const message = cause instanceof Error ? cause.message : '未能確認保存。';
+        setSaveError(`${message} 草稿已保留；請先確認資料再重試。`);
+      }
+    } finally {
+      pendingSave.current = false;
+      if (mounted.current) setSaving(false);
+    }
+  }
 
   /**
    * True when saving or deleting has to ask 單次還是全部 — DP-082.
@@ -278,6 +328,7 @@ function EventSheetForm({
   }
 
   function applyScope(kind: 'this' | 'all') {
+    if (pendingSave.current) return;
     const mode = scopeMode;
     setScopeMode(null);
     if (!editing || !occurrence || !seriesEventId) return;
@@ -292,8 +343,11 @@ function EventSheetForm({
         setPendingPatch(null);
         return;
       }
-      if (kind === 'all') onUpdateEvent(seriesEventId, patch);
-      else onReplaceOccurrence(seriesEventId, occurrence, pendingPatch);
+      void confirmSave(() => kind === 'all'
+        ? onUpdateEvent(seriesEventId, patch)
+        : onReplaceOccurrence(seriesEventId, occurrence, pendingPatch));
+      setPendingPatch(null);
+      return;
     }
     setPendingPatch(null);
     onClose();
@@ -354,10 +408,11 @@ function EventSheetForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pendingSave.current) return;
     // Events and todos diverge here, and both halves are the原檔's behaviour —
     // DP-076.
     //
-    // An event never fails to save: `commitEvent()` and `scopeApply()` both
+    // An untitled event still has a name: `commitEvent()` and `scopeApply()` both
     // commit `title:(dr.title||'').trim()||'新事件'`, so an empty field becomes
     // a named event rather than a button that does nothing. DayPop had dropped
     // the fallback and kept a silent `return`, which is how "只給時間" quick
@@ -403,9 +458,9 @@ function EventSheetForm({
         setScopeMode('save');
         return;
       }
-      onUpdateEvent(editing.id, patch);
+      void confirmSave(() => onUpdateEvent(editing.id, patch));
     } else if (mode === 'event') {
-      onAddEvent({
+      void confirmSave(() => onAddEvent({
         title: named,
         date,
         allDay,
@@ -416,11 +471,10 @@ function EventSheetForm({
         notes,
         recurrenceRule: repeat === null ? null : recurrenceRuleForPreset(repeat),
         ...(!allDay ? { timezone } : {}),
-      });
+      }));
     } else {
-      onAddTodo({ title: trimmed, date, calendarId: chosen });
+      void confirmSave(() => onAddTodo({ title: trimmed, date, calendarId: chosen }));
     }
-    onClose();
   }
 
   const heading = editing ? '編輯行程' : mode === 'event' ? '新增行程' : '新增待辦';
@@ -430,20 +484,21 @@ function EventSheetForm({
       <div
         className="cal-sheet-backdrop"
         onClick={(event) => {
-          if (event.target === event.currentTarget) onClose();
+          if (!pendingSave.current && event.target === event.currentTarget) onClose();
         }}
       >
-        <form className="cal-sheet" onSubmit={submit} role="dialog" aria-modal="true" aria-label={heading}>
+        <form className="cal-sheet" onSubmit={submit} role="dialog" aria-modal="true" aria-label={heading} aria-busy={saving}>
           <div className="cal-sheet-grip" aria-hidden="true" />
           <div className="cal-sheet-bar">
-            <button type="button" onClick={onClose}>
+            <button type="button" onClick={onClose} disabled={saving}>
               取消
             </button>
             <strong>{heading}</strong>
-            <button type="submit" disabled={isTitleTooLong(title) || dateIssue !== null}>儲存</button>
+            <button ref={saveButton} type="submit" disabled={saving || isTitleTooLong(title) || dateIssue !== null}>{saving ? '保存中…' : '儲存'}</button>
           </div>
 
-          <div className="cal-sheet-body">
+          <fieldset className="cal-sheet-body" disabled={saving} style={{ border: 0, margin: 0, minWidth: 0 }}>
+            {saveError && <div className="cal-day-title-error" role="alert">{saveError}</div>}
             {!editing && (
               <div className="cal-segmented" style={{ marginBottom: 12 }} role="group" aria-label="新增類型">
                 <button type="button" aria-pressed={mode === 'event'} onClick={() => setMode('event')}>
@@ -724,7 +779,7 @@ function EventSheetForm({
                 原稿是從寵物對話泡泡新增待辦（DP-040）；子項與優先度可在日詳情操作，排序仍待 DP-014。這裡先保留一個可用的入口，不讓現有能力消失。
               </div>
             )}
-          </div>
+          </fieldset>
         </form>
       </div>
       {/* 原稿 :430 puts this at z-index 92, above the sheet it was opened from. */}

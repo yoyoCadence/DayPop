@@ -80,6 +80,56 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133)', async (method) => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    let reject!: (error: Error) => void;
+    let calls = 0;
+    let resolveNext!: (next: DayPopUserData) => void;
+    const repository = asyncRepository(data);
+    repository[method] = () => { calls += 1; return new Promise((_resolve, refused) => { reject = refused; }); };
+    repository.updatePreferences = () => new Promise((resolve) => { resolveNext = resolve; });
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    let outcome!: Promise<unknown>;
+    await act(async () => {
+      const actions = latest().actions;
+      const id = '33333333-3333-4333-8333-333333333333';
+      const pending = method === 'addEvent' ? actions.addEvent({ title: '草稿', date: '2026-10-06', allDay: true, start: '', end: '' })
+        : method === 'updateEvent' ? actions.updateEvent(id, { title: '草稿' })
+          : method === 'replaceEventOccurrence' ? actions.replaceEventOccurrence(id, { kind: 'all-day', date: '2026-10-06' }, { title: '草稿' })
+            : actions.addTodo({ title: '草稿', date: '2026-10-06' });
+      expect(pending).toBeInstanceOf(Promise);
+      outcome = pending.catch((error) => error);
+      actions.updatePreferences({ petName: '下一筆' });
+    });
+    expect(calls).toBe(1);
+    expect(resolveNext).toBeUndefined();
+    expect(latest().state).toMatchObject({ status: 'ready', data, saving: true });
+    const failure = new RemoteDataError('保存', new Error('network down'));
+    await act(async () => { reject(failure); expect(await outcome).toBe(failure); });
+    expect(latest().state).toMatchObject({ status: 'ready', data, saving: true, warning: { kind: 'write-failed' } });
+    expect(calls).toBe(1);
+    const next = { ...data, preferences: { ...data.preferences, petName: '下一筆' } };
+    await act(async () => { resolveNext(next); });
+    expect(latest().state).toEqual({ status: 'ready', data: next });
+  });
+
+  it('returns success only after the queued repository confirms the saved snapshot (DP-133)', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    let resolve!: (next: DayPopUserData) => void;
+    let settled = false;
+    const repository = asyncRepository(data);
+    repository.addEvent = () => new Promise((done) => { resolve = done; });
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = latest().actions.addEvent({ title: '確認', date: '2026-10-06', allDay: true, start: '', end: '' }).then(() => { settled = true; });
+    });
+    expect(settled).toBe(false);
+    await act(async () => { resolve(data); await pending; });
+    expect(settled).toBe(true);
+    expect(latest().state).toEqual({ status: 'ready', data });
+  });
+
   it('orders deletion before an awaited reschedule, keeps the App ready and continues the queue', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await repository.load();

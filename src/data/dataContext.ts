@@ -43,10 +43,14 @@ export type DataState =
   | { status: 'blocked'; result: BlockedRead }
   | { status: 'failed'; message: string };
 
-/** Every write the UI is allowed to make. Identities are stable across renders. */
+/**
+ * Every write the UI is allowed to make. Identities are stable across renders.
+ * Event-sheet saves return confirmation (DP-133); other callers may ignore
+ * those promises safely, while DataProvider still reports the failure.
+ */
 export interface DataActions {
-  addEvent(input: NewEventInput): void;
-  updateEvent(id: string, patch: EventPatch): void;
+  addEvent(input: NewEventInput): Promise<void>;
+  updateEvent(id: string, patch: EventPatch): Promise<void>;
   deleteEvent(id: string): void;
   /**
    * The 只有這一次 half of the原檔's scope dialog — DP-082.
@@ -60,8 +64,8 @@ export interface DataActions {
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
-  ): void;
-  addTodo(input: NewTodoInput): void;
+  ): Promise<void>;
+  addTodo(input: NewTodoInput): Promise<void>;
   /** Awaited so an inline editor keeps its draft if the write is refused. */
   renameTodo(id: string, title: string): Promise<void>;
   setTodoPriority(id: string, priority: TodoPriority): Promise<void>;
@@ -80,7 +84,7 @@ export interface DataActions {
   /**
    * Applies a confirmed import — DP-056.
    *
-   * Awaitable, unlike the row edits above: the screen has to know whether the
+   * Awaitable: the screen has to know whether the
    * import landed before it closes the preview and tells the user how many
    * rows arrived. It goes through the same mutation queue as everything else,
    * so it cannot interleave with an edit the user issued a moment earlier.
