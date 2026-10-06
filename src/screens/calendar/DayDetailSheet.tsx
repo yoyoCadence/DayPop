@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { fromDateKey } from '../../domain/date';
 import {
   allDayDisplaySegments,
@@ -49,6 +49,7 @@ export interface DayDetailSheetProps {
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
   onSetTodoPriority(id: string, priority: TodoPriority): Promise<void>;
+  onRescheduleTodo(id: string, date: string): Promise<void>;
   onAddSticker(input: NewStickerInput): void;
   onDeleteSticker(id: string): void;
 }
@@ -57,7 +58,7 @@ export interface DayDetailSheetProps {
  * 日詳情 sheet, ported from the `dayOpen` block of
  * `日曆桌寵 Calendar Pet.dc.html`. Opened by tapping a month cell.
  *
- * DP-116 connects the original expandable subtask cards; DP-128 adds priority.
+ * DP-116 connects the original subtask cards; DP-128/130 add priority/date.
  * Drag ordering remains DP-014.
  */
 export function DayDetailSheet({ dateKey, ...rest }: DayDetailSheetProps) {
@@ -83,11 +84,29 @@ function DayDetailSheetBody({
   onDeleteTodo,
   onRenameTodo,
   onSetTodoPriority,
+  onRescheduleTodo,
   onAddSticker,
   onDeleteSticker,
 }: DayDetailSheetProps & { dateKey: string }) {
   const [todoDraft, setTodoDraft] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const done = useRef<HTMLButtonElement>(null);
+  const pendingDate = useRef(false);
+  const [datePending, setDatePending] = useState(false);
+
+  async function rescheduleTodo(id: string, nextDate: string) {
+    // Moving a parent re-groups its children. Keep a pending child editor from
+    // being re-mounted by another date write; other mutations keep their queue.
+    if (pendingDate.current) throw new Error('請等待目前的日期保存完成。');
+    pendingDate.current = true;
+    setDatePending(true);
+    try {
+      await onRescheduleTodo(id, nextDate);
+    } finally {
+      pendingDate.current = false;
+      setDatePending(false);
+    }
+  }
 
   // Escape is handled by `CalendarScreen`, not here: the event sheet can be open
   // on top of this one, and two window listeners would close both at once.
@@ -178,7 +197,7 @@ function DayDetailSheetBody({
           <div className="cal-day-grip" aria-hidden="true" />
           <div className="cal-day-head">
             <div className="cal-day-title">{dayLabel}</div>
-            <button className="cal-day-done" type="button" onClick={onClose}>
+            <button ref={done} className="cal-day-done" type="button" onClick={onClose}>
               完成
             </button>
           </div>
@@ -262,7 +281,7 @@ function DayDetailSheetBody({
 
           <div className="cal-day-section">待辦清單</div>
           {dayTodos.map((row) => (
-            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} onSetTodoPriority={onSetTodoPriority} />
+            <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} onSetTodoPriority={onSetTodoPriority} onRescheduleTodo={rescheduleTodo} onDateSaved={() => done.current?.focus()} datePending={datePending} />
           ))}
 
           <form className="cal-day-todo-add" onSubmit={submitTodo}>

@@ -1195,6 +1195,57 @@ button.cal-day-todo-title {
   gap: 4px;
 }
 
+.cal-day-date {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.cal-day-todo > .cal-day-date {
+  padding: 0 10px 8px 36px;
+}
+
+.cal-day-date-editor {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px;
+}
+
+.cal-day-date-trigger,
+.cal-day-date-editor input,
+.cal-day-date-editor button {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 4px 6px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+}
+
+.cal-day-date-editor input {
+  width: 100%;
+  background: var(--surface);
+  font-size: 16px;
+}
+
+.cal-day-date-editor :disabled,
+.cal-day-date-trigger:disabled {
+  opacity: .5;
+}
+
+.cal-day-date-hint {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .cal-day-priority {
   flex: none;
   width: 84px;
