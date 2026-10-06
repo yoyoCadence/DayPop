@@ -473,6 +473,53 @@ describe('SupabaseDayPopRepository writes', () => {
     expect(next.eventAttachments.map((attachment) => attachment.id)).toEqual([ATTACHMENT]);
   });
 
+  it('reconciles a lost response after committed attachment deletion when the explicit retry returns false (DP-135)', async () => {
+    const { db, repository } = bootstrapped();
+    const row = attachmentRow();
+    db.seed('event_attachments', [row]);
+    db.objects.set(`event-attachments/${row.object_path}`, new Blob(['agenda']));
+    const before = await repository.load();
+    const rpc = db.rpc.bind(db);
+    db.rpc = async (name, args) => {
+      const result = await rpc(name, args);
+      if (name === 'delete_event_attachment_with_cleanup') throw new Error('response lost after commit');
+      return result;
+    };
+    await expect(repository.deleteEventAttachment(ATTACHMENT)).rejects.toThrow(RemoteDataError);
+    expect(db.rows('event_attachments')).toHaveLength(0);
+    expect(db.rows('attachment_cleanup_jobs')).toHaveLength(1);
+    db.rpc = rpc;
+    const retried = await repository.deleteEventAttachment(ATTACHMENT);
+    expect(retried.eventAttachments).toHaveLength(0);
+    expect(retried.events).toEqual(before.events);
+    expect(db.rows('attachment_cleanup_jobs')).toHaveLength(0);
+    expect(db.objects.size).toBe(0);
+    expect(db.rpcCalls.filter((call) => call.name === 'delete_event_attachment_with_cleanup'))
+      .toEqual([1, 2].map(() => ({ name: 'delete_event_attachment_with_cleanup', args: { p_attachment_id: ATTACHMENT } })));
+    // Nothing left to delete: a third press is a no-op that sends no request.
+    expect(await repository.deleteEventAttachment(ATTACHMENT)).toEqual(retried);
+    expect(db.rpcCalls.filter((call) => call.name === 'delete_event_attachment_with_cleanup')).toHaveLength(2);
+  });
+
+  it.each([null, 'true', 1])('keeps the last confirmed attachment when its deletion answers %j instead of a boolean (DP-135)', async (answer) => {
+    const { db, repository } = bootstrapped();
+    const row = attachmentRow();
+    db.seed('event_attachments', [row]);
+    db.objects.set(`event-attachments/${row.object_path}`, new Blob(['agenda']));
+    await repository.load();
+    const rpc = db.rpc.bind(db);
+    db.rpc = async (name, args) => name === 'delete_event_attachment_with_cleanup'
+      ? { data: answer, error: null }
+      : rpc(name, args);
+    await expect(repository.deleteEventAttachment(ATTACHMENT)).rejects.toThrow(RemoteDataError);
+    db.rpc = rpc;
+    expect(db.rows('event_attachments')).toHaveLength(1);
+    expect(db.objects.size).toBe(1);
+    // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
+    const next = await repository.toggleTodo(TODO);
+    expect(next.eventAttachments.map((attachment) => attachment.id)).toEqual([ATTACHMENT]);
+  });
+
   it('toggles a todo in both directions', async () => {
     const { db, repository } = bootstrapped();
     await repository.load();

@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **附件刪除回應遺失（DP-135）：** Supabase deleteEventAttachment 與 DP-134 的 deleteEvent 採同一契約：`delete_event_attachment_with_cleanup` 回傳任何 boolean 都移除該筆附件 metadata 的 snapshot／cache 並 flush 既有清理佇列，非 boolean 回應拒絕並保留最後確認內容。舊行為在「已提交但回應遺失」後的重試會顯示「附件已刪除」卻把附件留在清單與快取，再按也刪不掉。snapshot 已無該筆時仍不送 request。只改這個方法的結果處理；EventSheet 附件 UI、DataProvider、RPC／RLS、schema、Auth、公告與部署不變。取代下一條 DP-134 的「附件刪除的同型 `false` 處理未改」。見 ADR §2。
+
 - **行程刪除確認（DP-134）：** EventSheet 的一般刪除、重複「刪除全部」與「只刪這一次」沿 DP-133 的同一個等待鎖，確認後才關閉；失敗保留編輯畫面與草稿，提示顯示在刪除按鈕正下方並捲入視野，重複刪除重試須重新選範圍，沒有自動重送。DataActions 的 deleteEvent／cancelEventOccurrence 改回傳可等待結果。Supabase deleteEvent 收到任何 boolean 都移除該筆 snapshot／cache 並沿既有附件清理：`false` 代表已無本人擁有的那一列（常見於上次已提交但回應遺失），舊行為會留下重試也刪不掉的幽靈行程；非 boolean 回應拒絕並保留最後確認內容。RPC／RLS、刪除語意、schema、Auth、公告與部署不變。取代下一條 DP-133 的「刪除仍待後續」；其他表單仍待後續，附件刪除的同型 `false` 處理未改。見 ADR §2。
 
 - **行程保存草稿（DP-133）：** EventSheet 的新增／編輯、重複單次／全部與新增待辦等待既有 queue 確認才關閉；失敗保留草稿並提示先確認資料再重試，沒有自動重送。DataActions 四支方法回傳可等待結果，ignored rejection 有 handler、warning／saving／write barrier 分類不變；repository／owner update／RPC／snapshot／cache 邊界不變。等待時 disabled fieldset、保存／取消／背景／window capture Escape 防重複或關閉；settle／unmount 清理，舊請求不能關掉新表單，失焦到 body 才還原保存焦點。原稿無遠端等待，此為狀態擴充，見 ADR §2。無 schema、Auth、公告或部署變更；刪除與其他表單仍待後續。
