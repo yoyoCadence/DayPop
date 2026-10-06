@@ -28,7 +28,7 @@ const E2E_NOW = '2026-08-09T00:00:00.000Z';
  * in-memory Supabase surface, while retaining the real App, data provider,
  * authenticated repository and attachment boundary.
  */
-const fakeSupabase = new FakeSupabase();
+export const fakeSupabase = new FakeSupabase();
 seedAccount(fakeSupabase);
 
 function seedAccount(database: FakeSupabase) {

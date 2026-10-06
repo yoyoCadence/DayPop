@@ -163,6 +163,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -299,6 +300,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-133 — 行程表單等待保存與失敗草稿保全（2026-10-06）：** 依持續自主開發／開 PR／合併委託，由 Backlog 經 Next、In Progress 完成；從最新 main（`f5e1036`）開獨立分支。新增／編輯行程、重複單次／全部及同表單新增待辦，等待既有 queue 確認才關閉；失敗保留完整草稿，明示先確認資料再重試，重複重試重新選範圍。ref 防重複提交、fieldset 停用草稿，取消／背景／window capture Escape 暫停；settle／unmount 清理，舊請求不能關閉新表單，僅失焦到 body 才還原保存焦點。四支 action 回傳確認結果，ignored rejection 有 handler，DataProvider 的 warning／saving／write barrier 與 repository／snapshot／cache 邊界不變。等待保存回歸在修正前失敗；lint、typecheck、986 個單元案例／61 檔＋七項 posttest、build／check:build 通過；實際 Intl America/New_York 的 87 個相關案例通過。完整 e2e 145 通過／五項既有 desktop 跳過；最後加入提示 viewport 斷言後，六個 mobile／desktop synthetic account 保存失敗／重試案例再跑全數通過，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。production 四種尺寸與漫畫淺／深／像素深色沿原稿實際新增事件對照、無水平溢出；375×667 失敗提示 150..184px 可見，證據留於 %TEMP%/daypop-dp133-qa/。無 schema、Auth、公告或部署變更，不當真實雲端／真機或 DP-014／034 結案。下一段優先補齊行程表單的刪除確認與失敗重試，另開 PR。
 
 - [x] **DP-132 — 日期保存中另一表單取消焦點（2026-10-06）：** PR #121 三項 CI 成功合併後，從最新 main（`1fd0092`）獨立開分支，由 Backlog 經 Next、In Progress 完成。兩個父／已完成子項日期表單回歸先在 baseline 失敗：保存子項日期時，父表單取消／Escape 會關掉草稿，嘗試返回已停用的觸發鈕。EditableTodoDate 只改兩行，取消按鈕與表單內 Escape 也共用 sheet 的 datePending；settle 後恢復原取消／焦點契約，失敗保留兩份草稿、不改完成或資料，外層 sheet／其他操作／queue／repository 不變。973 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；PowerShell 印出實際 America/New_York 後 61 個介面案例通過。既有換日 mobile／desktop guest／account 四個 browser case 全部通過，實際 Intl America/New_York、display Asia/Taipei、console 0 error／warning；帳號仍是 dev-only FakeSupabase，不宣稱真機或實際雲端驗收。新增案例驗證兩份草稿保存、只有一個 request、外層不關閉、失敗 settle 後取消回原鈕且不重送。決策見 ADR §2；沒有 CSS、日期契約、schema、release／公告、Auth 或部署變更。
 

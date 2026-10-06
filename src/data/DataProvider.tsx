@@ -66,8 +66,8 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
 
   const actions = useMemo<DataActions>(() => {
     /**
-     * Writes stay fire-and-forget from the UI's point of view, but reach the
-     * repository in call order. Remote methods read and replace their shared
+     * Writes reach the repository in call order, whether screens await their
+     * confirmation or continue immediately. Remote methods replace their shared
      * snapshot, so merely ignoring a stale response would still allow an
      * earlier request to overwrite durable data after a later request.
      *
@@ -109,13 +109,22 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       void enqueue(operation);
     }
 
+    /** Awaitable by sheets; existing fire-and-forget callers remain safe. */
+    function confirmed(operation: () => Promise<DayPopUserData>): Promise<void> {
+      const result = enqueue(operation).then(() => {});
+      // This handles ignored promises without replacing the rejecting result
+      // that an awaiting editor needs. enqueue still reports the data warning.
+      void result.catch(() => {});
+      return result;
+    }
+
     return {
       addEvent(input) {
-        if (!input.title.trim()) return;
-        run(() => activeRepository.addEvent(input));
+        if (!input.title.trim()) return Promise.resolve();
+        return confirmed(() => activeRepository.addEvent(input));
       },
       updateEvent(id, patch) {
-        run(() => activeRepository.updateEvent(id, patch));
+        return confirmed(() => activeRepository.updateEvent(id, patch));
       },
       deleteEvent(id) {
         run(() => activeRepository.deleteEvent(id));
@@ -124,11 +133,11 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         run(() => activeRepository.cancelEventOccurrence(eventId, occurrence));
       },
       replaceEventOccurrence(eventId, occurrence, patch) {
-        run(() => activeRepository.replaceEventOccurrence(eventId, occurrence, patch));
+        return confirmed(() => activeRepository.replaceEventOccurrence(eventId, occurrence, patch));
       },
       addTodo(input) {
-        if (!input.title.trim()) return;
-        run(() => activeRepository.addTodo(input));
+        if (!input.title.trim()) return Promise.resolve();
+        return confirmed(() => activeRepository.addTodo(input));
       },
       toggleTodo(id) {
         run(() => activeRepository.toggleTodo(id));

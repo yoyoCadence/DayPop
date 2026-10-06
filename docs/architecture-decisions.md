@@ -28,6 +28,16 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 行程表單保存確認（DP-133，2026-10-06）
+
+新增／編輯行程、重複單次／全部及同表單新增待辦，原本送出後立即關閉，遠端拒絕時草稿也消失。依持續自主開發委託，DataActions 的 addEvent／updateEvent／replaceEventOccurrence／addTodo 回傳既有單一 queue 的確認 Promise；保留原本不等待的呼叫方式，ignored rejection 有 handler，但 awaiting caller 仍取得原錯誤，DataProvider 的 warning／saving／write barrier 分類不變。Repository、owner update／RPC、snapshot／cache 成功才更新的邊界不變。
+
+EventSheet 只有確認成功才關閉；等待時 ref 防重複提交，native disabled fieldset 暫停草稿欄位，保存／取消、背景與 Escape 均不能關閉。Escape 在 window capture 暫時攔截，涵蓋 disabled 控制項失焦到 body 的情況，settle／unmount 即移除；原 CalendarScreen 的關閉順序不變。失敗保留日期、時間、時區、日曆、標題、地點、備註與重複選項，顯示可重試提示；重複重試重新選範圍，不記住失敗時的選擇。失焦到 body 才回到保存按鈕，不搶其他控制項；離開畫面或切換帳號後，舊請求不能關閉新的表單。
+
+沒有自動重送；transport 拒絕可能無法確定遠端是否已完成，文案要求先確認資料再重試，不承諾手動重試的新增請求具備 idempotency。corrupt／future 等 fail-closed 復原仍優先，草稿不阻擋資料邊界卸載。刪除與其他表單不在本項。沿原稿欄位／token，fieldset 保留原 body padding、取消 native border／margin 與 min-width；無 CSS palette、schema、Auth、公告或部署變更。
+
+驗證：修正前等待保存回歸失敗；986 個單元案例／61 檔與七項 posttest 通過，PowerShell 實際 Intl America/New_York 的 87 個相關案例通過。完整 e2e 145 通過／五項既有 desktop 跳過；最後補提示 viewport 斷言的六項再跑全過。dev-only synthetic account 覆蓋 transport／remote error、五種保存、快取逐字保留及明確重試，沒有真實雲端／真機證據。production 390×844、375×667、360×640、1280×900，漫畫淺／深及像素深色，最終 sheet 在 viewport、body 可捲動、padding 12px 14px 18px／border 0、無水平溢出或 console error／warning；375×667 失敗提示 150..184px 在 viewport。原稿新增事件實際渲染同標題／地點／備註並對照，截圖／量測留於本機 %TEMP%/daypop-dp133-qa/，不宣稱未搬的欄位逐像素相同。
+
 ### 標題長度與舊遊客資料（DP-125，2026-10-04）
 
 事件與待辦（含子項）的新標題最多 300 個 Unicode code point，與 PostgreSQL `char_length` 一致；emoji 的 surrogate pair 算一字，組合 emoji 與結合符號按實際 code point 計。輸入沿原稿控制項，native `maxLength=600` 只作 UTF-16 外圍上限，真正的 300 字閘門由共用 domain helper、輸入提示／儲存按鈕與 submit guard 執行。超限顯示「標題最多 300 字，請縮短後再儲存」，保留草稿，不截短標題；直接 repository 命令也會在遠端 request 前拒絕，DataProvider 保持 ready 並沿 DP-123 的 refused 提示繼續 queue。

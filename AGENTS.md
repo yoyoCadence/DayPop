@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **行程保存草稿（DP-133）：** EventSheet 的新增／編輯、重複單次／全部與新增待辦等待既有 queue 確認才關閉；失敗保留草稿並提示先確認資料再重試，沒有自動重送。DataActions 四支方法回傳可等待結果，ignored rejection 有 handler、warning／saving／write barrier 分類不變；repository／owner update／RPC／snapshot／cache 邊界不變。等待時 disabled fieldset、保存／取消／背景／window capture Escape 防重複或關閉；settle／unmount 清理，舊請求不能關掉新表單，失焦到 body 才還原保存焦點。原稿無遠端等待，此為狀態擴充，見 ADR §2。無 schema、Auth、公告或部署變更；刪除與其他表單仍待後續。
+
 - **日期等待取消焦點（DP-132）：** 同一日詳情兩個日期表單開啟時，取消按鈕與表單內 Escape 也共用 sheet 的 datePending；避免另一筆日期仍在等待時關閉草稿、返回已停用觸發鈕。settle 後恢復原取消／焦點，失敗保留父子草稿，外層 sheet／其他操作／queue／repository 不變。兩個回歸在修正前失敗，修正只改 EditableTodoDate 兩行；見 ADR §2。沒有 CSS、日期契約、schema、release／公告、Auth 或部署變更。
 
 - **0.4.2 日常能力公告補齊（DP-131，2026-10-06）：** 直接讀取 staging 確認仍為 0.4.1，將未部署 0.4.2 的兩條公告補入全天結束日期／各檢視續日與待辦換日／優先度；仍為六條、177 Unicode code point，所有歷史公告逐欄不變。用既有 generator 同步 version.json，release／schema／worker template 不變。實際 5891034／0.3.0 的 lockfile production build 原始不可捲動 dialog 先以 0.4.0 校準，五種尺寸完整內容／兩顆按鈕均可見；方法與最終發布交接見 docs/deployment.md §5.20。本項未觸發部署，DP-034 未結案。
