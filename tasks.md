@@ -164,6 +164,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -236,6 +237,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Quality / release
 
+- [ ] **DP-135 — 附件刪除回應遺失後的幽靈附件：** DP-134 驗證時查出的同型問題，2026-10-06 登記。`SupabaseDayPopRepository.deleteEventAttachment()` 收到 `delete_event_attachment_with_cleanup` 回傳 `false` 時原樣回傳舊 snapshot（`if (!deleted) return data`）；若上次呼叫已提交、只是回應遺失，明確重試只會得到 `false`，那筆附件 metadata 便永遠留在畫面與帳號快取，按「刪除」也刪不掉。先以未修改 repository 的回歸重現，再比照 DP-134：任何 boolean 都移除該筆並沿既有清理佇列 flush，非 boolean 回應拒絕並保留最後確認內容；確認 RPC 的 `false` 語意（最後一次 create or replace 的 migration）。不改 RPC／RLS、schema、Auth、公告或部署，不自動重送。
 
 - [ ] **DP-032 — 行動裝置 QA 與無障礙（2026-08-26 由 In Progress 移回 Backlog）：** 專案擁有者決定移回，理由是剩下的三項（Android Chrome、螢幕閱讀器、實體鍵盤）對自己的實際使用情境用不太到。**已完成的兩輪結果仍然有效，下方原文照留未刪**；未測的三項仍如實記為未測，不得視為通過。要重啟時由專案擁有者指定移回 Next。
   > **DP-032 — 行動裝置 QA 與無障礙：** **第一輪（模擬環境）已完成**，報告見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)。以 Playwright Chromium 在 393×852 觸控、412×915 觸控與 1280×900 三種 viewport 對 staging 實測。**通過**：3 viewport × 4 分頁水平溢出全部 0px、沒有小於 24×24 的互動元素、實際按 Tab 走訪的 30 個元素全部有 `2px solid` 焦點框且 `:focus-visible` 成立、sheet 有 `role=dialog`／`aria-modal`／`aria-label` 且開啟後 focus 在內、Escape 可關閉、viewport meta 沒有封鎖縮放、`env(safe-area-inset-*)` 與 `@media (prefers-reduced-motion: reduce)` 都有實作、console 全程 0 error／0 warning。**發現三項**：日期格佔滿 tab 順序（DP-069，高）、農曆 8px 對比 2.81:1（DP-070，中，屬原稿逐行移植故另立決策）、沒有 h1 與 `main` landmark（DP-071，低）。**剩下的是真實裝置**，agent 無法涵蓋、需要專案擁有者操作實體裝置：iOS Safari 的瀏海／home indicator safe area 與加到主畫面後的外觀（含 DP-019 圖示）、Android Chrome 的安裝橫幅與 maskable 裁切、週檢視在真實觸控下的拖曳手感、VoiceOver／TalkBack 走訪，以及外接鍵盤。清單見報告 §4；完成前本任務不結案。
@@ -300,6 +302,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-134 — 行程刪除確認與回應遺失重試（2026-10-06）：** 接續已合併 DP-133（#123），由 Backlog 經 Next、In Progress 完成；從最新 main（`b5ffd87`）開獨立分支。一般刪除、重複「刪除全部」與「只刪這一次」沿 DP-133 的同一個等待鎖（`confirmWrite`），確認後才關閉；失敗保留編輯畫面與草稿，提示在刪除按鈕正下方並捲入視野，重複刪除重試重新選範圍，沒有自動重送。deleteEvent／cancelEventOccurrence 回傳既有 queue 的確認結果。Supabase deleteEvent 收到任何 boolean 都移除該筆並 flush 既有附件清理，修正「已提交但回應遺失後重試得 false、幽靈行程永遠刪不掉」；非 boolean 拒絕並保留最後確認內容。驗證時另發現 DP-133 頂端提示在刪除失敗時 viewport ratio 0，改放刪除按鈕下方，保存／刪除提示都 `scrollIntoView({ block: 'nearest' })`。兩個 red cases 與只還原 repository 的 browser 案例在修正前失敗；lint／typecheck／build／check:build／七項 posttest 通過，999 單元案例在 30 秒 timeout 下全過（預設 5 秒的本機負載逾時在未修改基線同樣發生），America/New_York 下 132 個相關案例通過，完整 e2e 151 通過／五項既有 desktop 跳過。驗證細節見 ADR §2。RPC／RLS、schema、Auth、公告、版號與部署不變，不當真實雲端／真機或 DP-014／034 結案。
+  > **2026-10-06 交接：** 專案擁有者指示「告一段落開完 PR 並 merge 就先結束」，本 PR 合併後暫停。下一個建議是 Backlog 的 **DP-135**（附件刪除回應遺失的同型問題），尚未開始；另有 `.cal-sheet-backdrop` 在 375×667 有 243px 捲動範圍的觀察，成因未查。
 
 - [x] **DP-133 — 行程表單等待保存與失敗草稿保全（2026-10-06）：** 依持續自主開發／開 PR／合併委託，由 Backlog 經 Next、In Progress 完成；從最新 main（`f5e1036`）開獨立分支。新增／編輯行程、重複單次／全部及同表單新增待辦，等待既有 queue 確認才關閉；失敗保留完整草稿，明示先確認資料再重試，重複重試重新選範圍。ref 防重複提交、fieldset 停用草稿，取消／背景／window capture Escape 暫停；settle／unmount 清理，舊請求不能關閉新表單，僅失焦到 body 才還原保存焦點。四支 action 回傳確認結果，ignored rejection 有 handler，DataProvider 的 warning／saving／write barrier 與 repository／snapshot／cache 邊界不變。等待保存回歸在修正前失敗；lint、typecheck、986 個單元案例／61 檔＋七項 posttest、build／check:build 通過；實際 Intl America/New_York 的 87 個相關案例通過。完整 e2e 145 通過／五項既有 desktop 跳過；最後加入提示 viewport 斷言後，六個 mobile／desktop synthetic account 保存失敗／重試案例再跑全數通過，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。production 四種尺寸與漫畫淺／深／像素深色沿原稿實際新增事件對照、無水平溢出；375×667 失敗提示 150..184px 可見，證據留於 %TEMP%/daypop-dp133-qa/。無 schema、Auth、公告或部署變更，不當真實雲端／真機或 DP-014／034 結案。下一段優先補齊行程表單的刪除確認與失敗重試，另開 PR。
 

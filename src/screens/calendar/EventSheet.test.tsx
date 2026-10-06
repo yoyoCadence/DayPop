@@ -213,6 +213,112 @@ describe('EventSheet confirmed saves (DP-133)', () => {
   });
 });
 
+describe('EventSheet delete confirmation (DP-134)', () => {
+  it('keeps the editor open until deletion is confirmed', async () => {
+    let resolve!: () => void;
+    const onDeleteEvent = vi.fn(() => new Promise<void>((done) => { resolve = done; }));
+    const props = render({ editing: timedEvent(), onDeleteEvent });
+    click('.cal-delete-button');
+    expect(onDeleteEvent).toHaveBeenCalledTimes(1);
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector('form')!.getAttribute('aria-busy')).toBe('true');
+    expect(container.querySelector('.cal-delete-button')!.textContent).toBe('刪除中…');
+    expect(container.querySelector('.cal-sheet-bar button[type="submit"]')!.textContent).toBe('儲存');
+    expect(container.querySelector<HTMLButtonElement>('.cal-sheet-bar button[type="button"]')!.disabled).toBe(true);
+    click('.cal-delete-button');
+    submit();
+    click('.cal-sheet-backdrop');
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => window.dispatchEvent(escape));
+    expect(escape.defaultPrevented).toBe(true);
+    expect(onDeleteEvent).toHaveBeenCalledTimes(1);
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    await act(async () => { resolve(); });
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['single', 'all', 'this'] as const)('retains the editor and draft after a rejected %s deletion until an explicit retry', async (kind) => {
+    let reject!: (error: Error) => void;
+    const remove = vi.fn<(...args: unknown[]) => Promise<void>>()
+      .mockImplementationOnce(() => new Promise((_resolve, refused) => { reject = refused; }))
+      .mockResolvedValue(undefined);
+    const editing = timedEvent();
+    if (editing.allDay) throw new Error('expected a timed fixture');
+    const scoped = kind !== 'single';
+    if (scoped) editing.recurrence = { rule: 'FREQ=DAILY' };
+    const occurrence = { kind: 'timed', startsAt: editing.startsAt } as const;
+    const props = render({
+      editing,
+      ...(scoped ? { occurrence, seriesEventId: editing.id, seriesDate: '2026-08-06' } : {}),
+      onDeleteEvent: remove, onCancelOccurrence: remove,
+    });
+    type('[aria-label="標題"]', '未保存的標題');
+    const choose = () => {
+      click('.cal-delete-button');
+      if (scoped) act(() => [...document.querySelectorAll<HTMLButtonElement>('.cal-scope-card button')].find((button) => button.textContent === (kind === 'this' ? '只刪這一次' : '刪除全部'))!.click());
+    };
+    choose();
+    expect(remove.mock.calls).toEqual([kind === 'this' ? [editing.id, occurrence] : [editing.id]]);
+    expect(document.querySelector('.cal-scope-card')).toBeNull();
+    const lostFocus = document.createElement('button');
+    document.body.append(lostFocus);
+    lostFocus.focus();
+    lostFocus.remove();
+    await act(async () => { reject(new Error('網路中斷')); });
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="alert"]')!.textContent).toBe('網路中斷 尚未確認刪除，草稿已保留；請先確認資料再重試。');
+    expect(container.querySelector('.cal-delete-button')!.nextElementSibling).toBe(container.querySelector('[role="alert"]'));
+    expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('未保存的標題');
+    expect(container.querySelector<HTMLFieldSetElement>('fieldset')!.disabled).toBe(false);
+    expect(container.querySelector('.cal-delete-button')!.textContent).toBe('刪除事件');
+    expect(document.activeElement).toBe(container.querySelector('.cal-delete-button'));
+    expect(props.onUpdateEvent).not.toHaveBeenCalled();
+    expect(props.onReplaceOccurrence).not.toHaveBeenCalled();
+    expect(remove).toHaveBeenCalledTimes(1);
+    choose();
+    await act(async () => {});
+    expect(remove).toHaveBeenCalledTimes(2);
+    expect(remove.mock.calls[1]).toEqual(remove.mock.calls[0]);
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['save', 'delete'] as const)('scrolls the %s failure into view without taking focus from another control', async (kind) => {
+    const original = Element.prototype.scrollIntoView;
+    const revealed: Element[] = [];
+    Element.prototype.scrollIntoView = function reveal(this: Element) { revealed.push(this); };
+    try {
+      let reject!: (error: Error) => void;
+      const refused = () => new Promise<void>((_resolve, fail) => { reject = fail; });
+      render({ editing: timedEvent(), onUpdateEvent: refused, onDeleteEvent: refused });
+      if (kind === 'save') submit();
+      else click('.cal-delete-button');
+      const outside = document.createElement('button');
+      document.body.append(outside);
+      outside.focus();
+      await act(async () => { reject(new Error('無法確認')); });
+      expect(revealed).toEqual([container.querySelector('[role="alert"]')]);
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it('does not close a newly opened sheet when an unmounted deletion settles', async () => {
+    let resolve!: () => void;
+    const previous = render({ editing: timedEvent(), onDeleteEvent: () => new Promise<void>((done) => { resolve = done; }) });
+    click('.cal-delete-button');
+    act(() => root.render(<EventSheet {...previous} open={false} />));
+    const next = render();
+    type('[aria-label="標題"]', '另一份草稿');
+    await act(async () => { resolve(); });
+    expect(previous.onClose).not.toHaveBeenCalled();
+    expect(next.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('另一份草稿');
+  });
+});
+
 describe('EventSheet all-day dates (DP-127)', () => {
   const field = (name: string) => `[aria-label="${name}"]`;
   const allDayEvent = (): CalendarEvent => ({ ...timedEvent(), allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' });

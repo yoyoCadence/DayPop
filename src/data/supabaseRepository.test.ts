@@ -428,6 +428,51 @@ describe('SupabaseDayPopRepository writes', () => {
     expect(db.objects.size).toBe(0);
   });
 
+  it('reconciles a lost response after committed deletion when the explicit retry returns false (DP-134)', async () => {
+    const { db, repository } = bootstrapped();
+    const row = attachmentRow();
+    db.seed('event_attachments', [row]);
+    db.objects.set(`event-attachments/${row.object_path}`, new Blob(['agenda']));
+    const before = await repository.load();
+    const rpc = db.rpc.bind(db);
+    db.rpc = async (name, args) => {
+      const result = await rpc(name, args);
+      if (name === 'delete_event_with_attachment_cleanup') throw new Error('response lost after commit');
+      return result;
+    };
+    await expect(repository.deleteEvent(EVENT)).rejects.toThrow(RemoteDataError);
+    expect(db.rows('events')).toHaveLength(0);
+    expect(db.rows('attachment_cleanup_jobs')).toHaveLength(1);
+    db.rpc = rpc;
+    const retried = await repository.deleteEvent(EVENT);
+    expect(retried.events).toHaveLength(0);
+    expect(retried.eventAttachments).toHaveLength(0);
+    expect(retried.todos).toEqual(before.todos);
+    expect(db.rows('attachment_cleanup_jobs')).toHaveLength(0);
+    expect(db.objects.size).toBe(0);
+    expect(db.rpcCalls.filter((call) => call.name === 'delete_event_with_attachment_cleanup'))
+      .toEqual([1, 2].map(() => ({ name: 'delete_event_with_attachment_cleanup', args: { p_event_id: EVENT } })));
+  });
+
+  it.each([null, 'true', 1])('keeps the last confirmed snapshot when deletion answers %j instead of a boolean (DP-134)', async (answer) => {
+    const { db, repository } = bootstrapped();
+    const row = attachmentRow();
+    db.seed('event_attachments', [row]);
+    db.objects.set(`event-attachments/${row.object_path}`, new Blob(['agenda']));
+    await repository.load();
+    const rpc = db.rpc.bind(db);
+    db.rpc = async (name, args) => name === 'delete_event_with_attachment_cleanup'
+      ? { data: answer, error: null }
+      : rpc(name, args);
+    await expect(repository.deleteEvent(EVENT)).rejects.toThrow(RemoteDataError);
+    db.rpc = rpc;
+    expect(db.objects.size).toBe(1);
+    // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
+    const next = await repository.toggleTodo(TODO);
+    expect(next.events.map((event) => event.id)).toEqual([EVENT]);
+    expect(next.eventAttachments.map((attachment) => attachment.id)).toEqual([ATTACHMENT]);
+  });
+
   it('toggles a todo in both directions', async () => {
     const { db, repository } = bootstrapped();
     await repository.load();

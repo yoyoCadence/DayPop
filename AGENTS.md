@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **行程刪除確認（DP-134）：** EventSheet 的一般刪除、重複「刪除全部」與「只刪這一次」沿 DP-133 的同一個等待鎖，確認後才關閉；失敗保留編輯畫面與草稿，提示顯示在刪除按鈕正下方並捲入視野，重複刪除重試須重新選範圍，沒有自動重送。DataActions 的 deleteEvent／cancelEventOccurrence 改回傳可等待結果。Supabase deleteEvent 收到任何 boolean 都移除該筆 snapshot／cache 並沿既有附件清理：`false` 代表已無本人擁有的那一列（常見於上次已提交但回應遺失），舊行為會留下重試也刪不掉的幽靈行程；非 boolean 回應拒絕並保留最後確認內容。RPC／RLS、刪除語意、schema、Auth、公告與部署不變。取代下一條 DP-133 的「刪除仍待後續」；其他表單仍待後續，附件刪除的同型 `false` 處理未改。見 ADR §2。
+
 - **行程保存草稿（DP-133）：** EventSheet 的新增／編輯、重複單次／全部與新增待辦等待既有 queue 確認才關閉；失敗保留草稿並提示先確認資料再重試，沒有自動重送。DataActions 四支方法回傳可等待結果，ignored rejection 有 handler、warning／saving／write barrier 分類不變；repository／owner update／RPC／snapshot／cache 邊界不變。等待時 disabled fieldset、保存／取消／背景／window capture Escape 防重複或關閉；settle／unmount 清理，舊請求不能關掉新表單，失焦到 body 才還原保存焦點。原稿無遠端等待，此為狀態擴充，見 ADR §2。無 schema、Auth、公告或部署變更；刪除與其他表單仍待後續。
 
 - **日期等待取消焦點（DP-132）：** 同一日詳情兩個日期表單開啟時，取消按鈕與表單內 Escape 也共用 sheet 的 datePending；避免另一筆日期仍在等待時關閉草稿、返回已停用觸發鈕。settle 後恢復原取消／焦點，失敗保留父子草稿，外層 sheet／其他操作／queue／repository 不變。兩個回歸在修正前失敗，修正只改 EditableTodoDate 兩行；見 ADR §2。沒有 CSS、日期契約、schema、release／公告、Auth 或部署變更。

@@ -80,7 +80,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
-  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133)', async (method) => {
+  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'deleteEvent', 'cancelEventOccurrence'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134)', async (method) => {
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
     let reject!: (error: Error) => void;
     let calls = 0;
@@ -96,7 +96,9 @@ describe('DataProvider', () => {
       const pending = method === 'addEvent' ? actions.addEvent({ title: '草稿', date: '2026-10-06', allDay: true, start: '', end: '' })
         : method === 'updateEvent' ? actions.updateEvent(id, { title: '草稿' })
           : method === 'replaceEventOccurrence' ? actions.replaceEventOccurrence(id, { kind: 'all-day', date: '2026-10-06' }, { title: '草稿' })
-            : actions.addTodo({ title: '草稿', date: '2026-10-06' });
+            : method === 'deleteEvent' ? actions.deleteEvent(id)
+              : method === 'cancelEventOccurrence' ? actions.cancelEventOccurrence(id, { kind: 'all-day', date: '2026-10-06' })
+                : actions.addTodo({ title: '草稿', date: '2026-10-06' });
       expect(pending).toBeInstanceOf(Promise);
       outcome = pending.catch((error) => error);
       actions.updatePreferences({ petName: '下一筆' });

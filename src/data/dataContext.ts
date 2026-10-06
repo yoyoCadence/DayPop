@@ -45,13 +45,14 @@ export type DataState =
 
 /**
  * Every write the UI is allowed to make. Identities are stable across renders.
- * Event-sheet saves return confirmation (DP-133); other callers may ignore
- * those promises safely, while DataProvider still reports the failure.
+ * Event-sheet saves (DP-133) and deletions (DP-134) return confirmation;
+ * other callers may ignore those promises safely, while DataProvider still
+ * reports the failure.
  */
 export interface DataActions {
   addEvent(input: NewEventInput): Promise<void>;
   updateEvent(id: string, patch: EventPatch): Promise<void>;
-  deleteEvent(id: string): void;
+  deleteEvent(id: string): Promise<void>;
   /**
    * The 只有這一次 half of the原檔's scope dialog — DP-082.
    *
@@ -59,7 +60,7 @@ export interface DataActions {
    * serialized mutation queue, so choosing 單次 cannot interleave with an edit
    * the user issued a moment earlier.
    */
-  cancelEventOccurrence(eventId: string, occurrence: EventOccurrence): void;
+  cancelEventOccurrence(eventId: string, occurrence: EventOccurrence): Promise<void>;
   replaceEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
