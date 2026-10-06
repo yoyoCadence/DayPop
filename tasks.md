@@ -182,6 +182,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 ### Foundation / maintainable frontend
 
 
@@ -298,6 +299,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-132 — 日期保存中另一表單取消焦點（2026-10-06）：** PR #121 三項 CI 成功合併後，從最新 main（`1fd0092`）獨立開分支，由 Backlog 經 Next、In Progress 完成。兩個父／已完成子項日期表單回歸先在 baseline 失敗：保存子項日期時，父表單取消／Escape 會關掉草稿，嘗試返回已停用的觸發鈕。EditableTodoDate 只改兩行，取消按鈕與表單內 Escape 也共用 sheet 的 datePending；settle 後恢復原取消／焦點契約，失敗保留兩份草稿、不改完成或資料，外層 sheet／其他操作／queue／repository 不變。973 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過；PowerShell 印出實際 America/New_York 後 61 個介面案例通過。既有換日 mobile／desktop guest／account 四個 browser case 全部通過，實際 Intl America/New_York、display Asia/Taipei、console 0 error／warning；帳號仍是 dev-only FakeSupabase，不宣稱真機或實際雲端驗收。新增案例驗證兩份草稿保存、只有一個 request、外層不關閉、失敗 settle 後取消回原鈕且不重送。決策見 ADR §2；沒有 CSS、日期契約、schema、release／公告、Auth 或部署變更。
 
 - [x] **DP-131 — 0.4.2 日常功能公告補齊（2026-10-06）：** PR #120 三項 CI 成功合併後，從最新 main（`d67d92a`）獨立開分支，由 Backlog 經 Next、In Progress 完成。兩次直接 GET staging version.json 確認仍是 0.4.1，只修改未部署 0.4.2 兩條公告，補入 DP-127／128／130 全天結束日期／各檢視續日、待辦換日／優先度；維持六條、177 Unicode code point。全部歷史公告逐欄不變，版號、日期、title 與 worker template 不變，既有 generator 只同步 version.json。以 5891034 的自身 lockfile 離線 build 真實 0.3.0 production App，原始不可捲動 dialog 先以 0.4.0 校準並重現 DP-122 數值；補正後五種尺寸完整 dialog／兩顆按鈕均在 viewport，375×667 為 69.3..597.7、932×430 為 15..418.5。每個 context 印出實際 Asia/Taipei，無水平溢出或 console error／warning，稍後提醒可操作且 guest bytes 不變；圖與量測在 `%TEMP%/daypop-dp131-proof/`，本次暫存舊 source／node_modules／dist／archive 已核對路徑與身分後清理。lint／typecheck、971 個單元案例（61 檔）＋7 項 posttest、build／check:build、直接對線上 0.4.1 的 check:release-notes 與既有 release-notice／production-update mobile／desktop 14／14 全部通過，未新增文案鏡像測試。交接見 docs/deployment.md §5.20；未改 schema／Auth、提升 release 或觸發部署，DP-034 與真機限制維持。
 

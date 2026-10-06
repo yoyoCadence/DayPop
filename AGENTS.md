@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **日期等待取消焦點（DP-132）：** 同一日詳情兩個日期表單開啟時，取消按鈕與表單內 Escape 也共用 sheet 的 datePending；避免另一筆日期仍在等待時關閉草稿、返回已停用觸發鈕。settle 後恢復原取消／焦點，失敗保留父子草稿，外層 sheet／其他操作／queue／repository 不變。兩個回歸在修正前失敗，修正只改 EditableTodoDate 兩行；見 ADR §2。沒有 CSS、日期契約、schema、release／公告、Auth 或部署變更。
+
 - **0.4.2 日常能力公告補齊（DP-131，2026-10-06）：** 直接讀取 staging 確認仍為 0.4.1，將未部署 0.4.2 的兩條公告補入全天結束日期／各檢視續日與待辦換日／優先度；仍為六條、177 Unicode code point，所有歷史公告逐欄不變。用既有 generator 同步 version.json，release／schema／worker template 不變。實際 5891034／0.3.0 的 lockfile production build 原始不可捲動 dialog 先以 0.4.0 校準，五種尺寸完整內容／兩顆按鈕均可見；方法與最終發布交接見 docs/deployment.md §5.20。本項未觸發部署，DP-034 未結案。
 
 - **日詳情待辦換日（DP-130）：** 父待辦與已顯示子項的 EditableTodoDate 在列下方提供 native date 草稿／儲存／取消，16px 與既有欄位 token／2px 焦點。Enter 保存，空白／無效保留草稿，同日／取消／Escape 不寫入並還原焦點，Escape 不關外層 sheet；等待防重複提交，失敗保留草稿。awaited rescheduleTodo 沿 DP-129 的單一 queue／確認後移出來源日，父子日期獨立，不自動換頁；移出後焦點回同一 sheet 的完成按鈕，不搶其他控制項或另一 sheet 的焦點。原稿無此控制項，擴充見 ADR §2；取代下方歷史「UI 未接」，未改 schema／release／Auth 或部署，排序與 DP-014 其餘段落未結案。
