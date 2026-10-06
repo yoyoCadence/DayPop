@@ -598,3 +598,23 @@ DP-034 清單裡的「確認已部署 release note 不再被同版號改寫」�
 lint、typecheck（隨 build）、build、check:build、線上 check:release-notes 通過；既有 `release-notice`／`production-update` browser **14／14**（mobile＋desktop，production 實際 Intl Asia/Taipei）亦通過，涵蓋首次公告／看過後 reload、手動檢查、等待 install、失敗後重試及更新後 guest 資料保存。未新增測試檔或放寬斷言。
 
 本項只完成發布前公告閘門，未觸發部署。0.4.2 的實際發布仍由擁有者執行 §3.4；DP-077 真機觸控、DP-034 其餘驗收與日常使用放行仍待完成。
+
+### 5.20 0.4.2 日常能力公告補齊（DP-131，2026-10-06）
+
+DP-130 的 PR #120 三項 CI 成功合併後，從最新 main（`d67d92a`）獨立補齊候選公告。再次直接 GET staging（唯一 query、HTTP 200）確認仍為 0.4.1「更新提示與資料保護」，只修改未部署的 0.4.2 兩條 changes：全天結束日期／各檢視續日，以及待辦換日／優先度。仍為 **六條、177 個 Unicode code point**，保留子項新增／展開／勾選／完成比例與父項刪除、中文快速新增、事件時區／多日時間、拖曳範圍、隱私說明與標題上限。版號、releasedAt、title 與全部歷史公告逐欄不變；既有 generator 只同步 public/version.json，sw.js／worker template 不變。`check:release-notes` 直接對線上 0.4.1 通過，§5.19 原量測保留但發布時以本節的最終文案與數值為準。
+
+歷史驗證基準取同一個 `5891034` 的 git archive，在系統暫存使用其自身 lockfile 離線 `npm ci --ignore-scripts`，Node 24.14.1、`npm run build -- --base=/DayPop/`。保留真正 0.3.0 production App 與原始不可捲動 `.update-dialog`，只 route 新版 version.json；先用未變的 0.4.0 校準出 932×430 的 `15..418.5` 與按鈕 `348.5..394.5`，並重現 §5.19 的原 0.4.2 五種數值，再驗證補正後文案。每個獨立 mobile Chromium context 等待 fonts ready、印出實際 Intl **Asia/Taipei**。
+
+| 尺寸 | 最終 0.4.2 dialog top..bottom | 兩顆按鈕 top..bottom | 完整放得下 |
+| --- | --- | --- | --- |
+| 430×932 | 233.0..699.0 | 629.0..675.0 | 是 |
+| 390×844 | 168.2..675.8 | 605.8..651.8 | 是 |
+| 375×667 | 69.3..597.7 | 527.7..573.7 | 是 |
+| 360×640 | 55.8..584.2 | 514.2..560.2 | 是 |
+| 932×430 | 15.0..418.5 | 348.5..394.5 | 是 |
+
+六條與結束日期／換日／優先度／完成比例／隱私／300 字內容均在實際 dialog 中驗證；完整 dialog 與兩顆按鈕四邊在 viewport 內，無水平溢出，稍後提醒可點擊關閉且 guest 原始 envelope 逐字不變，console error／warning 與 pageerror 均 0。375×667／932×430 最終截圖已目視確認；腳本、量測 JSON 與圖在 `%TEMP%/daypop-dp131-qa.mjs`／`daypop-dp131-proof/`，本次暫存舊 source／node_modules／dist／archive 已於驗證後核對絕對路徑及 package 身分並清理。
+
+lint／typecheck、971 個單元案例（61 檔）＋7 項 posttest、build／check:build 與直接對線上 0.4.1 的 check:release-notes 全部通過。既有 release-notice／production-update mobile＋desktop 共 **14／14** 通過，涵蓋首次公告、已是最新、檢查失敗、等待 install、更新失敗重試及 guest 資料保存；production 實際 Intl 為 Asia/Taipei。不新增只比對文案的測試或放寬既有斷言。
+
+本項只補齊候選公告，不提升 release／schema 或改 Auth／worker，不觸發部署。實際發布仍由擁有者執行 §3.4，DP-077 真機與 DP-034 放行限制維持。
