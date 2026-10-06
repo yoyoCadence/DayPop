@@ -72,7 +72,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-131 — 0.4.2 日常功能公告補齊：** 前置 DP-130 合併；2026-10-06 直接讀取 staging version.json 確認仍是 0.4.1，未部署的 0.4.2 公告可補入 DP-127／128／130 的全天結束日期、待辦優先度與換日。保留六條結構及所有歷史公告，只修改候選文案並用既有 generator 同步產物；重新確認線上版號、歷史逐欄不變與 check:release-notes，五種 production dialog 尺寸可見。不提升 release／schema 或改 worker template，不觸發部署。
 
 
 
@@ -299,6 +298,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-131 — 0.4.2 日常功能公告補齊（2026-10-06）：** PR #120 三項 CI 成功合併後，從最新 main（`d67d92a`）獨立開分支，由 Backlog 經 Next、In Progress 完成。兩次直接 GET staging version.json 確認仍是 0.4.1，只修改未部署 0.4.2 兩條公告，補入 DP-127／128／130 全天結束日期／各檢視續日、待辦換日／優先度；維持六條、177 Unicode code point。全部歷史公告逐欄不變，版號、日期、title 與 worker template 不變，既有 generator 只同步 version.json。以 5891034 的自身 lockfile 離線 build 真實 0.3.0 production App，原始不可捲動 dialog 先以 0.4.0 校準並重現 DP-122 數值；補正後五種尺寸完整 dialog／兩顆按鈕均在 viewport，375×667 為 69.3..597.7、932×430 為 15..418.5。每個 context 印出實際 Asia/Taipei，無水平溢出或 console error／warning，稍後提醒可操作且 guest bytes 不變；圖與量測在 `%TEMP%/daypop-dp131-proof/`，本次暫存舊 source／node_modules／dist／archive 已核對路徑與身分後清理。lint／typecheck、971 個單元案例（61 檔）＋7 項 posttest、build／check:build、直接對線上 0.4.1 的 check:release-notes 與既有 release-notice／production-update mobile／desktop 14／14 全部通過，未新增文案鏡像測試。交接見 docs/deployment.md §5.20；未改 schema／Auth、提升 release 或觸發部署，DP-034 與真機限制維持。
 
 - [x] **DP-130 — 日詳情待辦換日介面（2026-10-06）：** DP-129 的 PR #119 三項 CI 通過並合併後，從最新 main（`f31d381`）獨立開分支，由 Next 移入 In Progress 完成。父待辦與已顯示子項在列下方提供 native date 草稿、儲存／取消，沿既有卡片與欄位 token、16px 輸入／2px 焦點。Enter 保存，同日／取消／Escape 不寫入並還原觸發焦點，Escape 不關外層 sheet；空白／無效保留草稿。awaited 保存沿單一 queue，成功才移出來源日，父子日期獨立，不改完成、優先度、階層、排序、標題、日曆或分享範圍。移出後焦點回到同一日詳情的完成按鈕，不搶其他控制項或新 sheet 的焦點；同一 sheet 一次只保存一筆日期，避免父子重分組重掛等待中的表單，失敗保留草稿。971 個單元案例（61 檔）＋7 項 posttest、lint／typecheck／build／check:build 通過，PowerShell 實際印出 America/New_York 後 59 個介面案例通過。完整 browser suite 139 通過、5 個原有 desktop 尺寸案例跳過；最後等待保護更新後再跑 mobile／desktop guest／account 本項四個案例全部通過，實際 Intl 為 America/New_York、display 為 Asia/Taipei。正式 build 對照原稿實際渲染，390×844／375×667／360×640／1280×900、漫畫淺／深色與像素深色均无水平溢出或 console error／warning；驗證長標題、逾期與已完成子項的兩個日期表單、16px／2px 焦點，圖與量測在 `%TEMP%/daypop-dp130-qa/`。原稿無此能力，擴充見 ADR §2；不提供日期清除／無日期管理，未改 schema／RPC、Auth、release 或部署，帳號仍用 dev-only FakeSupabase，不宣稱真機或實際雲端驗收。DP-014／DP-034 未結案，公告補齊另接 DP-131。
 
