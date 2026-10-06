@@ -242,6 +242,40 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     await act(async () => { finish(); });
     expect(document.activeElement).toBe(document.body);
   });
+  it.each(['取消', 'Escape'])('waits before %s in another date editor, preserving both drafts and returning focus after settlement', async (action) => {
+    let fail!: (error: Error) => void;
+    const save = vi.fn(() => new Promise<void>((_resolve, reject) => { fail = reject; }));
+    const props = render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)], onRescheduleTodo: save });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    click(container.querySelector('button[aria-label="修改 訂房 的日期"]'));
+    const child = changeDate('2026-08-08');
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const parent = container.querySelector<HTMLInputElement>('[aria-label="旅行 的日期"]')!;
+    const parentForm = parent.form!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(parent, '2026-08-09');
+      parent.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => child.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    const cancel = parentForm.querySelector<HTMLButtonElement>('button[type="button"]')!;
+    if (action === '取消') click(cancel);
+    else act(() => parent.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(parentForm.isConnected).toBe(true);
+    expect(cancel.disabled).toBe(true);
+    expect(parent.value).toBe('2026-08-09');
+    expect(child.value).toBe('2026-08-08');
+    expect(save).toHaveBeenCalledExactlyOnceWith('child', '2026-08-08');
+    expect(props.onClose).not.toHaveBeenCalled();
+    await act(async () => { fail(new Error('offline')); });
+    expect(cancel.disabled).toBe(false);
+    if (action === '取消') click(cancel);
+    else act(() => parent.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(parentForm.isConnected).toBe(false);
+    expect(document.activeElement).toBe(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    expect(child.value).toBe('2026-08-08');
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
   it('changes priority on the completed child only and leaves completion controls intact', async () => {
     const props = render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)] });
     click(container.querySelector('[aria-label="展開 旅行 的子項"]'));

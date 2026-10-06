@@ -36,6 +36,8 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ### 日詳情待辦換日介面（DP-130，2026-10-06）
 
+**DP-132 補正（2026-10-06）：** 兩個日期表單同時開啟時，另一表單取消／Escape 原本只看自己的 pending flag，會在 sheet 的其他日期寫入等待時關閉草稿、嘗試聚焦已停用的觸發鈕。取消按鈕與表單內的 Escape 現在也共用 datePending；該筆保存 settle 前不關閉任何日期草稿，失敗 settle 後恢復原取消／焦點契約，父子草稿、完成狀態與資料均保留。外層 sheet 與其他操作／queue／repository handlers 不變，沒有日期或樣式重設計。
+
 承接已合併的 DP-129，依持續自主開發委託，父待辦與已顯示子項新增「改日期」按鈕與 native date 表單，放在各列下方而不壓縮標題。原稿 :561 沒有換日能力，這是刻意擴充，沿現有卡片、surface／surface-2／fg／muted／border、8px 欄位圓角與 2px accent 焦點，輸入採 16px。日期的 min／max 對齊既有 domain 的 0100–9999 年範圍，不改 validation 或轉成 timed instant。
 
 表單明示「只更改這一項，其他待辦日期不變」。Enter 儲存，同日保存／取消／Escape 不寫入且還原觸發按鈕焦點；Escape 不傳到外層關閉日詳情。空白／無效日期保持草稿並提示修正，沒有清除日期按鈕或無日期管理入口。等待時停用本表單輸入與儲存／取消、防止重複提交；同一日詳情一次只保存一筆日期，其他日期輸入／儲存／觸發鈕暫停，避免父項換日重掛仍在等待的子項表單，其他 mutation 維持原 queue。可恢復失敗保留草稿、提示重試。所有保存仍走 DataProvider 的 awaited rescheduleTodo 與既有單一 queue。

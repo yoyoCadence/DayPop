@@ -70,11 +70,11 @@ export function EditableTodoDate({ todo, datePending, onReschedule, onSaved }: E
           if (event.key !== 'Escape') return;
           event.preventDefault();
           event.stopPropagation();
-          if (!pending.current) close();
+          if (!pending.current && !datePending) close();
         }}>
           <input ref={input} type="date" required min="0100-01-01" max="9999-12-31" aria-label={`${todo.title} 的日期`} aria-invalid={!isDateKey(draft)} aria-describedby={`${hintId}${issue ? ` ${errorId}` : ''}`} value={draft} disabled={saving || datePending} onChange={(event) => setDraft(event.target.value)} />
           <button type="submit" disabled={saving || datePending || !isDateKey(draft)}>{saving ? '保存中' : '儲存'}</button>
-          <button type="button" disabled={saving} onClick={() => close()}>取消</button>
+          <button type="button" disabled={saving || datePending} onClick={() => close()}>取消</button>
           <span className="cal-day-date-hint" id={hintId}>只更改這一項，其他待辦日期不變。</span>
           {issue && <span className="cal-day-title-error" id={errorId} role="alert">{issue}</span>}
         </form>
