@@ -28,6 +28,14 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 附件刪除的回應遺失重試（DP-135，2026-10-06）
+
+DP-134 驗證時查出 `deleteEventAttachment` 有同型的 `if (!deleted) return data`。`delete_event_attachment_with_cleanup`（最後一次定義在 `20260809085514`）和事件刪除的 RPC 一樣，只在「本人擁有的那一列已不存在」時回傳 `false`。上次呼叫已提交、只是回應遺失時，明確重試必定得到 `false`；舊程式原樣回傳舊 snapshot 而不丟錯，於是 EventSheet 顯示「附件已刪除」，附件卻仍在清單與帳號快取，再按「刪除」也一樣。
+
+修正比照 DP-134，兩個刪除方法現在是同一契約：收到任何 boolean 都移除該筆 metadata 並 flush 既有清理佇列（第一次提交時登記的清理工作因此完成，Storage 物件被移除）；非 boolean 的回應不算確認，adapter 拒絕並保留最後確認的 snapshot／cache。方法開頭「snapshot 已無該筆就不送 request」的防護不變，所以清掉之後再按不會多打一次 RPC。只改這一個方法的結果處理：EventSheet 的附件 UI 本來就等待結果並顯示錯誤訊息，DataProvider 的 queue 也不變；RPC／RLS、schema、Auth、公告與部署均不變，沒有自動重送。
+
+驗證：四個回歸（回應遺失後重試、三種非 boolean 回應）在修正前失敗；browser 案例在只還原 repository 修正時也失敗（重試後附件仍在清單）。lint、typecheck、1003 個單元案例／61 檔（預設 timeout）、七項 posttest、build／check:build 通過；PowerShell 實際 Intl America/New_York 下 repository 測試檔 44 案例通過。新增 `e2e/attachment-delete-lost-response.spec.ts` 與既有 `auth-attachment.spec.ts` 的四個 mobile／desktop 案例在本機通過，console error／warning 0；完整 e2e 這次只由 CI 執行，本機未重跑。仍只用 dev-only FakeSupabase，沒有真實雲端、真實 Storage 或真機證據。
+
 ### 行程刪除確認與回應遺失重試（DP-134，2026-10-06）
 
 DP-133 之後，行程表單的刪除仍是送出即關閉：遠端拒絕時畫面已關，使用者看不到失敗，也失去手上的草稿。依持續自主開發委託，一般刪除、重複「刪除全部」與「只刪這一次」改走 DP-133 的同一個 `confirmWrite` 等待鎖；DataActions 的 deleteEvent／cancelEventOccurrence 與 DP-133 的四支方法一樣回傳既有單一 queue 的確認 Promise，ignored rejection 有 handler，warning／saving／write barrier 分類不變。等待時 fieldset、取消、背景與 window capture Escape 都沿用同一套保護，刪除按鈕顯示「刪除中…」，儲存按鈕不顯示「保存中…」。成功才關閉；失敗保留編輯畫面與所有草稿欄位，提示「尚未確認刪除，草稿已保留；請先確認資料再重試」。重複刪除的重試要重新選範圍，不記住失敗時的選擇；settle／unmount 清理與「舊請求不能關閉新表單」不變。

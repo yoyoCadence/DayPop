@@ -375,7 +375,13 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       this.client.rpc('delete_event_attachment_with_cleanup', { p_attachment_id: id }),
     );
     if (error) throw new RemoteDataError('刪除附件與登記清理', error);
-    if (!deleted) return data;
+    // Same contract as `deleteEvent()` (DP-134): `false` means no owned row
+    // with this id remains, typically because an earlier attempt committed and
+    // only its response was lost, so the metadata must leave the snapshot too
+    // (DP-135). A non-boolean answer confirms nothing and keeps it.
+    if (typeof deleted !== 'boolean') {
+      throw new RemoteDataError('刪除附件與登記清理', '回應不是刪除結果');
+    }
     const next = this.#commit({
       ...data,
       eventAttachments: data.eventAttachments.filter((attachment) => attachment.id !== id),
