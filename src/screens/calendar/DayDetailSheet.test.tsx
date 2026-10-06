@@ -90,6 +90,7 @@ function render(overrides: Partial<DayDetailSheetProps> = {}) {
     onDeleteTodo: vi.fn(),
     onRenameTodo: vi.fn().mockResolvedValue(undefined),
     onSetTodoPriority: vi.fn().mockResolvedValue(undefined),
+    onRescheduleTodo: vi.fn().mockResolvedValue(undefined),
     onAddSticker: vi.fn(),
     onDeleteSticker: vi.fn(),
     ...overrides,
@@ -135,6 +136,112 @@ describe('DayDetailSheet all-day spans (DP-126)', () => {
 });
 
 describe('DayDetailSheet subtasks (DP-116)', () => {
+  function changeDate(value: string) {
+    const input = container.querySelector<HTMLInputElement>('.cal-day-date-editor input')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    return input;
+  }
+  it.each(['Escape', '取消', '同日保存'])('date edit %s does not write and returns focus to its trigger', async (action) => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const input = changeDate(action === '同日保存' ? DATE : '2026-08-08');
+    expect(document.activeElement).toBe(input);
+    if (action === 'Escape') act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    else if (action === '取消') click(container.querySelector('.cal-day-date-editor button[type="button"]'));
+    else await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(props.onRescheduleTodo).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(container.querySelector('.cal-day-date-editor')).toBeNull();
+    expect(document.activeElement).toBe(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+  });
+  it.each(['', '0099-01-01', '2026-02-30'])('refuses the native date draft %s and leaves the editor open', async (value) => {
+    const props = render({ todos: [todo('parent', null, '旅行')] });
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const input = changeDate(value);
+    const draft = input.value; // A native date input normalizes impossible days to blank.
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(props.onRescheduleTodo).not.toHaveBeenCalled();
+    expect(input.value).toBe(draft);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('有效');
+  });
+  it('awaits a completed child date edit once, keeps the rejected draft, then retries without toggling completion', async () => {
+    let fail!: (error: Error) => void;
+    const save = vi.fn().mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { fail = reject; })).mockResolvedValue(undefined);
+    const props = render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)], onRescheduleTodo: save });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    click(container.querySelector('button[aria-label="修改 訂房 的日期"]'));
+    const input = changeDate('2026-08-08');
+    act(() => {
+      input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    });
+    expect(save).toHaveBeenCalledExactlyOnceWith('child', '2026-08-08');
+    expect(input.disabled).toBe(true);
+    expect(container.querySelectorAll('.cal-day-date-editor button:disabled')).toHaveLength(2);
+    expect(container.querySelector('.cal-day-sub-count')?.textContent).toContain('1/1');
+    await act(async () => { fail(new Error('offline')); });
+    expect(input.disabled).toBe(false);
+    expect(input.value).toBe('2026-08-08');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('尚未保存');
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(props.onToggleTodo).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(container.querySelector('.cal-day-done'));
+  });
+  it('does not take focus from a different control opened while a date save is pending', async () => {
+    let finish!: () => void;
+    render({ todos: [todo('parent', null, '旅行')], onRescheduleTodo: () => new Promise<void>((resolve) => { finish = resolve; }) });
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const input = changeDate('2026-08-08');
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    const otherInput = container.querySelector<HTMLInputElement>('[aria-label="新增清單項目"]')!;
+    otherInput.focus();
+    await act(async () => { finish(); });
+    expect(document.activeElement).toBe(otherInput);
+  });
+  it('allows only one date write in the sheet so a parent cannot re-mount a pending child editor', async () => {
+    let fail!: (error: Error) => void;
+    const save = vi.fn(() => new Promise<void>((_resolve, reject) => { fail = reject; }));
+    render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)], onRescheduleTodo: save });
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    click(container.querySelector('button[aria-label="修改 訂房 的日期"]'));
+    const child = changeDate('2026-08-08');
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const parent = container.querySelector<HTMLInputElement>('[aria-label="旅行 的日期"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(parent, '2026-08-09');
+      parent.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => {
+      child.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      parent.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(save).toHaveBeenCalledExactlyOnceWith('child', '2026-08-08');
+    expect(parent.disabled).toBe(true);
+    expect(child.disabled).toBe(true);
+    await act(async () => { fail(new Error('offline')); });
+    expect(parent.disabled).toBe(false);
+    expect(parent.value).toBe('2026-08-09');
+    expect(child.value).toBe('2026-08-08');
+    expect(child.form!.querySelector('[role="alert"]')?.textContent).toContain('尚未保存');
+  });
+  it('does not focus a replacement day sheet when an old pending save finishes', async () => {
+    let finish!: () => void;
+    const props = render({ todos: [todo('parent', null, '旅行')], onRescheduleTodo: () => new Promise<void>((resolve) => { finish = resolve; }) });
+    click(container.querySelector('button[aria-label="修改 旅行 的日期"]'));
+    const input = changeDate('2026-08-08');
+    act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    act(() => root.render(<DayDetailSheet {...props} dateKey="2026-08-07" />));
+    expect(document.activeElement).toBe(document.body);
+    await act(async () => { finish(); });
+    expect(document.activeElement).toBe(document.body);
+  });
   it('changes priority on the completed child only and leaves completion controls intact', async () => {
     const props = render({ todos: [todo('parent', null, '旅行'), todo('child', 'parent', '訂房', true)] });
     click(container.querySelector('[aria-label="展開 旅行 的子項"]'));

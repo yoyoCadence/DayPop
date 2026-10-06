@@ -7,6 +7,8 @@ import { instantDateInZone } from '../../domain/eventTime';
 import { createEmptyUserData } from '../../domain/types';
 import { timedEventFromWallTime } from '../../domain/eventTime';
 import { writeUserData } from '../../storage/versionedStorage';
+import { LocalDayPopRepository } from '../../storage/localRepository';
+import { MemoryStorage } from '../../storage/browserStorage';
 import { CalendarScreen, type CalendarFocus } from './CalendarScreen';
 
 /**
@@ -49,6 +51,40 @@ async function click(element: Element | null | undefined) {
 const weekButton = () => container.querySelectorAll('.cal-segmented button')[1];
 const periodLabel = () => container.querySelector('.cal-period')?.textContent;
 const daySheet = () => container.querySelector('.cal-day-sheet');
+
+describe('confirmed todo date moves (DP-130)', () => {
+  it.each(['parent', 'child'])('moves only the %s, keeps the source day open and returns focus after that row disappears', async (target) => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const parent = (await repository.addTodo({ title: '旅行', date: '2026-08-06' })).todos[0]!;
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-08-06', parentId: parent.id })).todos[1]!;
+    await repository.toggleTodo(child.id);
+    const before = await repository.setTodoPriority(child.id, 'high');
+    let finish!: () => void;
+    const gate = new Promise<void>((resolve) => { finish = resolve; });
+    const reschedule = repository.rescheduleTodo.bind(repository);
+    repository.rescheduleTodo = async (id, date) => { await gate; return reschedule(id, date); };
+    await act(async () => root.render(<DataProvider repository={repository}><CalendarScreen focus={{ kind: 'day', dateKey: '2026-08-06' }} onGoSearch={vi.fn()} /></DataProvider>));
+    await click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    const title = target === 'parent' ? '旅行' : '訂房';
+    await click(container.querySelector(`button[aria-label="修改 ${title} 的日期"]`));
+    const input = container.querySelector<HTMLInputElement>(`[aria-label="${title} 的日期"]`)!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '2026-08-08');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(input.isConnected).toBe(true);
+    expect((await repository.load()).todos).toEqual(before.todos);
+    await act(async () => { finish(); });
+    expect(daySheet()?.getAttribute('aria-label')).toBe('8月6日 週四');
+    expect(container.querySelector(`button[aria-label="修改 ${title} 的日期"]`)).toBeNull();
+    expect(document.activeElement).toBe(container.querySelector('.cal-day-done'));
+    const saved = await repository.load();
+    expect(saved.todos).toEqual(before.todos.map((todo) => todo.id === (target === 'parent' ? parent.id : child.id) ? { ...todo, dueDate: '2026-08-08', updatedAt: saved.todos.find((row) => row.id === todo.id)!.updatedAt } : todo));
+    expect(container.querySelector(`[aria-label="完成 ${target === 'parent' ? '訂房' : '旅行'}"]`)).not.toBeNull();
+  });
+});
 
 describe('quick-add confirmation (DP-075)', () => {
   beforeEach(() => {
