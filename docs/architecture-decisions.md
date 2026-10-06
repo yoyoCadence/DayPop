@@ -28,6 +28,21 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 日詳情新增待辦等待確認（DP-137，2026-10-07）
+
+DP-133 讓行程表單的新增待辦等待確認，但日詳情裡每天更常用的兩個入口 ——「新增清單項目」與卡片內的「新增細項」—— 仍是呼叫 `onAddTodo` 後立刻清空輸入框。帳號寫入失敗、或遊客的輸入被拒絕（例如父項已被前一個排隊中的刪除移除）時，畫面只剩全域的未同步橫幅，使用者打好的標題已經不見。
+
+`addTodo` 自 DP-133 起就回傳既有單一 queue 的確認 Promise，所以本項不動 DataActions 與 repository，只讓這兩個表單等待它。共用邏輯放在 `useConfirmedTodoAdd()`：確認後才清空；失敗保留輸入並在表單下方顯示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」；同步的 callback 視為已確認，與 EventSheet 相同。沒有自動重送：transport 失敗時無法判斷伺服器是否已經有那一列，新增也不具備 idempotency，所以文案要求先確認清單。
+
+與行程表單不同的兩個決定：
+
+- **等待時用 `readOnly`，不用 `disabled`。** 這兩個欄位是連續輸入用的，送出後焦點留在輸入框、手機鍵盤不收起，才能接著打下一筆。`disabled` 會讓欄位失焦，確認後還得把焦點搶回來。重複送出改由 ref 擋下，表單以 `aria-busy` 表示等待；送出按鈕不停用，避免按下它之後焦點掉到 body。
+- **不鎖 day sheet。** 日詳情是瀏覽畫面，其他列的操作不該因為一筆新增在等待而被擋住。等待中關閉或換日（body 以日期為 key 重新掛載）時，舊請求仍在 queue 內完成，失敗照常由 DataProvider 的橫幅報告，只是不再更新已卸載的表單。
+
+原稿的新增是同步的本機操作，沒有等待或失敗狀態；這是沿既有欄位與 `.cal-day-title-error` token 的狀態擴充，不改版面。勾選、刪除與貼圖沒有會遺失的輸入，維持原本不等待的寫法。
+
+驗證：四個回歸（兩個表單 × 等待、失敗重試）在修正前失敗於「輸入被清空」；browser 案例在還原兩個元件時也失敗。lint、typecheck、1008 個單元案例／61 檔、七項 posttest、build／check:build 通過；PowerShell 實際 Intl America/New_York 下 DayDetailSheet／CalendarScreen 兩個測試檔 66 案例通過。新增 `e2e/day-todo-add-draft.spec.ts`（mobile／desktop，實際 browser timezone America/New_York、display Asia/Taipei）以 dev-only synthetic account 驗證 transport 失敗後輸入、焦點與帳號快取都不變，明確重試才新增，且不離開輸入框就能接著新增下一筆。375×667 的失敗提示在表單正下方、無水平溢出。完整 e2e 由 CI 執行；沒有真實雲端或真機證據。
+
 ### 附件按鈕的焦點不得捲動 App（DP-136，2026-10-07）
 
 DP-028 的「選擇附件」是一個 label 包住視覺隱藏的 `<input type="file">`。輸入框是 `position: absolute`，label 卻沒有定位，於是 containing block 一路落到最近的定位祖先 `.cal-sheet-backdrop`。絕對定位元素不隨未定位的捲動容器移動，所以它停在「sheet body 沒捲動時」的版面位置：375×667 為 top 909px，在畫面下方，並替 `.cal-sheet-backdrop` 與 `.dp-viewport` 撐出 243px（390×844 為 87px、1280×900 為 123px）的捲動範圍。

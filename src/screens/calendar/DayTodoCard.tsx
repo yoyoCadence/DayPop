@@ -6,11 +6,12 @@ import { EditableTodoDate } from './EditableTodoDate';
 import { TodoPrioritySelect } from './TodoPrioritySelect';
 import type { TodoPriority } from '../../domain/types';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
+import { useConfirmedTodoAdd } from './useConfirmedTodoAdd';
 
 interface DayTodoCardProps extends DayTodoGroup {
   dateKey: string;
   todayKey: string;
-  onAddTodo(input: NewTodoInput): void;
+  onAddTodo(input: NewTodoInput): Promise<void> | void;
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
@@ -23,7 +24,8 @@ interface DayTodoCardProps extends DayTodoGroup {
 /** Original day sheet card / sublist (:561), with native keyboard controls. */
 export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onToggleTodo, onDeleteTodo, onRenameTodo, onSetTodoPriority, onRescheduleTodo, onDateSaved, datePending }: DayTodoCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState('');
+  const subAdd = useConfirmedTodoAdd();
+  const { draft, setDraft } = subAdd;
   const detailsId = useId();
   const canAdd = todo.parentId === null;
   const expandable = canAdd || subtasks.length > 0;
@@ -35,8 +37,8 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim() || isTitleTooLong(draft)) return;
-    onAddTodo({ title: draft.trim(), date: dateKey, parentId: todo.id });
-    setDraft('');
+    // Cleared only once the add is confirmed; a failure keeps the text (DP-137).
+    void subAdd.submit(() => onAddTodo({ title: draft.trim(), date: dateKey, parentId: todo.id }));
   }
 
   return (
@@ -75,12 +77,13 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
             );
           })}
           {canAdd && (
-            <form className="cal-day-sub-add" onSubmit={add}>
-              <input value={draft} maxLength={MAX_TITLE_INPUT_LENGTH} aria-invalid={isTitleTooLong(draft)} onChange={(event) => setDraft(event.target.value)} placeholder="新增細項…" aria-label={`新增 ${todo.title} 的細項`} />
+            <form className="cal-day-sub-add" onSubmit={add} aria-busy={subAdd.saving}>
+              <input value={draft} readOnly={subAdd.saving} maxLength={MAX_TITLE_INPUT_LENGTH} aria-invalid={isTitleTooLong(draft)} onChange={(event) => setDraft(event.target.value)} placeholder="新增細項…" aria-label={`新增 ${todo.title} 的細項`} />
               <button type="submit" disabled={isTitleTooLong(draft)} aria-label={`新增 ${todo.title} 的子項`}>＋</button>
             </form>
           )}
           {isTitleTooLong(draft) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
+          {subAdd.error && !isTitleTooLong(draft) && <div className="cal-day-title-error" role="alert">{subAdd.error}</div>}
         </div>
       )}
     </div>

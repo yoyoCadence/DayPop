@@ -9,6 +9,7 @@ import {
 import { todoGroupsOn } from '../../domain/todos';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import { DayTodoCard } from './DayTodoCard';
+import { useConfirmedTodoAdd } from './useConfirmedTodoAdd';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
@@ -44,7 +45,8 @@ export interface DayDetailSheetProps {
   onClose(): void;
   onOpenEvent(target: OccurrenceTarget): void;
   onNewEvent(): void;
-  onAddTodo(input: NewTodoInput): void;
+  /** A synchronous callback has already confirmed; production awaits the queue (DP-137). */
+  onAddTodo(input: NewTodoInput): Promise<void> | void;
   onToggleTodo(id: string): void;
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
@@ -88,7 +90,8 @@ function DayDetailSheetBody({
   onAddSticker,
   onDeleteSticker,
 }: DayDetailSheetProps & { dateKey: string }) {
-  const [todoDraft, setTodoDraft] = useState('');
+  const todoAdd = useConfirmedTodoAdd();
+  const { draft: todoDraft, setDraft: setTodoDraft } = todoAdd;
   const [pickerOpen, setPickerOpen] = useState(false);
   const done = useRef<HTMLButtonElement>(null);
   const pendingDate = useRef(false);
@@ -185,8 +188,8 @@ function DayDetailSheetBody({
   function submitTodo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!todoDraft.trim() || isTitleTooLong(todoDraft)) return;
-    onAddTodo({ title: todoDraft, date: dateKey });
-    setTodoDraft('');
+    // Cleared only once the add is confirmed; a failure keeps the text (DP-137).
+    void todoAdd.submit(() => onAddTodo({ title: todoDraft, date: dateKey }));
   }
 
   return (
@@ -284,9 +287,12 @@ function DayDetailSheetBody({
             <DayTodoCard key={row.todo.id} {...row} dateKey={dateKey} todayKey={todayKey} onAddTodo={onAddTodo} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onRenameTodo={onRenameTodo} onSetTodoPriority={onSetTodoPriority} onRescheduleTodo={rescheduleTodo} onDateSaved={() => done.current?.focus()} datePending={datePending} />
           ))}
 
-          <form className="cal-day-todo-add" onSubmit={submitTodo}>
+          <form className="cal-day-todo-add" onSubmit={submitTodo} aria-busy={todoAdd.saving}>
             <input
               value={todoDraft}
+              // Not `disabled`: that would drop focus and the phone keyboard
+              // between consecutive todos.
+              readOnly={todoAdd.saving}
               maxLength={MAX_TITLE_INPUT_LENGTH}
               aria-invalid={isTitleTooLong(todoDraft)}
               onChange={(event) => setTodoDraft(event.target.value)}
@@ -299,6 +305,7 @@ function DayDetailSheetBody({
           </form>
 
           {isTitleTooLong(todoDraft) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
+          {todoAdd.error && !isTitleTooLong(todoDraft) && <div className="cal-day-title-error" role="alert">{todoAdd.error}</div>}
 
           <div className="cal-day-pending">
             <span className="dp-note-task">DP-014</span>
