@@ -166,6 +166,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -302,11 +303,14 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-136 — 點「選擇附件」後整個 App 被往上捲、表單標題列跑出畫面（2026-10-07）：** 追查 DP-134 留下的「`.cal-sheet-backdrop` 多 243px 捲動範圍」時重現並登記，依持續開發委託由 Backlog 經 Next、In Progress 完成，從最新 main（`b867d03`）開獨立分支。`.cal-attachment-picker input` 是 `position: absolute` 的視覺隱藏輸入框，但外層 label 沒有定位，containing block 一路落到 `.cal-sheet-backdrop`，輸入框留在未捲動的版面位置（375×667 為 top 909px）並替 `overflow: hidden` 的 `.dp-viewport` 撐出捲動範圍。焦點一落上去（Tab，或直接按「選擇附件」），瀏覽器就捲動整個 App：375×667 捲 243px、標題列從 97px 變成 -146px，「取消／儲存」不在畫面內且手指捲不回來；390×844 與 1280×900 各上移 87／123px。修正是兩條 CSS：label 加 `position: relative`，另以 `:has(input:focus-visible)` 在 label 顯示 2px 鍵盤焦點框。新增 `e2e/attachment-picker-focus.spec.ts`（以螢幕座標按下，不用會自動捲動祖先的 `locator.click()`），六個 mobile／desktop 案例在修正前全部失敗、修正後通過；修正後三種尺寸的 App 捲動範圍皆為 0、標題列位置不變。lint／typecheck、1003 個單元案例／61 檔＋七項 posttest、build／check:build 通過，production CSS 兩條規則都在；本機另跑附件、行程表單保存／刪除、responsive shell、guest CRUD 與帳號備份 spec 共 31 通過／3 跳過，完整 e2e 由 CI 執行。只在 Chromium 重現與驗證，iOS Safari／真機未驗；不改 `.dp-viewport`、其他 sheet、附件行為、schema、Auth、公告、版號或部署。通則與細節見 ADR §2。
+
 - [x] **DP-135 — 附件刪除回應遺失後的幽靈附件（2026-10-06）：** DP-134 驗證時查出的同型問題；專案擁有者再次委託持續開發／開 PR／合併後，由 Backlog 經 Next、In Progress 完成，從最新 main（`2b5e4a2`）開獨立分支。`SupabaseDayPopRepository.deleteEventAttachment()` 原本在 `delete_event_attachment_with_cleanup` 回傳 `false` 時原樣回傳舊 snapshot；上次已提交、只是回應遺失時，重試會顯示「附件已刪除」卻把附件留在清單與帳號快取，再按也刪不掉。RPC 的 `false` 語意對照最後一次定義（`20260809085514`）後，比照 DP-134：任何 boolean 都移除該筆並 flush 既有清理佇列，非 boolean 回應拒絕並保留最後確認內容；snapshot 已無該筆時仍不送 request。四個回歸與只還原 repository 的 browser 案例在修正前失敗；lint／typecheck、1003 個單元案例／61 檔（預設 timeout）＋七項 posttest、build／check:build 通過，America/New_York 下 repository 測試檔 44 案例通過，新增與既有附件 spec 的四個 mobile／desktop 案例本機通過；完整 e2e 這次只由 CI 執行。只改這一個方法的結果處理，附件 UI、DataProvider、RPC／RLS、schema、Auth、公告、版號與部署不變，不當真實雲端／Storage／真機驗收。細節見 ADR §2。
 
 - [x] **DP-134 — 行程刪除確認與回應遺失重試（2026-10-06）：** 接續已合併 DP-133（#123），由 Backlog 經 Next、In Progress 完成；從最新 main（`b5ffd87`）開獨立分支。一般刪除、重複「刪除全部」與「只刪這一次」沿 DP-133 的同一個等待鎖（`confirmWrite`），確認後才關閉；失敗保留編輯畫面與草稿，提示在刪除按鈕正下方並捲入視野，重複刪除重試重新選範圍，沒有自動重送。deleteEvent／cancelEventOccurrence 回傳既有 queue 的確認結果。Supabase deleteEvent 收到任何 boolean 都移除該筆並 flush 既有附件清理，修正「已提交但回應遺失後重試得 false、幽靈行程永遠刪不掉」；非 boolean 拒絕並保留最後確認內容。驗證時另發現 DP-133 頂端提示在刪除失敗時 viewport ratio 0，改放刪除按鈕下方，保存／刪除提示都 `scrollIntoView({ block: 'nearest' })`。兩個 red cases 與只還原 repository 的 browser 案例在修正前失敗；lint／typecheck／build／check:build／七項 posttest 通過，999 單元案例在 30 秒 timeout 下全過（預設 5 秒的本機負載逾時在未修改基線同樣發生），America/New_York 下 132 個相關案例通過，完整 e2e 151 通過／五項既有 desktop 跳過。驗證細節見 ADR §2。RPC／RLS、schema、Auth、公告、版號與部署不變，不當真實雲端／真機或 DP-014／034 結案。
   > **2026-10-06 交接：** 專案擁有者指示「告一段落開完 PR 並 merge 就先結束」，本 PR 合併後暫停。下一個建議是 Backlog 的 **DP-135**（附件刪除回應遺失的同型問題），尚未開始；另有 `.cal-sheet-backdrop` 在 375×667 有 243px 捲動範圍的觀察，成因未查。
   > **補正：** DP-135 已於同日恢復開發後完成，見上一條；捲動範圍的觀察仍未查。
+  > **2026-10-07 補正：** 捲動範圍的成因已由 DP-136 查出並修正（附件按鈕的隱藏輸入框），見 Done 的 DP-136。
 
 - [x] **DP-133 — 行程表單等待保存與失敗草稿保全（2026-10-06）：** 依持續自主開發／開 PR／合併委託，由 Backlog 經 Next、In Progress 完成；從最新 main（`f5e1036`）開獨立分支。新增／編輯行程、重複單次／全部及同表單新增待辦，等待既有 queue 確認才關閉；失敗保留完整草稿，明示先確認資料再重試，重複重試重新選範圍。ref 防重複提交、fieldset 停用草稿，取消／背景／window capture Escape 暫停；settle／unmount 清理，舊請求不能關閉新表單，僅失焦到 body 才還原保存焦點。四支 action 回傳確認結果，ignored rejection 有 handler，DataProvider 的 warning／saving／write barrier 與 repository／snapshot／cache 邊界不變。等待保存回歸在修正前失敗；lint、typecheck、986 個單元案例／61 檔＋七項 posttest、build／check:build 通過；實際 Intl America/New_York 的 87 個相關案例通過。完整 e2e 145 通過／五項既有 desktop 跳過；最後加入提示 viewport 斷言後，六個 mobile／desktop synthetic account 保存失敗／重試案例再跑全數通過，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。production 四種尺寸與漫畫淺／深／像素深色沿原稿實際新增事件對照、無水平溢出；375×667 失敗提示 150..184px 可見，證據留於 %TEMP%/daypop-dp133-qa/。無 schema、Auth、公告或部署變更，不當真實雲端／真機或 DP-014／034 結案。下一段優先補齊行程表單的刪除確認與失敗重試，另開 PR。
 

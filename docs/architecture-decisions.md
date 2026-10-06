@@ -28,6 +28,20 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 附件按鈕的焦點不得捲動 App（DP-136，2026-10-07）
+
+DP-028 的「選擇附件」是一個 label 包住視覺隱藏的 `<input type="file">`。輸入框是 `position: absolute`，label 卻沒有定位，於是 containing block 一路落到最近的定位祖先 `.cal-sheet-backdrop`。絕對定位元素不隨未定位的捲動容器移動，所以它停在「sheet body 沒捲動時」的版面位置：375×667 為 top 909px，在畫面下方，並替 `.cal-sheet-backdrop` 與 `.dp-viewport` 撐出 243px（390×844 為 87px、1280×900 為 123px）的捲動範圍。
+
+`.dp-viewport` 以 `overflow: hidden` 裁切，手指捲不動，但瀏覽器在焦點移動時仍會捲動它。輸入框一取得焦點 —— 鍵盤 Tab，或直接按 label（點擊會把焦點交給輸入框）—— 整個 App 就被捲到上限：375×667 的 sheet 標題列從 97px 變成 -146px，「取消／儲存」不在畫面內，畫面下方留白，而 `overflow: hidden` 的容器沒有讓手指捲回去的方法。390×844 與桌面的標題列仍在畫面內，但整個 App 同樣上移並裁掉頂部。既有的附件 e2e 以 `setInputFiles()` 直接把檔案交給輸入框，從來沒有按過 label，所以一直是綠的。
+
+修正是讓 label 成為 containing block（`position: relative`）。輸入框因此留在 label 內、跟著 sheet body 捲動，App 的捲動範圍回到 0；焦點落上去時只有 sheet body 捲動把按鈕帶進畫面。輸入框被裁成 1px，sheet 既有的 `input:focus-visible` 焦點框在它身上看不到，因此另以 `.cal-attachment-picker:has(input:focus-visible)` 在 label 顯示同樣的 2px accent 外框；用 `:focus-visible` 而非 `:focus-within` 是為了維持「指標點擊不顯示焦點框」的既有慣例，不支援 `:has()` 的瀏覽器只是沒有這個框，與修正前相同。
+
+**通則（之後新增控制項時適用）：`.dp-viewport` 手指捲不動但焦點捲得動。任何 `position: absolute` 的視覺隱藏元素都必須有自己的定位祖先，否則它會停在未捲動的版面位置並讓焦點捲走整個 App。** 目前全專案只有這一處用這種寫法；設定頁的兩個檔案輸入框用 `hidden` 屬性，不佔版面也取不到焦點。沒有改 `.dp-viewport` 本身（例如換成 `overflow: clip`）：那會影響所有畫面，屬於另一個需要完整回歸的決定。
+
+這也解釋了 DP-134 段落記下的「`.cal-sheet-backdrop` 在操作前就有 243px／87px 捲動範圍、成因未查」，以及當時第一張截圖裡標題列消失的現象。
+
+驗證：新增 `e2e/attachment-picker-focus.spec.ts`，以螢幕座標按下按鈕（先只捲動 sheet body，如同手指）；不用 `locator.click()`，因為它會先替你捲動祖先，這是 DP-089 更新對話框留下的同一個教訓。修正前六個案例全部失敗，量到的 App scrollTop／標題列位置為 390×844：87／31px（原 118px），375×667：243／-146px（原 97px），1280×900：123／13px（原 136px）；修正後皆為 0 且標題列位置不變，Tab 抵達時 label 的 computed outline 為 `solid 2px`。lint、typecheck、1003 個單元案例／61 檔、七項 posttest、build／check:build 通過，production CSS 內兩條規則都在。本機另跑既有附件、行程表單保存／刪除、responsive shell、guest CRUD 與帳號備份 spec，連同新案例共 31 通過／3 跳過；完整 e2e 由 CI 執行。只在 Chromium 重現與驗證，iOS Safari／真機未驗；帳號流程仍是 dev-only FakeSupabase。
+
 ### 附件刪除的回應遺失重試（DP-135，2026-10-06）
 
 DP-134 驗證時查出 `deleteEventAttachment` 有同型的 `if (!deleted) return data`。`delete_event_attachment_with_cleanup`（最後一次定義在 `20260809085514`）和事件刪除的 RPC 一樣，只在「本人擁有的那一列已不存在」時回傳 `false`。上次呼叫已提交、只是回應遺失時，明確重試必定得到 `false`；舊程式原樣回傳舊 snapshot 而不丟錯，於是 EventSheet 顯示「附件已刪除」，附件卻仍在清單與帳號快取，再按「刪除」也一樣。
@@ -46,7 +60,7 @@ DP-133 之後，行程表單的刪除仍是送出即關閉：遠端拒絕時畫�
 
 不在本項：附件刪除 `deleteEventAttachment` 有同型的 `if (!deleted) return data`，回應遺失後同樣會留下幽靈附件，已另列任務；行程表單以外的刪除入口（待辦、貼圖、日曆）仍是不等待的寫法。
 
-驗證：表單關閉與重試留下幽靈 snapshot 兩個回歸在修正前失敗；browser 的回應遺失案例在只還原 repository 修正時也失敗（重試後行程仍在日詳情）。lint、typecheck、build／check:build 與七項 posttest 通過。單元測試 999 個案例／61 檔在 `--testTimeout=30000` 下全數通過；預設 5 秒時，本機負載下 CalendarScreen／App 有數個與本項無關的逾時，未修改的基線同樣逾時，因此不視為本項回歸，以 CI 為準。PowerShell 實際 Intl America/New_York 下三個相關測試檔 132 案例通過。完整 e2e 151 通過／五項既有 desktop 跳過，其中新增六個 mobile／desktop synthetic account 案例覆蓋一般刪除失敗、回應遺失後重試、重複「只刪這一次／刪除全部」失敗後重選範圍，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。dev server 下 375×667 與 390×844 的失敗狀態：提示在刪除按鈕下方 6px、標題列仍可見、只有 sheet body 捲動 40px、焦點回刪除按鈕、無水平溢出；量測時另見 `.cal-sheet-backdrop` 在操作前就有 243px／87px 的捲動範圍，成因未查，不由本項造成也未在本項處理。仍只用 dev-only FakeSupabase，沒有真實雲端或真機證據。
+驗證：表單關閉與重試留下幽靈 snapshot 兩個回歸在修正前失敗；browser 的回應遺失案例在只還原 repository 修正時也失敗（重試後行程仍在日詳情）。lint、typecheck、build／check:build 與七項 posttest 通過。單元測試 999 個案例／61 檔在 `--testTimeout=30000` 下全數通過；預設 5 秒時，本機負載下 CalendarScreen／App 有數個與本項無關的逾時，未修改的基線同樣逾時，因此不視為本項回歸，以 CI 為準。PowerShell 實際 Intl America/New_York 下三個相關測試檔 132 案例通過。完整 e2e 151 通過／五項既有 desktop 跳過，其中新增六個 mobile／desktop synthetic account 案例覆蓋一般刪除失敗、回應遺失後重試、重複「只刪這一次／刪除全部」失敗後重選範圍，實際 browser timezone America/New_York、display Asia/Taipei、console error／warning 0。dev server 下 375×667 與 390×844 的失敗狀態：提示在刪除按鈕下方 6px、標題列仍可見、只有 sheet body 捲動 40px、焦點回刪除按鈕、無水平溢出；量測時另見 `.cal-sheet-backdrop` 在操作前就有 243px／87px 的捲動範圍，成因未查，不由本項造成也未在本項處理（**2026-10-07 補正：成因已由 DP-136 查出並修正，是附件按鈕的隱藏輸入框，見上方該節**）。仍只用 dev-only FakeSupabase，沒有真實雲端或真機證據。
 
 ### 行程表單保存確認（DP-133，2026-10-06）
 

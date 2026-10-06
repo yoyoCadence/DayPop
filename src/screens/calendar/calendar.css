@@ -1551,6 +1551,11 @@ button.cal-day-todo-title {
 }
 
 .cal-attachment-picker {
+  /* Containing block for the hidden input below — DP-136. Without it the input
+     is laid out against `.cal-sheet-backdrop` at its unscrolled position, below
+     the screen, and focusing it (Tab, or pressing this label) makes the browser
+     scroll the clipped `.dp-viewport`, pushing 取消／儲存 off a small phone. */
+  position: relative;
   width: fit-content;
   border: var(--bd) solid var(--border);
   border-radius: calc(var(--radius) - 2px);
@@ -1565,6 +1570,13 @@ button.cal-day-todo-title {
 .cal-attachment-picker[aria-disabled='true'] {
   cursor: wait;
   opacity: 0.65;
+}
+
+/* The input is clipped to 1px, so the sheet's own `input:focus-visible` ring
+   cannot be seen on it; keyboard focus is shown on the label instead. */
+.cal-attachment-picker:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .cal-attachment-picker input {
