@@ -76,6 +76,7 @@ function fixedRepository(data: DayPopUserData): DayPopRepository & SyncLoadCapab
     toggleTodo: respond,
     renameTodo: respond,
     setTodoPriority: respond,
+    rescheduleTodo: respond,
     deleteTodo: respond,
     addSticker: respond,
     deleteSticker: respond,

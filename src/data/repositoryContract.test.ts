@@ -63,6 +63,37 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+describe.each(adapters)('%s adapter reschedules todos (DP-129)', (_name, create) => {
+  it('moves parent and completed child independently and preserves every other field through reload', async () => {
+    const repository = await create();
+    const parent = (await repository.addTodo({ title: '旅行', date: '2026-03-07' })).todos[0]!;
+    const child = (await repository.addTodo({ title: '訂房', date: '2026-03-07', parentId: parent.id })).todos[1]!;
+    await repository.toggleTodo(child.id);
+    const before = await repository.setTodoPriority(child.id, 'high');
+    const movedParent = await repository.rescheduleTodo(parent.id, '2026-03-08');
+    expect(movedParent.todos[1]).toEqual(before.todos[1]);
+    const saved = await repository.rescheduleTodo(child.id, '2011-12-30');
+    expect(saved.todos).toEqual(before.todos.map((todo, index) => ({ ...todo, dueDate: index === 0 ? '2026-03-08' : '2011-12-30', updatedAt: saved.todos[index]!.updatedAt })));
+    expect(await repository.load()).toEqual(saved);
+    const removed = await repository.deleteTodo(parent.id);
+    await expect(repository.rescheduleTodo(child.id, '2026-10-06')).rejects.toThrow('找不到待辦');
+    expect(await repository.load()).toEqual(removed);
+  });
+  it('assigns an undated row and refuses invalid dates or clearing without changing durable data', async () => {
+    const repository = await create();
+    const data = await repository.addTodo({ title: '未定日', date: '2026-10-06' });
+    const todo = { ...data.todos[0]!, dueDate: null };
+    await repository.importData({ kind: 'replace', data: {
+      calendars: data.calendars, events: data.events, eventExceptions: data.eventExceptions,
+      stickers: data.stickers, preferences: data.preferences, todos: [todo],
+    } });
+    const saved = await repository.rescheduleTodo(todo.id, '2028-02-29');
+    expect(saved.todos[0]).toEqual({ ...todo, dueDate: '2028-02-29', updatedAt: saved.todos[0]!.updatedAt });
+    for (const date of ['', '2026-02-29', null]) await expect(repository.rescheduleTodo(todo.id, date as string)).rejects.toThrow('有效');
+    expect(await repository.load()).toEqual(saved);
+  });
+});
+
 describe.each(adapters)('%s adapter todo priorities (DP-128)', (_name, create) => {
   it('changes parent and completed child independently, preserving all other fields through reload', async () => {
     const repository = await create();

@@ -17,11 +17,13 @@ import {
   withoutTodo,
   renamedTodo,
   todoWithPriority,
+  rescheduledTodo,
 } from './mutations';
 import { createEmptyUserData, type CalendarEvent, type DayPopUserData } from './types';
 import { eventDateInZone, eventStartTimeInZone } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
 import { todoTree } from '../test/todoTree';
+import { TodoInputError } from './todos';
 
 const NOW = '2026-08-04T00:00:00.000Z';
 const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
@@ -29,6 +31,33 @@ const OTHER_CALENDAR = '66666666-6666-4666-8666-666666666666';
 function baseData(): DayPopUserData {
   return createEmptyUserData({ now: NOW });
 }
+
+describe('rescheduledTodo (DP-129)', () => {
+  it.each(['2026-03-08', '2026-11-01', '2011-12-30', '2028-02-29', '9999-12-31'])('keeps %s as a date-only value and preserves completed nested rows', (date) => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const original = structuredClone(data);
+    const todo = data.todos.find((item) => item.completedAt !== null)!;
+    expect(rescheduledTodo(data, todo.id, date, NOW)).toEqual({ ...todo, dueDate: date, updatedAt: NOW });
+    expect(data).toEqual(original);
+  });
+  it.each(['', '2026-02-29', '2026-02-30', '2026-13-01', '0000-01-01', '0099-01-01', '10000-01-01', '2026-8-1', ' 2026-08-01 ', null])('refuses invalid or cleared date %s without mutation', (date) => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const original = structuredClone(data);
+    expect(() => rescheduledTodo(data, data.todos[0]!.id, date as string, NOW)).toThrow(TodoInputError);
+    expect(data).toEqual(original);
+  });
+  it('can assign a date to an imported undated row while keeping its parent', () => {
+    const data = baseData();
+    data.todos = todoTree(data.calendars[0]!.id);
+    const todo = { ...data.todos[0]!, dueDate: null };
+    data.todos[0] = todo;
+    expect(rescheduledTodo(data, todo.id, '2026-10-06', NOW)).toEqual({ ...todo, dueDate: '2026-10-06', updatedAt: NOW });
+    expect(() => rescheduledTodo(data, 'missing', '2026-10-06', NOW)).toThrow(TodoInputError);
+    expect(data.todos[0]).toEqual(todo);
+  });
+});
 
 describe('todoWithPriority (DP-128)', () => {
   it.each(['none', 'low', 'medium', 'high'] as const)('changes only priority to %s, including completed nested rows', (priority) => {

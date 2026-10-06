@@ -34,6 +34,14 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 舊遊客 schema v1–v4 的超長標題仍完整可讀，不因此進入 corrupt、裁切或自動改名；讀取 v4 不改原始 bytes，既有 migration 保留完整標題。後續本機寫入只允許同一種類、同一 id 且完全未變的超長標題原樣保留，其他待辦勾選、設定、刪除與合法新增不被阻擋。編輯該標題須先縮到上限；事件其他欄位的 repository patch 可保持原標題，sheet 編輯則提示先縮短。JSON／ICS 匯出保留完整標題，JSON 取代匯入與新 ICS 列嚴格驗證（超長備份須先修正標題才可匯入）；ICS 附加可保留既有超長列。登入快取（含 v3 migration）保持嚴格，不能把遊客相容規則套到帳號。未提升 schema／release、修改 DB 約束或部署。
 
+### 待辦換日資料契約（DP-129，2026-10-06）
+
+依持續自主開發委託，先新增 `rescheduleTodo(id, date)`，介面接線由 DP-130 獨立完成。只接受既有 `isDateKey()` 能驗證的日期字串，不接受 null、空白或不存在的日期，也不將日期轉成裝置時區的 instant；DST 日期與 Pacific/Apia 的 2011-12-30 仍是合法日曆日期。沿既有驗證的年份範圍，不在本項擴充 validation。可為已匯入的 null 日期列指定有效日期，但本段不開放清除日期，避免日詳情換日後沒有無日期管理入口。
+
+共用純函式 `rescheduledTodo()` 只更新單列 dueDate／updatedAt，保留 parentId、完成、優先度、排序、日曆、分享範圍、標題與建立時間；父與子不連動，跨日期階層維持 DP-116／121 的既有分組與可見性。不搬整棵子樹，也不重排目標日期的 sortOrder。missing id／invalid date 使用 TodoInputError，沿 refused 保留 ready snapshot 並繼續單一 queue。guest 仍先通過 corrupt／future write barrier，舊超長標題可原樣保留。
+
+authenticated 僅送 `{ due_date }` 的 owner-scoped update／single，不 upsert 已刪除列或傳 client timestamps；成功才更新 snapshot／account cache，遠端 error／transport rejection 皆保留最後確認資料、不自動重送。沒有 schema／RPC、Auth、release 或部署變更；DP-129 是資料前置完成，不能宣稱日詳情已有換日能力或 DP-014 已結案。
+
 ### 待辦優先度（DP-128，2026-10-05）
 
 依持續自主開發委託，日詳情的父待辦與已顯示子項新增 native select，對應 canonical `none`／`low`／`medium`／`high`。原稿 :561 沒有選擇器，但 seed／寵物建議已使用 priority 資料；這是刻意擴充，沿既有欄位 surface／fg／border／radius 與 2px accent 焦點，不新增 palette。16px 字級避開手機輸入縮放；不調整排序、日期、完成或父子關係，也不把父優先度套到子項。新待辦維持原先 `none`。

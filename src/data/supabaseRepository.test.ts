@@ -112,6 +112,32 @@ function bootstrapped() {
 }
 
 describe('SupabaseDayPopRepository load', () => {
+  it.each(['failures', 'rejections'] as const)('date-only update preserves snapshot on %s and commits only a confirmed row', async (mode) => {
+    const { db, repository } = bootstrapped();
+    const before = await repository.load();
+    db[mode].set('todos', 'offline');
+    await expect(repository.rescheduleTodo(TODO, '2011-12-30')).rejects.toThrow(RemoteDataError);
+    db[mode].delete('todos');
+    expect(await repository.load()).toEqual(before);
+    const saved = await repository.rescheduleTodo(TODO, '2011-12-30');
+    expect(db.writes.at(-1)).toEqual({ table: 'todos', row: { due_date: '2011-12-30' } });
+    expect(saved.todos[0]).toEqual({ ...before.todos[0], dueDate: '2011-12-30', updatedAt: db.serverTime });
+  });
+  it('refuses invalid dates before writes and cannot recreate missing or update foreign rows', async () => {
+    const { db, repository } = bootstrapped();
+    const before = await repository.load();
+    await expect(repository.rescheduleTodo(TODO, '2026-02-30')).rejects.toThrow('有效');
+    expect(db.writes).toEqual([]);
+    expect(await repository.load()).toEqual(before);
+    db.tables.set('todos', []);
+    await expect(repository.rescheduleTodo(TODO, '2026-10-06')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')).toEqual([]);
+    db.seed('todos', [todoRow({ owner_id: OTHER_OWNER })]);
+    db.writes.length = 0;
+    await expect(repository.rescheduleTodo(TODO, '2026-10-06')).rejects.toThrow(RemoteDataError);
+    expect(db.rows('todos')[0]).toEqual(todoRow({ owner_id: OTHER_OWNER }));
+    expect(db.writes).toEqual([]);
+  });
   it('priority update sends one field, preserves confirmed data on failure and refuses missing/foreign rows', async () => {
     const { db, repository } = bootstrapped();
     const before = await repository.load();

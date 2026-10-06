@@ -139,6 +139,9 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       async setTodoPriority(id, priority) {
         await enqueue(() => activeRepository.setTodoPriority(id, priority));
       },
+      async rescheduleTodo(id, date) {
+        await enqueue(() => activeRepository.rescheduleTodo(id, date));
+      },
       deleteTodo(id) {
         run(() => activeRepository.deleteTodo(id));
       },

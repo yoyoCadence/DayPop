@@ -69,6 +69,7 @@ export interface DayPopRepository {
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
   renameTodo(id: string, title: string): Promise<DayPopUserData>;
   setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData>;
+  rescheduleTodo(id: string, date: string): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
   addSticker(input: NewStickerInput): Promise<DayPopUserData>;

@@ -132,6 +132,10 @@ export class CachedSupabaseDayPopRepository
     return this.#persist(await this.#remote.setTodoPriority(id, priority));
   }
 
+  async rescheduleTodo(id: string, date: string): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.rescheduleTodo(id, date));
+  }
+
   async deleteTodo(id: string): Promise<DayPopUserData> {
     return this.#persist(await this.#remote.deleteTodo(id));
   }

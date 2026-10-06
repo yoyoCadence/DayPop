@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **待辦換日契約（DP-129）：** rescheduleTodo／rescheduledTodo 只更新單列 dueDate／updatedAt，沿既有 isDateKey、不轉 timed instant，父子日期獨立且不改排序／完成／優先度／階層。拒絕 null／空白／無效日期；可指定既有無日期列，但 UI／清除日期管理未接。TodoInputError 沿 refused／單一 queue、guest write barrier 與舊長標題相容；account owner-scoped date-only update／single，不 upsert 已刪列，成功才更新 snapshot／cache且不自動重送。ADR §2 記錄契約與界線；UI 接續 DP-130，未改 schema／release／Auth 或部署。
+
 - **待辦優先度（DP-128）：** 日詳情父待辦與已顯示子項的 native select 保存 none／low／medium／high，16px、沿既有欄位 token 與 2px 焦點。只更新該筆 priority／updatedAt，不繼承父值或改排序／日期／完成；新增仍為 none。setTodoPriority 經單一 queue，TodoInputError 沿 refused、guest write barrier 優先，舊長標題原樣保留；account owner-scoped priority-only update／single，不 upsert 已刪列，成功才更新 snapshot／cache且不自動重送。等待時防重複提交，失敗顯示最後確認值與重選提示。原稿無控制項，刻意擴充見 ADR §2；未改 schema／release／Auth 或部署，DP-014 其餘段落未結案。
 
 - **全天日期範圍（DP-127）：** EventSheet 全天模式沿既有日期欄位提供 inclusive 結束日，有效起日變更平移整段、明確結束日變更調整跨度，無效／倒置保留草稿。NewEventInput／EventPatch 可選 endDate 只適用全天，省略保持單日新增／原跨度 patch；allDayDates 的 UTC 欄位只作無時區日期算術。AllDayInputError 沿 refused／單一 queue、request 前拒絕，write barrier 不變。單次保持完整 occurrence，全部依日期位移錨點再套跨度、越界留表單；既有 DB mapping／RPC 不變。ADR §6 記錄原稿沒有此欄位的刻意擴充，未改 schema／release／部署。

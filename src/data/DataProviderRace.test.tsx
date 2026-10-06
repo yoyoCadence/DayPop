@@ -43,6 +43,32 @@ function latest() {
 }
 
 describe('DataProvider concurrent writes', () => {
+  it('holds later edits until the awaited reschedule settles, preserving both confirmed fields', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '排隊', date: '2026-10-06' })).todos[0]!;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const started: string[] = [];
+    const reschedule = repository.rescheduleTodo.bind(repository);
+    const reprioritize = repository.setTodoPriority.bind(repository);
+    repository.rescheduleTodo = async (id, date) => { started.push('date'); await gate; return reschedule(id, date); };
+    repository.setTodoPriority = async (id, priority) => { started.push('priority'); return reprioritize(id, priority); };
+    seen.length = 0;
+    await act(async () => root.render(<DataProvider repository={repository}><Probe /></DataProvider>));
+    let dateWrite!: Promise<void>;
+    let priorityWrite!: Promise<void>;
+    await act(async () => {
+      dateWrite = latest().actions.rescheduleTodo(todo.id, '2026-10-07');
+      priorityWrite = latest().actions.setTodoPriority(todo.id, 'high');
+    });
+    expect(started).toEqual(['date']);
+    expect(latest().state).toMatchObject({ status: 'ready', saving: true, data: { todos: [todo] } });
+    await act(async () => { release(); await Promise.all([dateWrite, priorityWrite]); });
+    expect(started).toEqual(['date', 'priority']);
+    expect((await repository.load()).todos[0]).toMatchObject({ dueDate: '2026-10-07', priority: 'high' });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ dueDate: '2026-10-07', priority: 'high' }] } });
+  });
   it('keeps the App ready when a queued child creation finds its parent already deleted (DP-116)', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await repository.load();
@@ -106,6 +132,7 @@ describe('DataProvider concurrent writes', () => {
       toggleTodo: pending,
       renameTodo: pending,
       setTodoPriority: pending,
+      rescheduleTodo: pending,
       deleteTodo: pending,
       addSticker: pending,
       deleteSticker: pending,
@@ -180,6 +207,7 @@ describe('DataProvider concurrent writes', () => {
       toggleTodo: pending,
       renameTodo: pending,
       setTodoPriority: pending,
+      rescheduleTodo: pending,
       deleteTodo: pending,
       addSticker: pending,
       deleteSticker: pending,

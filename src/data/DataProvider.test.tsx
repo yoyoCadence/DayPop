@@ -67,6 +67,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
     toggleTodo: respond,
     renameTodo: respond,
     setTodoPriority: respond,
+    rescheduleTodo: respond,
     deleteTodo: respond,
     addSticker: respond,
     deleteSticker: respond,
@@ -79,6 +80,29 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('orders deletion before an awaited reschedule, keeps the App ready and continues the queue', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '先刪除', date: '2026-10-06' })).todos[0]!;
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    await act(async () => {
+      latest().actions.deleteTodo(todo.id);
+      await expect(latest().actions.rescheduleTodo(todo.id, '2026-10-07')).rejects.toThrow('找不到待辦');
+    });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [] }, warning: { kind: 'refused' } });
+    await act(async () => { latest().actions.addTodo({ title: '後續正常', date: '2026-10-07' }); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ title: '後續正常', dueDate: '2026-10-07' }] } });
+  });
+  it('refuses an invalid date without altering the snapshot and permits a later reschedule', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '日期', date: '2026-10-06' })).todos[0]!;
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    await act(async () => { await expect(latest().actions.rescheduleTodo(todo.id, '')).rejects.toThrow('有效'); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [todo] }, warning: { kind: 'refused' } });
+    await act(async () => { await latest().actions.rescheduleTodo(todo.id, '2026-10-07'); });
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ dueDate: '2026-10-07' }] } });
+  });
   it('orders delete before priority edit, refuses it without unmounting and continues the queue', async () => {
     const repository = new LocalDayPopRepository(new MemoryStorage());
     await repository.load();

@@ -241,6 +241,12 @@ describe('backup and reset', () => {
 // the local and the Supabase adapter. The guarantees asserted here are the
 // DP-016 ones and are unchanged: refuse the write, leave the bytes alone.
 describe('repository write barrier', () => {
+  it.each(['not-json', JSON.stringify({ schemaVersion: 99, data: {} })])('blocks rescheduling before date validation and preserves raw bytes', async (raw) => {
+    localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
+    const repository = new LocalDayPopRepository();
+    await expect(repository.rescheduleTodo('missing', '')).rejects.toThrow(LocalDataBlockedError);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
+  });
   it.each(['not-json', JSON.stringify({ schemaVersion: 99, data: {} })])('blocks priority edits before command validation and keeps raw bytes', async (raw) => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
     const repository = new LocalDayPopRepository();
