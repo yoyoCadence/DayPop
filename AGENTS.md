@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **錯誤畫面可直接下載備份（DP-143，2026-10-07）：** `ScreenErrorFallback` 多了「下載備份」，由 `App` 以目前的資料呼叫 `src/screens/backupDownload.ts` 的 `downloadJsonBackup()`；設定的「匯出資料」改用同一個函式，兩處一定產生同一份檔案。DP-139 的 fallback 只建議到設定匯出，設定本身壞掉時就沒有出口；現在任何分頁壞掉都能在原地下載，成功時說明未包含的附件數，失敗時在原地說明，不影響「再試一次」與「重新載入 App」。`settingsHint` prop 已移除。最外層的 `RootErrorFallback` 在 provider 之上、拿不到資料，仍只有重新載入。備份格式、資料邊界、schema、Auth、公告與部署不變。取代下方 DP-139 與 docs/deployment.md §5.21「設定壞掉時沒有備份入口」的敘述。
+
 - **新增的重試不重複（DP-142，2026-10-07）：** `NewEventInput`／`NewTodoInput`／`NewCalendarInput` 多了可選的 `id`。行程表單（行程與待辦各一個）、日詳情兩個新增欄位（`useConfirmedTodoAdd`）與新增日曆對話框各自在同一份草稿的生命週期內固定一個 id，每次嘗試都帶上；確認成功或重新開啟才換新的。兩個 adapter 以 `creationTarget()` 決定落點：帳號端的新增本來就是主鍵 `upsert`，所以「已寫入但回應遺失」之後的明確重試會落在同一列（內容以重試的草稿為準），不再多出一筆；snapshot 已有該 id 視為已確認，不送 request 也不覆寫；省略或不是 UUID 時照舊由 adapter 產生。這取代 DP-133／137／141 文件裡「新增不具備 idempotency」的但書，UI 文案未改。測試用的 `FakeSupabase.lostResponses` 可模擬「寫入後回應遺失」。貼圖（沒有重試介面）、附件上傳、匯入與單次修改的 RPC 不在本項；schema／RPC／RLS（沿既有 upsert 與 owner policy）、Auth、公告與部署不變。見 ADR §2。
 
 - **日曆對話框等待確認（DP-141，2026-10-07）：** 設定的「新增日曆／編輯日曆」原本由 `SettingsScaffoldScreen` 在按下儲存或「刪除此日曆」的同時關閉，寫入失敗時對話框已不在。`addCalendar`／`updateCalendar`／`deleteCalendar` 改回傳既有 queue 的確認結果（與 DP-133／134 相同，不等待的呼叫如顯示／隱藏開關照常可用）；`CalendarEditDialog` 自己在確認後才呼叫 `onClose`。等待時整個對話框停用、不能取消或重複送出，按下的按鈕顯示「保存中…」或「刪除中…」；失敗留在畫面上，名稱與顏色不變，提示在該按鈕下方，失焦到 body 才把焦點還給它，沒有自動重送。標題在開啟時決定，確認刪除後資料先更新也不會閃成「新增日曆」。原稿是同步的本機保存，這是狀態擴充，見 ADR §2。repository（含 DP-138 的非原子刪除）、其他設定區塊、schema、Auth、公告與部署不變。至此有草稿的表單（行程、待辦新增、日曆）都會等待確認；勾選、刪除待辦與貼圖沒有草稿，維持不等待。

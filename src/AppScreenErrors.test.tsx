@@ -19,6 +19,11 @@ vi.mock('./screens/SearchScreen', () => ({
     throw new Error('搜尋畫面壞了');
   },
 }));
+const fileIo = vi.hoisted(() => ({ download: vi.fn(), read: vi.fn() }));
+vi.mock('./browser/dataTransferFiles', () => ({
+  downloadTextFile: fileIo.download,
+  readTextFile: fileIo.read,
+}));
 vi.mock('./auth/AuthProvider', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -100,7 +105,23 @@ describe('App when one screen fails to render', () => {
     expect(container.querySelector('main [role="alert"]')?.textContent).toContain('你的資料沒有被刪除');
     expect(container.querySelector('details')?.textContent).toContain('搜尋畫面壞了');
 
-    // The way out the fallback points at really is there.
+    // DP-143: the backup is offered on the failed screen itself, and it is the
+    // same file 設定 → 匯出資料 produces.
+    const download = [...container.querySelectorAll('main button')].find((item) => item.textContent === '下載備份');
+    await act(async () => {
+      (download as HTMLButtonElement).click();
+    });
+    expect(fileIo.download).toHaveBeenCalledExactlyOnceWith(
+      expect.stringMatching(/^daypop-backup-\d{4}-\d{2}-\d{2}\.json$/),
+      expect.any(String),
+      'application/json;charset=utf-8',
+    );
+    const backup = JSON.parse(fileIo.download.mock.calls[0]![1] as string);
+    expect(backup.appVersion).toBe('0.0.0-test');
+    expect(backup.data.calendars).toHaveLength(1);
+    expect(container.querySelector('main [role="status"]')?.textContent).toBe('已開始下載備份。');
+
+    // 設定 still works too, and exports through the same function.
     await openTab('設定');
     expect([...container.querySelectorAll('h1')].map((heading) => heading.textContent)).toEqual(['設定']);
     expect(container.textContent).toContain('匯出');

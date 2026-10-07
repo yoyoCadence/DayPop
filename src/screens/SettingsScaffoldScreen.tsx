@@ -6,11 +6,9 @@ import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
 import {
   backupFileName,
   buildIcsExport,
-  buildJsonBackup,
   planIcsImport,
   planJsonImport,
   previewTotal,
-  serializeJsonBackup,
   type ImportPlan,
 } from '../domain/dataTransfer';
 import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
@@ -18,6 +16,7 @@ import type { AppUpdateState } from '../pwa/useAppUpdate';
 import { LegacyImportCard } from '../legacy/LegacyImportCard';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
+import { downloadJsonBackup } from './backupDownload';
 import { CalendarEditDialog } from './CalendarEditDialog';
 import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
@@ -179,14 +178,11 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   function exportJson() {
     setTransferError(null);
     try {
-      downloadTextFile(
-        backupFileName('json'),
-        serializeJsonBackup(buildJsonBackup(data, { appVersion: updater.currentVersion })),
-        'application/json;charset=utf-8',
-      );
+      // Shared with the screen error fallback, so both export the same file — DP-143.
+      const attachments = downloadJsonBackup(data, updater.currentVersion);
       setTransferMessage(
-        data.eventAttachments.length > 0
-          ? `已開始下載備份；${data.eventAttachments.length} 個附件未包含在檔案內。`
+        attachments > 0
+          ? `已開始下載備份；${attachments} 個附件未包含在檔案內。`
           : '已開始下載 DayPop 備份。',
       );
     } catch (error) {

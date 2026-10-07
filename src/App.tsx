@@ -7,6 +7,7 @@ import { ReleaseNoticeDialog } from './pwa/ReleaseNoticeDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdateState } from './pwa/appUpdateContext';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
+import { downloadJsonBackup } from './screens/backupDownload';
 import { DataRecoveryScreen } from './screens/DataRecoveryScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { ScreenErrorFallback } from './screens/ScreenErrorFallback';
@@ -133,14 +134,15 @@ export default function App() {
       }
     >
       {/* A screen that throws while rendering is replaced on its own; the tab
-          bar and the other tabs stay usable, so 設定 → 匯出 is still reachable.
-          Keyed by tab so another tab never inherits the error — DP-139. */}
+          bar and the other tabs stay usable. Keyed by tab so another tab never
+          inherits the error — DP-139. The fallback can export the data itself,
+          because 設定 may be the screen that failed — DP-143. */}
       <ErrorBoundary
         key={tab}
         fallback={(caught) => (
           <ScreenErrorFallback
             {...caught}
-            settingsHint={tab !== 'settings'}
+            onDownloadBackup={() => downloadJsonBackup(state.data, updater.currentVersion)}
             onReload={() => window.location.reload()}
           />
         )}

@@ -46,7 +46,7 @@ test('單一畫面出錯時只換掉那個畫面，其他分頁、匯出備份�
   const alert = page.getByRole('main').getByRole('alert');
   await expect(alert).toContainText('你的資料沒有被刪除');
   await expect(alert).toBeInViewport();
-  await expect(page.getByText('「設定」匯出備份')).toBeVisible();
+  await expect(page.getByRole('button', { name: '下載備份', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '主導覽' })).toBeVisible();
   await page.getByText('錯誤訊息', { exact: true }).click();
   await expect(page.getByText('DP-139 測試錯誤：搜尋畫面壞了')).toBeVisible();
@@ -75,6 +75,38 @@ test('單一畫面出錯時只換掉那個畫面，其他分頁、匯出備份�
   await tabButton(page, '搜尋').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('搜尋');
   expect(await guestBytes(page)).toBe(stored);
+});
+
+test('設定畫面本身出錯時，錯誤畫面仍可直接下載完整備份', async ({ page }, testInfo) => {
+  // DP-143. The first fallback could only say "go to 設定 and export".
+  await breakModule(
+    page,
+    /\/src\/screens\/SettingsScaffoldScreen\.tsx(\?.*)?$/,
+    `export function SettingsScaffoldScreen() { throw new Error('DP-143 測試錯誤：設定畫面壞了'); }`,
+  );
+  await openApp(page);
+  await createEvent(page, '設定壞掉時的行程');
+  const stored = await guestBytes(page);
+
+  await tabButton(page, '設定').click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('這個畫面暫時無法顯示');
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: '下載備份', exact: true }).click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toMatch(/^daypop-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  const path = testInfo.outputPath(download.suggestedFilename());
+  await download.saveAs(path);
+  expect(await download.failure()).toBeNull();
+  const backup = JSON.parse(await readFile(path, 'utf8'));
+  expect(backup.data.events.map((event: { title: string }) => event.title)).toEqual(['設定壞掉時的行程']);
+  await expect(page.getByRole('status')).toHaveText('已開始下載備份。');
+  await expect(page.getByRole('status')).toBeInViewport();
+  expect(await guestBytes(page)).toBe(stored);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await tabButton(page, '日曆').click();
+  await calendarViewButton(page, '列表').click();
+  await expect(agendaRow(page, '設定壞掉時的行程')).toHaveCount(1);
 });
 
 test('App 無法啟動時顯示說明與重新載入，裝置上的資料原封不動', async ({ page }) => {
