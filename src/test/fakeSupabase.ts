@@ -21,6 +21,12 @@ export class FakeSupabase {
   readonly failures = new Map<string, string>();
   /** Table name → message, to imitate a transport-level promise rejection. */
   readonly rejections = new Map<string, string>();
+  /**
+   * Table name → message: the write is committed, then its promise rejects —
+   * a response lost after commit, which is what makes a retry dangerous
+   * (DP-142). Reads are unaffected, so the account can still be loaded.
+   */
+  readonly lostResponses = new Map<string, string>();
   /** Every write the adapter attempted, for asserting what reached the wire. */
   readonly writes: { table: string; row: FakeRow }[] = [];
   /** Every RPC call, including its serialized argument payload. */
@@ -422,9 +428,14 @@ class FakeQuery implements PromiseLike<QueryResult> {
     onrejected?: ((reason: unknown) => Rejected | PromiseLike<Rejected>) | null,
   ): PromiseLike<Fulfilled | Rejected> {
     const rejection = this.db.rejections.get(this.table);
+    const lost = this.#mode === 'select' ? undefined : this.db.lostResponses.get(this.table);
     const result = rejection
       ? Promise.reject(new Error(rejection))
-      : Promise.resolve(this.#run());
+      : lost
+        ? Promise.resolve(this.#run()).then(() => {
+            throw new Error(lost);
+          })
+        : Promise.resolve(this.#run());
     return result.then(onfulfilled, onrejected);
   }
 

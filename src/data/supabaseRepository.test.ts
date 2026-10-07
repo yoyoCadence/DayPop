@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { DayPopUserData } from '../domain/types';
 import { FakeSupabase, type FakeRow } from '../test/fakeSupabase';
 import {
   AccountNotBootstrappedError,
@@ -518,6 +519,67 @@ describe('SupabaseDayPopRepository writes', () => {
     // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
     const next = await repository.toggleTodo(TODO);
     expect(next.eventAttachments.map((attachment) => attachment.id)).toEqual([ATTACHMENT]);
+  });
+
+  /**
+   * DP-142. A create whose response is lost has still been stored. Each create
+   * used to mint a fresh id, so the explicit retry the forms invite added a
+   * second row; with the form's own id it is the same row again.
+   */
+  const DRAFT = '88888888-8888-4888-8888-888888888888';
+  const CREATES = [
+    ['events', (repository: SupabaseDayPopRepository, title: string, id?: string) =>
+      repository.addEvent({ ...(id ? { id } : {}), title, date: '2026-08-06', allDay: false, start: '09:00', end: '10:00' }),
+      (data: DayPopUserData) => data.events],
+    ['todos', (repository: SupabaseDayPopRepository, title: string, id?: string) =>
+      repository.addTodo({ ...(id ? { id } : {}), title, date: '2026-08-06' }),
+      (data: DayPopUserData) => data.todos],
+    ['calendars', (repository: SupabaseDayPopRepository, title: string, id?: string) =>
+      repository.addCalendar({ ...(id ? { id } : {}), name: title, color: '#2563eb' }),
+      (data: DayPopUserData) => data.calendars],
+  ] as const;
+  const label = (row: { title?: string; name?: string }) => row.title ?? row.name;
+
+  it.each(CREATES)('a %s create retried after a lost response reaches the same row (DP-142)', async (table, create, list) => {
+    const { db, repository } = bootstrapped();
+    const before = await repository.load();
+    const stored = db.rows(table).length;
+    db.lostResponses.set(table, 'response lost after commit');
+    await expect(create(repository, '第一次', DRAFT)).rejects.toThrow(RemoteDataError);
+    // The server has it; this session was never told.
+    expect(db.rows(table)).toHaveLength(stored + 1);
+    db.lostResponses.clear();
+
+    // The retry may carry an edited draft: it must land on the same row.
+    const retried = await create(repository, '重試後的內容', DRAFT);
+    expect(db.rows(table)).toHaveLength(stored + 1);
+    expect(db.rows(table).filter((row) => row.id === DRAFT).map((row) => row.title ?? row.name)).toEqual(['重試後的內容']);
+    expect(list(retried)).toHaveLength(list(before).length + 1);
+    expect(list(retried).filter((row) => row.id === DRAFT).map(label)).toEqual(['重試後的內容']);
+    expect(await repository.load()).toEqual(retried);
+  });
+
+  it.each(CREATES)('a %s create without a proposed id still makes a new row each time (DP-142)', async (table, create) => {
+    const { db, repository } = bootstrapped();
+    await repository.load();
+    const stored = db.rows(table).length;
+    db.lostResponses.set(table, 'response lost after commit');
+    await expect(create(repository, '沒有草稿 id')).rejects.toThrow(RemoteDataError);
+    db.lostResponses.clear();
+    await create(repository, '沒有草稿 id');
+    // Why the forms must propose one: nothing ties the two attempts together.
+    expect(db.rows(table)).toHaveLength(stored + 2);
+  });
+
+  it.each(CREATES)('a %s create whose id this session already holds is done, and sends nothing (DP-142)', async (_table, create, list) => {
+    const { db, repository } = bootstrapped();
+    await repository.load();
+    const first = await create(repository, '已確認', DRAFT);
+    const writes = db.writes.length;
+    const again = await create(repository, '不該覆寫', DRAFT);
+    expect(again).toEqual(first);
+    expect(db.writes).toHaveLength(writes);
+    expect(list(again).filter((row) => row.id === DRAFT).map(label)).toEqual(['已確認']);
   });
 
   it('toggles a todo in both directions', async () => {

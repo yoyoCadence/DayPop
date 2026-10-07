@@ -21,6 +21,8 @@ const WORK: Calendar = {
   updatedAt: '2026-08-01T00:00:00.000Z',
 };
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -81,8 +83,28 @@ describe('CalendarEditDialog confirmed writes (DP-141)', () => {
     const props = render();
     typeName('健身');
     await submit();
-    expect(props.onSave).toHaveBeenCalledExactlyOnceWith({ name: '健身', color: '#2563eb' });
+    expect(props.onSave).toHaveBeenCalledExactlyOnceWith({ name: '健身', color: '#2563eb' }, expect.stringMatching(UUID));
     expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('proposes one draft id for every attempt from this dialog, and a new one the next time it opens (DP-142)', async () => {
+    const onSave = vi.fn<(values: { name: string; color: string }, draftId: string) => Promise<void>>()
+      .mockRejectedValueOnce(new Error('網路中斷'))
+      .mockResolvedValue(undefined);
+    render({ calendar: null, canDelete: false, onSave });
+    typeName('工作');
+    await submit();
+    typeName('工作（改過）');
+    await submit();
+    expect(onSave.mock.calls.map(([values]) => values.name)).toEqual(['工作', '工作（改過）']);
+    expect(onSave.mock.calls[0]![1]).toMatch(UUID);
+    expect(onSave.mock.calls[1]![1]).toBe(onSave.mock.calls[0]![1]);
+
+    act(() => root.render(<div />));
+    render({ calendar: null, canDelete: false, onSave });
+    await submit();
+    expect(onSave.mock.calls[2]![1]).toMatch(UUID);
+    expect(onSave.mock.calls[2]![1]).not.toBe(onSave.mock.calls[0]![1]);
   });
 
   it('stays open and locked until the save is confirmed, and sends it once', async () => {
@@ -91,7 +113,7 @@ describe('CalendarEditDialog confirmed writes (DP-141)', () => {
     const props = render({ onSave });
     typeName('健身');
     await submit();
-    expect(onSave).toHaveBeenCalledExactlyOnceWith({ name: '健身', color: '#2563eb' });
+    expect(onSave).toHaveBeenCalledExactlyOnceWith({ name: '健身', color: '#2563eb' }, expect.stringMatching(UUID));
     expect(props.onClose).not.toHaveBeenCalled();
     expect(dialog().getAttribute('aria-busy')).toBe('true');
     expect(saveButton().textContent).toBe('保存中…');

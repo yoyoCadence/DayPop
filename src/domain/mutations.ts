@@ -10,7 +10,7 @@ import {
   wallTimeToInstant,
 } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
-import { DomainValidationError, isDateKey, isIsoInstant } from './validation';
+import { DomainValidationError, isDateKey, isIsoInstant, isUuid } from './validation';
 import { TodoInputError } from './todos';
 import { assertTitleLength } from './titles';
 import { AllDayInputError, allDayDateIssue, dateKeyDaysBetween, shiftDateKey } from './allDayDates';
@@ -40,6 +40,12 @@ import type {
 
 /** What the quick-add row and the event sheet collect for a new event. */
 export interface NewEventInput {
+  /**
+   * Chosen by the form and kept for the life of one draft, so an explicit
+   * retry reaches the same row — see `creationTarget()`. Adapters generate an
+   * id when this is omitted.
+   */
+  id?: string;
   title: string;
   date: string;
   allDay: boolean;
@@ -57,6 +63,8 @@ export interface NewEventInput {
 }
 
 export interface NewTodoInput {
+  /** The draft's own id, for safe retries — see `creationTarget()`. */
+  id?: string;
   title: string;
   date: string;
   calendarId?: string;
@@ -116,6 +124,8 @@ export interface EventPatch {
 }
 
 export interface NewCalendarInput {
+  /** The draft's own id, for safe retries — see `creationTarget()`. */
+  id?: string;
   name: string;
   color: string;
 }
@@ -142,6 +152,33 @@ export interface CreateContext {
   id: string;
   /** ISO instant used for both `createdAt` and `updatedAt`. */
   now: string;
+}
+
+/**
+ * Where a create should land — DP-142.
+ *
+ * The forms keep one id for the life of a draft and propose it with every
+ * attempt (`NewEventInput.id` and its todo and calendar counterparts). Creating
+ * under that id is what makes an explicit retry safe after a response was
+ * lost: the second attempt reaches the row the first one stored instead of
+ * adding another.
+ *
+ * `alreadyStored` means the snapshot already holds that id, i.e. this create
+ * was confirmed before; the adapters then write nothing and report the
+ * snapshot as it is, rather than overwriting a row with a stale draft.
+ *
+ * A proposal that is not a UUID is ignored in favour of `generated`, not
+ * refused: the id only improves retries and must never cost the user a draft.
+ * `generated` is passed in, like every other id here, so this module stays
+ * free of randomness.
+ */
+export function creationTarget(
+  existing: readonly { id: string }[],
+  proposed: string | undefined,
+  generated: string,
+): { id: string; alreadyStored: boolean } {
+  const id = isUuid(proposed) ? proposed : generated;
+  return { id, alreadyStored: existing.some((row) => row.id === id) };
 }
 
 /** The原檔's fallback when the name field is left empty. */

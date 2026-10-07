@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **新增的重試不重複（DP-142，2026-10-07）：** `NewEventInput`／`NewTodoInput`／`NewCalendarInput` 多了可選的 `id`。行程表單（行程與待辦各一個）、日詳情兩個新增欄位（`useConfirmedTodoAdd`）與新增日曆對話框各自在同一份草稿的生命週期內固定一個 id，每次嘗試都帶上；確認成功或重新開啟才換新的。兩個 adapter 以 `creationTarget()` 決定落點：帳號端的新增本來就是主鍵 `upsert`，所以「已寫入但回應遺失」之後的明確重試會落在同一列（內容以重試的草稿為準），不再多出一筆；snapshot 已有該 id 視為已確認，不送 request 也不覆寫；省略或不是 UUID 時照舊由 adapter 產生。這取代 DP-133／137／141 文件裡「新增不具備 idempotency」的但書，UI 文案未改。測試用的 `FakeSupabase.lostResponses` 可模擬「寫入後回應遺失」。貼圖（沒有重試介面）、附件上傳、匯入與單次修改的 RPC 不在本項；schema／RPC／RLS（沿既有 upsert 與 owner policy）、Auth、公告與部署不變。見 ADR §2。
+
 - **日曆對話框等待確認（DP-141，2026-10-07）：** 設定的「新增日曆／編輯日曆」原本由 `SettingsScaffoldScreen` 在按下儲存或「刪除此日曆」的同時關閉，寫入失敗時對話框已不在。`addCalendar`／`updateCalendar`／`deleteCalendar` 改回傳既有 queue 的確認結果（與 DP-133／134 相同，不等待的呼叫如顯示／隱藏開關照常可用）；`CalendarEditDialog` 自己在確認後才呼叫 `onClose`。等待時整個對話框停用、不能取消或重複送出，按下的按鈕顯示「保存中…」或「刪除中…」；失敗留在畫面上，名稱與顏色不變，提示在該按鈕下方，失焦到 body 才把焦點還給它，沒有自動重送。標題在開啟時決定，確認刪除後資料先更新也不會閃成「新增日曆」。原稿是同步的本機保存，這是狀態擴充，見 ADR §2。repository（含 DP-138 的非原子刪除）、其他設定區塊、schema、Auth、公告與部署不變。至此有草稿的表單（行程、待辦新增、日曆）都會等待確認；勾選、刪除待辦與貼圖沒有草稿，維持不等待。
 
 - **畫面出錯不留白（DP-139，2026-10-07）：** `src/shell/ErrorBoundary.tsx` 掛在兩處。`App` 內以分頁為 key 包住四個分頁畫面：某個畫面繪製時丟錯，只換成 `ScreenErrorFallback`（沿復原畫面的樣式，「再試一次」「重新載入 App」與可展開的錯誤訊息），分頁列與其他分頁照常可用，所以「設定 → 匯出」仍到得了。`main.tsx` 最外層另包一層，provider 或 shell 出錯時顯示不依賴主題的 `RootErrorFallback`。在此之前沒有任何 boundary，render error 會卸載整棵樹、留下空白頁。**只接住並說明，不讀寫資料，也不把錯誤送出裝置**；遠端錯誤回報需要另行決定服務、CSP 與隱私說明，仍是 DP-034 未完成的部分。事件 handler 與非同步錯誤不是 boundary 接得到的，維持各自既有的處理。`e2e/screen-error-boundary.spec.ts` 以攔截 dev server 模組的方式實測真實 `main.tsx`。資料邊界、schema、Auth、公告與部署不變，見 ADR §7。

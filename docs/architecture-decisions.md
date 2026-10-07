@@ -28,6 +28,24 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 新增以草稿 id 落點，重試不重複（DP-142，2026-10-07）
+
+DP-133／137／141 讓表單在寫入未確認時留下草稿，並請使用者「先確認資料再重試」。這句話背後有一個一直沒解決的但書：transport 失敗時分不出伺服器到底寫了沒有，而每次新增都由 adapter 另外產生 id。於是「已寫入、只是回應沒回來」之後的重試，會在伺服器上多出一筆一模一樣的行程、待辦或日曆。以假後端的 `lostResponses`（先提交再讓 Promise reject）重現：三種新增在重試後都是多一列。
+
+帳號端的三個新增本來就是對主鍵 `upsert`，缺的只是讓兩次嘗試共用同一個 id。所以契約的改動很小：
+
+- `NewEventInput`／`NewTodoInput`／`NewCalendarInput` 加上可選的 `id`。表單在**一份草稿的生命週期內**固定它：行程表單每次開啟各取一個行程 id 與一個待辦 id；日詳情的兩個連續輸入欄位在一筆新增確認後才換新的；新增日曆對話框每次開啟取一個。失敗後修改草稿再送出，仍是同一份草稿、同一個 id。
+- 兩個 adapter 以 `creationTarget(existing, proposed, generated)` 決定落點，行為一致（`repositoryContract.test.ts` 對兩者跑同一組案例）。提案是 UUID 就採用；省略或不是 UUID 則改用 adapter 產生的 id —— **忽略而不是拒絕**，因為這個 id 只是讓重試更安全，不能反過來讓使用者丟掉草稿。`generated` 由呼叫端傳入，`mutations.ts` 維持不碰亂數。
+- snapshot 已經有該 id，代表這筆新增先前已被確認：adapter 不送 request，也不拿可能過時的草稿覆寫，原樣回報 snapshot。
+
+回應遺失後的重試因此變成：snapshot 還沒有那個 id → 以同一個 id `upsert` → 落在第一次已寫入的那一列，內容以重試時的草稿為準 → snapshot 收到一筆。伺服器端沒有新東西：owner RLS 的 INSERT／UPDATE policy 與主鍵衝突處理，就是 `toggleTodo` 等既有 upsert 一直在用的那條路。遊客端沒有網路，採用同樣的規則是為了讓兩個 adapter 對「重試」的意義一致。
+
+**這取代了先前幾節裡「新增不具備 idempotency、手動重試可能重複」的敘述**，那些句子在寫下時是事實。UI 文案沒有改：「先確認資料再重試」仍然成立，只是重試不再有重複的代價。
+
+不在本項：貼圖新增沒有草稿也沒有重試介面，維持每次產生 id；附件上傳每次嘗試仍是新的 id 與新的物件路徑；單次修改與匯入各自由 RPC 處理；刪除在 DP-134／135 已處理。不改 schema、RPC、RLS、Auth、公告或部署。
+
+驗證：兩個 adapter 的契約案例與帳號端「回應遺失後重試」案例在修正前失敗（伺服器多一列）；browser 案例在還原兩個 adapter 時失敗（伺服器同時有「工作」與「工作（重試）」兩個日曆）。lint、typecheck、1050 個單元案例／64 檔、七項 posttest、build／check:build 通過。新增 `e2e/create-retry-idempotent.spec.ts`（mobile／desktop，實際 browser timezone America/New_York、display Asia/Taipei）：日曆、行程、待辦各走一次「伺服器已存、回應遺失、明確重試」，重試後伺服器、帳號快取與畫面都只有一筆，日詳情確認後的下一筆待辦是新的一列。沒有真實雲端或真機證據；真實 PostgREST 的 upsert 行為只由既有的 upsert 路徑與 pgTAP 的 owner policy 間接支持，沒有針對「同 id 重試」的遠端實測。
+
 ### 日曆編輯對話框等待確認（DP-141，2026-10-07）
 
 設定的「新增日曆／編輯日曆」是最後一個送出即關閉、又帶著草稿的表單。關閉不是對話框自己做的：`SettingsScaffoldScreen.saveCalendar()` 與 `onDelete` 在呼叫 action 的同一行就 `setEditing(null)`。帳號寫入失敗時，對話框已經卸載，名稱與顏色沒了，唯一的線索是全域橫幅。刪除更需要留在原地：它在帳號模式是多個請求（DP-138），失敗訊息指出是哪一步，使用者需要看得到。
@@ -46,7 +64,7 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 DP-133 讓行程表單的新增待辦等待確認，但日詳情裡每天更常用的兩個入口 ——「新增清單項目」與卡片內的「新增細項」—— 仍是呼叫 `onAddTodo` 後立刻清空輸入框。帳號寫入失敗、或遊客的輸入被拒絕（例如父項已被前一個排隊中的刪除移除）時，畫面只剩全域的未同步橫幅，使用者打好的標題已經不見。
 
-`addTodo` 自 DP-133 起就回傳既有單一 queue 的確認 Promise，所以本項不動 DataActions 與 repository，只讓這兩個表單等待它。共用邏輯放在 `useConfirmedTodoAdd()`：確認後才清空；失敗保留輸入並在表單下方顯示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」；同步的 callback 視為已確認，與 EventSheet 相同。沒有自動重送：transport 失敗時無法判斷伺服器是否已經有那一列，新增也不具備 idempotency，所以文案要求先確認清單。
+`addTodo` 自 DP-133 起就回傳既有單一 queue 的確認 Promise，所以本項不動 DataActions 與 repository，只讓這兩個表單等待它。共用邏輯放在 `useConfirmedTodoAdd()`：確認後才清空；失敗保留輸入並在表單下方顯示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」；同步的 callback 視為已確認，與 EventSheet 相同。沒有自動重送：transport 失敗時無法判斷伺服器是否已經有那一列，新增也不具備 idempotency（**補正：DP-142 起新增以草稿 id 落點，重試不再重複，見上方該節**），所以文案要求先確認清單。
 
 與行程表單不同的兩個決定：
 
@@ -97,7 +115,7 @@ DP-133 之後，行程表單的刪除仍是送出即關閉：遠端拒絕時畫�
 
 EventSheet 只有確認成功才關閉；等待時 ref 防重複提交，native disabled fieldset 暫停草稿欄位，保存／取消、背景與 Escape 均不能關閉。Escape 在 window capture 暫時攔截，涵蓋 disabled 控制項失焦到 body 的情況，settle／unmount 即移除；原 CalendarScreen 的關閉順序不變。失敗保留日期、時間、時區、日曆、標題、地點、備註與重複選項，顯示可重試提示；重複重試重新選範圍，不記住失敗時的選擇。失焦到 body 才回到保存按鈕，不搶其他控制項；離開畫面或切換帳號後，舊請求不能關閉新的表單。
 
-沒有自動重送；transport 拒絕可能無法確定遠端是否已完成，文案要求先確認資料再重試，不承諾手動重試的新增請求具備 idempotency。corrupt／future 等 fail-closed 復原仍優先，草稿不阻擋資料邊界卸載。刪除與其他表單不在本項。沿原稿欄位／token，fieldset 保留原 body padding、取消 native border／margin 與 min-width；無 CSS palette、schema、Auth、公告或部署變更。
+沒有自動重送；transport 拒絕可能無法確定遠端是否已完成，文案要求先確認資料再重試，不承諾手動重試的新增請求具備 idempotency（**補正：DP-142 起新增以草稿 id 落點，重試不再重複，見上方該節**）。corrupt／future 等 fail-closed 復原仍優先，草稿不阻擋資料邊界卸載。刪除與其他表單不在本項。沿原稿欄位／token，fieldset 保留原 body padding、取消 native border／margin 與 min-width；無 CSS palette、schema、Auth、公告或部署變更。
 
 驗證：修正前等待保存回歸失敗；986 個單元案例／61 檔與七項 posttest 通過，PowerShell 實際 Intl America/New_York 的 87 個相關案例通過。完整 e2e 145 通過／五項既有 desktop 跳過；最後補提示 viewport 斷言的六項再跑全過。dev-only synthetic account 覆蓋 transport／remote error、五種保存、快取逐字保留及明確重試，沒有真實雲端／真機證據。production 390×844、375×667、360×640、1280×900，漫畫淺／深及像素深色，最終 sheet 在 viewport、body 可捲動、padding 12px 14px 18px／border 0、無水平溢出或 console error／warning；375×667 失敗提示 150..184px 在 viewport。原稿新增事件實際渲染同標題／地點／備註並對照，截圖／量測留於本機 %TEMP%/daypop-dp133-qa/，不宣稱未搬的欄位逐像素相同。
 

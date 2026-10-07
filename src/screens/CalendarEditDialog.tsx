@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { calendarSwatches } from '../domain/calendars';
-import type { Calendar } from '../domain/types';
+import { createDomainId, type Calendar } from '../domain/types';
 import { ViewportLayer } from '../shell/ViewportLayer';
 import './calendarManage.css';
 
@@ -15,8 +15,13 @@ export interface CalendarEditDialogProps {
   itemCount: number;
   /** Where those items would move to. */
   reassignTargetName: string;
-  /** A synchronous callback has already confirmed; production awaits the queue (DP-141). */
-  onSave(values: { name: string; color: string }): Promise<void> | void;
+  /**
+   * A synchronous callback has already confirmed; production awaits the queue
+   * (DP-141). `draftId` stays the same for every attempt from this dialog, so
+   * a retried 新增日曆 reaches the row an unconfirmed attempt may have stored
+   * (DP-142); it means nothing when an existing calendar is being edited.
+   */
+  onSave(values: { name: string; color: string }, draftId: string): Promise<void> | void;
   onDelete(): Promise<void> | void;
   onClose(): void;
 }
@@ -54,6 +59,7 @@ export function CalendarEditDialog({
   // from the data a moment before this dialog is told to close, and the
   // heading must not flip to 新增日曆 in between.
   const [heading] = useState(calendar ? '編輯日曆' : '新增日曆');
+  const [draftId] = useState(createDomainId);
   const pending = useRef(false);
   const mounted = useRef(true);
   const [pendingKind, setPendingKind] = useState<WriteKind | null>(null);
@@ -100,7 +106,7 @@ export function CalendarEditDialog({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void confirmWrite('save', () => onSave({ name, color }));
+    void confirmWrite('save', () => onSave({ name, color }, draftId));
   }
 
   return (

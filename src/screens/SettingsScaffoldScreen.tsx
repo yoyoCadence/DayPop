@@ -161,8 +161,9 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   }
 
   /** The dialog closes itself once this confirms, and stays open if it rejects — DP-141. */
-  function saveCalendar(values: { name: string; color: string }) {
-    if (editing === 'new') return addCalendar(values);
+  function saveCalendar(values: { name: string; color: string }, draftId: string) {
+    // The dialog's own id, so retrying a new calendar cannot add it twice — DP-142.
+    if (editing === 'new') return addCalendar({ ...values, id: draftId });
     if (editingCalendar) return updateCalendar(editingCalendar.id, values);
   }
 
