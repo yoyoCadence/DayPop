@@ -582,6 +582,109 @@ describe('SupabaseDayPopRepository writes', () => {
     expect(list(again).filter((row) => row.id === DRAFT).map(label)).toEqual(['已確認']);
   });
 
+  /**
+   * DP-138. Deleting a calendar is one RPC, so it either happens completely or
+   * not at all. The fake models `calendars_one_default_per_owner_idx`; the
+   * real function is checked by pgTAP.
+   */
+  describe('deleteCalendar (DP-138)', () => {
+    const WORK = IMPORT_CALENDAR;
+    const DELETE_RPC = 'delete_calendar_with_reassignment';
+    /** 我的日曆 (default) holds the seeded event and todo; 工作 is empty. */
+    function withTwoCalendars() {
+      const { db, repository } = bootstrapped();
+      db.seed('calendars', [calendarRow(), calendarRow({ id: WORK, name: '工作', is_default: false, sort_order: 1 })]);
+      return { db, repository };
+    }
+    const deleteCalls = (db: FakeSupabase) => db.rpcCalls.filter((call) => call.name === DELETE_RPC);
+    const snapshotOf = (db: FakeSupabase) => structuredClone(Object.fromEntries(['calendars', 'events', 'todos', 'stickers'].map((table) => [table, db.rows(table)])));
+
+    it('deletes the default calendar in one request and reads the promoted survivor back', async () => {
+      const { db, repository } = withTwoCalendars();
+      await repository.load();
+      const writes = db.writes.length;
+
+      const data = await repository.deleteCalendar(CALENDAR);
+
+      expect(deleteCalls(db)).toEqual([{ name: DELETE_RPC, args: { p_calendar_id: CALENDAR } }]);
+      // Nothing is moved or promoted from here any more.
+      expect(db.writes).toHaveLength(writes);
+      expect(data.calendars.map((calendar) => [calendar.name, calendar.isDefault])).toEqual([['工作', true]]);
+      expect(data.events.map((event) => event.calendarId)).toEqual([WORK]);
+      expect(data.todos.map((todo) => todo.calendarId)).toEqual([WORK]);
+      expect(await repository.load()).toEqual(data);
+    });
+
+    it('a refused deletion changes nothing on the server or in the snapshot', async () => {
+      const { db, repository } = withTwoCalendars();
+      const before = await repository.load();
+      const server = snapshotOf(db);
+      db.failures.set(`rpc:${DELETE_RPC}`, 'offline');
+
+      await expect(repository.deleteCalendar(CALENDAR)).rejects.toThrow(RemoteDataError);
+
+      expect(snapshotOf(db)).toEqual(server);
+      db.failures.clear();
+      // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
+      const next = await repository.toggleTodo(TODO);
+      expect(next.calendars).toEqual(before.calendars);
+      expect(next.events).toEqual(before.events);
+    });
+
+    it('reconciles a deletion whose response was lost when the explicit retry returns false', async () => {
+      const { db, repository } = withTwoCalendars();
+      await repository.load();
+      const rpc = db.rpc.bind(db);
+      db.rpc = async (name, args) => {
+        const result = await rpc(name, args);
+        if (name === DELETE_RPC) throw new Error('response lost after commit');
+        return result;
+      };
+      await expect(repository.deleteCalendar(CALENDAR)).rejects.toThrow(RemoteDataError);
+      expect(db.rows('calendars').map((row) => row.name)).toEqual(['工作']);
+      db.rpc = rpc;
+
+      const retried = await repository.deleteCalendar(CALENDAR);
+
+      expect(deleteCalls(db)).toHaveLength(2);
+      expect(retried.calendars.map((calendar) => [calendar.name, calendar.isDefault])).toEqual([['工作', true]]);
+      expect(retried.events.map((event) => event.calendarId)).toEqual([WORK]);
+    });
+
+    it('a failed read-back after the deletion is repaired by the next attempt', async () => {
+      const { db, repository } = withTwoCalendars();
+      await repository.load();
+      // The RPC commits; the reload that follows it cannot reach `todos`.
+      db.rejections.set('todos', 'offline');
+      await expect(repository.deleteCalendar(CALENDAR)).rejects.toThrow(RemoteDataError);
+      expect(db.rows('calendars').map((row) => row.name)).toEqual(['工作']);
+      db.rejections.clear();
+
+      const retried = await repository.deleteCalendar(CALENDAR);
+
+      expect(retried.calendars.map((calendar) => calendar.name)).toEqual(['工作']);
+      expect(retried.todos.map((todo) => todo.calendarId)).toEqual([WORK]);
+    });
+
+    it.each([null, 'true', 1])('an answer of %j confirms nothing and keeps the snapshot', async (answer) => {
+      const { db, repository } = withTwoCalendars();
+      const before = await repository.load();
+      const rpc = db.rpc.bind(db);
+      db.rpc = async (name, args) => (name === DELETE_RPC ? { data: answer, error: null } : rpc(name, args));
+      await expect(repository.deleteCalendar(CALENDAR)).rejects.toThrow(RemoteDataError);
+      db.rpc = rpc;
+      const next = await repository.toggleTodo(TODO);
+      expect(next.calendars).toEqual(before.calendars);
+    });
+
+    it('never asks the server to delete the only calendar', async () => {
+      const { db, repository } = bootstrapped();
+      const before = await repository.load();
+      expect(await repository.deleteCalendar(CALENDAR)).toEqual(before);
+      expect(deleteCalls(db)).toEqual([]);
+    });
+  });
+
   it('toggles a todo in both directions', async () => {
     const { db, repository } = bootstrapped();
     await repository.load();

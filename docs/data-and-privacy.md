@@ -12,7 +12,7 @@
 | JSON 備份不含附件、匯出檔未加密 | `src/domain/dataTransfer.ts` 的明確 allowlist、`serializeJsonBackup()` 與 ICS 純文字輸出；`src/browser/dataTransferFiles.ts` 的下載。附件需個別下載，副本需自行管理。 |
 | 登出不刪雲端資料，device 可能仍留 guest／account cache | `AuthProvider.signOut()` 僅撤銷 session；SessionDataProvider 切 identity，沒有刪除 guest／account-cache 的 handler。不能把登出稱為清空資料。 |
 | 可逐筆刪除事件／待辦／貼圖；父待辦連子孫一併刪除 | 現有 repository 操作與 DP-115 的 `withoutTodo()` 完整子樹邊界；不宣稱附件實體即時完成清理或伺服器備份保留期間。 |
-| 刪除日曆會移動內容 | `calendarDeletionPlan()`／`withoutCalendar()`，若刪原 default，倖存 calendar 會被提升為 default。不是刪掉其事件、待辦與貼圖。 |
+| 刪除日曆會移動內容 | `calendarDeletionPlan()`／`withoutCalendar()`，若刪原 default，倖存 calendar 會被提升為 default。不是刪掉其事件、待辦與貼圖。**DP-138（2026-10-07）起**帳號端由 `delete_calendar_with_reassignment` RPC 在一個交易內完成同一件事（遊客端仍用 `withoutCalendar()`）；卡片的說明文字不需更動。 |
 | 尚無一鍵清空全部資料或刪除帳號 | 現有 Settings／Auth／repository 沒有這些入口。復原畫面的 blocked guest reset 是另一條受備份閘門保護的流程，不冒充一般資料全刪除。 |
 
 所有內容放在 `src/screens/DataPrivacyCard.tsx`，沒有事件 handler、外部 link、追蹤、分析請求或 repository 呼叫；讀取說明不改 guest、cache、session 或偏好。卡片借用 `accountAndDialogs.css` 的 canonical 設定卡片邊框／背景／陰影與原有 summary 焦點框，沒有另一套 palette。原稿沒有此功能，所以是沿 canonical 元件擴充自有說明，非逐像素還原；決策見 ADR §3。

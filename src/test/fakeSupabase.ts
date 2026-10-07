@@ -109,6 +109,9 @@ export class FakeSupabase {
     if (name === 'cancel_event_occurrence' || name === 'replace_event_occurrence') {
       return this.#occurrenceChange(name, args);
     }
+    if (name === 'delete_calendar_with_reassignment') {
+      return this.#deleteCalendar(String(args.p_calendar_id));
+    }
     if (name === 'finalize_event_attachment_upload') {
       const metadataFailure = this.failures.get('event_attachments');
       if (metadataFailure) return { data: null, error: { message: metadataFailure } };
@@ -170,6 +173,55 @@ export class FakeSupabase {
       return { data: true, error: null };
     }
     return { data: null, error: { message: `unsupported rpc ${name}` } };
+  }
+
+  /**
+   * `delete_calendar_with_reassignment` — `20261007000000_delete_calendar_rpc.sql`.
+   *
+   * Modelled as the function does it, in one step with nothing observable in
+   * between: the rows move, the calendar goes, and only then is the survivor
+   * promoted, so the one-default index never sees two defaults. The target is
+   * the surviving default, else the first survivor by `sort_order`, then
+   * `created_at`, then `id`. An unknown id is `false`, not an error; the only
+   * calendar is an error. The real function is what pgTAP checks
+   * (`supabase/tests/database/delete_calendar.test.sql`).
+   */
+  #deleteCalendar(id: string): QueryResult {
+    const calendars = this.rows('calendars');
+    const doomed = calendars.find((row) => row.id === id);
+    if (!doomed) return { data: false, error: null };
+    const target = calendars
+      .filter((row) => row.owner_id === doomed.owner_id && row.id !== id)
+      .sort(
+        (left, right) =>
+          Number(Boolean(right.is_default)) - Number(Boolean(left.is_default)) ||
+          Number(left.sort_order) - Number(right.sort_order) ||
+          String(left.created_at).localeCompare(String(right.created_at)) ||
+          String(left.id).localeCompare(String(right.id)),
+      )[0];
+    if (!target) return { data: null, error: { message: 'cannot delete the only calendar' } };
+
+    for (const table of ['events', 'todos', 'stickers']) {
+      this.tables.set(
+        table,
+        this.rows(table).map((row) =>
+          row.calendar_id === id && row.owner_id === doomed.owner_id
+            ? { ...row, calendar_id: target.id, updated_at: this.serverTime }
+            : row,
+        ),
+      );
+    }
+    this.tables.set(
+      'calendars',
+      calendars
+        .filter((row) => row.id !== id)
+        .map((row) =>
+          row.id === target.id && !row.is_default
+            ? { ...row, is_default: true, updated_at: this.serverTime }
+            : row,
+        ),
+    );
+    return { data: true, error: null };
   }
 
   /**
@@ -448,6 +500,11 @@ class FakeQuery implements PromiseLike<QueryResult> {
       const violation = this.#foreignKeyViolation();
       if (violation) return { data: null, error: { message: violation } };
       const row = this.#store(rows);
+      const duplicateDefault = this.#defaultCalendarViolation();
+      if (duplicateDefault) {
+        this.db.tables.set(this.table, rows);
+        return { data: null, error: { message: duplicateDefault } };
+      }
       return { data: row, error: null };
     }
     if (this.#mode === 'update') {
@@ -463,6 +520,11 @@ class FakeQuery implements PromiseLike<QueryResult> {
           return next;
         }),
       );
+      const duplicateDefault = this.#defaultCalendarViolation();
+      if (duplicateDefault) {
+        this.db.tables.set(this.table, rows);
+        return { data: null, error: { message: duplicateDefault } };
+      }
       return { data: this.#single ? (updated[0] ?? null) : updated, error: null };
     }
 
@@ -481,6 +543,26 @@ class FakeQuery implements PromiseLike<QueryResult> {
 
     const matched = rows.filter((row) => this.#matches(row));
     return { data: this.#single ? (matched[0] ?? null) : matched, error: null };
+  }
+
+  /**
+   * `calendars_one_default_per_owner_idx` — a partial unique index, so it is
+   * checked after every statement and cannot be deferred to the end of a
+   * client-side sequence. Left unmodelled, this fake accepted "promote the
+   * survivor, then delete the old default" as separate requests, which a real
+   * database rejects at the first of the two (DP-138).
+   */
+  #defaultCalendarViolation(): string | null {
+    if (this.table !== 'calendars') return null;
+    const owners = new Set<unknown>();
+    for (const row of this.db.rows('calendars')) {
+      if (!row.is_default) continue;
+      if (owners.has(row.owner_id)) {
+        return 'duplicate key value violates unique constraint "calendars_one_default_per_owner_idx"';
+      }
+      owners.add(row.owner_id);
+    }
+    return null;
   }
 
   #store(rows: FakeRow[]): FakeRow {

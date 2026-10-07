@@ -464,6 +464,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_calendar_with_reassignment: {
+        Args: { p_calendar_id: string }
+        Returns: boolean
+      }
       delete_event_attachment_with_cleanup: {
         Args: { p_attachment_id: string }
         Returns: boolean

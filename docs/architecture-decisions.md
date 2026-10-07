@@ -28,6 +28,23 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 刪除日曆是一個交易，不是一串請求（DP-138，2026-10-07）
+
+帳號端刪除日曆原本是四到五個獨立的 PostgREST 請求：搬移 `events`、搬移 `todos`、搬移 `stickers`、（刪的是預設日曆時）把另一個日曆設為預設，最後刪除。登記這一項時只看出它不是原子操作，並推論「重試會收斂、沒有資料遺失」。專案擁有者要求補上失敗情境的驗證；在本機由 migration 重建的 PostgreSQL 上照 adapter 的順序執行，結果比推論嚴重：
+
+- **刪除預設日曆必定失敗。** `calendars_one_default_per_owner_idx` 是 partial unique index，每個敘述結束時檢查。舊預設還在的時候把另一個日曆設為預設，就是同一個擁有者有兩個預設，第四步得到 `duplicate key value violates unique constraint`。這時前三步已經提交：1 筆行程、2 筆待辦、1 筆貼圖已在另一個日曆上，兩個日曆都還在，預設仍是原本那個。重試會重複同一個失敗，所以原先「重試會收斂」的推論只對刪除**非預設**日曆成立。沒有資料遺失，但這個日曆刪不掉，而且 snapshot 與伺服器不一致。
+- 反過來「先刪再提升」可以避開 index，卻會在兩個請求之間留下沒有預設日曆的帳號；adapter 每次載入都以「恰好一個預設日曆」驗證整份文件，那樣的帳號會載入失敗。
+
+沒有任何一種請求順序能同時解決這兩件事，所以把它收進資料庫：`delete_calendar_with_reassignment(uuid)` 在一個函式內搬移、刪除、最後才提升，任何錯誤整批回復。目標日曆的規則照 `calendarDeletionPlan()`：倖存的預設，否則依 `sort_order` 的第一個；函式另以 `created_at`、`id` 打破平手，領域函式沒有這個 tie-break，只在匯入資料重複使用 `sort_order` 時有差別。三張子表各以單一敘述搬移；`todos` 的複合外鍵要求子待辦與父待辦在同一個日曆，而且在敘述結束時檢查，所以父子必須在同一個敘述裡一起換。守衛沿既有 RPC：SECURITY INVOKER、空 `search_path`、明確的 `auth.uid()` 檢查、每個敘述都過濾 `owner_id`、只授權 `authenticated`。
+
+adapter 的責任因此變小：`calendarDeletionPlan()` 仍在送出前擋掉「最後一個日曆」與未知 id，接著只有一個 RPC，成功後重新 `load()`。目標與是否提升都由伺服器決定，所以讀回結果而不在本機重算；這與匯入 RPC 的做法相同。回傳 `false` 表示本人已無該日曆（回應遺失後的重試，或已在別處刪除），同樣以 reload 對齊，與 DP-134／135 對 `false` 的讀法一致。RPC 已提交但 reload 失敗時，呼叫端會收到錯誤、snapshot 暫時落後，下一次嘗試得到 `false` 再 reload 即修復。遊客端沒有這個問題，仍用純領域的 `withoutCalendar()`。
+
+**為什麼先前沒被發現：** `FakeSupabase` 沒有模擬那個 partial unique index，於是單元與 e2e 都接受了真實資料庫會拒絕的請求序列。現在 fake 的 `calendars` 寫入會在每次敘述後檢查該 index；補上之後，既有的契約測試「刪除預設日曆時提升另一個」立刻以和真實資料庫相同的錯誤失敗。fake 只模擬被人想到的約束（DP-115 為 parent FK 的 cascade 補過一次）；凡是依賴資料庫約束的行為，都要有 pgTAP 或本機 Postgres 的實測，不能只靠 fake。
+
+**部署順序是這個決策的一部分：** 前端改成呼叫遠端必須已經存在的函式。migration 由專案擁有者推到遠端之後才能部署前端；順序顛倒時，帳號端的刪除日曆會失敗且不改變任何資料（比現況安全），但功能不可用。
+
+驗證：本機 PostgreSQL 重現上述失敗（腳本與輸出留在 `%TEMP%/daypop-dp138-repro.log`）；fake 補上 index 後契約測試在修正前失敗；browser「刪除預設日曆」案例在還原 adapter 時失敗。`db reset` 套用 16 檔成功，pgTAP 6 檔 174／174（新增 24 項，含以 trigger 在搬移貼圖時丟錯、確認行程與待辦一併回復）。重新產生的型別只多這支函式。沒有在真實雲端專案執行過這支函式。
+
 ### 新增以草稿 id 落點，重試不重複（DP-142，2026-10-07）
 
 DP-133／137／141 讓表單在寫入未確認時留下草稿，並請使用者「先確認資料再重試」。這句話背後有一個一直沒解決的但書：transport 失敗時分不出伺服器到底寫了沒有，而每次新增都由 adapter 另外產生 id。於是「已寫入、只是回應沒回來」之後的重試，會在伺服器上多出一筆一模一樣的行程、待辦或日曆。以假後端的 `lostResponses`（先提交再讓 Promise reject）重現：三種新增在重試後都是多一列。

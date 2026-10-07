@@ -102,6 +102,20 @@
 - 遠端／MCP 產生的型別（以及 `npm run supabase:types:linked`）會多出一段 `__InternalSupabase: { PostgrestVersion: ... }`。這一段從第一版型別檔（`9978bad`）起就在 repo 裡，也就是上面各段比對時都包含它；本機 CLI 2.111.0 不論只啟動 Postgres 或完整 stack 都不會產生它。**所以日後的 postflight 應改成「扣掉這一段之後逐字一致」，而且不要把遠端輸出提交回 repo**，否則 CI 會失敗。
 - 同時消除了另一個差異：DP-082 在沒有 Docker 的情況下手寫的兩支 occurrence RPC 參數（`string | null`）已改回產生器輸出的 `string`；「其中一個可以是 NULL」這件事改由 `src/data/supabaseRepository.ts` 的 `OccurrenceRpcArgs` 表達，參數名稱與型別仍對照產生出來的 `Args` 檢查。
 
+## 0.10 DP-138 完成後更新（2026-10-07）— 第 16 檔尚未套用到遠端
+
+這一段沒有使用 MCP，也沒有碰遠端。**repo 多了一檔遠端還沒有的 migration，而且前端已經改成呼叫它。**
+
+- 第 16 檔 `20261007000000_delete_calendar_rpc.sql` 建立 `public.delete_calendar_with_reassignment(uuid)`：SECURITY INVOKER、空 `search_path`、只有 `authenticated` 可執行，在一個交易內把日曆的行程／待辦／貼圖搬到倖存的日曆、刪除該日曆，最後才提升新的預設。沒有新增或修改資料表、欄位、policy 或 index。
+- **為什麼需要它：** 帳號端原本以四到五個獨立請求做同一件事。在本機由 migration 重建的 PostgreSQL 上重現：刪除預設日曆時，「指定預設日曆」那一步必定違反 `calendars_one_default_per_owner_idx`，而前三步的搬移已經提交。也就是說，**線上的帳號目前無法刪除預設日曆**，每次嘗試都會把它的內容搬到另一個日曆。資料沒有遺失。
+- 本機驗證（Docker、與 CI 相同的排除清單）：`db reset` 套用 16 檔成功；pgTAP **6 檔 174／174**（新增 `delete_calendar.test.sql` 24 項：預設／非預設、子待辦跟著父待辦搬、最後一個日曆拒絕、重試回傳 `false`、跨帳號隔離、未登入拒絕，以及以 trigger 在搬移貼圖時丟錯來驗證整批回復）；`npm run supabase:types` 重新產生的型別只多了這支函式的 4 行，已提交。
+- **需要專案擁有者做的事，而且有順序：**
+  1. `npx supabase migration list --linked` 核對遠端目前的檔數。本檔之前，這份文件只記錄到第 14 檔由擁有者 push（§0.8）；**第 15 檔 `20260830000000_event_occurrence_rpcs.sql`（DP-082）的遠端套用沒有留下記錄，本次也沒有查。** 若遠端停在 14 檔，「只改這一次／只刪這一次」在 staging 的帳號模式會因 RPC 不存在而失敗，請一併推上去。
+  2. `npx supabase db push --linked --dry-run` 確認只會套用預期的檔案，再 `npx supabase db push --linked`。
+  3. **推完之後才部署前端。** 若前端先上線，帳號模式的「刪除此日曆」會因 RPC 不存在而失敗；失敗時什麼都不會改變（比現況安全），對話框會留在畫面上顯示錯誤，但功能無法使用。遊客模式不受影響。
+  4. 建議 postflight：遠端／repo 同為 16 檔、函式的 `prosecdef = false`、`proconfig` 為空 `search_path`、`anon` 無 execute、security advisor 仍為 0；遠端重新產生的型別扣掉 `__InternalSupabase` 那一段後應與 repo 一致（§0.9）。
+- 沒有在真實雲端專案上執行這支函式；上面的保證來自本機 PostgreSQL 與 pgTAP。
+
 ---
 
 ## 1. 交接當下已驗證的狀態
