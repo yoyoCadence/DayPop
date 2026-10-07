@@ -243,6 +243,22 @@
   text-align: center;
 }
 
+/* DP-141: the原檔 saves synchronously and has neither state. While a write is
+   awaited the whole dialog is locked; the dimming matches the attachment
+   picker's busy state. A failure is explained next to the button pressed. */
+.cal-manage-dialog :disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.cal-manage-error {
+  margin: 8px 0 0;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
 .cal-manage-dialog button:focus-visible,
 .cal-manage-dialog input:focus-visible,
 .cal-manage-list button:focus-visible,

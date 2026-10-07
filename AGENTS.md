@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **日曆對話框等待確認（DP-141，2026-10-07）：** 設定的「新增日曆／編輯日曆」原本由 `SettingsScaffoldScreen` 在按下儲存或「刪除此日曆」的同時關閉，寫入失敗時對話框已不在。`addCalendar`／`updateCalendar`／`deleteCalendar` 改回傳既有 queue 的確認結果（與 DP-133／134 相同，不等待的呼叫如顯示／隱藏開關照常可用）；`CalendarEditDialog` 自己在確認後才呼叫 `onClose`。等待時整個對話框停用、不能取消或重複送出，按下的按鈕顯示「保存中…」或「刪除中…」；失敗留在畫面上，名稱與顏色不變，提示在該按鈕下方，失焦到 body 才把焦點還給它，沒有自動重送。標題在開啟時決定，確認刪除後資料先更新也不會閃成「新增日曆」。原稿是同步的本機保存，這是狀態擴充，見 ADR §2。repository（含 DP-138 的非原子刪除）、其他設定區塊、schema、Auth、公告與部署不變。至此有草稿的表單（行程、待辦新增、日曆）都會等待確認；勾選、刪除待辦與貼圖沒有草稿，維持不等待。
+
 - **畫面出錯不留白（DP-139，2026-10-07）：** `src/shell/ErrorBoundary.tsx` 掛在兩處。`App` 內以分頁為 key 包住四個分頁畫面：某個畫面繪製時丟錯，只換成 `ScreenErrorFallback`（沿復原畫面的樣式，「再試一次」「重新載入 App」與可展開的錯誤訊息），分頁列與其他分頁照常可用，所以「設定 → 匯出」仍到得了。`main.tsx` 最外層另包一層，provider 或 shell 出錯時顯示不依賴主題的 `RootErrorFallback`。在此之前沒有任何 boundary，render error 會卸載整棵樹、留下空白頁。**只接住並說明，不讀寫資料，也不把錯誤送出裝置**；遠端錯誤回報需要另行決定服務、CSP 與隱私說明，仍是 DP-034 未完成的部分。事件 handler 與非同步錯誤不是 boundary 接得到的，維持各自既有的處理。`e2e/screen-error-boundary.spec.ts` 以攔截 dev server 模組的方式實測真實 `main.tsx`。資料邊界、schema、Auth、公告與部署不變，見 ADR §7。
 
 - **日詳情新增待辦保留輸入（DP-137，2026-10-07）：** 日詳情的「新增清單項目」與卡片內「新增細項」原本一呼叫 `onAddTodo` 就清空輸入框，寫入失敗或被拒絕時打好的標題就不見了。兩個表單改用 `useConfirmedTodoAdd()` 等待 `addTodo`（DP-133 起已回傳既有 queue 的確認結果）：確認後才清空，失敗保留輸入並在表單下方提示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」，沒有自動重送。等待時輸入框是 `readOnly` 而不是 `disabled`，重複送出由 ref 擋下，焦點與手機鍵盤不會中斷，可以連續新增；day sheet 不上鎖，關閉後舊請求安靜結束。DataActions、repository、勾選／刪除／貼圖、schema、Auth、公告與部署不變。原稿是同步的本機新增，這是狀態擴充，見 ADR §2。另登記 DP-138（帳號刪除日曆不是原子操作，需要 migration，等專案擁有者決定）。

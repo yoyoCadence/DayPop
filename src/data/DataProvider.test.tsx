@@ -80,7 +80,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
-  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'deleteEvent', 'cancelEventOccurrence'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134)', async (method) => {
+  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'deleteEvent', 'cancelEventOccurrence', 'addCalendar', 'updateCalendar', 'deleteCalendar'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134/141)', async (method) => {
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
     let reject!: (error: Error) => void;
     let calls = 0;
@@ -98,7 +98,10 @@ describe('DataProvider', () => {
           : method === 'replaceEventOccurrence' ? actions.replaceEventOccurrence(id, { kind: 'all-day', date: '2026-10-06' }, { title: '草稿' })
             : method === 'deleteEvent' ? actions.deleteEvent(id)
               : method === 'cancelEventOccurrence' ? actions.cancelEventOccurrence(id, { kind: 'all-day', date: '2026-10-06' })
-                : actions.addTodo({ title: '草稿', date: '2026-10-06' });
+                : method === 'addCalendar' ? actions.addCalendar({ name: '草稿', color: '#2563eb' })
+                  : method === 'updateCalendar' ? actions.updateCalendar(id, { name: '草稿' })
+                    : method === 'deleteCalendar' ? actions.deleteCalendar(id)
+                      : actions.addTodo({ title: '草稿', date: '2026-10-06' });
       expect(pending).toBeInstanceOf(Promise);
       outcome = pending.catch((error) => error);
       actions.updatePreferences({ petName: '下一筆' });

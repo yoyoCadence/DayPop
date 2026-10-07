@@ -169,6 +169,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -309,6 +310,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-141 — 日曆編輯對話框等待確認，失敗保留名稱與顏色（2026-10-07）：** 依持續開發委託登記，由 Backlog 經 Next、In Progress 完成，從最新 main（`d058e3c`）開獨立分支。設定的「新增日曆／編輯日曆」原本在按下儲存或「刪除此日曆」後立刻由父層關閉（`SettingsScaffoldScreen.saveCalendar` 與 `onDelete` 內的 `setEditing(null)`）；帳號寫入失敗時對話框已經不在，只剩全域橫幅，名稱與顏色也沒了。比照 DP-133／134：`addCalendar`／`updateCalendar`／`deleteCalendar` 回傳既有 queue 的確認結果，`CalendarEditDialog` 確認後才自行關閉；等待時整個對話框停用、不能取消或重複送出，失敗留在畫面上，提示在被按下的按鈕下方，失焦到 body 才還原焦點，沒有自動重送；標題在開啟時決定，避免確認刪除時閃成「新增日曆」。八個單元回歸與還原四個檔案的 browser 案例在修正前失敗；lint／typecheck、1029 個單元案例／64 檔＋七項 posttest、build／check:build 通過。新增 `e2e/calendar-dialog-confirmation.spec.ts`，連同 canonical account UI、responsive shell、guest CRUD、JSON 備份、附件與行程保存草稿 spec 本機共 33 通過／3 項既有跳過；完整 e2e 由 CI 執行。375×667 兩種失敗狀態的對話框完整在畫面內、無水平溢出。不改 repository（刪除日曆的多步驟非原子問題仍是 DP-138）、其他設定區塊、schema、Auth、公告、版號或部署，不當真實雲端／真機驗收。細節見 ADR §2。
 
 - [x] **DP-139 — 畫面出錯時不留白並保留資料出口（DP-034「錯誤監控」的本機部分，2026-10-07）：** 依持續開發委託從 DP-034 清單拆出，由 Backlog 經 Next、In Progress 完成，從最新 main（`8dc9357`）開獨立分支。整個 App 原本沒有任何 error boundary：畫面元件繪製時丟錯，React 卸載整棵樹，使用者只看到空白頁，若錯誤與某筆資料有關，重新載入也一樣，到不了「設定 → 匯出備份」。新增 `ErrorBoundary` 並掛在兩層：`App` 內以分頁為 key 包住分頁畫面（出錯只換成 `ScreenErrorFallback`，分頁列與其他分頁照常，提供「再試一次」「重新載入 App」與可展開的錯誤訊息）；`main.tsx` 最外層包住 provider（顯示不依賴主題的 `RootErrorFallback`）。只接住並說明，不讀寫資料，不送出任何遠端回報。App 層單元案例與兩個 browser 案例在修正前失敗（截圖為全白頁）；lint／typecheck、1018 個單元案例／63 檔＋七項 posttest、build／check:build 通過。新增 `e2e/screen-error-boundary.spec.ts`（攔截 dev server 模組，涵蓋真實 `main.tsx` 組成）：出錯後設定可下載內含該筆行程的備份、資料逐字不變、重新載入後恢復；連同版本檢查、公告、production 更新／離線／復原、guest CRUD、responsive shell 與 JSON 備份 spec 本機共 43 通過／1 項既有跳過，完整 e2e 由 CI 執行。375×667、390×844、1280×900 目視兩個 fallback；六套主題 × 淺／深色的對比量測結果與沿用原稿 token 的不足項登記為 DP-140。遠端錯誤回報、render 以外的錯誤、production build 與真機的錯誤注入仍未做，DP-034 父任務不結案。資料邊界、schema、Auth、公告、版號與部署不變。細節見 ADR §7 與 docs/deployment.md §5.21。
 
