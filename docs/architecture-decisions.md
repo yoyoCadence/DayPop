@@ -474,6 +474,8 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 fallback 沿用復原畫面（`recovery.css`）的版面與 token，不另立一套「App 出問題」的外觀。文案只說得出口的事：資料沒有被刪除（boundary 不讀寫任何資料）、其他分頁仍可使用、可以到設定匯出備份；當壞掉的就是設定時不提這一句，免得把人導回原地。錯誤訊息收在 `<details>` 裡，給使用者轉述用。
 
+**DP-143 補充（同日）：** 「到設定匯出」在設定本身壞掉時不是出口，也要求看著錯誤畫面的人知道匯出在哪裡。fallback 因此直接提供「下載備份」。資料由 `App` 透過 callback 交給它（`App` 本來就持有 ready 狀態的資料與版本號），fallback 仍然不碰資料邊界；備份的產生收進 `src/screens/backupDownload.ts` 的 `downloadJsonBackup()`，設定的「匯出資料」改用同一個函式，兩處不可能產生不同的檔案。下載在事件 handler 裡執行，不在 render，所以它自己出錯不會再觸發 boundary：錯誤會顯示在按鈕下方，「再試一次」與「重新載入 App」照常可用。原本依分頁切換文案的 `settingsHint` 已不需要而移除。最外層的 `RootErrorFallback` 位在 provider 之上，沒有資料可匯出，維持只有重新載入。
+
 **不做遠端回報。** boundary 不呼叫任何服務，也不自行記錄（React 已把接住的錯誤寫進 console）。把錯誤送出裝置需要先選服務、放寬 CSP 的 `connect-src`，並在隱私說明卡補上對應文字；那是產品與隱私決定，仍掛在 DP-034。也因此 `DataPrivacyCard` 與 `docs/data-and-privacy.md` 不需要更動。
 
 **boundary 接不到的：** 事件 handler、Promise 與計時器裡的錯誤不經過 render，不會觸發它。那些路徑維持既有處理（寫入失敗由 DataProvider 的橫幅與各表單回報）。這一項也不改 DP-016 的 fail-closed：資料讀不了仍然先到 `DataRecoveryScreen`，不會落到這裡。

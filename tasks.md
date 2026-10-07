@@ -171,6 +171,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -311,6 +312,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-143 — 錯誤畫面直接提供備份下載（2026-10-07）：** 依持續開發委託登記（DP-139 留下的缺口），由 Backlog 經 Next、In Progress 完成，從最新 main（`fa2993f`）開獨立分支。DP-139 的分頁錯誤畫面只建議「到設定匯出備份」；若壞掉的就是設定，資料就沒有出口。`ScreenErrorFallback` 加上「下載備份」，由 `App` 以目前的資料呼叫新的 `downloadJsonBackup()`（`src/screens/backupDownload.ts`）；設定的「匯出資料」改用同一個函式，兩處一定是同一份檔案。成功時說明未包含的附件數，失敗時在原地說明，不影響「再試一次」與「重新載入 App」；`settingsHint` prop 移除。五個單元回歸與「設定模組壞掉」的 browser 案例在修正前失敗；lint／typecheck、1052 個單元案例／64 檔＋七項 posttest、build／check:build 通過，設定頁既有的匯出測試未改即通過。`e2e/screen-error-boundary.spec.ts` 新增一案（設定出錯時下載的 JSON 內含先前建立的行程、資料逐字不變），連同 JSON／ICS 備份、guest CRUD、responsive shell、復原與 canonical account UI spec 本機共 45 通過／3 項既有跳過；完整 e2e 由 CI 執行。375×667 淺／深色目視，狀態文字對比 7.46／9.76，無水平溢出。最外層的 `RootErrorFallback` 在 provider 之上、拿不到資料，仍只有重新載入。備份格式、資料邊界、schema、Auth、公告、版號與部署不變。細節見 ADR §7 與 docs/deployment.md §5.21。
 
 - [x] **DP-142 — 新增行程／待辦／日曆在回應遺失後重試不產生重複（2026-10-07）：** 依持續開發委託登記，由 Backlog 經 Next、In Progress 完成，從最新 main（`71ba060`）開獨立分支。DP-133／137／141 讓表單在失敗後保留草稿供重試，但每次新增都由 adapter 產生新的 id，「已寫入但回應遺失」之後的重試會在伺服器多出一筆。`NewEventInput`／`NewTodoInput`／`NewCalendarInput` 加上可選的 `id`：行程表單、日詳情兩個新增欄位與新增日曆對話框各自在一份草稿的生命週期內固定它，確認成功或重新開啟才換新的；兩個 adapter 以 `creationTarget()` 決定落點，帳號端沿既有主鍵 upsert 落在同一列（內容以重試的草稿為準），snapshot 已有該 id 視為已確認、不送 request 也不覆寫，省略或非 UUID 時照舊自行產生。測試用的 `FakeSupabase` 新增 `lostResponses`（寫入後回應遺失）。兩個 adapter 的契約案例、帳號端回應遺失案例與還原 adapter 的 browser 案例在修正前失敗（伺服器多一列／兩個日曆）；lint／typecheck、1050 個單元案例／64 檔＋七項 posttest、build／check:build 通過。新增 `e2e/create-retry-idempotent.spec.ts`，**完整 e2e 本機 169 通過／7 項既有跳過**，實際 browser timezone America/New_York、display Asia/Taipei。UI 文案未改；貼圖、附件上傳、匯入與單次修改不在本項。不改 schema／RPC／RLS（沿既有 upsert 與 owner policy）、Auth、公告、版號或部署；沒有針對「同 id 重試」的真實雲端實測。細節見 ADR §2。
 
