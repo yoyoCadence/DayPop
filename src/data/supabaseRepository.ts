@@ -29,6 +29,7 @@ import {
   cancelEventOccurrence,
   createCalendarFromInput,
   createEventFromInput,
+  creationTarget,
   findCalendarById,
   withCalendar,
   withoutCalendar,
@@ -168,10 +169,19 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     });
   }
 
+  /**
+   * The three creates are `upsert`s on the primary key, so they are only as
+   * idempotent as their id — DP-142. A form proposes one id per draft; after a
+   * response lost in transit the retry therefore lands on the row the first
+   * attempt stored (owner RLS still decides whether that row may be written).
+   * An id this snapshot already holds was confirmed before: nothing is sent.
+   */
   async addEvent(input: NewEventInput): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    const target = creationTarget(data.events, input.id, createDomainId());
+    if (target.alreadyStored) return data;
     const draft = createEventFromInput(data, input, {
-      id: createDomainId(),
+      id: target.id,
       now: new Date().toISOString(),
     });
     return this.#commit(withEvent(data, await this.#upsertEvent(draft)));
@@ -405,8 +415,10 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
 
   async addTodo(input: NewTodoInput): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    const target = creationTarget(data.todos, input.id, createDomainId());
+    if (target.alreadyStored) return data;
     const draft = createTodoFromInput(data, input, {
-      id: createDomainId(),
+      id: target.id,
       now: new Date().toISOString(),
     });
     return this.#commit(withTodo(data, await this.#upsertTodo(draft)));
@@ -488,8 +500,10 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
 
   async addCalendar(input: NewCalendarInput): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    const target = creationTarget(data.calendars, input.id, createDomainId());
+    if (target.alreadyStored) return data;
     const draft = createCalendarFromInput(data, input, {
-      id: createDomainId(),
+      id: target.id,
       now: new Date().toISOString(),
     });
     return this.#commit(withCalendar(data, await this.#upsertCalendar(draft)));

@@ -26,6 +26,7 @@ function occurrenceResolver(events: CalendarEvent[]) {
 
 const DATE = '2026-08-06';
 const CALENDAR = '33333333-3333-4333-8333-333333333333';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 let container: HTMLDivElement;
 let root: Root;
@@ -413,7 +414,7 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-    expect(props.onAddTodo).toHaveBeenCalledWith({ title: '訂房', date: DATE, parentId: 'parent' });
+    expect(props.onAddTodo).toHaveBeenCalledWith({ id: expect.stringMatching(UUID), title: '訂房', date: DATE, parentId: 'parent' });
     expect(input.value).toBe('');
     act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(props.onAddTodo).toHaveBeenCalledTimes(1);
@@ -442,7 +443,7 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     render({ todos: [todo('parent', null, '旅行')], onAddTodo: add });
     const input = typeNewTodo(label, '訂車票');
     await submitForm(input);
-    expect(add).toHaveBeenCalledExactlyOnceWith(expected);
+    expect(add).toHaveBeenCalledExactlyOnceWith({ ...expected, id: expect.stringMatching(UUID) });
     expect(input.value).toBe('訂車票');
     expect(input.readOnly).toBe(true);
     expect(input.disabled).toBe(false);
@@ -464,7 +465,7 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     render({ todos: [todo('parent', null, '旅行')], onAddTodo: add });
     const input = typeNewTodo(label, '訂車票');
     await submitForm(input);
-    expect(add).toHaveBeenCalledExactlyOnceWith(expected);
+    expect(add).toHaveBeenCalledExactlyOnceWith({ ...expected, id: expect.stringMatching(UUID) });
     expect(input.value).toBe('訂車票');
     expect(input.readOnly).toBe(false);
     expect(document.activeElement).toBe(input);
@@ -474,6 +475,32 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     expect(add.mock.calls[1]).toEqual(add.mock.calls[0]);
     expect(input.value).toBe('');
     expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it.each(ADD_FORMS)('%s proposes the same id until an add is confirmed, then a new one (DP-142)', async (label) => {
+    const add = vi.fn<(input: { id?: string; title: string }) => Promise<void>>()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(undefined);
+    render({ todos: [todo('parent', null, '旅行')], onAddTodo: add });
+    const input = typeNewTodo(label, '訂車票');
+    await submitForm(input);
+    // An edited draft is still the same draft: the retry keeps its id.
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '訂高鐵票');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await submitForm(input);
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '帶護照');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await submitForm(input);
+    const calls = add.mock.calls.map(([sent]) => sent);
+    expect(calls.map((sent) => sent.title)).toEqual(['訂車票', '訂高鐵票', '帶護照']);
+    expect(calls[0]!.id).toMatch(UUID);
+    expect(calls[1]!.id).toBe(calls[0]!.id);
+    expect(calls[2]!.id).toMatch(UUID);
+    expect(calls[2]!.id).not.toBe(calls[0]!.id);
   });
 
   it('a pending add settles quietly after the day sheet has closed (DP-137)', async () => {

@@ -63,6 +63,56 @@ const adapters = [
   ['authenticated Supabase', supabaseAdapter],
 ] as const;
 
+/**
+ * DP-142. A form keeps one id for the life of a draft so that an explicit
+ * retry cannot create a second row. Both adapters have to treat that id the
+ * same way, or a guest and an account would disagree about what a retry does.
+ */
+describe.each(adapters)('%s adapter creates under a proposed id (DP-142)', (_name, create) => {
+  const EVENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const TODO_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const CALENDAR_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  let repository: DayPopRepository;
+  beforeEach(async () => {
+    repository = await create();
+  });
+
+  it('stores an event, a todo and a calendar under the ids the forms proposed, through reload', async () => {
+    await repository.addEvent({ id: EVENT_ID, title: '會議', date: '2026-08-06', allDay: false, start: '09:00', end: '10:00' });
+    await repository.addTodo({ id: TODO_ID, title: '訂車票', date: '2026-08-06' });
+    const data = await repository.addCalendar({ id: CALENDAR_ID, name: '工作', color: '#2563eb' });
+    expect(data.events.map((event) => event.id)).toEqual([EVENT_ID]);
+    expect(data.todos.map((todo) => todo.id)).toEqual([TODO_ID]);
+    expect(data.calendars.map((calendar) => calendar.id)).toContain(CALENDAR_ID);
+    expect(await repository.load()).toEqual(data);
+  });
+
+  it('treats a create whose id it already holds as done, without overwriting what is stored', async () => {
+    await repository.addEvent({ id: EVENT_ID, title: '會議', date: '2026-08-06', allDay: false, start: '09:00', end: '10:00' });
+    await repository.addTodo({ id: TODO_ID, title: '訂車票', date: '2026-08-06' });
+    const first = await repository.addCalendar({ id: CALENDAR_ID, name: '工作', color: '#2563eb' });
+
+    await repository.addEvent({ id: EVENT_ID, title: '不該覆寫', date: '2026-08-09', allDay: true, start: '', end: '' });
+    await repository.addTodo({ id: TODO_ID, title: '不該覆寫', date: '2026-08-09' });
+    const again = await repository.addCalendar({ id: CALENDAR_ID, name: '不該覆寫', color: '#16a34a' });
+    expect(again).toEqual(first);
+    expect(await repository.load()).toEqual(first);
+  });
+
+  it('generates its own id when none is proposed, or when the proposal is not a UUID', async () => {
+    await repository.addEvent({ title: '沒有 id', date: '2026-08-06', allDay: true, start: '', end: '' });
+    await repository.addEvent({ id: 'not-a-uuid', title: '壞的 id', date: '2026-08-06', allDay: true, start: '', end: '' });
+    await repository.addTodo({ id: '', title: '空字串', date: '2026-08-06' });
+    const data = await repository.addCalendar({ id: '12345', name: '壞的 id', color: '#2563eb' });
+    const ids = [...data.events, ...data.todos, ...data.calendars.filter((calendar) => calendar.name === '壞的 id')].map((row) => row.id);
+    expect(ids).toHaveLength(4);
+    for (const id of ids) expect(id).toMatch(UUID);
+    expect(new Set(ids).size).toBe(4);
+    expect(await repository.load()).toEqual(data);
+  });
+});
+
 describe.each(adapters)('%s adapter reschedules todos (DP-129)', (_name, create) => {
   it('moves parent and completed child independently and preserves every other field through reload', async () => {
     const repository = await create();

@@ -13,6 +13,7 @@ import {
   type NewCalendarInput,
   createStickerFromInput,
   createTodoFromInput,
+  creationTarget,
   findEvent,
   findTodo,
   renamedTodo,
@@ -107,11 +108,15 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
     return this.loadSync();
   }
 
+  // The three creates below honour a form's proposed id the same way the
+  // account adapter does (DP-142), so a retry means one thing on both.
   addEvent(input: NewEventInput): Promise<DayPopUserData> {
     const now = new Date().toISOString();
-    return this.#mutate((data) =>
-      withEvent(data, createEventFromInput(data, input, { id: createDomainId(), now })),
-    );
+    return this.#mutate((data) => {
+      const target = creationTarget(data.events, input.id, createDomainId());
+      if (target.alreadyStored) return data;
+      return withEvent(data, createEventFromInput(data, input, { id: target.id, now }));
+    });
   }
 
   updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData> {
@@ -155,9 +160,11 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   addTodo(input: NewTodoInput): Promise<DayPopUserData> {
     const now = new Date().toISOString();
-    return this.#mutate((data) =>
-      withTodo(data, createTodoFromInput(data, input, { id: createDomainId(), now })),
-    );
+    return this.#mutate((data) => {
+      const target = creationTarget(data.todos, input.id, createDomainId());
+      if (target.alreadyStored) return data;
+      return withTodo(data, createTodoFromInput(data, input, { id: target.id, now }));
+    });
   }
 
   deleteTodo(id: string): Promise<DayPopUserData> {
@@ -201,9 +208,11 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   addCalendar(input: NewCalendarInput): Promise<DayPopUserData> {
     const now = new Date().toISOString();
-    return this.#mutate((data) =>
-      withCalendar(data, createCalendarFromInput(data, input, { id: createDomainId(), now })),
-    );
+    return this.#mutate((data) => {
+      const target = creationTarget(data.calendars, input.id, createDomainId());
+      if (target.alreadyStored) return data;
+      return withCalendar(data, createCalendarFromInput(data, input, { id: target.id, now }));
+    });
   }
 
   updateCalendar(id: string, patch: CalendarPatch): Promise<DayPopUserData> {

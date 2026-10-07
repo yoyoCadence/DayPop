@@ -20,6 +20,7 @@ import type {
   EventAttachment,
   EventOccurrence,
 } from '../../domain/types';
+import { createDomainId } from '../../domain/types';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { eventTimezoneOptions } from '../timezoneOptions';
 import { ScopeDialog, type ScopeMode } from './ScopeDialog';
@@ -227,6 +228,10 @@ function EventSheetForm({
   const occurrenceDate = editingWallTime?.date ?? null;
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentMessage, setAttachmentMessage] = useState<string | null>(null);
+  // One id per kind for the life of this draft — the sheet remounts on every
+  // open. A retry after an unconfirmed save then reaches the row the first
+  // attempt may already have stored instead of creating a second one (DP-142).
+  const [draftIds] = useState(() => ({ event: createDomainId(), todo: createDomainId() }));
   const pendingSave = useRef(false);
   const mounted = useRef(true);
   const [pendingKind, setPendingKind] = useState<WriteKind | null>(null);
@@ -475,6 +480,7 @@ function EventSheetForm({
       void confirmWrite('save', () => onUpdateEvent(editing.id, patch));
     } else if (mode === 'event') {
       void confirmWrite('save', () => onAddEvent({
+        id: draftIds.event,
         title: named,
         date,
         allDay,
@@ -487,7 +493,7 @@ function EventSheetForm({
         ...(!allDay ? { timezone } : {}),
       }));
     } else {
-      void confirmWrite('save', () => onAddTodo({ title: trimmed, date, calendarId: chosen }));
+      void confirmWrite('save', () => onAddTodo({ id: draftIds.todo, title: trimmed, date, calendarId: chosen }));
     }
   }
 

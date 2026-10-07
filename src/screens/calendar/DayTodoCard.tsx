@@ -38,7 +38,7 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
     event.preventDefault();
     if (!draft.trim() || isTitleTooLong(draft)) return;
     // Cleared only once the add is confirmed; a failure keeps the text (DP-137).
-    void subAdd.submit(() => onAddTodo({ title: draft.trim(), date: dateKey, parentId: todo.id }));
+    void subAdd.submit((id) => onAddTodo({ id, title: draft.trim(), date: dateKey, parentId: todo.id }));
   }
 
   return (

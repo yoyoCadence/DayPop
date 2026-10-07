@@ -319,6 +319,52 @@ describe('EventSheet delete confirmation (DP-134)', () => {
   });
 });
 
+describe('EventSheet draft ids (DP-142)', () => {
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  it.each(['event', 'todo'] as const)('keeps one id for every attempt at a new %s, and uses another the next time the sheet opens', async (kind) => {
+    const write = vi.fn<(input: { id?: string; title: string }) => Promise<void>>()
+      .mockRejectedValueOnce(new Error('網路中斷'))
+      .mockResolvedValue(undefined);
+    const attempt = async (title: string) => {
+      if (kind === 'todo' && container.querySelector('.cal-segmented button:nth-child(2)')?.getAttribute('aria-pressed') !== 'true') {
+        click('.cal-segmented button:nth-child(2)');
+      }
+      type('[aria-label="標題"]', title);
+      submit();
+      await act(async () => {});
+    };
+    const first = render({ onAddEvent: write, onAddTodo: write });
+    await attempt('第一次');
+    // Editing the draft after a failure does not make it a different draft.
+    await attempt('改過的草稿');
+    act(() => root.render(<EventSheet {...first} open={false} />));
+    render({ onAddEvent: write, onAddTodo: write });
+    await attempt('下一份草稿');
+
+    const sent = write.mock.calls.map(([input]) => input);
+    expect(sent.map((input) => input.title)).toEqual(['第一次', '改過的草稿', '下一份草稿']);
+    expect(sent[0]!.id).toMatch(UUID);
+    expect(sent[1]!.id).toBe(sent[0]!.id);
+    expect(sent[2]!.id).toMatch(UUID);
+    expect(sent[2]!.id).not.toBe(sent[0]!.id);
+  });
+
+  it('an event and a todo drafted in the same sheet never share an id', async () => {
+    const write = vi.fn<(input: { id?: string }) => Promise<void>>().mockRejectedValue(new Error('網路中斷'));
+    render({ onAddEvent: write, onAddTodo: write });
+    type('[aria-label="標題"]', '同一張表單');
+    submit();
+    await act(async () => {});
+    click('.cal-segmented button:nth-child(2)');
+    submit();
+    await act(async () => {});
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(write.mock.calls[1]![0].id).toMatch(UUID);
+    expect(write.mock.calls[1]![0].id).not.toBe(write.mock.calls[0]![0].id);
+  });
+});
+
 describe('EventSheet all-day dates (DP-127)', () => {
   const field = (name: string) => `[aria-label="${name}"]`;
   const allDayEvent = (): CalendarEvent => ({ ...timedEvent(), allDay: true, startDate: '2026-08-06', endDate: '2026-08-09' });

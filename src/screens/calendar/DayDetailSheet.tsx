@@ -189,7 +189,7 @@ function DayDetailSheetBody({
     event.preventDefault();
     if (!todoDraft.trim() || isTitleTooLong(todoDraft)) return;
     // Cleared only once the add is confirmed; a failure keeps the text (DP-137).
-    void todoAdd.submit(() => onAddTodo({ title: todoDraft, date: dateKey }));
+    void todoAdd.submit((id) => onAddTodo({ id, title: todoDraft, date: dateKey }));
   }
 
   return (
