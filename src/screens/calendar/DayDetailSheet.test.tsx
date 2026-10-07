@@ -418,6 +418,76 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(props.onAddTodo).toHaveBeenCalledTimes(1);
   });
+  /** Opens the sublist and types into either add form — DP-137. */
+  function typeNewTodo(label: string, value: string) {
+    click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
+    const input = container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+    input.focus();
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    return input;
+  }
+  const submitForm = (input: HTMLInputElement) =>
+    act(async () => { input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+  const ADD_FORMS = [
+    ['新增清單項目', { title: '訂車票', date: DATE }],
+    ['新增 旅行 的細項', { title: '訂車票', date: DATE, parentId: 'parent' }],
+  ] as const;
+
+  it.each(ADD_FORMS)('%s keeps the typed title, focus and a single request until the add is confirmed (DP-137)', async (label, expected) => {
+    let finish!: () => void;
+    const add = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    render({ todos: [todo('parent', null, '旅行')], onAddTodo: add });
+    const input = typeNewTodo(label, '訂車票');
+    await submitForm(input);
+    expect(add).toHaveBeenCalledExactlyOnceWith(expected);
+    expect(input.value).toBe('訂車票');
+    expect(input.readOnly).toBe(true);
+    expect(input.disabled).toBe(false);
+    expect(input.form!.getAttribute('aria-busy')).toBe('true');
+    expect(document.activeElement).toBe(input);
+    await submitForm(input);
+    click(input.form!.querySelector('button[type="submit"]'));
+    expect(add).toHaveBeenCalledTimes(1);
+    await act(async () => { finish(); });
+    expect(input.value).toBe('');
+    expect(input.readOnly).toBe(false);
+    expect(input.form!.getAttribute('aria-busy')).toBe('false');
+    expect(document.activeElement).toBe(input);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it.each(ADD_FORMS)('%s keeps the typed title after a rejected add and sends it again only on an explicit retry (DP-137)', async (label, expected) => {
+    const add = vi.fn<(input: unknown) => Promise<void>>().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+    render({ todos: [todo('parent', null, '旅行')], onAddTodo: add });
+    const input = typeNewTodo(label, '訂車票');
+    await submitForm(input);
+    expect(add).toHaveBeenCalledExactlyOnceWith(expected);
+    expect(input.value).toBe('訂車票');
+    expect(input.readOnly).toBe(false);
+    expect(document.activeElement).toBe(input);
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe('待辦尚未確認新增，輸入內容已保留；請先確認清單再重試。');
+    await submitForm(input);
+    expect(add).toHaveBeenCalledTimes(2);
+    expect(add.mock.calls[1]).toEqual(add.mock.calls[0]);
+    expect(input.value).toBe('');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('a pending add settles quietly after the day sheet has closed (DP-137)', async () => {
+    let finish!: () => void;
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const props = render({ todos: [todo('parent', null, '旅行')], onAddTodo: () => new Promise<void>((resolve) => { finish = resolve; }) });
+    await submitForm(typeNewTodo('新增清單項目', '訂車票'));
+    act(() => root.render(<DayDetailSheet {...props} dateKey={null} />));
+    await act(async () => { finish(); });
+    expect(container.querySelector('.cal-day-sheet')).toBeNull();
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
   it('resets expansion when switching dates and keeps imported nested children operable', () => {
     const props = render({ todos: [todo('parent', null, '旅行'), todo('a', 'parent', '訂房'), todo('b', 'a', '付訂金')] });
     click(container.querySelector('[aria-label="展開 旅行 的子項"]'));

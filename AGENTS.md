@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **日詳情新增待辦保留輸入（DP-137，2026-10-07）：** 日詳情的「新增清單項目」與卡片內「新增細項」原本一呼叫 `onAddTodo` 就清空輸入框，寫入失敗或被拒絕時打好的標題就不見了。兩個表單改用 `useConfirmedTodoAdd()` 等待 `addTodo`（DP-133 起已回傳既有 queue 的確認結果）：確認後才清空，失敗保留輸入並在表單下方提示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」，沒有自動重送。等待時輸入框是 `readOnly` 而不是 `disabled`，重複送出由 ref 擋下，焦點與手機鍵盤不會中斷，可以連續新增；day sheet 不上鎖，關閉後舊請求安靜結束。DataActions、repository、勾選／刪除／貼圖、schema、Auth、公告與部署不變。原稿是同步的本機新增，這是狀態擴充，見 ADR §2。另登記 DP-138（帳號刪除日曆不是原子操作，需要 migration，等專案擁有者決定）。
+
 - **附件按鈕焦點捲走 App（DP-136，2026-10-07）：** `.cal-attachment-picker` 加上 `position: relative`，讓視覺隱藏的檔案輸入框以 label 為 containing block。原本它一路落到 `.cal-sheet-backdrop`，留在未捲動的版面位置（畫面下方）並替 `overflow: hidden` 的 `.dp-viewport` 撐出捲動範圍；焦點一落上去（Tab，或直接按「選擇附件」）瀏覽器就捲動整個 App，375×667 的「取消／儲存」被推到 -146px 且使用者捲不回來。修正後 App 捲動範圍為 0，只有 sheet body 捲動；另以 `:has(input:focus-visible)` 在 label 顯示 2px 鍵盤焦點框（不支援 `:has` 的瀏覽器維持原樣）。**通則：`.dp-viewport` 手指捲不動但焦點捲得動，任何 `position: absolute` 的視覺隱藏元素都要有自己的定位祖先。** 這也是 DP-134 記下「backdrop 多 243px 捲動範圍、成因未查」的成因。只改這兩條 CSS；附件行為、其他 sheet、schema、Auth、公告與部署不變。Chromium 重現與驗證，iOS Safari 未驗。見 ADR §2。
 
 - **附件刪除回應遺失（DP-135）：** Supabase deleteEventAttachment 與 DP-134 的 deleteEvent 採同一契約：`delete_event_attachment_with_cleanup` 回傳任何 boolean 都移除該筆附件 metadata 的 snapshot／cache 並 flush 既有清理佇列，非 boolean 回應拒絕並保留最後確認內容。舊行為在「已提交但回應遺失」後的重試會顯示「附件已刪除」卻把附件留在清單與快取，再按也刪不掉。snapshot 已無該筆時仍不送 request。只改這個方法的結果處理；EventSheet 附件 UI、DataProvider、RPC／RLS、schema、Auth、公告與部署不變。取代下一條 DP-134 的「附件刪除的同型 `false` 處理未改」。見 ADR §2。
