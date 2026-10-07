@@ -28,6 +28,20 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 日曆編輯對話框等待確認（DP-141，2026-10-07）
+
+設定的「新增日曆／編輯日曆」是最後一個送出即關閉、又帶著草稿的表單。關閉不是對話框自己做的：`SettingsScaffoldScreen.saveCalendar()` 與 `onDelete` 在呼叫 action 的同一行就 `setEditing(null)`。帳號寫入失敗時，對話框已經卸載，名稱與顏色沒了，唯一的線索是全域橫幅。刪除更需要留在原地：它在帳號模式是多個請求（DP-138），失敗訊息指出是哪一步，使用者需要看得到。
+
+做法與 DP-133／134 一致。`addCalendar`／`updateCalendar`／`deleteCalendar` 改由 `confirmed()` 回傳既有單一 queue 的確認 Promise；ignored rejection 有 handler，所以設定清單上的顯示／隱藏開關這類不等待的呼叫不必更動，DataProvider 的 warning／saving／write barrier 分類也不變。關閉的責任從父層移到對話框：`CalendarEditDialog` 等到確認才呼叫 `onClose`，父層只負責回傳 Promise。
+
+等待時整個對話框停用（輸入、色票、儲存、取消、刪除），背景點擊無效，重複送出由 ref 擋下；被按下的按鈕顯示「保存中…」或「刪除中…」，另一顆不變。失敗時回到可編輯狀態，名稱與顏色原樣保留，提示放在該按鈕正下方：保存是「名稱與顏色已保留；請先確認資料再重試」，刪除是「尚未確認刪除；請先確認資料再重試」。停用會讓原本聚焦的控制項失焦到 body，失敗後只在這種情況把焦點還給被按下的按鈕，不搶其他控制項。沒有自動重送。這裡用 `disabled` 而不是 DP-137 的 `readOnly`，因為成功後對話框就關閉，沒有需要延續的輸入焦點。
+
+一個只有等待才會出現的細節：確認刪除時，資料層先更新、對話框稍後才被告知。父層以 id 查出的 `calendar` 這時已是 null，原本依 prop 決定的標題會閃成「新增日曆」。標題與 `aria-label` 因此改在開啟時決定一次。
+
+原稿的日曆保存是同步的本機操作，沒有等待或失敗狀態；這是沿既有對話框與 token 的狀態擴充。停用時的 `opacity: 0.65`／`cursor: wait` 比照附件按鈕的 busy 樣式，提示文字用 `--fg`、12px。不改 repository：刪除日曆的多步驟非原子問題仍由 DP-138 追蹤，這一項只是讓它的失敗看得見。
+
+驗證：八個回歸（對話框五個、DataProvider 三個 action）在修正前失敗；browser 案例在還原四個檔案時也失敗。lint、typecheck、1029 個單元案例／64 檔、七項 posttest、build／check:build 通過。新增 `e2e/calendar-dialog-confirmation.spec.ts`（mobile／desktop，dev-only synthetic account）：新增日曆失敗後對話框、輸入、清單與帳號快取都不變，重試才出現；刪除在「搬移 events」那一步失敗後同樣留在原地，重試才移除。375×667 兩種失敗狀態的對話框完整在畫面內、`.dp-viewport` 捲動範圍 0、無水平溢出。完整 e2e 由 CI 執行；沒有真實雲端或真機證據。
+
 ### 日詳情新增待辦等待確認（DP-137，2026-10-07）
 
 DP-133 讓行程表單的新增待辦等待確認，但日詳情裡每天更常用的兩個入口 ——「新增清單項目」與卡片內的「新增細項」—— 仍是呼叫 `onAddTodo` 後立刻清空輸入框。帳號寫入失敗、或遊客的輸入被拒絕（例如父項已被前一個排隊中的刪除移除）時，畫面只剩全域的未同步橫幅，使用者打好的標題已經不見。

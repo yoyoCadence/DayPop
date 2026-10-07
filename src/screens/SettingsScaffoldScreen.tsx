@@ -160,10 +160,10 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
     );
   }
 
+  /** The dialog closes itself once this confirms, and stays open if it rejects — DP-141. */
   function saveCalendar(values: { name: string; color: string }) {
-    if (editing === 'new') addCalendar(values);
-    else if (editingCalendar) updateCalendar(editingCalendar.id, values);
-    setEditing(null);
+    if (editing === 'new') return addCalendar(values);
+    if (editingCalendar) return updateCalendar(editingCalendar.id, values);
   }
 
   async function signOut() {
@@ -352,10 +352,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               ''
             }
             onSave={saveCalendar}
-            onDelete={() => {
-              if (editingCalendar) deleteCalendar(editingCalendar.id);
-              setEditing(null);
-            }}
+            onDelete={() => (editingCalendar ? deleteCalendar(editingCalendar.id) : undefined)}
             onClose={() => setEditing(null)}
           />
         )}

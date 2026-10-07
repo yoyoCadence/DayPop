@@ -45,9 +45,9 @@ export type DataState =
 
 /**
  * Every write the UI is allowed to make. Identities are stable across renders.
- * Event-sheet saves (DP-133) and deletions (DP-134) return confirmation;
- * other callers may ignore those promises safely, while DataProvider still
- * reports the failure.
+ * Event-sheet saves (DP-133) and deletions (DP-134), and the calendar dialog's
+ * writes (DP-141), return confirmation; other callers may ignore those
+ * promises safely, while DataProvider still reports the failure.
  */
 export interface DataActions {
   addEvent(input: NewEventInput): Promise<void>;
@@ -75,9 +75,9 @@ export interface DataActions {
   deleteTodo(id: string): void;
   addSticker(input: NewStickerInput): void;
   deleteSticker(id: string): void;
-  addCalendar(input: NewCalendarInput): void;
-  updateCalendar(id: string, patch: CalendarPatch): void;
-  deleteCalendar(id: string): void;
+  addCalendar(input: NewCalendarInput): Promise<void>;
+  updateCalendar(id: string, patch: CalendarPatch): Promise<void>;
+  deleteCalendar(id: string): Promise<void>;
   updatePreferences(patch: PreferencesPatch): void;
   uploadEventAttachment(eventId: string, file: File): Promise<void>;
   deleteEventAttachment(id: string): Promise<void>;
