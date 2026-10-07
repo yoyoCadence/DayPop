@@ -9,9 +9,11 @@ import { useAppUpdateState } from './pwa/appUpdateContext';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
 import { DataRecoveryScreen } from './screens/DataRecoveryScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
+import { ScreenErrorFallback } from './screens/ScreenErrorFallback';
 import { SearchScreen } from './screens/SearchScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { AppShell } from './shell/AppShell';
+import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
 import type { ShellTab } from './shell/tabs';
@@ -130,24 +132,38 @@ export default function App() {
         </>
       }
     >
-      {tab === 'cal' && (
-        <CalendarScreen focus={calendarFocus} onGoSearch={() => changeTab('search')} />
-      )}
-      {tab === 'search' && (
-        <SearchScreen
-          onOpenEvent={(id) => focusCalendar({ kind: 'event', id })}
-          onOpenDay={(dateKey) => focusCalendar({ kind: 'day', dateKey })}
-        />
-      )}
-      {tab === 'overview' && (
-        <OverviewScreen
-          onOpenEvent={(id) => focusCalendar({ kind: 'event', id })}
-          onOpenDay={(dateKey) => focusCalendar({ kind: 'day', dateKey })}
-        />
-      )}
-      {tab === 'settings' && (
-        <SettingsScaffoldScreen updater={updater} onOpenAuth={() => setAuthOpen(true)} />
-      )}
+      {/* A screen that throws while rendering is replaced on its own; the tab
+          bar and the other tabs stay usable, so 設定 → 匯出 is still reachable.
+          Keyed by tab so another tab never inherits the error — DP-139. */}
+      <ErrorBoundary
+        key={tab}
+        fallback={(caught) => (
+          <ScreenErrorFallback
+            {...caught}
+            settingsHint={tab !== 'settings'}
+            onReload={() => window.location.reload()}
+          />
+        )}
+      >
+        {tab === 'cal' && (
+          <CalendarScreen focus={calendarFocus} onGoSearch={() => changeTab('search')} />
+        )}
+        {tab === 'search' && (
+          <SearchScreen
+            onOpenEvent={(id) => focusCalendar({ kind: 'event', id })}
+            onOpenDay={(dateKey) => focusCalendar({ kind: 'day', dateKey })}
+          />
+        )}
+        {tab === 'overview' && (
+          <OverviewScreen
+            onOpenEvent={(id) => focusCalendar({ kind: 'event', id })}
+            onOpenDay={(dateKey) => focusCalendar({ kind: 'day', dateKey })}
+          />
+        )}
+        {tab === 'settings' && (
+          <SettingsScaffoldScreen updater={updater} onOpenAuth={() => setAuthOpen(true)} />
+        )}
+      </ErrorBoundary>
     </AppShell>
   );
 }

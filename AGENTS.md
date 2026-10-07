@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **畫面出錯不留白（DP-139，2026-10-07）：** `src/shell/ErrorBoundary.tsx` 掛在兩處。`App` 內以分頁為 key 包住四個分頁畫面：某個畫面繪製時丟錯，只換成 `ScreenErrorFallback`（沿復原畫面的樣式，「再試一次」「重新載入 App」與可展開的錯誤訊息），分頁列與其他分頁照常可用，所以「設定 → 匯出」仍到得了。`main.tsx` 最外層另包一層，provider 或 shell 出錯時顯示不依賴主題的 `RootErrorFallback`。在此之前沒有任何 boundary，render error 會卸載整棵樹、留下空白頁。**只接住並說明，不讀寫資料，也不把錯誤送出裝置**；遠端錯誤回報需要另行決定服務、CSP 與隱私說明，仍是 DP-034 未完成的部分。事件 handler 與非同步錯誤不是 boundary 接得到的，維持各自既有的處理。`e2e/screen-error-boundary.spec.ts` 以攔截 dev server 模組的方式實測真實 `main.tsx`。資料邊界、schema、Auth、公告與部署不變，見 ADR §7。
+
 - **日詳情新增待辦保留輸入（DP-137，2026-10-07）：** 日詳情的「新增清單項目」與卡片內「新增細項」原本一呼叫 `onAddTodo` 就清空輸入框，寫入失敗或被拒絕時打好的標題就不見了。兩個表單改用 `useConfirmedTodoAdd()` 等待 `addTodo`（DP-133 起已回傳既有 queue 的確認結果）：確認後才清空，失敗保留輸入並在表單下方提示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」，沒有自動重送。等待時輸入框是 `readOnly` 而不是 `disabled`，重複送出由 ref 擋下，焦點與手機鍵盤不會中斷，可以連續新增；day sheet 不上鎖，關閉後舊請求安靜結束。DataActions、repository、勾選／刪除／貼圖、schema、Auth、公告與部署不變。原稿是同步的本機新增，這是狀態擴充，見 ADR §2。另登記 DP-138（帳號刪除日曆不是原子操作，需要 migration，等專案擁有者決定）。
 
 - **附件按鈕焦點捲走 App（DP-136，2026-10-07）：** `.cal-attachment-picker` 加上 `position: relative`，讓視覺隱藏的檔案輸入框以 label 為 containing block。原本它一路落到 `.cal-sheet-backdrop`，留在未捲動的版面位置（畫面下方）並替 `overflow: hidden` 的 `.dp-viewport` 撐出捲動範圍；焦點一落上去（Tab，或直接按「選擇附件」）瀏覽器就捲動整個 App，375×667 的「取消／儲存」被推到 -146px 且使用者捲不回來。修正後 App 捲動範圍為 0，只有 sheet body 捲動；另以 `:has(input:focus-visible)` 在 label 顯示 2px 鍵盤焦點框（不支援 `:has` 的瀏覽器維持原樣）。**通則：`.dp-viewport` 手指捲不動但焦點捲得動，任何 `position: absolute` 的視覺隱藏元素都要有自己的定位祖先。** 這也是 DP-134 記下「backdrop 多 243px 捲動範圍、成因未查」的成因。只改這兩條 CSS；附件行為、其他 sheet、schema、Auth、公告與部署不變。Chromium 重現與驗證，iOS Safari 未驗。見 ADR §2。

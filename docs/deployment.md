@@ -618,3 +618,22 @@ DP-130 的 PR #120 三項 CI 成功合併後，從最新 main（`d67d92a`）獨�
 lint／typecheck、971 個單元案例（61 檔）＋7 項 posttest、build／check:build 與直接對線上 0.4.1 的 check:release-notes 全部通過。既有 release-notice／production-update mobile＋desktop 共 **14／14** 通過，涵蓋首次公告、已是最新、檢查失敗、等待 install、更新失敗重試及 guest 資料保存；production 實際 Intl 為 Asia/Taipei。不新增只比對文案的測試或放寬既有斷言。
 
 本項只補齊候選公告，不提升 release／schema 或改 Auth／worker，不觸發部署。實際發布仍由擁有者執行 §3.4，DP-077 真機與 DP-034 放行限制維持。
+
+### 5.21 畫面錯誤的本機處理（DP-139，2026-10-07）
+
+DP-034 清單的「錯誤監控」拆成兩半，本項只做不需要外部服務的那一半。
+
+| 狀況 | 使用者看到 | 可以做什麼 |
+| --- | --- | --- |
+| 某個分頁畫面（含它開啟的 sheet／dialog）繪製時丟錯 | 該分頁換成「這個畫面暫時無法顯示」，分頁列、橫幅與其他分頁照常 | 再試一次、重新載入 App、到「設定」匯出備份、展開錯誤訊息轉述 |
+| provider、shell 或上層 dialog 丟錯，App 無法啟動 | 不依賴主題的「日蹦暫時無法啟動」 | 重新載入、展開錯誤訊息轉述 |
+| 資料讀不了（corrupt／future） | 不變，仍是 §5.12 的 `DataRecoveryScreen` | 備份後重設 |
+
+本機 mobile／desktop Chromium 以攔截 dev server 模組的方式實測（`e2e/screen-error-boundary.spec.ts`）：某畫面出錯後，「設定 → 匯出資料」下載的 JSON 內含先前建立的行程、回到日曆資料仍在、`daypop.user-data` 逐字不變；App 無法啟動時資料同樣不變，重新載入後恢復。修正前兩個案例都是全白頁。
+
+**仍未完成，父任務不結案：**
+
+- **遠端錯誤回報／監控。** 目前沒有任何錯誤離開裝置，營運端不會知道使用者遇到錯誤。要做需先決定服務、放寬建置時注入的 CSP `connect-src`，並更新設定的隱私說明卡與 `docs/data-and-privacy.md`。
+- **render 以外的錯誤。** 事件 handler、Promise 與計時器的錯誤不經過 boundary，維持既有的橫幅與表單提示。
+- **production build 與真機。** 模組攔截只在 dev server 可行；打包後的 App 與 iOS／Android 實機沒有對應的錯誤注入驗證，只有相同原始碼的單元與 dev 測試。
+- 設定畫面本身壞掉時，fallback 沒有獨立的備份下載入口，只能重新載入。

@@ -168,6 +168,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -264,6 +265,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-02 開機額度子項進度**：DP-106 重現並修正「額度已滿時開機顯示空白預設資料、匯出為空」，改為沿用仍可讀的內容並持續警告；補上 production 回歸與 9 個單元案例，見同份交接 §5.16。SecurityError／實際政策封鎖、開機額度滿＋不可讀資料的瀏覽器流程、帳號快取、Chromium 以外的瀏覽器、真機／staging 及其他驗收仍未完成，父任務不結案。
   > **2026-10-03 公告不可回寫子項進度**：DP-110 把本條的「確認已部署 release note 不再被同版號改寫」做成部署 workflow 的一步，上傳產物前比對線上 `version.json`，見同份交接 §5.17。這一步尚未在 runner 上實際跑過，也只看得到此刻線上的那一版；資料刪除、隱私說明、錯誤監控、效能 budget、真機／staging 等其餘驗收仍未完成，父任務不結案。
   > **2026-10-04 部署證據補正（DP-124）**：上述「尚未在 runner 上實際跑過」是加入當下的歷史。2026-10-03 部署 0.4.1 的 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407)，head `d713b52b48765bb1ba6db89fb065388e134ed5e5`，Build for Pages job `111230422331` 的「Refuse to rewrite deployed release notes」成功。log 在 `2026-10-03T15:15:14.9411837Z` 明確回報 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`；整個部署成功。仍只比對當時線上的版本，DP-034 其他驗收與父任務不因此結案。
+  > **2026-10-07 畫面錯誤子項進度**：DP-139 補上本機的 error boundary：單一分頁畫面出錯時只換掉該分頁、仍可到設定匯出備份，App 無法啟動時顯示說明與重新載入，見同份交接 §5.21。**「錯誤監控」的遠端回報仍未做**（沒有任何錯誤離開裝置，需先決定服務、CSP 與隱私說明）；render 以外的錯誤、production build 與真機的錯誤注入、資料刪除、真機／staging 等其餘驗收也未完成，父任務不結案。
+
+- [ ] **DP-140 — 原稿主題 token 的文字對比（需要專案擁有者決定，agent 不自行改色）：** 2026-10-07 量測 DP-139 的錯誤畫面時登記；量到的是全 App 共用的配色，不是那個畫面特有的。六套主題 × 淺／深色、375×667、Chromium 的 computed color：主色按鈕字（`--accent-fg` 在 `--accent` 上，14px 粗體）在暖陽淺色 3.73:1、鮮活淺色 3.12:1、像素淺色 3.64:1；次要文字 `--muted` 在暖陽淺色 4.48:1；其餘組合不低於 4.5:1。另外，復原畫面寫死的 `#e4002b` 小標在漫畫深色 surface 上是 3.59:1（DP-139 的新畫面已改用 `--fg` 避開，既有的 `DataRecoveryScreen` 未動）。這些 token 逐字移植自原稿，改值會偏離設計基準，所以是設計決定：比照 DP-070 新增語意 token、接受為已知例外並釘進測試，或維持現狀。**建議：** 比照 DP-070 的做法，只調整量到不足的那幾組並以測試釘住；復原畫面的紅色小標可以直接比照 DP-139 改用 `--fg`。只量了這一個畫面上出現的配色，沒有涵蓋其他畫面的所有文字。
 
 ### 原型假功能與待補能力
 
@@ -305,6 +309,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-139 — 畫面出錯時不留白並保留資料出口（DP-034「錯誤監控」的本機部分，2026-10-07）：** 依持續開發委託從 DP-034 清單拆出，由 Backlog 經 Next、In Progress 完成，從最新 main（`8dc9357`）開獨立分支。整個 App 原本沒有任何 error boundary：畫面元件繪製時丟錯，React 卸載整棵樹，使用者只看到空白頁，若錯誤與某筆資料有關，重新載入也一樣，到不了「設定 → 匯出備份」。新增 `ErrorBoundary` 並掛在兩層：`App` 內以分頁為 key 包住分頁畫面（出錯只換成 `ScreenErrorFallback`，分頁列與其他分頁照常，提供「再試一次」「重新載入 App」與可展開的錯誤訊息）；`main.tsx` 最外層包住 provider（顯示不依賴主題的 `RootErrorFallback`）。只接住並說明，不讀寫資料，不送出任何遠端回報。App 層單元案例與兩個 browser 案例在修正前失敗（截圖為全白頁）；lint／typecheck、1018 個單元案例／63 檔＋七項 posttest、build／check:build 通過。新增 `e2e/screen-error-boundary.spec.ts`（攔截 dev server 模組，涵蓋真實 `main.tsx` 組成）：出錯後設定可下載內含該筆行程的備份、資料逐字不變、重新載入後恢復；連同版本檢查、公告、production 更新／離線／復原、guest CRUD、responsive shell 與 JSON 備份 spec 本機共 43 通過／1 項既有跳過，完整 e2e 由 CI 執行。375×667、390×844、1280×900 目視兩個 fallback；六套主題 × 淺／深色的對比量測結果與沿用原稿 token 的不足項登記為 DP-140。遠端錯誤回報、render 以外的錯誤、production build 與真機的錯誤注入仍未做，DP-034 父任務不結案。資料邊界、schema、Auth、公告、版號與部署不變。細節見 ADR §7 與 docs/deployment.md §5.21。
 
 - [x] **DP-137 — 日詳情新增待辦／子項失敗時保留輸入（2026-10-07）：** 依持續開發委託登記，由 Backlog 經 Next、In Progress 完成，從最新 main（`e0d2529`）開獨立分支。日詳情的「新增清單項目」與卡片內「新增細項」原本在呼叫 `onAddTodo` 後立刻清空輸入框（`DayDetailSheet.submitTodo`、`DayTodoCard.add`）；帳號寫入失敗或被拒絕時，打好的標題就不見了，只剩全域的未同步橫幅。`addTodo` 自 DP-133 起已回傳既有 queue 的確認結果，本項新增 `useConfirmedTodoAdd()` 讓兩個表單等待它：確認後才清空，失敗保留輸入並提示「待辦尚未確認新增，輸入內容已保留；請先確認清單再重試」，沒有自動重送。等待時用 `readOnly` 而非 `disabled`、重複送出由 ref 擋下，焦點與手機鍵盤不中斷，可連續新增；day sheet 不上鎖，關閉後舊請求安靜結束。四個單元回歸與還原兩個元件的 browser 案例在修正前失敗；lint／typecheck、1008 個單元案例／61 檔＋七項 posttest、build／check:build 通過，America/New_York 下 DayDetailSheet／CalendarScreen 66 案例通過。新增 `e2e/day-todo-add-draft.spec.ts`，連同既有待辦、guest CRUD、行程保存草稿與 responsive shell spec 本機共 35 通過／1 項既有跳過；完整 e2e 由 CI 執行。375×667 失敗提示在表單正下方、無水平溢出。不改 DataActions、repository、勾選／刪除／貼圖、schema、Auth、公告、版號或部署，不當真實雲端／真機驗收。細節見 ADR §2。
   > **同一輪的兩個附帶結果：** (1) DP-136 合併後以暫存腳本稽核 17 個畫面／對話框 × 375×667、390×844、932×430、1280×900，逐一 Tab 過可聚焦元素：`.dp-viewport` 的捲動範圍全部為 0，沒有任何裁切方向被焦點捲動，這類問題只有附件按鈕一處；腳本未進 repo。(2) 檢查其餘刪除路徑：待辦、貼圖、日曆的 `#delete` 是單純 delete，刪到 0 列不算錯，回應遺失後重試本來就會成功；另發現帳號刪除日曆不是原子操作，登記為 Backlog 的 DP-138。
