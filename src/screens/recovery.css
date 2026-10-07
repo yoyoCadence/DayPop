@@ -22,7 +22,9 @@
 .recovery-alert strong {
   display: block;
   margin-bottom: 5px;
-  color: #e4002b;
+  /* The frame stays red; the title does not. `#e4002b` as 14px text is below
+     4.5:1 on the dark surface of every theme (3.10–3.77:1) — DP-140. */
+  color: var(--fg);
   font-size: 14px;
   font-weight: 800;
 }
@@ -102,13 +104,6 @@
 
 /* The screen error fallback (DP-139) shares this file's look: its second,
    non-destructive action and the error message it reveals on request. */
-
-/* Its alert keeps the red frame but not the red title: #e4002b on the dark
-   surface measured 3.59:1 (漫畫 dark), below 4.5:1 for 14px text. */
-.recovery-alert-plain strong {
-  color: var(--fg);
-}
-
 .recovery-secondary {
   width: 100%;
   margin-top: 8px;
