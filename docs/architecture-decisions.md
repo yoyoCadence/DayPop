@@ -431,6 +431,25 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 ## 7. 工程治理
 
+### 決策（DP-139，2026-10-07）— 畫面錯誤在本機接住，不送出裝置
+
+整個 App 原本沒有 error boundary。React 在錯誤逸出 render 時會卸載整棵樹，使用者看到的是空白頁；若錯誤來自某筆已保存的資料，重新載入會得到同一張空白頁，而且到不了「設定 → 匯出備份」。這是 DP-034「錯誤監控」清單裡不需要外部服務就能先做的一半。
+
+`ErrorBoundary` 掛在兩層，責任不同：
+
+- **分頁畫面一層（`App`）。** 以分頁為 key 包住目前的分頁畫面。某個畫面丟錯時只有它被換成 `ScreenErrorFallback`；`AppShell` 的分頁列、橫幅與其他分頁不在 boundary 內，照常運作。sheet 與 dialog 雖然 portal 到 viewport，在 React 樹上仍屬於開啟它的畫面，所以它們的 render error 也由這一層接住。以分頁為 key 是為了讓另一個分頁永遠從乾淨狀態開始，不必在各個離開路徑上記得清錯誤。
+- **最外層（`main.tsx`）。** 包住所有 provider。provider、shell 或上層 dialog 出錯時，主題 token 與 shell 樣式都不能假設存在，所以 `RootErrorFallback` 用自帶的樣式，顏色取預設主題漫畫淺色。這一層不提供「再試一次」：壞的是畫面之上的樹，原地重繪多半再壞一次，重新載入才是誠實的選項。
+
+fallback 沿用復原畫面（`recovery.css`）的版面與 token，不另立一套「App 出問題」的外觀。文案只說得出口的事：資料沒有被刪除（boundary 不讀寫任何資料）、其他分頁仍可使用、可以到設定匯出備份；當壞掉的就是設定時不提這一句，免得把人導回原地。錯誤訊息收在 `<details>` 裡，給使用者轉述用。
+
+**不做遠端回報。** boundary 不呼叫任何服務，也不自行記錄（React 已把接住的錯誤寫進 console）。把錯誤送出裝置需要先選服務、放寬 CSP 的 `connect-src`，並在隱私說明卡補上對應文字；那是產品與隱私決定，仍掛在 DP-034。也因此 `DataPrivacyCard` 與 `docs/data-and-privacy.md` 不需要更動。
+
+**boundary 接不到的：** 事件 handler、Promise 與計時器裡的錯誤不經過 render，不會觸發它。那些路徑維持既有處理（寫入失敗由 DataProvider 的橫幅與各表單回報）。這一項也不改 DP-016 的 fail-closed：資料讀不了仍然先到 `DataRecoveryScreen`，不會落到這裡。
+
+測試方式值得留給後人：dev server 逐檔提供原始模組，所以 e2e 可以用 `page.route()` 把某個畫面模組換成會丟錯的版本，不必在正式程式裡留測試掛鉤，也因此能涵蓋沒有單元測試的 `main.tsx` 組成。這只在 dev server 下可行；production build 是打包過的。
+
+驗證：App 層單元案例在修正前以「錯誤直接逸出、整棵樹卸載」失敗，兩個 browser 案例在還原 `App.tsx`／`main.tsx` 時失敗（截圖為全白頁）。lint、typecheck、1018 個單元案例／63 檔、七項 posttest、build／check:build 通過（JS 665,849 raw／195,191 gzip，CSS 102,385／25,569，皆在上限內）。browser：某畫面出錯後分頁列可用、設定可下載內含該筆行程的 JSON 備份、回到日曆資料仍在、遊客資料逐字不變，按「重新載入 App」後恢復；App 無法啟動時顯示說明，資料不變，重新載入後恢復。375×667、390×844、1280×900 目視兩個 fallback，按鈕高 45–48px、無水平溢出。六套主題 × 淺／深色量測 fallback 的文字對比：本項新增的樣式都不低於 4.5:1（標題改用 `--fg`，因為 `#e4002b` 在漫畫深色 surface 上只有 3.59:1）；低於 4.5:1 的只有沿用的原稿 token —— 主色按鈕字在暖陽／鮮活／像素淺色為 3.73／3.12／3.64，`--muted` 在暖陽淺色為 4.48 —— 這是全 App 共用的配色，登記為 DP-140，不在本項改動。只在 Chromium 驗證，沒有真機證據。
+
 ### 決策（DP-119，2026-10-04）— 可執行的產物大小上限
 
 依持續自主開發委託採用 agent 建議：在 `performance-budget.json` 保存 JS 800 KiB raw／220 KiB gzip、CSS 128 KiB raw／32 KiB gzip 的總量上限。`check:build` 加總 production 所有 `.js`／`.mjs`（包含 worker）與 `.css`，逐檔 gzip 後加總；配置缺漏／無效、讀取失敗或任一超限都走既有失敗流程。既有 CI 三種 base 與 staging 部署閘門自動沿用，不改 workflow。限制依 DP-118 後 main 的實測基線保留約 18–31% 空間，後續調整須在 PR 說明原因；Vite 單一 chunk 的 500 kB 警告保留。

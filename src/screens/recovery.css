@@ -100,7 +100,45 @@
   line-height: 1.6;
 }
 
-.recovery-screen button:focus-visible {
+/* The screen error fallback (DP-139) shares this file's look: its second,
+   non-destructive action and the error message it reveals on request. */
+
+/* Its alert keeps the red frame but not the red title: #e4002b on the dark
+   surface measured 3.59:1 (漫畫 dark), below 4.5:1 for 14px text. */
+.recovery-alert-plain strong {
+  color: var(--fg);
+}
+
+.recovery-secondary {
+  width: 100%;
+  margin-top: 8px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 11px;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.recovery-details {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.recovery-details summary {
+  cursor: pointer;
+}
+
+.recovery-details p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.recovery-screen button:focus-visible,
+.recovery-details summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
