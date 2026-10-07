@@ -637,3 +637,20 @@ DP-034 清單的「錯誤監控」拆成兩半，本項只做不需要外部服�
 - **render 以外的錯誤。** 事件 handler、Promise 與計時器的錯誤不經過 boundary，維持既有的橫幅與表單提示。
 - **production build 與真機。** 模組攔截只在 dev server 可行；打包後的 App 與 iOS／Android 實機沒有對應的錯誤注入驗證，只有相同原始碼的單元與 dev 測試。
 - ~~設定畫面本身壞掉時，fallback 沒有獨立的備份下載入口，只能重新載入。~~ **2026-10-07 補正（DP-143）：** 分頁錯誤畫面已直接提供「下載備份」，與設定的「匯出資料」是同一個函式、同一份檔案；本機 mobile／desktop Chromium 以壞掉的設定模組實測，下載的 JSON 內含先前建立的行程。App 無法啟動時的最外層畫面在 provider 之上，仍然沒有備份入口。
+
+### 5.22 刪除日曆的 RPC：部署前必須先推 migration（DP-138，2026-10-07）
+
+**這一項改變了部署的前置條件。** 從這個 commit 起，前端在帳號模式刪除日曆時呼叫 `delete_calendar_with_reassignment`，它由第 16 檔 migration `20261007000000_delete_calendar_rpc.sql` 建立，而這檔 **尚未套用到遠端 Supabase 專案**。
+
+| 順序 | 誰 | 做什麼 |
+| --- | --- | --- |
+| 1 | 專案擁有者 | `npx supabase migration list --linked`，核對遠端目前套用到第幾檔 |
+| 2 | 專案擁有者 | `npx supabase db push --linked --dry-run`，確認清單只有預期的檔案 |
+| 3 | 專案擁有者 | `npx supabase db push --linked` |
+| 4 | 專案擁有者 | 之後才執行 §3.4 的 staging 部署 |
+
+- **第 1 步不是形式。** `docs/supabase-mcp-handoff.md` 只記錄到第 14 檔由擁有者 push；第 15 檔 `20260830000000_event_occurrence_rpcs.sql`（DP-082 的「只改這一次／只刪這一次」）有沒有推到遠端，文件裡沒有記錄，這次也沒有查遠端。如果 dry-run 列出兩檔，代表第 15 檔也還沒上去，一起推即可；兩檔都只新增函式，不改資料表。
+- **順序顛倒會怎樣：** 前端先部署、migration 還沒推時，帳號模式按「刪除此日曆」會因為函式不存在而失敗。失敗時不會搬移或刪除任何資料，對話框留在畫面上顯示錯誤（DP-141）。遊客模式不受影響。也就是功能暫時不可用，但不會弄亂資料。
+- **目前線上的行為（修正前）：** 帳號模式刪除**預設**日曆每次都會失敗，並把它的行程、待辦、貼圖搬到另一個日曆；刪除非預設日曆正常。資料不會遺失。這是在本機由 migration 重建的 PostgreSQL 上重現的，沒有在 staging 上操作驗證。
+- 本機驗證：`db reset` 套用 16 檔、pgTAP 6 檔 174／174、重新產生的型別只多這支函式；CI 的 `database` job 會重跑同一組。沒有在真實雲端專案執行過這支函式，推上去之後建議以測試帳號實際刪一次預設日曆。
+- 這一步沒有自動檢查：`deploy-staging.yml` 不會、也不能確認遠端的 migration 版本（CI 不使用任何 secret，也不 link 專案）。它只能靠這份清單。

@@ -32,7 +32,6 @@ import {
   creationTarget,
   findCalendarById,
   withCalendar,
-  withoutCalendar,
   type CalendarPatch,
   type NewCalendarInput,
   createStickerFromInput,
@@ -517,41 +516,36 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     return this.#commit(withCalendar(data, await this.#upsertCalendar(draft)));
   }
 
+  /**
+   * One RPC, therefore one transaction — DP-138.
+   *
+   * This used to be four or five PostgREST writes: move events, todos and
+   * stickers, promote another calendar if the default was the one going, then
+   * delete. Promoting while the old default still existed is a second default
+   * row, which `calendars_one_default_per_owner_idx` rejects, so deleting the
+   * default calendar failed every time with its rows already moved; and any
+   * failure part-way left the server ahead of this snapshot. No ordering of
+   * separate requests fixes both, so the server now does it in one function.
+   *
+   * The server also decides where the rows go and whether to promote, so the
+   * result is read back rather than recomputed here. `false` means the caller
+   * no longer owns a calendar with this id — typically a retry after a lost
+   * response — and is reconciled by the same reload.
+   */
   async deleteCalendar(id: string): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
-    const plan = calendarDeletionPlan(data, id);
     // Refused (last calendar, or unknown id) — nothing reaches the server.
-    if (!plan) return data;
+    if (!calendarDeletionPlan(data, id)) return data;
 
-    // Child rows move first. The composite foreign key would reject the delete
-    // while anything still points at this calendar, so the order is required,
-    // not just tidy.
-    for (const table of ['events', 'todos', 'stickers'] as const) {
-      const { error } = await requestRemote(
-        `搬移 ${table}`,
-        this.client
-          .from(table)
-          .update({ calendar_id: plan.target.id })
-          .eq('calendar_id', id)
-          .eq('owner_id', this.userId),
-      );
-      if (error) throw new RemoteDataError(`搬移 ${table}`, error);
+    const { data: deleted, error } = await requestRemote(
+      '刪除日曆並搬移內容',
+      this.client.rpc('delete_calendar_with_reassignment', { p_calendar_id: id }),
+    );
+    if (error) throw new RemoteDataError('刪除日曆並搬移內容', error);
+    if (typeof deleted !== 'boolean') {
+      throw new RemoteDataError('刪除日曆並搬移內容', '回應不是刪除結果');
     }
-
-    if (plan.promote) {
-      const { error } = await requestRemote(
-        '指定預設日曆',
-        this.client
-          .from('calendars')
-          .update({ is_default: true })
-          .eq('id', plan.target.id)
-          .eq('owner_id', this.userId),
-      );
-      if (error) throw new RemoteDataError('指定預設日曆', error);
-    }
-
-    await this.#delete('calendars', id);
-    return this.#commit(withoutCalendar(data, id, new Date().toISOString()));
+    return this.load();
   }
 
   async updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {

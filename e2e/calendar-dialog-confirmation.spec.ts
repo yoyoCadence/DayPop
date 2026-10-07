@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { E2E_EMAIL, E2E_PASSWORD, monitorBrowser, openApp, tabButton } from './support';
 
 const KEY = 'daypop.account-cache.00000000-0000-4000-8000-000000000030';
+const DELETE_RPC = 'rpc:delete_calendar_with_reassignment';
 
 async function signIn(page: Page) {
   await openApp(page, '/e2e/auth.html');
@@ -57,8 +58,8 @@ test('帳號新增與刪除日曆失敗時對話框留著並保留輸入，明�
 
   await page.locator('.cal-manage-open', { hasText: '工作' }).click();
   const edit = page.getByRole('dialog', { name: '編輯日曆', exact: true });
-  // Deleting moves events first, so that is the request refused here.
-  await failTable(page, 'events', true);
+  // Deletion is one RPC since DP-138, so that is the request refused here.
+  await failTable(page, DELETE_RPC, true);
   await edit.getByRole('button', { name: '刪除此日曆', exact: true }).click();
   await expect(edit.getByRole('alert')).toContainText('尚未確認刪除；請先確認資料再重試。');
   await expect(edit.getByRole('alert')).toBeInViewport();
@@ -66,11 +67,48 @@ test('帳號新增與刪除日曆失敗時對話框留著並保留輸入，明�
   expect(await calendarNames(page)).toEqual([...base, '工作']);
   expect(await cachedCalendarNames(page)).toEqual([...base, '工作']);
 
-  await failTable(page, 'events', false);
+  await failTable(page, DELETE_RPC, false);
   await edit.getByRole('button', { name: '刪除此日曆', exact: true }).click();
   await expect(edit).toHaveCount(0);
   expect(await calendarNames(page)).toEqual(base);
   expect(await cachedCalendarNames(page)).toEqual(base);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  clean();
+});
+
+test('帳號刪除預設日曆：內容跟著搬到倖存的日曆，並由它成為新的預設', async ({ page }) => {
+  // DP-138. As separate requests this could never finish: promoting the
+  // survivor while the old default still existed broke the one-default index.
+  const clean = monitorBrowser(page);
+  await signIn(page);
+  const [original] = await calendarNames(page);
+
+  await page.getByRole('button', { name: '＋ 新增日曆' }).click();
+  const create = page.getByRole('dialog', { name: '新增日曆', exact: true });
+  await create.getByLabel('名稱').fill('家庭');
+  await create.getByRole('button', { name: '儲存', exact: true }).click();
+  await expect(create).toHaveCount(0);
+
+  // An event on the calendar that is about to go.
+  await tabButton(page, '日曆').click();
+  await page.getByRole('button', { name: '新增', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: '新增行程', exact: true });
+  await sheet.getByLabel('標題').fill('預設日曆上的行程');
+  await sheet.getByRole('button', { name: '儲存', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+
+  await tabButton(page, '設定').click();
+  await page.locator('.cal-manage-open', { hasText: original! }).click();
+  const edit = page.getByRole('dialog', { name: '編輯日曆', exact: true });
+  await expect(edit).toContainText('會移到「家庭」');
+  await edit.getByRole('button', { name: '刪除此日曆', exact: true }).click();
+  await expect(edit).toHaveCount(0);
+
+  expect(await calendarNames(page)).toEqual(['家庭']);
+  const cached = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).data, KEY);
+  expect(cached.calendars.map((calendar: { name: string; isDefault: boolean }) => [calendar.name, calendar.isDefault])).toEqual([['家庭', true]]);
+  expect(cached.events.map((event: { title: string }) => event.title)).toEqual(['預設日曆上的行程']);
+  expect(cached.events[0].calendarId).toBe(cached.calendars[0].id);
+  await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
   clean();
 });
