@@ -654,3 +654,30 @@ DP-034 清單的「錯誤監控」拆成兩半，本項只做不需要外部服�
 - **目前線上的行為（修正前）：** 帳號模式刪除**預設**日曆每次都會失敗，並把它的行程、待辦、貼圖搬到另一個日曆；刪除非預設日曆正常。資料不會遺失。這是在本機由 migration 重建的 PostgreSQL 上重現的，沒有在 staging 上操作驗證。
 - 本機驗證：`db reset` 套用 16 檔、pgTAP 6 檔 174／174、重新產生的型別只多這支函式；CI 的 `database` job 會重跑同一組。沒有在真實雲端專案執行過這支函式，推上去之後建議以測試帳號實際刪一次預設日曆。
 - 這一步沒有自動檢查：`deploy-staging.yml` 不會、也不能確認遠端的 migration 版本（CI 不使用任何 secret，也不 link 專案）。它只能靠這份清單。
+
+### 5.23 0.4.2 公告補上失敗保留輸入與錯誤畫面備份（DP-147，2026-10-12）
+
+依專案擁有者「補一條精簡公告，先確認線上版本，未部署就合併進現有六條，再用真正舊版驗證直向與橫向」的指示。直接 GET staging `version.json`（唯一 query、no-cache）確認線上仍為 **0.4.1**「更新提示與資料保護」，因此 0.4.2 仍可修改。
+
+**只改 0.4.2 第六條**，仍為六條（177 → 184 個 Unicode code point）：
+
+- 原：「行程與待辦標題最多 300 字，超限會提示並保留草稿」
+- 新：「儲存或刪除失敗時保留輸入；畫面出錯可下載備份；標題上限 300 字」
+
+涵蓋 DP-133／134／137／141 的保留輸入與 DP-139／143 的錯誤畫面備份，並保留原本的標題上限。版號、`releasedAt`、標題與全部歷史公告不變；以既有 generator 同步 `public/version.json`，`sw.js` 與 worker template 不變。`npm run check:release-notes -- https://yoyocadence.github.io/DayPop/version.json` 通過（0.4.1 條目未變）。
+
+**舊版驗證方法同 §5.20：** `5891034`（staging 最後一次部署 0.3.0 的 commit）以 git archive 取出、用它自己的 lockfile `npm ci --ignore-scripts`，Node 24.19.0、`npm run build -- --base=/DayPop/` 建出真正的 0.3.0 production App（原始不可捲動的 `.update-dialog`），只 route 候選的 `version.json`。**注意：這個 build 必須在 PowerShell 執行**；從 Git Bash 執行時 MSYS 會把 `--base=/DayPop/` 轉成 `C:/Program Files/Git/DayPop/`，建出的頁面資源全部 404（和 AGENTS.md 記載的 TZ 是同一條轉換邊界）。先以 0.4.0 校準得到 932×430 的 `15.0..418.5`，並逐一重現 §5.20 的原 0.4.2 五種數值，再量候選；每個 mobile Chromium context 等待 fonts ready、實際 Intl 為 Asia/Taipei。
+
+| 尺寸 | 候選 dialog top..bottom | 兩顆按鈕 top..bottom | 完整放得下 |
+| --- | --- | --- | --- |
+| 430×932 | 222.6..709.4 | 639.4..685.4 | 是 |
+| 390×844 | 168.2..675.8 | 605.8..651.8 | 是 |
+| 375×667 | 69.3..597.7 | 527.7..573.7 | 是 |
+| 360×640 | 55.8..584.2 | 514.2..560.2 | 是 |
+| 932×430 | 15.0..418.5 | 348.5..394.5 | 是 |
+
+除 430×932 多折一行外，其餘四種尺寸與原 0.4.2 完全相同。每種尺寸都確認六條、內容含「下載備份」、無水平溢出、console error／warning 與 pageerror 為 0，「稍後提醒」可點擊關閉且遊客原始 envelope 逐字不變。**專案擁有者建議的完整句子**（「改善儲存與刪除失敗時的操作，保留輸入內容；畫面出錯時可下載備份。」）同樣量過：四種尺寸可以，但 **932×430 對話框底部到 439.3、超出畫面 9.3px**（按鈕仍在畫面內），且會拿掉標題上限的資訊，所以採用較短的合併版。腳本、量測 JSON 與截圖在 `%TEMP%/daypop-dp147-proof/`；本機暫存的舊 source／node_modules／dist 於驗證後清理。
+
+本項只修改候選公告，不提升 release／schema、不改 Auth／worker、不觸發部署。**部署前仍需先依 §5.22 推第 16 檔 migration。**
+
+**同日發現的部署阻礙（DP-148）：** staging 線上 bundle 指向的 Supabase 主機，在本機路由器、8.8.8.8 與 1.1.1.1 都查不到（名稱不存在），`supabase.co` 本身正常。若屬實，staging 的登入與帳號同步目前不可用，§5.22 的 `db push` 也無法執行。原因沒有驗證，需要專案擁有者到 Supabase 後台確認。本機跑 e2e 時，`.env.local` 的這個主機會讓「主控台必須乾淨」的檢查失敗；暫時以 `VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY=`（環境變數優先於 `.env.local`）執行即可排除，CI 沒有 `.env.local`，不受影響。
