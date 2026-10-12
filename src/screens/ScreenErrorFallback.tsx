@@ -50,7 +50,7 @@ export function ScreenErrorFallback({ error, retry, onDownloadBackup, onReload }
         <h1 className="dp-screen-title">這個畫面暫時無法顯示</h1>
       </div>
       <div className="dp-screen-body">
-        <div className="recovery-alert recovery-alert-plain" role="alert">
+        <div className="recovery-alert" role="alert">
           <strong>畫面發生錯誤</strong>
           <p>這不是你的操作造成的，你的資料沒有被刪除。</p>
         </div>

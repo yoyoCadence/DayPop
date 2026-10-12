@@ -173,6 +173,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -269,7 +270,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-04 部署證據補正（DP-124）**：上述「尚未在 runner 上實際跑過」是加入當下的歷史。2026-10-03 部署 0.4.1 的 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407)，head `d713b52b48765bb1ba6db89fb065388e134ed5e5`，Build for Pages job `111230422331` 的「Refuse to rewrite deployed release notes」成功。log 在 `2026-10-03T15:15:14.9411837Z` 明確回報 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`；整個部署成功。仍只比對當時線上的版本，DP-034 其他驗收與父任務不因此結案。
   > **2026-10-07 畫面錯誤子項進度**：DP-139 補上本機的 error boundary：單一分頁畫面出錯時只換掉該分頁、仍可到設定匯出備份，App 無法啟動時顯示說明與重新載入，見同份交接 §5.21。**「錯誤監控」的遠端回報仍未做**（沒有任何錯誤離開裝置，需先決定服務、CSP 與隱私說明）；render 以外的錯誤、production build 與真機的錯誤注入、資料刪除、真機／staging 等其餘驗收也未完成，父任務不結案。
 
-- [ ] **DP-140 — 原稿主題 token 的文字對比（需要專案擁有者決定，agent 不自行改色）：** 2026-10-07 量測 DP-139 的錯誤畫面時登記；量到的是全 App 共用的配色，不是那個畫面特有的。六套主題 × 淺／深色、375×667、Chromium 的 computed color：主色按鈕字（`--accent-fg` 在 `--accent` 上，14px 粗體）在暖陽淺色 3.73:1、鮮活淺色 3.12:1、像素淺色 3.64:1；次要文字 `--muted` 在暖陽淺色 4.48:1；其餘組合不低於 4.5:1。另外，復原畫面寫死的 `#e4002b` 小標在漫畫深色 surface 上是 3.59:1（DP-139 的新畫面已改用 `--fg` 避開，既有的 `DataRecoveryScreen` 未動）。這些 token 逐字移植自原稿，改值會偏離設計基準，所以是設計決定：比照 DP-070 新增語意 token、接受為已知例外並釘進測試，或維持現狀。**建議：** 比照 DP-070 的做法，只調整量到不足的那幾組並以測試釘住；復原畫面的紅色小標可以直接比照 DP-139 改用 `--fg`。只量了這一個畫面上出現的配色，沒有涵蓋其他畫面的所有文字。
+- [ ] **DP-145 — `--faint` 當文字、以及月格行程色塊上的白字（需要專案擁有者決定）：** 2026-10-07 DP-140 的實際畫面稽核找到（390×844、六套主題 × 淺／深色，逐段文字對其真實背景）。(1) **`--faint` 當文字**：設定的主題說明、資料備份說明、頁尾、綜覽的分組計數等用原稿的 `faint` 畫小字，十二組**全部**不足，最低 2.18（極簡深色）、多數在 2.3–3.3。DP-070 曾為農曆另建 `--lunar-muted` 避開同一個 token；`faint` 也用在純裝飾處，直接調亮／調暗會連帶改變那些地方。(2) **月格行程色塊**：行程標題是白字畫在日曆色上，預設日曆色 `#f06c5c` 只有 3.0（8.5px），日曆色由使用者從色盤選擇，所以要嘛依底色自動選深／淺字，要嘛調整色盤。數值來自實際畫面量測，未逐一涵蓋所有畫面的所有狀態。**建議：** (1) 把這些「說明用小字」改用已達標的 `--muted`，只留裝飾用途給 `faint`；(2) 依日曆色亮度自動選深色或白色字，不動使用者已選的顏色。
+
+- [ ] **DP-144 — 主色與紅色「當作文字」時的對比（需要專案擁有者決定範圍）：** 2026-10-07 做 DP-140 時由色票數值算出，DP-140 沒有處理。(1) **主色當文字**：`color: var(--accent)` 用在表單標題列的「取消／儲存」、分頁列的目前分頁等處，直接畫在 `--surface`／`--bg` 上；暖陽淺色 3.78／3.38、鮮活淺色 3.12／2.83、像素淺色 3.64／3.25，其餘九組在 `--surface` 上不低於 4.75。(2) **寫死的 `#e4002b` 當文字**：刪除按鈕、逾期標籤、復原畫面的危險按鈕與錯誤訊息等，在六套主題的深色模式全部不足（`--surface` 上 3.10–3.77、`--bg` 上 3.43–4.09），淺色的暖陽 `--bg` 4.16、商務 `--bg` 4.28、鮮活 `--bg` 4.40、像素 3.84／4.29 也不足。兩者都要新增用途明確的 token（例如文字用的主色、每套主題各自的危險色）並逐一替換十幾處樣式，動到的畫面遠多於 DP-140，所以分開。數值來自 `themes.ts` 的色票計算，已釘在 `src/theme/textContrast.test.ts` 的已知例外清單，清單變動時測試會失敗；沒有逐一在瀏覽器量每個使用處。**建議：** 先做 (2) 的危險色 token（影響所有深色模式的刪除按鈕），(1) 再比照 DP-070 新增文字用的主色 token。
 
 ### 原型假功能與待補能力
 
@@ -311,6 +314,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-140 — 原稿主題 token 的文字對比（2026-10-07）：** 量測 DP-139 錯誤畫面時登記；同日專案擁有者回覆「同意小幅調色，建議現在做」（優先按鈕文字色、保留六套主題風格、復原畫面紅色小標改用 `--fg`、驗證六套主題淺／深色與實際背景），由 Backlog 經 Next、In Progress 完成，從最新 main（`fca9e81`）開獨立分支。改以色票對十二組全部重算，再於實際畫面逐段量測：調整七個色票值，主色一個都沒動 —— 暖陽／鮮活／像素淺色的 `accentFg` 由淺改深（3.73／3.12／3.64 → 4.68／6.04／4.60），暖陽／極簡／商務淺色的 `muted` 與鮮活淺色的 `todayFg` 同色相調暗到剛好達標（商務與 `muted` 在 `todayBg` 上那一組是實際畫面才找到的）；復原畫面紅框內小標改用 `--fg`，DP-139 的修飾類別移除。新增 `src/theme/textContrast.test.ts`：原稿色票下 5 組失敗、調整後全過，並把主色當文字與寫死紅色當文字列成精確的已知例外。實際畫面稽核剩下的 65 組不足全部歸入四類、沒有無法解釋的項目，登記為 DP-144（主色／紅色當文字）與 DP-145（`--faint` 當文字、月格行程色塊白字）。lint／typecheck、build／check:build 通過；單元測試整套 1075／1075 在 `--testTimeout=30000` 下通過 —— 預設 5 秒時 App／CalendarScreen／MonthView 有 10 個逾時，同時段機器上另有其他專案的測試與開發伺服器在跑，單獨重跑時間一次比一次長（72 秒 → 132 秒、轉譯時間 6 秒 → 59 秒），以 CI 為準。相關 e2e（responsive shell、canonical account UI、錯誤畫面、復原、guest CRUD）中 canonical account UI 的三個手機案例因 `page.goto` 逾時失敗，單獨重跑 6／6 通過；完整 e2e 由 CI 執行。行為、版面、schema、Auth、公告、版號與部署不變。細節見 ADR §3。
 
 - [x] **DP-138 — 帳號刪除日曆改為單一交易的 RPC（2026-10-07；程式已完成，遠端 migration 待專案擁有者套用）：** 檢查刪除路徑時登記；同日專案擁有者回覆四個待決事項時指示「建議修，不必等其他 schema 工作」並要求補上失敗情境的驗證，由 Backlog 經 Next、In Progress 完成，從最新 main（`78331fe`）開獨立分支。原登記的問題是 `deleteCalendar()` 以四到五個獨立請求搬移、提升、刪除，中途失敗時伺服器已搬走部分資料。**在本機由 migration 重建的 PostgreSQL 上重現出更嚴重的事實：帳號模式刪除預設日曆每次都失敗。** `calendars_one_default_per_owner_idx` 是 partial unique index，舊預設還在時把另一個日曆設為預設必定是 `duplicate key value violates unique constraint`，而 1 筆行程、2 筆待辦、1 筆貼圖已被搬走；重試只會重複同一個失敗。原登記「重試會收斂」的推論只對刪除非預設日曆成立；沒有資料遺失。修正：第 16 檔 migration `20261007000000_delete_calendar_rpc.sql` 建立 SECURITY INVOKER、空 `search_path`、僅 `authenticated` 的 `delete_calendar_with_reassignment(uuid)`，一個交易內搬移、刪除、最後才提升；adapter 改呼叫它並重新 load，`false` 與 reload 失敗都可由下一次嘗試修復；`FakeSupabase` 補上該 unique index 的模擬與這支 RPC（先前就是因為沒模擬才一直是綠的）。本機 `db reset` 套用 16 檔、pgTAP **6 檔 174／174**（新增 24 項，含以 trigger 在搬移貼圖時丟錯驗證整批回復）、型別檔重新產生後只多 4 行。fake 補上 index 後既有契約測試在修正前失敗，browser「刪除預設日曆」案例在還原 adapter 時失敗。lint／typecheck、1060 個單元案例／64 檔＋七項 posttest、build／check:build 通過；**完整 e2e 本機 173 通過／7 項既有跳過**。不改資料表、欄位、policy、index、Auth、公告、版號或部署；遊客端不受影響。細節見 ADR §2。
   > **需要專案擁有者做、而且有順序（部署前）：** (1) `npx supabase migration list --linked` 核對遠端檔數 —— 文件只記錄到第 14 檔由擁有者 push，第 15 檔（DP-082 的單次修改 RPC）有沒有推沒有記錄，這次也沒有查遠端；(2) `db push --dry-run` 後 `db push`；(3) **推完才部署前端**，否則帳號模式的刪除日曆會因函式不存在而失敗（不會改動資料）。步驟與 postflight 見 docs/supabase-mcp-handoff.md §0.10、docs/deployment.md §5.22。沒有在真實雲端專案執行過這支函式。

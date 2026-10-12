@@ -27,6 +27,17 @@ export interface ThemePalette {
   surface: string;
   surface2: string;
   fg: string;
+  /**
+   * Secondary text. Clears 4.5:1 on `bg`, `surface`, `surface2` and `todayBg`
+   * (the week view labels today's column in it) in every theme and mode —
+   * DP-140, pinned by `textContrast.test.ts`.
+   *
+   * Three light values are **not from the原檔** for that reason: 暖陽 (source
+   * `#7a6a58`: 4.48:1 on `bg`, 4.11:1 on `surface2`), 極簡 (source `#71717a`:
+   * 4.40:1 on `surface2`, 4.36:1 on `todayBg`) and 商務 (source `#5a6b82`:
+   * 4.45:1 on `todayBg`). Each is the source colour darkened just far enough,
+   * keeping its hue.
+   */
   muted: string;
   faint: string;
   /**
@@ -47,8 +58,24 @@ export interface ThemePalette {
   border: string;
   line: string;
   accent: string;
+  /**
+   * Text drawn on `accent` — the label of every primary button. Clears 4.5:1
+   * in every theme and mode — DP-140, pinned by `textContrast.test.ts`.
+   *
+   * Three light values are **not from the原檔**: 暖陽, 鮮活 and 像素 put a
+   * near-white label on a mid-tone accent there (3.73, 3.12 and 3.64:1). The
+   * accent is each theme's identity and stays as transcribed; the label turned
+   * dark instead. 鮮活 and 像素 reuse the ink their own dark mode already puts
+   * on the accent; 暖陽's dark-mode ink only reaches 4.23:1 on the light-mode
+   * accent, so it is taken a little darker.
+   */
   accentFg: string;
   todayBg: string;
+  /**
+   * The date in today's month cell and week column, on `todayBg`. Clears 4.5:1
+   * everywhere — DP-140. 鮮活 light is **not from the原檔** (`#c23c08` is
+   * 4.30:1); it is that colour darkened just far enough.
+   */
   todayFg: string;
   chip: string;
   shadow: string;
@@ -156,7 +183,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       surface: '#ffffff',
       surface2: '#f4f4f5',
       fg: '#18181b',
-      muted: '#71717a',
+      muted: '#6b6b74', // 原檔 #71717a — DP-140
       faint: '#a1a1aa',
       lunarMuted: '#6a6a70',
       border: '#e4e4e7',
@@ -208,13 +235,13 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       surface: '#fffaf1',
       surface2: '#efe3d0',
       fg: '#3d2f24',
-      muted: '#7a6a58',
+      muted: '#6f6050', // 原檔 #7a6a58 — DP-140
       faint: '#a89684',
       lunarMuted: '#6c6054',
       border: '#e2d3bd',
       line: '#ece0cd',
       accent: '#c2683f',
-      accentFg: '#fff8f0',
+      accentFg: '#1a130d', // 原檔 #fff8f0 — DP-140
       todayBg: '#f3ddc4',
       todayFg: '#8a3f1c',
       chip: '#fffaf1',
@@ -260,7 +287,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       surface: '#ffffff',
       surface2: '#f4f7fb',
       fg: '#0f2440',
-      muted: '#5a6b82',
+      muted: '#58697f', // 原檔 #5a6b82 — DP-140
       faint: '#93a1b5',
       lunarMuted: '#606976',
       border: '#dbe2ec',
@@ -318,9 +345,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#141414',
       line: '#e3e1d7',
       accent: '#ff5a1f',
-      accentFg: '#ffffff',
+      accentFg: '#1a0f08', // 原檔 #ffffff — DP-140
       todayBg: '#ffe1d1',
-      todayFg: '#c23c08',
+      todayFg: '#ba3a08', // 原檔 #c23c08 — DP-140
       chip: '#ffffff',
       shadow: '0 10px 26px rgba(255,90,31,.26)',
       halftone: 'none',
@@ -370,7 +397,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#2b2b22',
       line: '#c3bf9e',
       accent: '#2f8f3e',
-      accentFg: '#f4f2df',
+      accentFg: '#0f120e', // 原檔 #f4f2df — DP-140
       todayBg: '#cfe6b8',
       todayFg: '#1f5c26',
       chip: '#f4f2df',
