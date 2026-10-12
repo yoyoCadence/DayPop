@@ -29,6 +29,15 @@ async function createEvent(page: Page, title: string) {
 
 const guestBytes = (page: Page) => page.evaluate((key) => localStorage.getItem(key), GUEST_KEY);
 
+/** Presses 複製診斷資訊 and returns what reached the clipboard — DP-146. */
+async function copyDiagnostics(page: Page) {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: '複製診斷資訊', exact: true }).click();
+  await expect(page.getByText('已複製診斷資訊，可以貼到訊息裡。', { exact: true })).toBeVisible();
+  // The Windows clipboard hands `\n` back as `\r\n`; Linux CI does not.
+  return (await page.evaluate(() => navigator.clipboard.readText())).replaceAll('\r\n', '\n');
+}
+
 test('單一畫面出錯時只換掉那個畫面，其他分頁、匯出備份與資料都不受影響', async ({ page }, testInfo) => {
   const searchScreen = /\/src\/screens\/SearchScreen\.tsx(\?.*)?$/;
   await breakModule(
@@ -51,6 +60,11 @@ test('單一畫面出錯時只換掉那個畫面，其他分頁、匯出備份�
   await page.getByText('錯誤訊息', { exact: true }).click();
   await expect(page.getByText('DP-139 測試錯誤：搜尋畫面壞了')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  // DP-146: the copied report names version, screen and error type — and
+  // leaves out the message, which is still readable on screen above.
+  expect(await copyDiagnostics(page)).toEqual(expect.stringMatching(/^日蹦診斷資訊\n版本：\d+\.\d+\.\d+\n畫面：搜尋\n錯誤類型：Error\n發生時間：\S+Z$/));
+  expect(await page.evaluate(() => navigator.clipboard.readText())).not.toContain('DP-139 測試錯誤');
 
   // The exit the fallback points at works: a real backup with the event in it.
   await tabButton(page, '設定').click();
@@ -128,6 +142,10 @@ test('App 無法啟動時顯示說明與重新載入，裝置上的資料原封�
   await expect(page.locator('.dp-viewport')).toHaveCount(0);
   expect(await guestBytes(page)).toBe(stored);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const report = await copyDiagnostics(page);
+  expect(report).toContain('畫面：啟動');
+  expect(report).toContain('錯誤類型：Error');
+  expect(report).not.toContain('DP-139 測試錯誤');
 
   await page.unroute(app);
   await alert.getByRole('button', { name: '重新載入', exact: true }).click();

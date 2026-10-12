@@ -1,9 +1,9 @@
-import { act } from 'react';
+import { act, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScreenErrorFallback } from '../screens/ScreenErrorFallback';
-import { ErrorBoundary } from './ErrorBoundary';
+import { ErrorBoundary, type ErrorFallbackProps } from './ErrorBoundary';
 import { RootErrorFallback } from './RootErrorFallback';
 
 /**
@@ -46,7 +46,7 @@ describe('ErrorBoundary with the screen fallback', () => {
           <span className="tab-bar">分頁列</span>
           <ErrorBoundary
             key={key}
-            fallback={(caught) => <ScreenErrorFallback {...caught} onDownloadBackup={download} onReload={reload} />}
+            fallback={(caught) => <ScreenErrorFallback {...caught} screen="搜尋" onDownloadBackup={download} onReload={reload} />}
           >
             <Screen />
           </ErrorBoundary>
@@ -143,7 +143,7 @@ describe('ErrorBoundary with the screen fallback', () => {
     }
     act(() =>
       root.render(
-        <ErrorBoundary fallback={(caught) => <ScreenErrorFallback {...caught} onDownloadBackup={() => 0} onReload={vi.fn()} />}>
+        <ErrorBoundary fallback={(caught) => <ScreenErrorFallback {...caught} screen="搜尋" onDownloadBackup={() => 0} onReload={vi.fn()} />}>
           <ScreenWithSheet />
         </ErrorBoundary>,
       ),
@@ -158,7 +158,7 @@ describe('ErrorBoundary with the screen fallback', () => {
     }
     act(() =>
       root.render(
-        <ErrorBoundary fallback={(caught) => <ScreenErrorFallback {...caught} onDownloadBackup={() => 0} onReload={vi.fn()} />}>
+        <ErrorBoundary fallback={(caught) => <ScreenErrorFallback {...caught} screen="搜尋" onDownloadBackup={() => 0} onReload={vi.fn()} />}>
           <ThrowsString />
         </ErrorBoundary>,
       ),
@@ -183,5 +183,102 @@ describe('ErrorBoundary with the root fallback', () => {
     expect(alert?.querySelector('details')?.textContent).toContain('畫面元件壞了');
     act(() => button('重新載入')!.click());
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * DP-146. Both fallbacks can copy a short report the user can paste into a
+ * message. It names the version, the screen and the error type only.
+ */
+describe('copying diagnostics from either fallback', () => {
+  const SECRET = '無法保存「和醫生約診」user@example.com';
+  function SecretScreen(): never {
+    throw new RangeError(SECRET);
+  }
+  function stubClipboard(writeText: ((text: string) => Promise<void>) | undefined) {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: writeText ? { writeText } : undefined,
+    });
+  }
+  afterEach(() => stubClipboard(undefined));
+
+  const fallbacks = [
+    ['the screen fallback', (caught: ErrorFallbackProps) => <ScreenErrorFallback {...caught} screen="設定" onDownloadBackup={() => 0} onReload={vi.fn()} />, '設定'],
+    ['the root fallback', (caught: ErrorFallbackProps) => <RootErrorFallback {...caught} onReload={vi.fn()} />, '啟動'],
+  ] as const;
+
+  function renderWith(fallback: (caught: ErrorFallbackProps) => ReactNode) {
+    act(() =>
+      root.render(
+        <ErrorBoundary fallback={fallback}>
+          <SecretScreen />
+        </ErrorBoundary>,
+      ),
+    );
+  }
+
+  it.each(fallbacks)('%s copies version, screen and error type, and never the message', async (_label, fallback, screen) => {
+    const writeText = vi.fn(() => Promise.resolve());
+    stubClipboard(writeText);
+    renderWith(fallback);
+    await act(async () => button('複製診斷資訊')!.click());
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = (writeText.mock.calls[0] as unknown as [string])[0];
+    expect(copied).toContain(`版本：${__APP_VERSION__}`);
+    expect(copied).toContain(`畫面：${screen}`);
+    expect(copied).toContain('錯誤類型：RangeError');
+    expect(copied).toMatch(/發生時間：\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
+    expect(copied).not.toContain('和醫生約診');
+    expect(copied).not.toContain('user@example.com');
+    expect(container.querySelector('[role="status"]')?.textContent).toBe('已複製診斷資訊，可以貼到訊息裡。');
+    // The message is still there for the user to read on screen.
+    expect(container.querySelector('details')?.textContent).toContain(SECRET);
+  });
+
+  it.each(fallbacks)('%s shows the report for manual copying when the clipboard refuses', async (_label, fallback) => {
+    stubClipboard(() => Promise.reject(new Error('NotAllowedError')));
+    const original = Element.prototype.scrollIntoView;
+    const revealed: Element[] = [];
+    Element.prototype.scrollIntoView = function reveal(this: Element) { revealed.push(this); };
+    try {
+      renderWith(fallback);
+      await act(async () => button('複製診斷資訊')!.click());
+
+      const manual = container.querySelector<HTMLTextAreaElement>('textarea[aria-label="診斷資訊"]');
+      expect(manual?.readOnly).toBe(true);
+      expect(manual?.value).toContain('錯誤類型：RangeError');
+      expect(manual?.value).not.toContain('和醫生約診');
+      expect(document.activeElement).toBe(manual);
+      expect([manual?.selectionStart, manual?.selectionEnd]).toEqual([0, manual?.value.length]);
+      // A partly visible field is not scrolled by focus alone (it sat under the tab bar).
+      expect(revealed).toEqual([manual]);
+      expect(container.querySelector('[role="status"]')?.textContent).toBe('無法自動複製，請手動選取下方文字。');
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it.each(fallbacks)('%s falls back the same way where there is no clipboard API at all', async (_label, fallback) => {
+    stubClipboard(undefined);
+    renderWith(fallback);
+    await act(async () => button('複製診斷資訊')!.click());
+    expect(container.querySelector<HTMLTextAreaElement>('textarea[aria-label="診斷資訊"]')?.value).toContain('錯誤類型：RangeError');
+  });
+
+  it('keeps the time the error was caught, not the time the button was pressed', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      vi.setSystemTime(new Date('2026-10-12T01:00:00.000Z'));
+      const writeText = vi.fn(() => Promise.resolve());
+      stubClipboard(writeText);
+      renderWith(fallbacks[0][1]);
+      vi.setSystemTime(new Date('2026-10-12T05:00:00.000Z'));
+      await act(async () => button('複製診斷資訊')!.click());
+      expect((writeText.mock.calls[0] as unknown as [string])[0]).toContain('發生時間：2026-10-12T01:00:00.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

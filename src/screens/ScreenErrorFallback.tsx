@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useDiagnosticsCopy } from '../shell/diagnostics';
 import type { ErrorFallbackProps } from '../shell/ErrorBoundary';
 import './screens.css';
 import './recovery.css';
 
 export interface ScreenErrorFallbackProps extends ErrorFallbackProps {
+  /** The failed screen as the user knows it (分頁名稱), for the diagnostics — DP-146. */
+  screen: string;
   /**
    * Starts a backup download and returns how many attachments it leaves out;
    * throws if the file could not be produced — DP-143. Supplied by `App`,
@@ -25,10 +28,13 @@ export interface ScreenErrorFallbackProps extends ErrorFallbackProps {
  * not have to know where the export lives.
  *
  * The message is shown on request only. It is there so the user can pass it
- * on; it is not sent anywhere.
+ * on; it is not sent anywhere. 複製診斷資訊 (DP-146) copies a report without
+ * it — see `buildDiagnostics()` for what is and is not included.
  */
-export function ScreenErrorFallback({ error, retry, onDownloadBackup, onReload }: ScreenErrorFallbackProps) {
+export function ScreenErrorFallback({ error, retry, screen, onDownloadBackup, onReload }: ScreenErrorFallbackProps) {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const manualField = useRef<HTMLTextAreaElement>(null);
+  const diagnostics = useDiagnosticsCopy(error, screen, manualField);
 
   function downloadBackup() {
     try {
@@ -73,6 +79,24 @@ export function ScreenErrorFallback({ error, retry, onDownloadBackup, onReload }
           <summary>錯誤訊息</summary>
           <p>{error.message || '（沒有訊息）'}</p>
         </details>
+        <button className="recovery-copy" type="button" onClick={() => void diagnostics.copy()}>
+          複製診斷資訊
+        </button>
+        {diagnostics.message && (
+          <div className="recovery-ok" role="status">
+            {diagnostics.message}
+          </div>
+        )}
+        {diagnostics.status === 'manual' && (
+          <textarea
+            ref={manualField}
+            className="recovery-diagnostics"
+            aria-label="診斷資訊"
+            readOnly
+            rows={5}
+            value={diagnostics.text}
+          />
+        )}
       </div>
     </div>
   );
