@@ -180,7 +180,7 @@ export function AgendaView({
           <div className="cal-agenda-head">
             <div
               className="cal-agenda-date"
-              style={{ color: day.isToday ? 'var(--accent)' : 'var(--fg)' }}
+              style={{ color: day.isToday ? 'var(--accent-text)' : 'var(--fg)' }}
             >
               {day.dateLabel}
             </div>
@@ -215,7 +215,7 @@ export function AgendaView({
               {item.kind === 'todo' && (
                 <span
                   className="cal-agenda-check"
-                  style={{ color: item.done ? 'var(--accent)' : 'var(--faint)' }}
+                  style={{ color: item.done ? 'var(--accent-text)' : 'var(--faint)' }}
                 >
                   {item.done ? '✓' : '○'}
                 </span>

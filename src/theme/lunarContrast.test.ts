@@ -11,11 +11,8 @@ import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
  * trusted: it re-derives the ratio for all six themes in both modes, against
  * every background a cell can actually have.
  *
- * **Festival days are out of scope and deliberately so.** They are drawn in
- * `--accent`, which the product decision kept as-is, and that colour does not
- * clear AA on every cell background — 7 of the 12 theme/mode combinations fail,
- * down to 2.52:1 (鮮活 light on the today cell). The exception is pinned below
- * rather than asserted away, so nobody reads this file as covering them.
+ * DP-144 also guarantees festival text via `--accent-text`, keeping the
+ * original accent for fills and outlines. Both text tokens are checked below.
  */
 
 const REQUIRED_RATIO = 4.5;
@@ -107,33 +104,14 @@ describe('月格一般日農曆文字的對比', () => {
     // file can see — `MonthView.test.tsx` asserts that wiring, because a change
     // there would leave every assertion here green.
     for (const { palette } of cases) {
-      expect(palette.accent).not.toBe(palette.lunarMuted);
+      expect(palette.accentText).not.toBe(palette.lunarMuted);
     }
   });
 
-  /**
-   * Characterisation, not a target. The product decision kept festivals on
-   * `--accent` knowing it fails AA on some cells; this pins exactly where, so
-   * the failure list cannot quietly grow — and so that if a future palette
-   * change makes them all pass, this test fails and forces the "非節日" wording
-   * in the docs to be revisited.
-   */
-  it('pins the known festival exceptions', () => {
-    const failing = cases
-      .filter(({ palette }) => {
-        const accent = parseHex(palette.accent);
-        return cellBackgrounds(palette).some(({ color }) => contrast(accent, color) < REQUIRED_RATIO);
-      })
-      .map(({ id, mode }) => `${id}.${mode}`);
-
-    expect(failing).toEqual([
-      'manga.light',
-      'manga.dark',
-      'warm.light',
-      'warm.dark',
-      'business.dark',
-      'vivid.light',
-      'pixel.light',
-    ]);
+  it.each(cases)('$id $mode: festival text clears AA on every cell background', ({ palette }) => {
+    const accent = parseHex(palette.accentText);
+    for (const { label, color } of cellBackgrounds(palette)) {
+      expect(contrast(accent, color), label).toBeGreaterThanOrEqual(REQUIRED_RATIO);
+    }
   });
 });

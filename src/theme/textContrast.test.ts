@@ -16,9 +16,8 @@ import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
  * here; each says so where it is defined. `lunarContrast.test.ts` covers the
  * one earlier departure (DP-070).
  *
- * `dangerText` clears the same four backgrounds — DP-144. Accent-coloured
- * text is still pinned at the bottom so the list cannot grow unnoticed — DP-144 in
- * `tasks.md`. `faint` as text and white text on calendar colours are not
+ * `dangerText` and `accentText` clear the same four backgrounds — DP-144.
+ * `faint` as text and white text on calendar colours are not
  * covered here at all — DP-145.
  */
 
@@ -79,6 +78,11 @@ function guaranteedPairs(palette: ThemePalette): [string, string, string][] {
         `dangerText on ${background}`, palette.dangerText, palette[background],
       ],
     ),
+    ...(['bg', 'surface', 'surface2', 'todayBg'] as const).map(
+      (background): [string, string, string] => [
+        `accentText on ${background}`, palette.accentText, palette[background],
+      ],
+    ),
   ];
 }
 
@@ -101,20 +105,4 @@ describe('主題色票的文字對比', () => {
     expect(THEMES.pixel.light.accent).toBe('#2f8f3e');
   });
 
-  /**
-   * Characterisation, not a target — DP-144.
-   *
-   * `--accent` is also used as a *text* colour straight on the page (the sheet
-   * bar's 取消／儲存, the active tab). It does not clear AA everywhere.
-   * Fixing it needs another token and a sweep of the stylesheets,
-   * which DP-140 did not take on. The lists are exact so that a palette change
-   * which worsens or fixes one of them fails here and gets looked at.
-   */
-  it('pins where accent-coloured text falls short', () => {
-    const failing = cases
-      .filter(({ palette }) => contrast(palette.accent, palette.surface) < REQUIRED_RATIO || contrast(palette.accent, palette.bg) < REQUIRED_RATIO)
-      .map(({ id, mode }) => `${id}.${mode}`);
-
-    expect(failing).toEqual(['warm.light', 'vivid.light', 'pixel.light']);
-  });
 });

@@ -24,6 +24,7 @@ const PALETTE_KEYS: (keyof ThemePalette)[] = [
   'border',
   'line',
   'accent',
+  'accentText',
   'accentFg',
   'todayBg',
   'todayFg',
@@ -36,7 +37,7 @@ const PALETTE_KEYS: (keyof ThemePalette)[] = [
 /**
  * The custom properties written by `phoneStyle()` in the原檔, plus the
  * additions DayPop made deliberately: `--lunar-muted` (DP-070) and
- * `--danger-text` (DP-144).
+ * `--danger-text` and `--accent-text` (DP-144).
  */
 const EXPECTED_CSS_VARIABLES = [
   '--bg',
@@ -50,6 +51,7 @@ const EXPECTED_CSS_VARIABLES = [
   '--border',
   '--line',
   '--accent',
+  '--accent-text',
   '--accent-fg',
   '--today-bg',
   '--today-fg',

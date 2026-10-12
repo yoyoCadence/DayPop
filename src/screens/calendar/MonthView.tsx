@@ -392,7 +392,7 @@ export function MonthView({
     <div className="cal-view-pane">
       <div className="cal-weekhead">
         {weekdayHead.map((head, index) => (
-          <div key={index} style={{ color: head.isWeekend ? 'var(--accent)' : 'var(--muted)' }}>
+          <div key={index} style={{ color: head.isWeekend ? 'var(--accent-text)' : 'var(--muted)' }}>
             {head.label}
           </div>
         ))}
@@ -428,7 +428,7 @@ export function MonthView({
                       color: isToday
                         ? 'var(--today-fg)'
                         : isSelected || cell.isFirstOfMonth
-                          ? 'var(--accent)'
+                          ? 'var(--accent-text)'
                           : 'var(--fg)',
                       fontWeight: isToday || isSelected || cell.isFirstOfMonth ? 800 : 500,
                     }}
@@ -438,9 +438,9 @@ export function MonthView({
                   <div
                     className="cal-cell-lunar"
                     style={{
-                      // Festivals keep the原檔's accent; ordinary days use the
-                      // DP-070 token instead of `--faint`, which fails AA here.
-                      color: cell.lunar.isFestival ? 'var(--accent)' : 'var(--lunar-muted)',
+                      // Separate text tokens clear every cell background;
+                      // the原檔's accent still supplies fills and outlines.
+                      color: cell.lunar.isFestival ? 'var(--accent-text)' : 'var(--lunar-muted)',
                       fontWeight: cell.lunar.isFestival ? 800 : 600,
                     }}
                   >

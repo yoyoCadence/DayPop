@@ -157,7 +157,7 @@ body {
 }
 
 .dp-tab[aria-current="page"] {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dp-tab-label {
