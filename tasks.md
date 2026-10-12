@@ -175,6 +175,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -247,6 +248,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ### Quality / release
 
+- [ ] **DP-148 — staging 的 Supabase 專案主機在公開 DNS 查不到（需要專案擁有者到後台確認，agent 無權限）：** 2026-10-12 做 DP-147 時發現。本機開發伺服器連 `.env.local` 設定的 Supabase 主機出現 `net::ERR_NAME_NOT_RESOLVED`；**staging 線上 bundle 指向的是同一個主機**。本機路由器、Google（8.8.8.8）與 Cloudflare（1.1.1.1）三個 DNS 都回覆「名稱不存在」，`supabase.co` 與 `supabase.com` 本身可解析，對該主機的 HTTPS 請求連不上。同一週稍早（DP-139～DP-146 的 e2e）同樣的設定沒有出現這個錯誤，所以是這幾天才發生的。**可能的原因**（沒有驗證）：專案被刪除、專案代碼改變，或專案被暫停後 DNS 被移除。**若屬實，staging 的登入、註冊與帳號同步目前都無法使用**（遊客模式不受影響），DP-138 的第 16 檔 migration 也無法推送。**請到 Supabase 後台確認專案狀態**：若只是暫停，恢復即可；若專案已不存在或換了代碼，需要更新 GitHub repository variables 與 `.env.local`，並依 docs/supabase-mcp-handoff.md 重建 schema（`db push` 會依序套用全部 16 檔）。agent 沒有改任何設定。
+
+
 - [ ] **DP-032 — 行動裝置 QA 與無障礙（2026-08-26 由 In Progress 移回 Backlog）：** 專案擁有者決定移回，理由是剩下的三項（Android Chrome、螢幕閱讀器、實體鍵盤）對自己的實際使用情境用不太到。**已完成的兩輪結果仍然有效，下方原文照留未刪**；未測的三項仍如實記為未測，不得視為通過。要重啟時由專案擁有者指定移回 Next。
   > **DP-032 — 行動裝置 QA 與無障礙：** **第一輪（模擬環境）已完成**，報告見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md)。以 Playwright Chromium 在 393×852 觸控、412×915 觸控與 1280×900 三種 viewport 對 staging 實測。**通過**：3 viewport × 4 分頁水平溢出全部 0px、沒有小於 24×24 的互動元素、實際按 Tab 走訪的 30 個元素全部有 `2px solid` 焦點框且 `:focus-visible` 成立、sheet 有 `role=dialog`／`aria-modal`／`aria-label` 且開啟後 focus 在內、Escape 可關閉、viewport meta 沒有封鎖縮放、`env(safe-area-inset-*)` 與 `@media (prefers-reduced-motion: reduce)` 都有實作、console 全程 0 error／0 warning。**發現三項**：日期格佔滿 tab 順序（DP-069，高）、農曆 8px 對比 2.81:1（DP-070，中，屬原稿逐行移植故另立決策）、沒有 h1 與 `main` landmark（DP-071，低）。**剩下的是真實裝置**，agent 無法涵蓋、需要專案擁有者操作實體裝置：iOS Safari 的瀏海／home indicator safe area 與加到主畫面後的外觀（含 DP-019 圖示）、Android Chrome 的安裝橫幅與 maskable 裁切、週檢視在真實觸控下的拖曳手感、VoiceOver／TalkBack 走訪，以及外接鍵盤。清單見報告 §4；完成前本任務不結案。
   > **2026-08-22 第二輪（真機）已進行，報告見 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)，但仍未結案。** 開工前先把 staging 從 `3f404d03` 重新部署到當時的 `main`（`f7dd158`），並以線上 bundle 的字串比對確認新版真的上線，才開始測。**裝置只有 iPhone 15 Pro Max**，由專案擁有者實機操作。**通過四項**（全部是第一輪量不到的）：動態島不遮住內容、home indicator 不壓住底部分頁列、加到主畫面的圖示外觀（**擁有者目視確認，無截圖佐證**，已在報告註明）、standalone 啟動無 Safari 網址列。**開出六項**：DP-074（畫布底色寫死 `#f7f3ff` 不隨主題變）、DP-075（快速新增不吃中文數字時間，**屬忠實移植故為產品決策**）、DP-076（只給時間時標題為空且儲存靜默失效，**屬偏離原稿**）、DP-077（週檢視拖曳在真機觸控無即時回饋，資料正確）、DP-078（橫向沒有版面）、DP-079（轉回直向殘留放大）。**2026-08-23 第二輪的真機複驗結果**：DP-074、DP-076、DP-078 已修正並結案，DP-079 由 DP-078 一併解決、無獨立程式修改；**DP-077 仍未修正**（真機只補到「拖曳時色塊會出現陰影」這個觀察。它證明的是**至少一次完整的 `pointermove` → `setPreview()` → render → paint** —— `beginDrag()` 只寫 ref 不觸發重繪，而 `.dragging` 由 `preview` state 導出，所以陰影不可能只由 pointerdown 造成；但它**分辨不出移動期間是否持續寫入 `top`／`height`**，因此原先要求的真機 instrumentation 不能省）；**DP-080 是 DP-074 之後觀察到的新回歸**（standalone 狀態列文字看不見）；DP-074 最可疑，但**因果待受控對照確認**，成因更未確認。**本輪未涵蓋三項，如實記為未測**：Android Chrome（擁有者無此裝置）、螢幕閱讀器 VoiceOver／TalkBack（擁有者決定延後，因此 DP-069 與 DP-071 這兩個專為螢幕閱讀器做的修正**至今仍只在模擬環境驗過**）、實體鍵盤（無裝置）。這三項補齊前 DP-032 維持 In Progress。
@@ -315,6 +319,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-147 — 0.4.2 公告補上失敗保留輸入與錯誤畫面備份（2026-10-12）：** 專案擁有者 2026-10-07 指示「補一條精簡的使用者公告即可，先確認線上版本；若 0.4.2 仍未部署，就合併進現有六條公告，再用真正舊版驗證直向、橫向都看得到完整內容與按鈕」，由 Backlog 經 Next、In Progress 完成，從最新 main（`e82625a`）開獨立分支。直接 GET staging 確認線上仍為 0.4.1；只把 0.4.2 第六條改為「儲存或刪除失敗時保留輸入；畫面出錯可下載備份；標題上限 300 字」，仍為六條（177 → 184 code point），歷史公告逐欄不變，以 generator 同步 `version.json`，`check:release-notes` 對線上 0.4.1 通過。以 `5891034` 重建真正的 0.3.0 production App（必須在 PowerShell 建置，Git Bash 會把 `--base=/DayPop/` 轉成 Windows 路徑），0.4.0 校準 `15.0..418.5` 並重現 §5.20 全部數值；候選在 430×932／390×844／375×667／360×640／932×430 完整放得下、可關閉、資料不變、主控台 0 錯誤。專案擁有者原句在 932×430 超出 9.3px，因此採較短的合併版。lint／typecheck、1086 個單元案例＋七項 posttest 通過；公告／更新相關 e2e 18 通過／2 既有跳過（第一次跑因本機 `.env.local` 的 Supabase 主機 DNS 失敗而 8 個主控台檢查失敗，以空的 Supabase 環境變數重跑全過，見 DP-148）。版號、schema、worker 與部署不變。見 docs/deployment.md §5.23。
 
 - [x] **DP-146 — 錯誤畫面提供可複製的診斷資訊（2026-10-12）：** 專案擁有者 2026-10-07 回覆遠端錯誤回報時指示「目前自己使用可延後，先提供可複製的診斷資訊，包含版本、分頁、錯誤類型；回報內容需排除行程文字、附件、Email 與登入憑證」，由 Backlog 經 Next、In Progress 完成，從最新 main（`ebff5e3`）開獨立分支。兩個錯誤畫面加上「複製診斷資訊」，內容由純函式 `buildDiagnostics()` 決定：App 版本、出錯的畫面、錯誤類型（非識別字形式的 `Error.name` 寫成「（其他）」）與錯誤被接住的時間（UTC）；**不含錯誤訊息本文**。剪貼簿不可用或被拒時改顯示已全選、聚焦並捲入視野的唯讀文字框（實測發現底部原本被分頁列蓋住 20px 而補上）。修正前 11 個新案例全部失敗；lint／typecheck、1086 個單元案例／66 檔（預設逾時）＋七項 posttest、build／check:build 通過。`e2e/screen-error-boundary.spec.ts` 在兩種錯誤畫面實際讀回剪貼簿，確認格式正確且不含錯誤訊息（Windows 剪貼簿會把換行轉成 `\r\n`，讀回時統一）；mobile／desktop 6／6 通過，完整 e2e 由 CI 執行。375×667 目視成功與手動複製兩種狀態，無水平溢出。沒有資料離開裝置，CSP、隱私說明、資料邊界、schema、Auth、公告、版號與部署不變；遠端監控仍屬 DP-034。細節見 ADR §7。
 

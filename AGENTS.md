@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.4.2 公告補上保留輸入與錯誤畫面備份（DP-147，2026-10-12）：** 直接讀取 staging 確認線上仍是 0.4.1，只把未部署 0.4.2 的第六條改為「儲存或刪除失敗時保留輸入；畫面出錯可下載備份；標題上限 300 字」，仍為六條、184 個 code point，歷史公告逐欄不變，`check:release-notes` 對線上 0.4.1 通過。以 `5891034` 重建的真正 0.3.0 production App（不可捲動的更新對話框）先用 0.4.0 校準並重現上次全部數值，候選在 430×932／390×844／375×667／360×640／932×430 都完整放得下；專案擁有者原句在 932×430 會超出 9.3px，所以採較短的合併版。**舊版必須在 PowerShell 建置**，Git Bash 會把 `--base=/DayPop/` 轉成 Windows 路徑。版號、schema、worker、部署不變；部署前仍需先推第 16 檔 migration（DP-138）。見 docs/deployment.md §5.23。**同日發現（DP-148）：staging bundle 指向的 Supabase 主機在公開 DNS 查不到，帳號功能可能整個不可用，需專案擁有者到後台確認；本機 e2e 遇到它時以空的 `VITE_SUPABASE_URL`／`VITE_SUPABASE_PUBLISHABLE_KEY` 環境變數執行。**
+
 - **錯誤畫面的可複製診斷資訊（DP-146，2026-10-12）：** 兩個錯誤畫面都有「複製診斷資訊」，內容由 `src/shell/diagnostics.ts` 的 `buildDiagnostics()` 產生：只有 App 版本（`__APP_VERSION__`）、出錯的畫面（分頁名稱，最外層為「啟動」）、錯誤類型（`Error.name`，非識別字形式一律寫成「（其他）」）與錯誤被接住的時間（UTC）。**不含錯誤訊息本文**，因為訊息是自由文字，可能夾帶行程標題或伺服器回覆；訊息仍只在畫面上的「錯誤訊息」裡給使用者自己看。這是專案擁有者對遠端回報的指示：目前自用可延後，先提供可複製的資訊，回報內容排除行程文字、附件、Email 與登入憑證。剪貼簿不可用或被拒時改顯示已全選、可手動複製的唯讀文字框。沒有任何資料離開裝置，CSP、隱私說明、資料邊界、schema、Auth、公告與部署都不變；遠端錯誤監控仍屬 DP-034 未完成項。
 
 - **原稿色票的文字對比（DP-140，2026-10-07）：** `themes.ts` 有七個色票值不再是原稿值，每個都在定義處註明原值：暖陽／鮮活／像素淺色的 `accentFg`（按鈕字改成深色，主色本身不動）、暖陽／極簡／商務淺色的 `muted`、鮮活淺色的 `todayFg`，都是同色相調暗到剛好達標。`src/theme/textContrast.test.ts` 保證十二組的按鈕字、`muted` 在 `bg`／`surface`／`surface2`／`todayBg` 上、今天日期都 ≥ 4.5:1，並把主色當文字與寫死 `#e4002b` 當文字列成精確的已知例外（DP-144）；`--faint` 當文字與月格行程色塊上的白字在實際畫面也不足，登記為 DP-145。復原畫面的紅色小標改用 `--fg`。這是繼 DP-070 `lunarMuted` 之後第二次偏離原稿色票，理由與數值見 ADR §3；不要把這些值「修回」原稿。
