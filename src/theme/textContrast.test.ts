@@ -16,8 +16,8 @@ import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
  * here; each says so where it is defined. `lunarContrast.test.ts` covers the
  * one earlier departure (DP-070).
  *
- * Accent-coloured text and the hard-coded danger red are **not** guaranteed,
- * and are pinned at the bottom so the list cannot grow unnoticed — DP-144 in
+ * `dangerText` clears the same four backgrounds — DP-144. Accent-coloured
+ * text is still pinned at the bottom so the list cannot grow unnoticed — DP-144 in
  * `tasks.md`. `faint` as text and white text on calendar colours are not
  * covered here at all — DP-145.
  */
@@ -74,6 +74,11 @@ function guaranteedPairs(palette: ThemePalette): [string, string, string][] {
     // The week view labels today's column (週三) in `muted` on `todayBg`.
     ['muted on todayBg', palette.muted, palette.todayBg],
     ['todayFg on todayBg', palette.todayFg, palette.todayBg],
+    ...(['bg', 'surface', 'surface2', 'todayBg'] as const).map(
+      (background): [string, string, string] => [
+        `dangerText on ${background}`, palette.dangerText, palette[background],
+      ],
+    ),
   ];
 }
 
@@ -100,9 +105,8 @@ describe('主題色票的文字對比', () => {
    * Characterisation, not a target — DP-144.
    *
    * `--accent` is also used as a *text* colour straight on the page (the sheet
-   * bar's 取消／儲存, the active tab), and delete buttons, the overdue label and
-   * the recovery screen's danger text hard-code `#e4002b`. Neither clears AA
-   * everywhere. Fixing them needs new tokens and a sweep of the stylesheets,
+   * bar's 取消／儲存, the active tab). It does not clear AA everywhere.
+   * Fixing it needs another token and a sweep of the stylesheets,
    * which DP-140 did not take on. The lists are exact so that a palette change
    * which worsens or fixes one of them fails here and gets looked at.
    */
@@ -112,25 +116,5 @@ describe('主題色票的文字對比', () => {
       .map(({ id, mode }) => `${id}.${mode}`);
 
     expect(failing).toEqual(['warm.light', 'vivid.light', 'pixel.light']);
-  });
-
-  it('pins where the hard-coded danger red falls short as text', () => {
-    const DANGER = '#e4002b';
-    const failing = cases
-      .filter(({ palette }) => contrast(DANGER, palette.surface) < REQUIRED_RATIO || contrast(DANGER, palette.bg) < REQUIRED_RATIO)
-      .map(({ id, mode }) => `${id}.${mode}`);
-
-    expect(failing).toEqual([
-      'manga.dark',
-      'minimal.dark',
-      'warm.light',
-      'warm.dark',
-      'business.light',
-      'business.dark',
-      'vivid.light',
-      'vivid.dark',
-      'pixel.light',
-      'pixel.dark',
-    ]);
   });
 });

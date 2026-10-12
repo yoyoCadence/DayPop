@@ -70,7 +70,7 @@
 
 .recovery-danger {
   background: var(--bg);
-  color: #e4002b;
+  color: var(--danger-text);
 }
 
 .recovery-danger:disabled {
@@ -97,7 +97,7 @@
   border: 1.5px solid #e4002b;
   border-radius: calc(var(--radius) - 3px);
   padding: 9px 10px;
-  color: #e4002b;
+  color: var(--danger-text);
   font-size: 12px;
   line-height: 1.6;
 }
