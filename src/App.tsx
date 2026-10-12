@@ -17,7 +17,7 @@ import { AppShell } from './shell/AppShell';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
-import type { ShellTab } from './shell/tabs';
+import { SHELL_TAB_LABELS, type ShellTab } from './shell/tabs';
 
 /**
  * Routes the four canonical tabs into the App shell.
@@ -142,6 +142,7 @@ export default function App() {
         fallback={(caught) => (
           <ScreenErrorFallback
             {...caught}
+            screen={SHELL_TAB_LABELS[tab]}
             onDownloadBackup={() => downloadJsonBackup(state.data, updater.currentVersion)}
             onReload={() => window.location.reload()}
           />

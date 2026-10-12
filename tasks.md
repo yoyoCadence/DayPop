@@ -174,6 +174,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -314,6 +315,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-146 — 錯誤畫面提供可複製的診斷資訊（2026-10-12）：** 專案擁有者 2026-10-07 回覆遠端錯誤回報時指示「目前自己使用可延後，先提供可複製的診斷資訊，包含版本、分頁、錯誤類型；回報內容需排除行程文字、附件、Email 與登入憑證」，由 Backlog 經 Next、In Progress 完成，從最新 main（`ebff5e3`）開獨立分支。兩個錯誤畫面加上「複製診斷資訊」，內容由純函式 `buildDiagnostics()` 決定：App 版本、出錯的畫面、錯誤類型（非識別字形式的 `Error.name` 寫成「（其他）」）與錯誤被接住的時間（UTC）；**不含錯誤訊息本文**。剪貼簿不可用或被拒時改顯示已全選、聚焦並捲入視野的唯讀文字框（實測發現底部原本被分頁列蓋住 20px 而補上）。修正前 11 個新案例全部失敗；lint／typecheck、1086 個單元案例／66 檔（預設逾時）＋七項 posttest、build／check:build 通過。`e2e/screen-error-boundary.spec.ts` 在兩種錯誤畫面實際讀回剪貼簿，確認格式正確且不含錯誤訊息（Windows 剪貼簿會把換行轉成 `\r\n`，讀回時統一）；mobile／desktop 6／6 通過，完整 e2e 由 CI 執行。375×667 目視成功與手動複製兩種狀態，無水平溢出。沒有資料離開裝置，CSP、隱私說明、資料邊界、schema、Auth、公告、版號與部署不變；遠端監控仍屬 DP-034。細節見 ADR §7。
 
 - [x] **DP-140 — 原稿主題 token 的文字對比（2026-10-07）：** 量測 DP-139 錯誤畫面時登記；同日專案擁有者回覆「同意小幅調色，建議現在做」（優先按鈕文字色、保留六套主題風格、復原畫面紅色小標改用 `--fg`、驗證六套主題淺／深色與實際背景），由 Backlog 經 Next、In Progress 完成，從最新 main（`fca9e81`）開獨立分支。改以色票對十二組全部重算，再於實際畫面逐段量測：調整七個色票值，主色一個都沒動 —— 暖陽／鮮活／像素淺色的 `accentFg` 由淺改深（3.73／3.12／3.64 → 4.68／6.04／4.60），暖陽／極簡／商務淺色的 `muted` 與鮮活淺色的 `todayFg` 同色相調暗到剛好達標（商務與 `muted` 在 `todayBg` 上那一組是實際畫面才找到的）；復原畫面紅框內小標改用 `--fg`，DP-139 的修飾類別移除。新增 `src/theme/textContrast.test.ts`：原稿色票下 5 組失敗、調整後全過，並把主色當文字與寫死紅色當文字列成精確的已知例外。實際畫面稽核剩下的 65 組不足全部歸入四類、沒有無法解釋的項目，登記為 DP-144（主色／紅色當文字）與 DP-145（`--faint` 當文字、月格行程色塊白字）。lint／typecheck、build／check:build 通過；單元測試整套 1075／1075 在 `--testTimeout=30000` 下通過 —— 預設 5 秒時 App／CalendarScreen／MonthView 有 10 個逾時，同時段機器上另有其他專案的測試與開發伺服器在跑，單獨重跑時間一次比一次長（72 秒 → 132 秒、轉譯時間 6 秒 → 59 秒），以 CI 為準。相關 e2e（responsive shell、canonical account UI、錯誤畫面、復原、guest CRUD）中 canonical account UI 的三個手機案例因 `page.goto` 逾時失敗，單獨重跑 6／6 通過；完整 e2e 由 CI 執行。行為、版面、schema、Auth、公告、版號與部署不變。細節見 ADR §3。
 

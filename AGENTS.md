@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **錯誤畫面的可複製診斷資訊（DP-146，2026-10-12）：** 兩個錯誤畫面都有「複製診斷資訊」，內容由 `src/shell/diagnostics.ts` 的 `buildDiagnostics()` 產生：只有 App 版本（`__APP_VERSION__`）、出錯的畫面（分頁名稱，最外層為「啟動」）、錯誤類型（`Error.name`，非識別字形式一律寫成「（其他）」）與錯誤被接住的時間（UTC）。**不含錯誤訊息本文**，因為訊息是自由文字，可能夾帶行程標題或伺服器回覆；訊息仍只在畫面上的「錯誤訊息」裡給使用者自己看。這是專案擁有者對遠端回報的指示：目前自用可延後，先提供可複製的資訊，回報內容排除行程文字、附件、Email 與登入憑證。剪貼簿不可用或被拒時改顯示已全選、可手動複製的唯讀文字框。沒有任何資料離開裝置，CSP、隱私說明、資料邊界、schema、Auth、公告與部署都不變；遠端錯誤監控仍屬 DP-034 未完成項。
+
 - **原稿色票的文字對比（DP-140，2026-10-07）：** `themes.ts` 有七個色票值不再是原稿值，每個都在定義處註明原值：暖陽／鮮活／像素淺色的 `accentFg`（按鈕字改成深色，主色本身不動）、暖陽／極簡／商務淺色的 `muted`、鮮活淺色的 `todayFg`，都是同色相調暗到剛好達標。`src/theme/textContrast.test.ts` 保證十二組的按鈕字、`muted` 在 `bg`／`surface`／`surface2`／`todayBg` 上、今天日期都 ≥ 4.5:1，並把主色當文字與寫死 `#e4002b` 當文字列成精確的已知例外（DP-144）；`--faint` 當文字與月格行程色塊上的白字在實際畫面也不足，登記為 DP-145。復原畫面的紅色小標改用 `--fg`。這是繼 DP-070 `lunarMuted` 之後第二次偏離原稿色票，理由與數值見 ADR §3；不要把這些值「修回」原稿。
 
 - **刪除日曆改為單一交易（DP-138，2026-10-07）：** 第 16 檔 migration `20261007000000_delete_calendar_rpc.sql` 建立 `delete_calendar_with_reassignment(uuid)`（SECURITY INVOKER、空 `search_path`、僅 `authenticated`）：搬移行程／待辦／貼圖、刪除日曆、最後才提升新的預設，任何錯誤整批回復。帳號端原本是四到五個獨立請求；在本機真實 Postgres 重現出**刪除預設日曆必定失敗**（先提升再刪除會違反 `calendars_one_default_per_owner_idx`，而搬移已提交），不只是非原子。`SupabaseDayPopRepository.deleteCalendar()` 改為呼叫這支 RPC 後重新 `load()`，由伺服器決定目標與是否提升；回傳 `false`（已無本人擁有的該日曆）同樣以 reload 對齊，非 boolean 拒絕。`FakeSupabase` 現在模擬該 partial unique index 並提供這支 RPC，先前就是因為沒有模擬它才一直是綠的。pgTAP 現為 6 檔 174 項，`database.types.ts` 已由本機重新產生。**這檔 migration 尚未套用到遠端：必須先由專案擁有者 push，才能部署前端**，順序與核對事項見 docs/supabase-mcp-handoff.md §0.10 與 docs/deployment.md §5.22（該處也指出第 15 檔的遠端狀態沒有記錄）。遊客端仍用 `withoutCalendar()`，不受影響。見 ADR §2。
