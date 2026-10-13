@@ -157,7 +157,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-144 — 主色與紅色「當作文字」時的對比：** 2026-10-13 依專案擁有者持續開發、開 PR 與 CI 通過後自主合併的委託，由 Next 移入。先另開 PR 新增 `dangerText`／`--danger-text`，替換刪除、逾期與復原／記憶體警告文字；再另開 PR 處理文字用主色 token。兩者均須在六套主題 × 淺／深色的 `bg`／`surface`／`surface2`／`todayBg` 上達 4.5:1，保留原稿主色、危險色背景與已保存的使用者偏好。原先問題與核准範圍見 2026-10-12 PR #136 及 ADR §3。
 
 
 
@@ -317,6 +316,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-144 — 危險色與主色文字的對比：** 依 2026-10-12 核准與 2026-10-13 持續開發／CI 通過後自主合併委託，拆兩個 PR 完成。`dangerText`／`--danger-text` 的 PR #137 已通過完整 CI 並合併；第二個 PR 新增 `accentText`／`--accent-text`，接回表單文字按鈕、目前分頁、主題勾選、列表今天／完成符號、月格週末／選取日／月份與節日。十二組兩種文字 token 在四種主要背景均 ≥ 4.5:1，節日再驗證交錯背景合成；原稿主色、底色、邊框、焦點與日曆裝飾色條保留。兩個已知例外清單改為保證，schema／Auth／公告／版號／部署未變。主色 PR 本機 lint、typecheck、1,095 個單元案例、七項 posttest、build／check:build 通過；MCP 實際量到漫畫淺／深色與暖陽深色的刪除文字，手機 390×844 月曆及深色編輯日曆截圖正常。詳見 ADR §3。
 
 - [x] **DP-148 — staging 的 Supabase 專案主機在公開 DNS 查不到（2026-10-12 已解決）：** **專案擁有者確認原因是專案閒置太久被 Supabase 暫停，已於同日恢復**；恢復後 8.8.8.8 與 1.1.1.1 都能解析，`/auth/v1/health` 有回應（未帶金鑰時 401，代表服務在線）。以下為發現當時的記錄： 2026-10-12 做 DP-147 時發現。本機開發伺服器連 `.env.local` 設定的 Supabase 主機出現 `net::ERR_NAME_NOT_RESOLVED`；**staging 線上 bundle 指向的是同一個主機**。本機路由器、Google（8.8.8.8）與 Cloudflare（1.1.1.1）三個 DNS 都回覆「名稱不存在」，`supabase.co` 與 `supabase.com` 本身可解析，對該主機的 HTTPS 請求連不上。同一週稍早（DP-139～DP-146 的 e2e）同樣的設定沒有出現這個錯誤，所以是這幾天才發生的。**可能的原因**（沒有驗證）：專案被刪除、專案代碼改變，或專案被暫停後 DNS 被移除。**若屬實，staging 的登入、註冊與帳號同步目前都無法使用**（遊客模式不受影響），DP-138 的第 16 檔 migration 也無法推送。**請到 Supabase 後台確認專案狀態**：若只是暫停，恢復即可；若專案已不存在或換了代碼，需要更新 GitHub repository variables 與 `.env.local`，並依 docs/supabase-mcp-handoff.md 重建 schema（`db push` 會依序套用全部 16 檔）。agent 沒有改任何設定。
 
