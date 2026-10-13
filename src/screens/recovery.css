@@ -88,7 +88,7 @@
 
 .recovery-hint {
   margin-top: 6px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
 }
 

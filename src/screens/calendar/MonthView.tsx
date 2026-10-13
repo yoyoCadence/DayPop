@@ -25,7 +25,8 @@ import {
   type DisplaySegmentWindow,
 } from '../../domain/displaySegments';
 import { eventStartTimeInZone } from '../../domain/eventTime';
-import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
+import { calendarColor } from '../../domain/calendars';
+import { calendarTextColor } from '../../theme/calendarTextColor';
 import { lunarCell } from '../../domain/lunar';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
@@ -456,7 +457,7 @@ export function MonthView({
                       key={`${entry.key}:${entry.isContinuation ? 'cont' : 'start'}`}
                       style={{
                         background: calendarColor(calendars, entry.event.calendarId),
-                        color: CALENDAR_TEXT_COLOR,
+                        color: calendarTextColor(calendarColor(calendars, entry.event.calendarId)),
                       }}
                     >
                       {entry.time ? `${entry.time} ${entry.event.title}` : entry.event.title}

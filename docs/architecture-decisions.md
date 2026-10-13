@@ -321,6 +321,12 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 這也取代 DP-070 為節日保留不足對比的舊決策：節日仍用主色系且加粗，改為文字專用值。`lunarContrast.test.ts` 同時計算普通、交錯月格（實際透明色合成）、選取與今天背景，十二組節日都達標；`MonthView.test.tsx` 確認節日與一般農曆接到各自 token。主題／模式保存、domain 資料、schema、Auth 與部署沿用原契約；本機 lint、typecheck、1,095 個單元案例、七項 posttest、build／check:build 通過。
 
+### 決策（DP-145，2026-10-13）— 小字與日曆色塊的文字對比
+
+依已核准建議，說明、空白狀態、未選取分頁、時刻軌、位置、副標題、計數與已完成待辦改用已達標的 `muted`，保持字級、版面與刪除線。`faint` 原值保留給裝飾色條／背景與停用的復原按鈕；待辦完成勾選原本的白字改用既有 `accentFg`，讓暖陽／鮮活／像素淺色也可讀。
+
+`calendarTextColor()` 放在 theme 顯示層，以 WCAG 相對亮度比較黑字與白字，取對比較高者；任一不透明 RGB 底色至少有一者達 4.5:1。月格、週格（含全天列）及行程表單的日曆選取標籤共用，十個原稿色盤、預設 `#f06c5c`、缺失日曆的灰色及其他合法六位十六進位自選色均適用。只計算畫面文字色，不寫回日曆，也不動色盤與使用者資料；普通、全天、重複與續日的 domain identity 保持原契約。`textContrast.test.ts` 驗證色盤、預設、黑／白、灰階切換邊界與大小寫自選色，共 17 項；本機 lint、typecheck、1,112 個單元案例、七項 posttest、build／check:build 通過。
+
 ## 4. App 內浮動寵物
 
 寵物是 App viewport 內的 floating companion，不是作業系統桌面程式。現有 React `<aside class="pet-helper">` 只是正常文件流中的摘要佔位；未來 DP-040 才會建立浮動層、七個動畫狀態與拖曳。

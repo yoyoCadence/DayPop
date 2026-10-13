@@ -38,13 +38,6 @@ export const CALENDAR_PALETTE = [
   '#64748b',
 ] as const;
 
-/**
- * Foreground for text drawn on a calendar colour. The原檔 stores a per-calendar
- * `text` and sets every one of them to white, so white is the canonical value
- * rather than a simplification.
- */
-export const CALENDAR_TEXT_COLOR = '#ffffff';
-
 /** The原檔 offers the next palette entry when creating a calendar. */
 export function nextCalendarColor(existingCount: number): string {
   return CALENDAR_PALETTE[existingCount % CALENDAR_PALETTE.length]!;

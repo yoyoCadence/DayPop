@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
+import { CALENDAR_PALETTE } from '../domain/calendars';
+import { calendarTextColor } from './calendarTextColor';
 
 /**
  * Text that every screen draws from the palette must clear WCAG AA — DP-140.
@@ -17,8 +19,8 @@ import { THEMES, THEME_IDS, type ThemeMode, type ThemePalette } from './themes';
  * one earlier departure (DP-070).
  *
  * `dangerText` and `accentText` clear the same four backgrounds — DP-144.
- * `faint` as text and white text on calendar colours are not
- * covered here at all — DP-145.
+ * DP-145 moves explanatory text off `faint` to `muted`, and chooses black or
+ * white on user-selected calendar colours. Both are covered here.
  */
 
 const REQUIRED_RATIO = 4.5;
@@ -87,6 +89,15 @@ function guaranteedPairs(palette: ThemePalette): [string, string, string][] {
 }
 
 describe('主題色票的文字對比', () => {
+  it.each([...CALENDAR_PALETTE, '#f06c5c', '#888888', '#000000', '#ffffff', '#757575', '#767676', '#ABCDEF'])(
+    'calendar text clears AA on %s without changing its background', (background) => {
+      const foreground = calendarTextColor(background);
+      expect(contrast(foreground, background)).toBeGreaterThanOrEqual(REQUIRED_RATIO);
+      expect(contrast(foreground, background)).toBeGreaterThanOrEqual(
+        contrast(foreground === '#000000' ? '#ffffff' : '#000000', background),
+      );
+    },
+  );
   it.each(cases)('$id $mode: button labels, secondary text and today clear AA', ({ palette }) => {
     // The raw ratio decides; rounding is for the failure message only.
     const failures = guaranteedPairs(palette)

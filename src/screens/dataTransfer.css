@@ -23,7 +23,7 @@
 
 .data-transfer-help {
   margin: 0 0 16px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -161,7 +161,7 @@
 }
 
 .data-import-row div span {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
 }
 
