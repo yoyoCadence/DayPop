@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.4.2 已部署、第 15／16 檔已套用（DP-149，2026-10-13 紀錄）：** 2026-10-12 已依圖片交接以正式 CLI dry-run／push 將遠端由 14 檔升為 16 檔，再由 `deploy-staging` 成功部署 `main` 的 `e7c95ed`。線上 0.4.2 六條公告已驗收，**0.4.2 也已是不可回寫的歷史公告**；下方「尚未部署」「第 16 檔尚未套用」均為當時歷史，不應再次執行。公開 10 表 RLS、三支 RPC 權限與 39 項完整 rollback pgTAP 已驗證，advisor 僅既有 Auth 洩漏密碼保護警告。PR #136 於 2026-10-13 依明確授權合併。完整 workflow／commit 與真機／實帳號限制見 `docs/deployment-verification-2026-10-13.md`；DP-034 未結案，DP-144／145 後續修改未包含在這次部署。專案擁有者同日授權持續開發、各自開 PR，完成驗證與 CI 通過後自主合併；需要新產品決策時仍先釐清。
+
 - **0.4.2 公告補上保留輸入與錯誤畫面備份（DP-147，2026-10-12）：** 直接讀取 staging 確認線上仍是 0.4.1，只把未部署 0.4.2 的第六條改為「儲存或刪除失敗時保留輸入；畫面出錯可下載備份；標題上限 300 字」，仍為六條、184 個 code point，歷史公告逐欄不變，`check:release-notes` 對線上 0.4.1 通過。以 `5891034` 重建的真正 0.3.0 production App（不可捲動的更新對話框）先用 0.4.0 校準並重現上次全部數值，候選在 430×932／390×844／375×667／360×640／932×430 都完整放得下；專案擁有者原句在 932×430 會超出 9.3px，所以採較短的合併版。**舊版必須在 PowerShell 建置**，Git Bash 會把 `--base=/DayPop/` 轉成 Windows 路徑。版號、schema、worker、部署不變；部署前仍需先推第 16 檔 migration（DP-138）。見 docs/deployment.md §5.23。**同日發現（DP-148）：staging bundle 指向的 Supabase 主機在公開 DNS 查不到，帳號功能可能整個不可用，需專案擁有者到後台確認；本機 e2e 遇到它時以空的 `VITE_SUPABASE_URL`／`VITE_SUPABASE_PUBLISHABLE_KEY` 環境變數執行。**
 
 - **錯誤畫面的可複製診斷資訊（DP-146，2026-10-12）：** 兩個錯誤畫面都有「複製診斷資訊」，內容由 `src/shell/diagnostics.ts` 的 `buildDiagnostics()` 產生：只有 App 版本（`__APP_VERSION__`）、出錯的畫面（分頁名稱，最外層為「啟動」）、錯誤類型（`Error.name`，非識別字形式一律寫成「（其他）」）與錯誤被接住的時間（UTC）。**不含錯誤訊息本文**，因為訊息是自由文字，可能夾帶行程標題或伺服器回覆；訊息仍只在畫面上的「錯誤訊息」裡給使用者自己看。這是專案擁有者對遠端回報的指示：目前自用可延後，先提供可複製的資訊，回報內容排除行程文字、附件、Email 與登入憑證。剪貼簿不可用或被拒時改顯示已全選、可手動複製的唯讀文字框。沒有任何資料離開裝置，CSP、隱私說明、資料邊界、schema、Auth、公告與部署都不變；遠端錯誤監控仍屬 DP-034 未完成項。
