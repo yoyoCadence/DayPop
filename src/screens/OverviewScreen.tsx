@@ -251,7 +251,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
                           {item.kind === 'todo' && (
                             <span
                               className="overview-item-right"
-                              style={{ color: item.done ? 'var(--accent)' : 'var(--faint)' }}
+                              style={{ color: item.done ? 'var(--accent-text)' : 'var(--faint)' }}
                             >
                               {item.done ? '✓' : '○'}
                             </span>

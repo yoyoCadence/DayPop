@@ -51,9 +51,8 @@ export interface ThemePalette {
    * against every background a month cell can have (plain, zebra, selected,
    * today) — see `lunarContrast.test.ts`.
    *
-   * Festival days stay on `accent` by product decision and are **not** covered
-   * by that guarantee; 7 of the 12 theme/mode combinations fall below 4.5:1
-   * there. The exception is pinned in the same test file.
+   * Festival days use `accentText` (DP-144), whose contrast is covered in
+   * the same test file against all four cell backgrounds.
    */
   lunarMuted: string;
   /**
@@ -67,6 +66,13 @@ export interface ThemePalette {
   border: string;
   line: string;
   accent: string;
+  /**
+   * Accent used as text on bg/surface/surface2/todayBg — DP-144. Unlike the
+   * original accent (still used for fills and outlines), this clears 4.5:1.
+   * Each value keeps the original hue, mixing toward black/white only as far
+   * as necessary; five theme/mode combinations already pass unchanged.
+   */
+  accentText: string;
   /**
    * Text drawn on `accent` — the label of every primary button. Clears 4.5:1
    * in every theme and mode — DP-140, pinned by `textContrast.test.ts`.
@@ -147,6 +153,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#111111',
       line: '#111111',
       accent: '#e4002b',
+      accentText: '#cc0026',
       accentFg: '#ffffff',
       todayBg: '#ffe08a',
       todayFg: '#111111',
@@ -167,6 +174,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#ffffff',
       line: '#ffffff',
       accent: '#ff2d4b',
+      accentText: '#ff5f76',
       accentFg: '#111111',
       todayBg: '#3a2f00',
       todayFg: '#ffe08a',
@@ -201,6 +209,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#e4e4e7',
       line: '#eeeef0',
       accent: '#18181b',
+      accentText: '#18181b',
       accentFg: '#ffffff',
       todayBg: '#eeeef0',
       todayFg: '#18181b',
@@ -221,6 +230,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#282828',
       line: '#1f1f1f',
       accent: '#fafafa',
+      accentText: '#fafafa',
       accentFg: '#0a0a0a',
       todayBg: '#242424',
       todayFg: '#fafafa',
@@ -255,6 +265,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#e2d3bd',
       line: '#ece0cd',
       accent: '#c2683f',
+      accentText: '#975131',
       accentFg: '#1a130d', // 原檔 #fff8f0 — DP-140
       todayBg: '#f3ddc4',
       todayFg: '#8a3f1c',
@@ -275,6 +286,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#463726',
       line: '#3a2e22',
       accent: '#e0895c',
+      accentText: '#e29167',
       accentFg: '#241d17',
       todayBg: '#4a3820',
       todayFg: '#f0c79a',
@@ -309,6 +321,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#dbe2ec',
       line: '#e9eef5',
       accent: '#1e5fd6',
+      accentText: '#1e5fd6',
       accentFg: '#ffffff',
       todayBg: '#dde9ff',
       todayFg: '#1747a8',
@@ -329,6 +342,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#25384f',
       line: '#1e2f47',
       accent: '#4b8bff',
+      accentText: '#5b95ff',
       accentFg: '#08122a',
       todayBg: '#183056',
       todayFg: '#a9cbff',
@@ -363,6 +377,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#141414',
       line: '#e3e1d7',
       accent: '#ff5a1f',
+      accentText: '#b64016',
       accentFg: '#1a0f08', // 原檔 #ffffff — DP-140
       todayBg: '#ffe1d1',
       todayFg: '#ba3a08', // 原檔 #c23c08 — DP-140
@@ -383,6 +398,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#372b45',
       line: '#2b2135',
       accent: '#ff6a2b',
+      accentText: '#ff6a2b',
       accentFg: '#1a0f08',
       todayBg: '#3a2214',
       todayFg: '#ffb083',
@@ -417,6 +433,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#2b2b22',
       line: '#c3bf9e',
       accent: '#2f8f3e',
+      accentText: '#246c2f',
       accentFg: '#0f120e', // 原檔 #f4f2df — DP-140
       todayBg: '#cfe6b8',
       todayFg: '#1f5c26',
@@ -437,6 +454,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       border: '#cfeccb',
       line: '#25301f',
       accent: '#46d160',
+      accentText: '#46d160',
       accentFg: '#0f120e',
       todayBg: '#1c3a1f',
       todayFg: '#8ef58a',
@@ -487,6 +505,7 @@ export function themeCssVariables(
     '--border': palette.border,
     '--line': palette.line,
     '--accent': palette.accent,
+    '--accent-text': palette.accentText,
     '--accent-fg': palette.accentFg,
     '--today-bg': palette.todayBg,
     '--today-fg': palette.todayFg,

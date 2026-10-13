@@ -113,7 +113,7 @@
 }
 
 .dp-theme-name span {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 400;
 }
 

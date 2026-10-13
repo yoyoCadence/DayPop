@@ -315,6 +315,12 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 `textContrast.test.ts` 將原本紅色文字的精確已知例外改成十二組 × 四種背景的保證；主色文字仍維持已知例外，下一個 PR 處理，不因這一部分完成而結案 DP-144。
 
+### 決策（DP-144，2026-10-13）— 主色當文字時使用 `accentText`
+
+第二個 PR 新增 `accentText`／`--accent-text`：表單文字按鈕、目前分頁、主題勾選、列表今天日期／完成符號、月格週末／選取日／月份與節日文字使用它。`accent` 保留原稿值，仍供按鈕底色、邊框、焦點框與行程裝飾色條使用。新 token 由各主題原主色向黑／白混合到 `bg`／`surface`／`surface2`／`todayBg` 均達 4.5:1；十二組中五組已達標，直接保留原值，其餘七組調整文字色。
+
+這也取代 DP-070 為節日保留不足對比的舊決策：節日仍用主色系且加粗，改為文字專用值。`lunarContrast.test.ts` 同時計算普通、交錯月格（實際透明色合成）、選取與今天背景，十二組節日都達標；`MonthView.test.tsx` 確認節日與一般農曆接到各自 token。主題／模式保存、domain 資料、schema、Auth 與部署沿用原契約；本機 lint、typecheck、1,095 個單元案例、七項 posttest、build／check:build 通過。
+
 ## 4. App 內浮動寵物
 
 寵物是 App viewport 內的 floating companion，不是作業系統桌面程式。現有 React `<aside class="pet-helper">` 只是正常文件流中的摘要佔位；未來 DP-040 才會建立浮動層、七個動畫狀態與拖曳。

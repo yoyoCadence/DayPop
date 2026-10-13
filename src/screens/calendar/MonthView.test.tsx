@@ -326,10 +326,10 @@ describe('MonthView 農曆顏色接線', () => {
 
     expect(festival).toBeDefined();
     expect(ordinary).toBeDefined();
-    expect(lunarStyleOf(festival!)).toContain('var(--accent)');
+    expect(lunarStyleOf(festival!)).toContain('var(--accent-text)');
     expect(lunarStyleOf(festival!)).not.toContain('var(--lunar-muted)');
     expect(lunarStyleOf(ordinary!)).toContain('var(--lunar-muted)');
-    expect(lunarStyleOf(ordinary!)).not.toContain('var(--accent)');
+    expect(lunarStyleOf(ordinary!)).not.toContain('var(--accent-text)');
   });
 
   it('never falls back to the shared --faint the原檔 used', () => {
