@@ -72,6 +72,25 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-13 專案審查委託（任務於 2026-10-14 登記）**：一個 agent 完成全專案審查後額度用盡，專案擁有者要求另一個 agent 接手複核報告、把相關工作整理進本檔，之後由他接著開發。複核結果與原報告全文見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。**這次只登記任務**，沒有修改產品程式碼、依賴、migration、版號、公告或部署。已重現、不需要產品決策的修正（DP-152–DP-157）依建議順序放在這裡；需要設計或產品決策的（DP-158–DP-175）放在 Backlog，各自附建議。順序是 agent 的建議，專案擁有者可以直接調整。更下方「Next 目前是空的」是 2026-08 的歷史敘述。
+
+- [ ] **DP-152 — 帳號資料載入補上完整分頁（審查 R1，P1）：** `SupabaseDayPopRepository.load()`（[`supabaseRepository.ts:134-169`](src/data/supabaseRepository.ts#L134-L169)）對六個集合各只發一次 `select('*')`，沒有 range、排序或筆數核對，而 `supabase/config.toml:18` 是 `max_rows = 1000`。匯入上限（`dataTransfer.ts:39`）允許 10,000 筆行程、20,000 筆待辦、50,000 筆例外，一次 JSON 還原就能超過。**已重現**：1,001 筆行程只載入 1,000 筆，`buildJsonBackup()` 也只有 1,000 筆，沒有任何錯誤，events 只發一個不帶 Range 的請求。畫面、snapshot、帳號快取與 JSON／ICS 匯出都會缺列。`load()` 本身不刪伺服器資料，但截斷的備份再以「取代資料」匯回就會真的刪掉缺的列（推論，未重現）。
+  - **要做**：六個集合查詢共用一套完整載入。以主鍵做穩定且唯一的排序，分頁到確定沒有下一頁為止；任一頁失敗就整次失敗，不得 commit 部分 snapshot，也不得覆寫最後確認的帳號快取。`FakeSupabase` 要能模擬列數上限與頁間失敗，否則測試會像 DP-138 之前那樣永遠是綠的。
+  - **兩個實作陷阱**：(1) 不能假設伺服器上限等於自己要的頁大小。要 1,000 列而上限是 500 時，回來的 500 列看起來像「不足一頁」；結束條件要用空頁或 exact count。(2) `load()` 內的註解說明 table 名稱必須維持 literal，否則 generated row types 會退化成無法使用的 union。
+  - **驗收**：1,001 與 2,001 筆；最後一頁剛好滿頁；第二頁失敗時 snapshot 與快取維持最後確認內容，並走既有的讀取失敗狀態；跨頁的父子待辦與例外；reload、帳號快取、JSON、ICS 四處筆數一致。一般帳號（每個集合不到一頁）啟動時的請求數要記錄下來。
+  - **不在範圍**：只調高 `max_rows`（遠端設定不在 repo 裡，任何上限也都會再被超過）；讀取途中遠端被修改的一致性，MVP 是單裝置假設，把它明寫成已知限制記入 ADR §2。預期不需要 migration、RLS 或 Auth 變更。遠端專案實際的 Max rows 沒有量測。資料邊界屬高風險區，獨立 PR。
+- [ ] **DP-153 — 更新資訊在讀取邊界做格式驗證（審查 R2，P2）：** `useAppUpdate.runCheck()`（[`useAppUpdate.ts:131`](src/pwa/useAppUpdate.ts#L131)）把 `response.json()` 直接斷言成 `ReleaseInfo`；`UpdateDialog.tsx:20`、`ReleaseNoticeDialog.tsx:34`／`:38` 與 `SettingsScaffoldScreen.tsx:600` 三處繪製直接信任 `changes`。**已重現兩條路徑**：較新版本（更新提示）與同一版本（版本公告，啟動時自動觸發），在 `changes` 缺漏、為字串或陣列含物件時都在繪製時丟錯。兩個對話框在分頁 `ErrorBoundary` 之外，所以整個 App 被 `RootErrorFallback` 取代。觸發條件很窄（合法 JSON、`version` 為字串且不比目前版本舊、`changes` 不是字串陣列），沒有發現線上 `version.json` 已損壞。
+  - **要做**：在 fetch 邊界以 runtime 驗證取代型別斷言。`version`、`title`、`releasedAt` 為字串，`changes` 為字串陣列，條數與長度有合理上限。不合格就沿既有的檢查失敗路徑（自動檢查安靜、手動檢查顯示失敗結果），不要在繪製時用空陣列掩蓋。
+  - **驗收**：缺欄位、`null`、非陣列、陣列含物件，各自在同版本與較新版本、手動與自動檢查下，App 都維持可用；合法更新、稍後提醒、`daypop.release-notes-seen` 與歷史公告的行為不變。
+  - **不在範圍**：`release-notes.json`、`version.json`、`sw.js`、generator、版號與公告。
+- [ ] **DP-154 — 共用的對話框焦點限制，先套用日曆對話框（審查 R3，P2）：** **已重現**（Chromium 390×844）：設定 → 新增日曆 → 輸入名稱 → Shift+Tab 兩次 → Enter，App 切到綜覽，對話框與草稿都消失。`aria-modal="true"` 只是宣告，擋不住鍵盤焦點。複核另外量了七個對話框，Tab 或 Shift+Tab 都能到達背景控制項（表在審查文件 §2.3）；只有 `ScopeDialog` 自己做了按鈕間的循環。
+  - **要做**：建立一套共用的焦點管理，並套用到 `CalendarEditDialog`。內容是：Tab 與 Shift+Tab 留在最上層對話框、開啟時把焦點放進去、關閉時還給觸發的控制項、背景不能由鍵盤操作。DP-141 的等待規則不變，包括按鈕停用後焦點落到 `body` 時的還原。
+  - **驗收**：真實瀏覽器 e2e 重做上面的步驟，修正前失敗；Tab 與 Shift+Tab 各走完一圈不離開對話框；取消與 Escape 後焦點回到「＋ 新增日曆」或該日曆的編輯鈕；保存失敗與等待中的草稿契約（DP-141／142）不變。jsdom 不模擬 Tab 順序，不能只靠單元測試。
+  - **決策點與建議**：背景用 `inert` 還是只攔截 keydown。建議 `inert`，它連滑鼠與螢幕閱讀器一起擋；但對話框是 portal 進 `.dp-viewport` 的同層子節點，`inert` 要設在兄弟節點而不是 viewport 上。原稿沒有焦點限制，這是可及性擴充，比照 DP-141 記入 ADR §2。
+- [ ] **DP-155 — 焦點限制套用到日曆的 sheet（依賴 DP-154）：** `EventSheet`、`DayDetailSheet` 與疊在上面的 `ScopeDialog`。複核量到：`EventSheet` Shift+Tab 第 5 次到背景「設定」分頁；`DayDetailSheet` 開啟後焦點仍在觸發它的日期格、沒有進入 sheet，第一次 Tab 就到背景的 FAB。要保留的既有契約：`ScopeDialog` 的 Escape 只關自己、不關 `EventSheet`；日詳情的 inline 編輯（改名、換日、優先度）Escape 不關外層 sheet；DP-132／133／134／137 的等待鎖、草稿與焦點還原。驗收同 DP-154，另加巢狀對話框的 Escape 與焦點歸還順序。
+- [ ] **DP-156 — 焦點限制套用到帳號、更新與匯入對話框（依賴 DP-154）：** `AuthDialog`、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`。複核量到：`UpdateDialog` 開啟時焦點在 `body`，沒有初始焦點；`AuthDialog` 開啟後焦點仍在觸發它的「登入／註冊」鈕；`ReleaseNoticeDialog` Shift+Tab 一次就到分頁列；`DataImportDialog` Tab 兩次到背景的主題卡片。要注意三件事：`UpdateDialog` 在 `preparing` 時兩顆按鈕都停用，要決定那段時間焦點放哪；`update-dialog.spec.ts` 以畫面座標點擊驗證對話框可捲動（DP-089），不能被改壞；註冊成功後的終態（DP-023）沒有表單，也要有可聚焦的出口。
+- [ ] **DP-157 — 更新開發依賴 `source-map-js` 到 1.2.2：** `npm audit` 回報 1 個 high（[GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)，影響 1.0.0–1.2.1）。它只經由 `vite` → `postcss` 與 `jsdom` → `css-tree` 進來，`npm audit --omit=dev` 是 0，不是已證明的 production 漏洞。只更新 lockfile 裡這一個套件，不跑會連帶升級其他套件的 `npm audit fix --force`；之後跑完整品質檢查。比照 DP-087。與其他修正沒有依賴，可以隨時插隊。
+
 
 
 
@@ -277,6 +296,14 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-04 部署證據補正（DP-124）**：上述「尚未在 runner 上實際跑過」是加入當下的歷史。2026-10-03 部署 0.4.1 的 [run 37132293407](https://github.com/yoyoCadence/DayPop/actions/runs/37132293407)，head `d713b52b48765bb1ba6db89fb065388e134ed5e5`，Build for Pages job `111230422331` 的「Refuse to rewrite deployed release notes」成功。log 在 `2026-10-03T15:15:14.9411837Z` 明確回報 `Release notes check passed: 0.4.1 replaces 0.4.0, whose notes are unchanged.`；整個部署成功。仍只比對當時線上的版本，DP-034 其他驗收與父任務不因此結案。
   > **2026-10-07 畫面錯誤子項進度**：DP-139 補上本機的 error boundary：單一分頁畫面出錯時只換掉該分頁、仍可到設定匯出備份，App 無法啟動時顯示說明與重新載入，見同份交接 §5.21。**「錯誤監控」的遠端回報仍未做**（沒有任何錯誤離開裝置，需先決定服務、CSP 與隱私說明）；render 以外的錯誤、production build 與真機的錯誤注入、資料刪除、真機／staging 等其餘驗收也未完成，父任務不結案。
 
+> **2026-10-13 審查登記（DP-158–DP-162）**：以下五項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。它們都不是已確認的故障，是測試與量測上的缺口。
+
+- [ ] **DP-158 — 真實 `AuthProvider` 的整合測試：** 帳號 e2e 用 `FakeSupabase` 並在 `e2eAuthMain.tsx:99` 換掉 `AuthContext`；單元測試也都直接提供 context，沒有任何測試檔引用 `AuthProvider`。補上 initial session、逾時與失敗、token refresh、重設密碼（recovery）與使用者切換。另外確認啟動時 session 長時間沒有回應的畫面與出路；審查沒有把它列為已確認故障，只是沒測過。以 stub 的 auth client 或攔截 HTTP 進行，不使用 secret 或真實帳號。真實 Email／Google 流程在 2026-08-22 由專案擁有者手動驗過（DP-023），這一項補的是自動化回歸。
+- [ ] **DP-159 — 加一個 WebKit smoke 專案：** `playwright.config.ts` 只有 `mobile-chrome` 與 `desktop-chrome`，而主要目標裝置是 iPhone；DP-077 是 Chromium 重現不了的類型。**決策點**：CI 時間。**建議**：先加一個只跑少數 smoke（開啟、建立行程、開關 sheet、設定頁）的 WebKit 專案，不整套重跑。Linux 上的 WebKit 不等於 iOS Safari，真機仍屬 DP-032／DP-077。
+- [ ] **DP-160 — 量測月曆長時間捲動：** `MonthView` 初始 53 週、每到邊界加 12 週（[`MonthView.tsx:46-48`](src/screens/calendar/MonthView.tsx#L46-L48)），只增不減。在大量重複事件加上長時間捲動下量 DOM 節點數、occurrence 展開耗時與記憶體，再決定要不要做有界 buffer 或 virtualization。這是靜態風險，沒有證明目前會卡。任何改動都要保住 DP-069 的 roving tabindex 與捲動補償。
+- [ ] **DP-161 — 評估重模組的載入時機：** 審查記錄主要 chunk 約 669 kB raw（複核沒有重新量），Vite 的 500 kB 警告仍在，總量在 DP-119 的 budget 內。評估備份、ICS、重複事件展開等只在特定操作才用到的模組改成動態載入。先量測再決定；不得為了拆分破壞 domain／repository 邊界，service worker 的 app shell 快取與已快取離線啟動（DP-099）要一起驗。
+- [ ] **DP-162 — 評估自動化可及性與視覺基線：** 目前沒有 coverage gate、axe gate 或截圖比對。**建議**：先加 axe smoke（四個分頁與主要 sheet），截圖基線延後。六套主題 × 淺／深 × 各檢視的成本高，字型繪製也容易造成不穩定的差異。axe 抓不到焦點逃逸，不能取代 DP-154 的 e2e。
+
 ### 原型假功能與待補能力
 
 > 原稿裡有畫面但沒有真正能力的部分。搬移時一律停用並保留版面位置，不得以假的成功狀態充數（規則見 `docs/claude-design-source-of-truth.md` 與 `docs/prototype-behavior-baseline.md`）。這裡是每一項的歸屬，避免停用之後被遺忘。
@@ -293,10 +320,27 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-054 — 補回天氣欄位：** 先定案資料來源、是否需要位置權限、離線與失敗時的顯示，再接回列表檢視每日標題右側與日詳情。在來源定案前維持停用；不得沿用原稿依日期取固定字串的假資料。
 
+### UI／視覺調整（2026-10-13 審查）
+
+> 審查報告記錄專案擁有者選的方向是「保留漫畫品牌、允許改版」。原稿本身就是密集的月格與週欄，下面幾項**不是搬移漂移**。會動到 canonical UI 的都要先有設計稿，在 ADR §3 記下偏離原稿的理由，並以原稿與十二組主題（六套 × 淺／深）驗收。DP-070／140／144／145 的對比修正不得改回原稿色值。來源見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。
+
+- [ ] **DP-163 — 設定頁的使用者文案移除工程用語：** `SettingsScaffoldScreen.tsx:434` 顯示「尚未提供（DP-040）：…」，`:612-625` 的「尚未搬移」區塊列出 DP-014／040／041／042／043、「原稿」「搬移」與「開發／示範資料控制」。這個清單是 DP-014 刻意留的，規則是不以假的成功狀態充數，所以要做的是改寫，不是把能力說明刪掉。**建議**：保留「這些功能還沒有」的誠實說明，改成使用者看得懂的話並拿掉任務編號；搬移進度留在本檔。斷言這些字串的測試一起改。只改文案不需要設計稿。**複核補充**：`:431` 寫寵物「待在日曆右下角」，但 `.cal-pet` 是 `left: 14px`，審查截圖裡也在左下角；一併更正。
+- [ ] **DP-164 — 設定頁資訊層級重整（設計決策，依賴 DP-163）：** 審查建議依「外觀、夥伴、日曆、帳號與資料」分組。目前的順序一部分沿原稿（`:317-337` 的桌寵與一般），一部分是 DayPop 自有的區塊（帳號、資料備份、隱私、版本）。先出設計稿再動；偏離原稿的順序記入 ADR §3。`DataPrivacyCard` 的內容與 `docs/data-and-privacy.md` 的對照關係（DP-118）不變。
+- [ ] **DP-165 — 手機月格的行程標籤與選定日清單（設計決策）：** 審查的 360×640 截圖顯示月格標籤只剩「15:00 …」。**方向**：月格負責日期、數量與簡短標題，選日之後提供清楚的當日清單，不再靠縮字。牽涉 DP-064 的 display segments、DP-126 的續日、DP-069 的鍵盤移動與月曆列數偏好，先出設計稿。同一張截圖裡寵物與 FAB 都蓋在日期格上（原稿同樣是浮動層），設計稿要一併交代。
+- [ ] **DP-166 — 深色主題格線的視覺份量：** 審查認為深色下一般格線太亮，搶過內容。**複核沒能確認**：留下來的 `theme-*-dark.png` 抽看兩張都是設定頁，不是月曆。所以動工前先重新截十二組月曆。做法是加語意化的格線 token，減弱一般格線、保留今天與選取的層級；`themes.ts` 的新值比照 DP-140 註明原稿值，並重跑 `textContrast`／`lunarContrast` 測試。
+- [ ] **DP-167 — 週檢視三日模式（產品決策）：** 七欄在手機上閱讀與拖曳都吃力。保留完整週檢視，另加三日模式。要先定：切換入口、起始日怎麼選、拖曳／跨午夜／全天列／now line 是否與週檢視一致、要不要記住選擇。**建議**：第一版不保存偏好，留在裝置端的介面狀態，避開 preferences 欄位與 migration。
+- [ ] **DP-168 — 動效與「減少動態效果」盤點：** 2026-10-13 的數字是 23 個 transition／animation 宣告、10 個 `prefers-reduced-motion` 區塊，分布在 5 個 CSS 檔。已知漏掉的一處：`calendarManage.css:74`、`:90` 的開關 transition 不在 `:151` 的 reduced-motion 區塊內。逐一盤點後統一：操作回饋 160–240ms、以 transform／opacity 為主、reduced-motion 下移除非必要的位移；不加持續播放的慶祝效果。先盤點並列表，再分批改。
+
 ### Deferred product features
 
 - [ ] **DP-040 — App 內浮動寵物素材與狀態機：** 核心 MVP 穩定後，將目前正常文件流的 `<aside class="pet-helper">` 升級為 App viewport 浮動層，依 `寵物素材規範 Pet Asset Spec.md` 接入各品種與含 `grab` 的七種狀態；拖曳範圍避開 safe-area，位置等純 UI state 留在裝置端，`pet_enabled` 可永久關閉。
+  > **2026-10-13 校正與拆分**：上面「目前正常文件流的 `<aside class="pet-helper">`」已經過期。DP-051 起日曆頁的寵物是 `PetLayer`（`.cal-pet-layer`，`position: absolute` 的浮動層），固定在左下角並顯示未完成待辦數；`pet-helper` 只剩 `src/styles.css` 的舊樣式，沒有元件使用。`PetLayer` 目前整層 `aria-hidden` 且 `pointer-events: none`，不能互動。本條範圍太大，依審查建議拆成 DP-169–DP-172，本條留作父項。來源見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。
+- [ ] **DP-169 — 寵物對話泡泡（DP-040 第一段）：** 點擊或以鍵盤啟動寵物，開啟漫畫對話泡泡，顯示今日剩餘待辦數、下一個行程，以及「查看」與「新增」入口。內容用可預期的本機規則，不用 AI。`PetLayer` 要改成有可及性名稱的可聚焦控制項，裝飾的部分維持隱藏。可以一併接回原稿的三個接點：搜尋點待辦開泡泡（`:1295` 的 `showTodosBubble()`）、關閉桌寵時同時關泡泡（`:995`）、設定頁的說明文字（DP-163）。資料只讀，不需要 schema。泡泡不是可靠提醒，不得這樣宣稱（DP-042）。若泡泡是 modal，沿用 DP-154 的焦點管理。
+- [ ] **DP-170 — 寵物拖移、靠邊停駐與收起（DP-040 第二段，依賴 DP-169）：** 位置與收起狀態是裝置端的介面狀態（比照 `daypop.release-notes-seen`，走 `AppStorage`，不進 user data）。不得蓋住 FAB、底部分頁列、表單按鈕與手機鍵盤，並遵守 safe-area；reduced-motion 下不做位移動畫；`petEnabled` 關閉時整層不出現。**風險**：DP-077 已經說明 iOS 觸控拖曳的即時回饋在本機三條路徑都測不出，這一項同樣需要真機確認。
+- [ ] **DP-171 — 寵物素材 registry 與七種狀態（DP-040 第三段）：** 依 `寵物素材規範 Pet Asset Spec.md`：四個品種（`cat`／`bear`／`bunny`／`chick`）、七種狀態（含 `grab`）、120×120 素材顯示為 60×60。建立 typed asset registry（`PET_ASSETS[kind][state]`），缺圖時退回現有的 CSS 角色。素材要通過 `check:build`（無遠端依賴）。`performance-budget.json` 目前只管 JS／CSS，圖片體積的上限與是否進 app shell 快取要另外定。**前置**：素材檔本身要先存在；沒有素材時這一項只能做 registry 與 fallback。
+- [ ] **DP-172 — 選擇夥伴偏好（DP-040 第四段，依賴 DP-171）：** 原稿設定頁的「選擇夥伴」需要一個新的偏好欄位。這代表 migration、重新產生 `database.types.ts`、guest 與帳號快取的 schema version 提升（v4 → v5）、write barrier 與遷移回歸測試。高風險，獨立 PR；migration 要由專案擁有者 push 之後才能部署前端（比照 DP-138）。不得把這個值另存在臨時 storage，那會變成第二套資料模型。
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
+  > **2026-10-13 審查補充（動工前要先有答案）**：(1) 回饋與獎勵只能在「待辦已確認保存為完成」之後發生。`toggleTodo` 目前對 UI 回傳 `void`（`dataContext.ts:74`），第一步是比照 DP-133／134／141 讓它回傳既有 queue 的確認結果。(2) 先定規則：重複勾選與取消完成、父子待辦、匯入的資料、重試（DP-142）與帳號切換，同一來源不得重複給獎勵。(3) 成長資料走既有 repository；如果需要 ledger 或新表，獨立 migration 加 RLS 測試，不與動畫 PR 混在一起。(4) 優先解鎖表情、配件與日常互動，不用斷連續天數或扣生命值來懲罰。上方 Proposed data architecture 寫的是「寵物 XP 優先由已完成待辦推導」，若改成 ledger 要同步那一句。
 - [ ] **DP-042 — 可靠背景提醒／推播：** 另行設計 Web Push subscription、排程、撤銷、時區與權限；目前頁面開啟時的 Notification timer 不視為可靠提醒。
 - [ ] **DP-043 — 安全 AI 助理：** 若產品決定保留 AI，改由 Supabase Edge Function／受控 server endpoint 管理 provider secret、rate limit、輸入最小化與稽核；禁止在 browser localStorage 保存 secret。
 - [ ] **DP-044 — 定案家庭群組產品規則：** 確認群組人數上限、owner／admin／member 能力、退出與解散規則、Email 邀請與重送／撤銷／過期流程，以及共享日曆是 `edit` 預設或可切唯讀；在 owner-only 模型完整驗證前不開始。
@@ -306,12 +350,18 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-045 — 外部日曆整合：** Google／Apple／Outlook 雙向同步另列專案，先維持經驗證的 ICS 匯入匯出。
 - [ ] **DP-046 — 進階跨裝置同步：** 產品真的出現多裝置需求後，再設計 Realtime、`updated_at` 衝突規則、tombstone、pending queue、可觀測 sync status 與多 client 測試。
 
+> **2026-10-13 審查登記（DP-173–DP-175）**：以下三項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)，都需要產品決策，各自附建議。審查另外提到的可靠提醒仍屬 DP-042，家庭分享、Realtime、離線寫入佇列與 AI 維持既有的延後決定，沒有新增條目。
+
+- [ ] **DP-173 — 無日期待辦的管理入口（產品決策）：** 沒有 `dueDate` 的待辦搜尋得到，但結果是 disabled（`SearchScreen.tsx:104`），綜覽也略過它們（`overview.ts:310`），沒有任何地方能開啟、改名、排日期、完成或刪除。目前畫面建不出這種待辦（`NewTodoInput.date` 必填），它們只會由匯入帶進來。**要決定**：只是給匯入進來的無日期待辦一個出口，還是把「收件匣」做成正式功能（那就還要能建立無日期待辦，以及把日期清掉）。**建議**：先做出口。在綜覽加一個「未排日期」區塊，沿用既有的 `renameTodo`、`rescheduleTodo`（DP-129 已允許指定既有的無日期列）、勾選與刪除，不新增契約，也不需要 schema。正式的收件匣等寵物泡泡（DP-169）需要落點時再擴充。
+- [ ] **DP-174 — 搜尋的日曆篩選是否涵蓋待辦（產品決策）：** 現況是選了日曆之後只篩行程，待辦照樣全部出現（`search.ts:53`、`:70`）。原稿 `:1295` 則是選了特定日曆時待辦**整批不出現**。`search.ts:33-38` 的註解把現況寫成沿用原稿，並說「待辦沒有日曆」；那在原稿成立，但 DayPop 的待辦有 `calendarId`。三個選項：(a) 照原稿，選了日曆就不顯示待辦；(b) 依待辦自己的 `calendarId` 篩選；(c) 維持現況，只更正註解。**建議 (b)**：它是唯一讓「依日曆篩選」對兩種內容意思一致的做法。畫面建立的子項繼承父項的日曆（DP-116），匯入的資料不保證如此，父子被拆開時怎麼顯示要一併定。選 (b) 或 (c) 都是偏離原稿，記入 ADR，並更新 `docs/prototype-behavior-baseline.md`。
+- [ ] **DP-175 — 顯示備份狀態（依賴 DP-152）：** 在設定的資料備份區塊顯示上次成功匯出的時間，以及那份備份涵蓋什麼（不含附件）。要等 DP-152 修好，否則顯示的是一份可能被截斷的備份「已完成」。**要決定**：時間記在哪裡。**建議**：裝置層級的介面狀態（比照 `daypop.release-notes-seen`），不進 user data，也不需要 schema。代價是換裝置或清除網站資料後會歸零，文案要寫成「這台裝置上次匯出」。
+
 ## Package / tooling review
 
 - 現有工具：Node `v24.14.1`、npm `11.12.1`、Git 與 GitHub CLI；React、React DOM、Supabase JS、TypeScript、Vite、Vitest、jsdom 與 ESLint 已由 npm 官方 registry 安裝並提交 lockfile，初次 audit 為 0 個已知漏洞。
 - 字體：DP-052 加入六個 Fontsource 套件（`@fontsource/bangers`、`newsreader`、`ibm-plex-sans`、`space-grotesk`、`pixelify-sans`、`dotgothic16`），皆為 OFL-1.1、pin 到固定版本、只提供字體檔與 CSS，audit 仍為 0 個漏洞。中文字體因體積不自託管。
 - CI：GitHub Actions（`.github/workflows/ci.yml`）在 PR 與 `main` 上跑 `npm ci`、lint、typecheck、unit、build、build asset check 與 Playwright e2e，DP-084 起另有 Supabase `db reset`／pgTAP job（runner 內只啟動本機 Postgres）。DP-086 起所有 job 的 runner 固定為 `ubuntu-26.04`，不用 `ubuntu-latest`。Node major 由 `.nvmrc` 固定為 24，`package.json` 的 `engines` 宣告相同範圍；改版時兩處必須一起改。CI 目前不需要任何 secret，日後若需要只能經 GitHub Secrets 注入到單一步驟。
-- `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。DP-087（2026-09-30）後，含開發相依的完整 `npm audit` 也是 0。
+- `package.json` 已提供 lint、typecheck、unit、build、preview、release asset 與 Playwright e2e scripts。DP-027 將 BSD-3-Clause 的 `rrule` 精確固定為 `2.8.1`，用於 RFC 5545 RECUR parse／expand；DP-030 將 Apache-2.0 的 `@playwright/test` 精確固定為 `1.62.1`，CI 只安裝 Chromium。production dependency audit 為 0 個已知漏洞。DP-087（2026-09-30）後，含開發相依的完整 `npm audit` 也是 0。**2026-10-13 更新**：完整 `npm audit` 現為 1 個 high（開發相依的 `source-map-js`），production 仍為 0，見 DP-157。
 - 本機 Supabase 完整 stack 需要 Docker-compatible runtime。~~目前此電腦未偵測到 Docker~~ —— **2026-08-31 更正：這台電腦有裝 Docker Desktop**，先前偵測不到是因為 CLI 不在 PATH。加上 `C:\Program Files\Docker\Docker\resources\bin` 並先啟動 `Docker Desktop.exe`（daemon 起來約 10 秒）之後，`npx supabase start`／`db reset`／`test db --local` 都可用，已實跑 15 檔 migration 與 5 檔 pgTAP 共 150 個斷言。**因此「沒有 Docker 所以 DB 測試跑不了」不再是可接受的理由**，動到 migration 就要實跑。附帶：`supabase/.temp` 已加入 `eslint.config.js` 的 ignores，否則跑過 stack 之後 `npm run lint` 會被 CLI 產生的檔噴 99 個錯。
 - MCP／Codex plugin 不是 runtime 必需品。目前已使用 OpenAI curated 的 Supabase plugin 核對／驗證 migration、schema 與 advisors；它不能取代 repo 內 migration、RLS 測試或 CLI workflow。
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
