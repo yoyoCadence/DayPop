@@ -4,6 +4,7 @@ import {
   eventEndTime,
   eventStartTime,
   eventWallTime,
+  instantDateInZone,
   timedEventFromWallTime,
   wallTimeToInstant,
 } from './eventTime';
@@ -84,6 +85,11 @@ describe('wallTimeToInstant', () => {
 });
 
 describe('reading a stored event back', () => {
+  it.each(['0100-01-01', '0999-12-31', '1000-01-01', '9999-12-31'])('retains a four-digit own/display date for %s (DP-151)', (date) => {
+    const event = timed(date, '09:00', '10:00', 'UTC');
+    expect(eventWallTime(event)).toEqual({ date, start: '09:00', end: '10:00' });
+    expect(instantDateInZone(event.startsAt, 'UTC')).toBe(date);
+  });
   it('round-trips a wall time through the instant it was stored as', () => {
     for (const [date, start, end, zone] of [
       ['2026-08-06', '09:00', '10:00', 'Asia/Taipei'],

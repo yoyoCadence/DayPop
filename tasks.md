@@ -318,6 +318,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
+- [x] **DP-151 — 日期 helper 保留四位年份（2026-10-13）：** `toDateKey()`／`instantDateInZone()` 的數字年份補滿四位，使既有有效 0100／0999 日期不再變成三位數或在 native date 欄位留白；不放寬年份範圍、不裁切較長輸出、不改保存格式。十個回歸含兩端年份、0999／1000 跨年、own／display 日期與 EventSheet 預填／保存，六個在修正前失敗。原 main 基線的 1122 個單元與七項 posttest、lint、typecheck、build／check:build 通過；實際 Intl America/New_York 下 116 個相關案例通過。未改 schema、Auth、樣式、版號／公告或部署，見 ADR §6。
+
 - [x] **DP-150 — App 跨午夜時刷新「今天」（2026-10-13）：** 日曆／綜覽共用 `useTodayKey()`，依 `preferences.timezone` 每分鐘檢查、focus／visible 立即刷新，相同日期不重畫，卸載清除 timer／listeners。日期高亮、標頭與逾期自動換日；瀏覽日期／草稿／焦點與 durable bytes 保持不變。七個新單元案例與 mobile／desktop 跨時區回歸涵蓋午夜及恢復；本機實際 Intl America/New_York、browser America/New_York／display Asia/Taipei 有印出。Windows 部分原期限案例逾時，CI 維持原設定並作為合併閘門；沒有調整 repo timeout。前景最多延遲一分鐘、真實背景休眠／真機未驗；未改 schema、Auth、版本／公告、樣式或部署。見 ADR §6。
 
 - [x] **DP-149 — 已部署狀態與驗收交接：** 新增 `docs/deployment-verification-2026-10-13.md`，逐項記錄已完成的正式 CLI 第 15／16 檔 push、39 項完整 rollback MCP pgTAP、RPC／RLS／types／advisor postflight、部署 workflow `38259974848` 與 commit `e7c95ed`、線上手機／桌面 smoke test、PR #136 的 CI 與 2026-10-13 合併。AGENTS、部署與 MCP 交接文件新增目前狀態註記，保留歷史段落：**0.4.2 已部署，公告自此不可回寫**；DP-144／145 尚未包含在該次部署。明示沒有實帳號／真機验收，DP-034 未結案；本項只補既成操作紀錄，未再次推 DB、部署或改 runtime。文件 diff／相對連結與 workflow／commit 核對通過。

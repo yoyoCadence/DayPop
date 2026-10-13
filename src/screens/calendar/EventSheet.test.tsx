@@ -47,6 +47,14 @@ function timedEvent(): CalendarEvent {
   );
 }
 
+it('prefills and saves a supported three-digit year as a four-digit native date (DP-151)', () => {
+  const editing = { ...timedEvent(), allDay: false as const, startsAt: '0999-12-31T09:00:00.000Z', endsAt: '0999-12-31T10:00:00.000Z', timezone: 'UTC' };
+  const props = render({ editing });
+  expect(container.querySelector<HTMLInputElement>('[aria-label="日期"]')!.value).toBe('0999-12-31');
+  act(() => container.querySelector('.cal-sheet')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(props.onUpdateEvent).toHaveBeenCalledWith(editing.id, expect.objectContaining({ date: '0999-12-31', start: '09:00', end: '10:00' }));
+});
+
 let container: HTMLDivElement;
 let root: Root;
 
