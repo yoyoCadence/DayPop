@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **App 跨午夜刷新今天（DP-150，2026-10-13）：** 日曆／綜覽共用 `useTodayKey()`，依已保存的 `preferences.timezone` 每分鐘檢查日期，focus／回到 visible 時立即刷新，日期字串相同不重畫；偏好換時區立即重新讀取。標頭、月／週／列表高亮、日詳情與綜覽逾期使用同一來源，不自動移動 cursor／selected day、不清草稿、不寫資料。卸載清除 timer 與 listeners；前景最多延遲一分鐘，背景節流沿前景恢復，不能視為可靠提醒。午夜與前景回歸、手機／桌面跨時區 e2e 見 ADR §6；真機／實際休眠未驗，沒有 schema、Auth、版本／公告或部署變更。
+
 - **0.4.2 已部署、第 15／16 檔已套用（DP-149，2026-10-13 紀錄）：** 2026-10-12 已依圖片交接以正式 CLI dry-run／push 將遠端由 14 檔升為 16 檔，再由 `deploy-staging` 成功部署 `main` 的 `e7c95ed`。線上 0.4.2 六條公告已驗收，**0.4.2 也已是不可回寫的歷史公告**；下方「尚未部署」「第 16 檔尚未套用」均為當時歷史，不應再次執行。公開 10 表 RLS、三支 RPC 權限與 39 項完整 rollback pgTAP 已驗證，advisor 僅既有 Auth 洩漏密碼保護警告。PR #136 於 2026-10-13 依明確授權合併。完整 workflow／commit 與真機／實帳號限制見 `docs/deployment-verification-2026-10-13.md`；DP-034 未結案，DP-144／145 後續修改未包含在這次部署。專案擁有者同日授權持續開發、各自開 PR，完成驗證與 CI 通過後自主合併；需要新產品決策時仍先釐清。
 
 - **0.4.2 公告補上保留輸入與錯誤畫面備份（DP-147，2026-10-12）：** 直接讀取 staging 確認線上仍是 0.4.1，只把未部署 0.4.2 的第六條改為「儲存或刪除失敗時保留輸入；畫面出錯可下載備份；標題上限 300 字」，仍為六條、184 個 code point，歷史公告逐欄不變，`check:release-notes` 對線上 0.4.1 通過。以 `5891034` 重建的真正 0.3.0 production App（不可捲動的更新對話框）先用 0.4.0 校準並重現上次全部數值，候選在 430×932／390×844／375×667／360×640／932×430 都完整放得下；專案擁有者原句在 932×430 會超出 9.3px，所以採較短的合併版。**舊版必須在 PowerShell 建置**，Git Bash 會把 `--base=/DayPop/` 轉成 Windows 路徑。版號、schema、worker、部署不變；部署前仍需先推第 16 檔 migration（DP-138）。見 docs/deployment.md §5.23。**同日發現（DP-148）：staging bundle 指向的 Supabase 主機在公開 DNS 查不到，帳號功能可能整個不可用，需專案擁有者到後台確認；本機 e2e 遇到它時以空的 `VITE_SUPABASE_URL`／`VITE_SUPABASE_PUBLISHABLE_KEY` 環境變數執行。**
