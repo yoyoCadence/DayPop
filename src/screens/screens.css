@@ -119,7 +119,7 @@
 
 .dp-theme-desc {
   margin-top: 1px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.3;
 }
@@ -200,7 +200,7 @@
 
 .dp-screen-footnote {
   padding: 6px 0 12px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 10px;
   text-align: center;
 }

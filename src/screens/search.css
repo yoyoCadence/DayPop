@@ -89,7 +89,7 @@
 
 .search-hint {
   margin-top: 40px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.7;
   text-align: center;
@@ -142,6 +142,6 @@
 .search-result-sub {
   display: block;
   margin-top: 1px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
 }

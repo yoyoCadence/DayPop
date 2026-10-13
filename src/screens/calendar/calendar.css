@@ -425,7 +425,7 @@
   position: absolute;
   right: 2px;
   left: 0;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 9px;
   text-align: right;
   transform: translateY(-6px);
@@ -556,7 +556,7 @@
 
 .cal-agenda-empty {
   padding: 8px 2px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -962,7 +962,7 @@
 
 .cal-day-empty {
   margin-bottom: 10px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -1012,7 +1012,7 @@
 .cal-day-event-loc {
   display: block;
   overflow: hidden;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1063,7 +1063,7 @@
   justify-content: center;
   border: 2px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--accent-fg);
   font-size: 12px;
   font-weight: 900;
 }
@@ -1123,7 +1123,7 @@ button.cal-day-todo-title {
   justify-content: center;
   border: 2px solid var(--border);
   border-radius: 5px;
-  color: #fff;
+  color: var(--accent-fg);
   font-size: 10px;
   font-weight: 900;
 }
@@ -1282,7 +1282,7 @@ button.cal-day-todo-title {
 .cal-day-sub-delete {
   border: 0;
   background: none;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -1323,7 +1323,7 @@ button.cal-day-todo-title {
 .cal-day-delete {
   border: 0;
   background: none;
-  color: var(--faint);
+  color: var(--muted);
   font-size: 15px;
   font-weight: 800;
 }

@@ -31,7 +31,8 @@ import {
   timeFromMinutes,
   type DragRange,
 } from '../../domain/timeGrid';
-import { calendarColor, CALENDAR_TEXT_COLOR } from '../../domain/calendars';
+import { calendarColor } from '../../domain/calendars';
+import { calendarTextColor } from '../../theme/calendarTextColor';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, TimedCalendarEvent } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
@@ -426,7 +427,7 @@ export function WeekView({
                       aria-label={`${column.key} ${continuation ? `${CONTINUATION_LABEL} ` : ''}全天 ${event.title}`}
                       title={event.title}
                       onClick={() => openOccurrence(key)}
-                      style={{ background: calendarColor(calendars, event.calendarId), color: CALENDAR_TEXT_COLOR }}
+                      style={{ background: calendarColor(calendars, event.calendarId), color: calendarTextColor(calendarColor(calendars, event.calendarId)) }}
                     >
                       {continuation ? `${CONTINUATION_LABEL} ` : ''}{event.title}
                     </button>
@@ -477,7 +478,7 @@ export function WeekView({
                         top: `${block.top}px`,
                         height: `${block.height}px`,
                         background: calendarColor(calendars, block.segment.event.calendarId),
-                        color: CALENDAR_TEXT_COLOR,
+                        color: calendarTextColor(calendarColor(calendars, block.segment.event.calendarId)),
                       }}
                     >
                       <div className="cal-week-event-time">{block.timeLabel}</div>

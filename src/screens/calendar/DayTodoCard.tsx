@@ -32,7 +32,7 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
   const complete = todo.completedAt !== null;
   const doneCount = subtasks.filter((item) => item.todo.completedAt !== null).length;
   const overdue = !complete && todo.dueDate !== null && todo.dueDate < todayKey;
-  const title = <span className="cal-day-todo-title-text" style={{ color: complete ? 'var(--faint)' : 'var(--fg)', textDecoration: complete ? 'line-through' : 'none' }}>{todo.title}</span>;
+  const title = <span className="cal-day-todo-title-text" style={{ color: complete ? 'var(--muted)' : 'var(--fg)', textDecoration: complete ? 'line-through' : 'none' }}>{todo.title}</span>;
 
   function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,7 +68,7 @@ export function DayTodoCard({ todo, subtasks, dateKey, todayKey, onAddTodo, onTo
               <div key={sub.id} style={{ paddingLeft: `${Math.min(depth - 1, 3) * 8}px` }}>
                 <div className="cal-day-subtask">
                   <button className="cal-day-sub-check" type="button" aria-pressed={done} aria-label={`完成 ${sub.title}`} onClick={() => onToggleTodo(sub.id)} style={{ background: done ? 'var(--accent)' : 'transparent' }}>{done ? '✓' : ''}</button>
-                  <EditableTodoTitle todo={sub} onRename={onRenameTodo}><span className="cal-day-sub-title" style={{ color: done ? 'var(--faint)' : 'var(--fg)', textDecoration: done ? 'line-through' : 'none' }}>{sub.title}</span></EditableTodoTitle>
+                  <EditableTodoTitle todo={sub} onRename={onRenameTodo}><span className="cal-day-sub-title" style={{ color: done ? 'var(--muted)' : 'var(--fg)', textDecoration: done ? 'line-through' : 'none' }}>{sub.title}</span></EditableTodoTitle>
                   <TodoPrioritySelect todo={sub} onSetPriority={onSetTodoPriority} />
                   <button className="cal-day-sub-delete" type="button" aria-label={`刪除 ${sub.title}`} onClick={() => onDeleteTodo(sub.id)}>×</button>
                 </div>

@@ -205,7 +205,7 @@ export function AgendaView({
                 <span
                   className="cal-agenda-title"
                   style={{
-                    color: item.done ? 'var(--faint)' : 'var(--fg)',
+                    color: item.done ? 'var(--muted)' : 'var(--fg)',
                     textDecoration: item.done ? 'line-through' : 'none',
                   }}
                 >
@@ -215,7 +215,7 @@ export function AgendaView({
               {item.kind === 'todo' && (
                 <span
                   className="cal-agenda-check"
-                  style={{ color: item.done ? 'var(--accent-text)' : 'var(--faint)' }}
+                  style={{ color: item.done ? 'var(--accent-text)' : 'var(--muted)' }}
                 >
                   {item.done ? '✓' : '○'}
                 </span>

@@ -32,7 +32,7 @@
 }
 
 .legacy-import-card .legacy-import-notice {
-  color: var(--faint);
+  color: var(--muted);
 }
 
 .legacy-import-card .legacy-import-error {

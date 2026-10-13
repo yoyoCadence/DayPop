@@ -6,6 +6,7 @@ import {
   formatAttachmentBytes,
 } from '../../domain/attachments';
 import { sortedCalendars } from '../../domain/calendars';
+import { calendarTextColor } from '../../theme/calendarTextColor';
 import { addDays, daysBetween, fromDateKey, toDateKey } from '../../domain/date';
 import { eventWallTime } from '../../domain/eventTime';
 import { allDayDateIssue, dateKeyDaysBetween, shiftDateKey } from '../../domain/allDayDates';
@@ -562,7 +563,7 @@ function EventSheetForm({
                             ? {
                                 borderColor: calendar.color,
                                 background: calendar.color,
-                                color: '#ffffff',
+                                color: calendarTextColor(calendar.color),
                               }
                             : { borderColor: 'var(--border)' }
                         }

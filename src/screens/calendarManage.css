@@ -56,7 +56,7 @@
 }
 
 .cal-manage-edit-hint {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 700;
 }
