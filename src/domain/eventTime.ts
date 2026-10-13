@@ -100,7 +100,7 @@ export function timedEventFromWallTime(
 
 export function instantDateInZone(instant: string, timezone: string): string {
   const parts = zonedParts(new Date(instant), timezone);
-  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+  return `${String(parts.year).padStart(4, '0')}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
 export function instantTimeInZone(instant: string, timezone: string): string {

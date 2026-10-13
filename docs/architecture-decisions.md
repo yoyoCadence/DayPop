@@ -343,6 +343,10 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 ## 6. 資料庫與日期邊界
 
+### 四位年份的日期序列化（DP-151，2026-10-13）
+
+Canonical date key 已接受 `0100-01-01` 至 `9999-12-31`，但 `toDateKey()` 與 `instantDateInZone()` 原本直接插入數字年份，將 `0100`／`0999` 輸出成三位數。這不符合 YYYY-MM-DD，匯入的有效行程在 EventSheet 的 native date 欄位會變成空白。兩個輸出邊界改為將年份補滿四位，不裁切較長值、不放寬 `isDateKey()`，也不將 0–99 年納入支援。十個新案例核對兩端年份、0999／1000 跨年、own／display 日期與既有行程表單的預填／保存；六個案例在修正前失敗，包括實際空白的 input.value。這只是已有保存契約的格式修正，不改 schema、日期／時區語意、資料 migration、Auth、版號／公告或樣式。
+
 - 全天事件在 DayPop domain／DB 使用 inclusive `end_date`；ICS import/export 在 adapter 邊界轉換 exclusive `DTEND`。
 - IANA timezone 由 domain validation 與可測的資料庫 trigger／受控寫入邊界驗證，不使用直接查詢 `pg_timezone_names` 的 CHECK，因為該資料來源不適合 immutable CHECK expression。
 - `reminder_minutes` 與 `default_reminder_minutes` 要限制元素數量、非負範圍與可接受上限。

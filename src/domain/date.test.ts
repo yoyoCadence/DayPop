@@ -25,6 +25,14 @@ import {
  */
 
 describe('date keys', () => {
+  it.each(['0100-01-01', '0999-12-31', '1000-01-01', '9999-12-31'])('keeps all four year digits in a supported date: %s (DP-151)', (key) => {
+    expect(toDateKey(fromDateKey(key))).toBe(key);
+  });
+
+  it('retains canonical keys when stepping through the year 1000 boundary (DP-151)', () => {
+    expect(toDateKey(addDays(fromDateKey('1000-01-01'), -1))).toBe('0999-12-31');
+    expect(toDateKey(addDays(fromDateKey('0999-12-31'), 1))).toBe('1000-01-01');
+  });
   it('pads month and day and round-trips through a Date', () => {
     expect(toDateKey(new Date(2026, 0, 5))).toBe('2026-01-05');
     expect(toDateKey(new Date(2026, 11, 31))).toBe('2026-12-31');

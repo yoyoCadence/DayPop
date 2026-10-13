@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **四位年份不丟前導零（DP-151，2026-10-13）：** `toDateKey()`／`instantDateInZone()` 將數字年份補滿四位，保持既有有效 date key（0100–9999 年）；原本 0100／0999 會變成三位數，使匯入行程的 native date 欄位空白。十個回歸涵蓋日期兩端、0999／1000 跨年及表單預填／保存，六個在修正前失敗。沒有放寬年份支援範圍、裁切長年份、修改 schema／migration、Auth、公告或樣式，見 ADR §6。
+
 - **App 跨午夜刷新今天（DP-150，2026-10-13）：** 日曆／綜覽共用 `useTodayKey()`，依已保存的 `preferences.timezone` 每分鐘檢查日期，focus／回到 visible 時立即刷新，日期字串相同不重畫；偏好換時區立即重新讀取。標頭、月／週／列表高亮、日詳情與綜覽逾期使用同一來源，不自動移動 cursor／selected day、不清草稿、不寫資料。卸載清除 timer 與 listeners；前景最多延遲一分鐘，背景節流沿前景恢復，不能視為可靠提醒。午夜與前景回歸、手機／桌面跨時區 e2e 見 ADR §6；真機／實際休眠未驗，沒有 schema、Auth、版本／公告或部署變更。
 
 - **0.4.2 已部署、第 15／16 檔已套用（DP-149，2026-10-13 紀錄）：** 2026-10-12 已依圖片交接以正式 CLI dry-run／push 將遠端由 14 檔升為 16 檔，再由 `deploy-staging` 成功部署 `main` 的 `e7c95ed`。線上 0.4.2 六條公告已驗收，**0.4.2 也已是不可回寫的歷史公告**；下方「尚未部署」「第 16 檔尚未套用」均為當時歷史，不應再次執行。公開 10 表 RLS、三支 RPC 權限與 39 項完整 rollback pgTAP 已驗證，advisor 僅既有 Auth 洩漏密碼保護警告。PR #136 於 2026-10-13 依明確授權合併。完整 workflow／commit 與真機／實帳號限制見 `docs/deployment-verification-2026-10-13.md`；DP-034 未結案，DP-144／145 後續修改未包含在這次部署。專案擁有者同日授權持續開發、各自開 PR，完成驗證與 CI 通過後自主合併；需要新產品決策時仍先釐清。
