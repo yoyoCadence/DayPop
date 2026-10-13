@@ -20,6 +20,7 @@ const PALETTE_KEYS: (keyof ThemePalette)[] = [
   'faint',
   // DP-070 addition — not part of the原檔 palette; see `lunarContrast.test.ts`.
   'lunarMuted',
+  'dangerText',
   'border',
   'line',
   'accent',
@@ -33,8 +34,9 @@ const PALETTE_KEYS: (keyof ThemePalette)[] = [
 ];
 
 /**
- * The custom properties written by `phoneStyle()` in the原檔, plus the one
- * addition DayPop made deliberately: `--lunar-muted` (DP-070).
+ * The custom properties written by `phoneStyle()` in the原檔, plus the
+ * additions DayPop made deliberately: `--lunar-muted` (DP-070) and
+ * `--danger-text` (DP-144).
  */
 const EXPECTED_CSS_VARIABLES = [
   '--bg',
@@ -44,6 +46,7 @@ const EXPECTED_CSS_VARIABLES = [
   '--muted',
   '--faint',
   '--lunar-muted',
+  '--danger-text',
   '--border',
   '--line',
   '--accent',

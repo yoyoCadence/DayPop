@@ -1,9 +1,10 @@
 /**
  * Canonical DayPop theme tokens.
  *
- * Every value here is transcribed verbatim from the `THEMES` getter of the
+ * Original values are transcribed from the `THEMES` getter of the
  * Claude Design source `日曆桌寵 Calendar Pet.dc.html`. Treat this file as a
- * mirror of that原檔: do not "improve" colours, radii or font stacks here — see
+ * mirror of that原檔, with documented contrast adjustments (DP-070/140/144).
+ * Do not "improve" colours, radii or font stacks here — see
  * `docs/claude-design-source-of-truth.md`.
  *
  * All six themes stay in the product. 漫畫 (`manga`) light is the new-user
@@ -55,6 +56,14 @@ export interface ThemePalette {
    * there. The exception is pinned in the same test file.
    */
   lunarMuted: string;
+  /**
+   * Destructive actions, overdue labels and recovery/warning text — DP-144.
+   * Not from the原檔: its fixed `#e4002b` fails on every dark theme and several
+   * light ones. Each value blends that red toward black (light mode) or white
+   * (dark mode) just until it clears 4.5:1 on bg/surface/surface2/todayBg.
+   * Red backgrounds, borders and user-selected calendar colours stay intact.
+   */
+  dangerText: string;
   border: string;
   line: string;
   accent: string;
@@ -134,6 +143,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#555555',
       faint: '#9a9a9a',
       lunarMuted: '#646464',
+      dangerText: '#cc0026',
       border: '#111111',
       line: '#111111',
       accent: '#e4002b',
@@ -153,6 +163,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#bbbbbb',
       faint: '#777777',
       lunarMuted: '#989898',
+      dangerText: '#ef6c85',
       border: '#ffffff',
       line: '#ffffff',
       accent: '#ff2d4b',
@@ -186,6 +197,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#6b6b74', // 原檔 #71717a — DP-140
       faint: '#a1a1aa',
       lunarMuted: '#6a6a70',
+      dangerText: '#da0029',
       border: '#e4e4e7',
       line: '#eeeef0',
       accent: '#18181b',
@@ -205,6 +217,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#a1a1aa',
       faint: '#52525b',
       lunarMuted: '#8b8b91',
+      dangerText: '#ed5471',
       border: '#282828',
       line: '#1f1f1f',
       accent: '#fafafa',
@@ -238,6 +251,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#6f6050', // 原檔 #7a6a58 — DP-140
       faint: '#a89684',
       lunarMuted: '#6c6054',
+      dangerText: '#ca0026',
       border: '#e2d3bd',
       line: '#ece0cd',
       accent: '#c2683f',
@@ -257,6 +271,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#c3b3a0',
       faint: '#8a7a67',
       lunarMuted: '#afa598',
+      dangerText: '#f28398',
       border: '#463726',
       line: '#3a2e22',
       accent: '#e0895c',
@@ -290,6 +305,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#58697f', // 原檔 #5a6b82 — DP-140
       faint: '#93a1b5',
       lunarMuted: '#606976',
+      dangerText: '#d30028',
       border: '#dbe2ec',
       line: '#e9eef5',
       accent: '#1e5fd6',
@@ -309,6 +325,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#9db0cb',
       faint: '#64768f',
       lunarMuted: '#8c9aac',
+      dangerText: '#f06d86',
       border: '#25384f',
       line: '#1e2f47',
       accent: '#4b8bff',
@@ -342,6 +359,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#5b5b52',
       faint: '#93938a',
       lunarMuted: '#676761',
+      dangerText: '#d10027',
       border: '#141414',
       line: '#e3e1d7',
       accent: '#ff5a1f',
@@ -361,6 +379,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#b4a6c4',
       faint: '#7c6e8c',
       lunarMuted: '#968ba3',
+      dangerText: '#ee5b77',
       border: '#372b45',
       line: '#2b2135',
       accent: '#ff6a2b',
@@ -394,6 +413,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#5c5a45',
       faint: '#8a866a',
       lunarMuted: '#615e4a',
+      dangerText: '#c00024',
       border: '#2b2b22',
       line: '#c3bf9e',
       accent: '#2f8f3e',
@@ -413,6 +433,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       muted: '#7fa87a',
       faint: '#4d6349',
       lunarMuted: '#92a090',
+      dangerText: '#f0748b',
       border: '#cfeccb',
       line: '#25301f',
       accent: '#46d160',
@@ -462,6 +483,7 @@ export function themeCssVariables(
     '--muted': palette.muted,
     '--faint': palette.faint,
     '--lunar-muted': palette.lunarMuted,
+    '--danger-text': palette.dangerText,
     '--border': palette.border,
     '--line': palette.line,
     '--accent': palette.accent,
