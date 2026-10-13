@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **專案審查：三項已重現、尚未修正的缺陷（2026-10-13 審查，DP-152–175 於 2026-10-14 登記）：** 審查、複核與原報告全文見 `docs/review-2026-10-13-project-audit.md`；**只登記任務，沒有改任何程式、依賴、migration、版號或部署。** 三項都在未修改的 `main`（`bc6c16a`）重現：(1) 帳號端 `load()` 沒有分頁，任一集合超過 API 列數上限（repo 設定 `max_rows = 1000`，遠端實際值未量測）時靜默少列，帳號快取與 JSON／ICS 匯出跟著不完整（DP-152，P1）；(2) `version.json` 回傳合法 JSON 但 `changes` 不是字串陣列時，更新提示與版本公告在繪製時丟錯，整個 App 落到 `RootErrorFallback`（DP-153）；(3) 對話框都沒有限制焦點，量到的七個 Tab／Shift+Tab 都能到背景控制項，新增日曆對話框已確認會因此丟失草稿（DP-154–156）。另有開發相依 `source-map-js` 一項 high，production audit 仍為 0（DP-157）。**這些修好之前，不得宣稱帳號備份一定完整，也不得把 `aria-modal` 當成焦點已受限。** `FakeSupabase` 不模擬列數上限，既有測試因此發現不了第一項。DP-158–175 是需要設計或產品決策的 Backlog，各自附建議。
+
 - **四位年份不丟前導零（DP-151，2026-10-13）：** `toDateKey()`／`instantDateInZone()` 將數字年份補滿四位，保持既有有效 date key（0100–9999 年）；原本 0100／0999 會變成三位數，使匯入行程的 native date 欄位空白。十個回歸涵蓋日期兩端、0999／1000 跨年及表單預填／保存，六個在修正前失敗。沒有放寬年份支援範圍、裁切長年份、修改 schema／migration、Auth、公告或樣式，見 ADR §6。
 
 - **App 跨午夜刷新今天（DP-150，2026-10-13）：** 日曆／綜覽共用 `useTodayKey()`，依已保存的 `preferences.timezone` 每分鐘檢查日期，focus／回到 visible 時立即刷新，日期字串相同不重畫；偏好換時區立即重新讀取。標頭、月／週／列表高亮、日詳情與綜覽逾期使用同一來源，不自動移動 cursor／selected day、不清草稿、不寫資料。卸載清除 timer 與 listeners；前景最多延遲一分鐘，背景節流沿前景恢復，不能視為可靠提醒。午夜與前景回歸、手機／桌面跨時區 e2e 見 ADR §6；真機／實際休眠未驗，沒有 schema、Auth、版本／公告或部署變更。
