@@ -1,12 +1,13 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { addDays, daysBetween, fromDateKey, startOfWeek, toDateKey } from '../../domain/date';
-import { eventWallTime, instantDateInZone } from '../../domain/eventTime';
+import { eventWallTime } from '../../domain/eventTime';
 import { visibleOccurrences } from '../../domain/calendars';
 import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { topLevelTodos } from '../../domain/todos';
 import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
+import { useTodayKey } from '../useTodayKey';
 import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
 import { EventSheet, type EventDraft } from './EventSheet';
@@ -95,7 +96,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // the 今天 button, the header date and the month label all derive from it,
   // because moving one of them alone made 今天 scroll to a different day than
   // the one it had highlighted.
-  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
+  const todayKey = useTodayKey(data.preferences.timezone);
   const todayDate = fromDateKey(todayKey);
   // Only a real `YYYY-MM-DD` is honoured. `fromDateKey('')` parses to year 0,
   // which `Date` maps to 1900, so seeding the cursor with an empty key sent the

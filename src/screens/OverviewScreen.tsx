@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { calendarColor, visibleOccurrences } from '../domain/calendars';
 import { fromDateKey, toDateKey } from '../domain/date';
-import { instantDateInZone } from '../domain/eventTime';
+import { useTodayKey } from './useTodayKey';
 import {
   buildOverviewGroups,
   countOverviewOccurrences,
@@ -52,7 +52,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
   // Same reading of "today" as the calendar — DP-064. On the device clock this
   // screen could call a todo overdue that 日曆 still counted as open, and the
   // browsing cursor could open the wrong month at a month boundary.
-  const todayKey = instantDateInZone(new Date().toISOString(), data.preferences.timezone);
+  const todayKey = useTodayKey(data.preferences.timezone);
   const [cursor, setCursor] = useState(() => fromDateKey(todayKey));
   const [collapsed, setCollapsed] = useState<string[]>([]);
   // The same range `buildOverviewGroups` walks, so nothing outside the browsed

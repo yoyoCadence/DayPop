@@ -409,6 +409,10 @@ DP-012 已完成 domain 的日期／instant／IANA timezone validation、inclusi
 
 裝置時區只用於**尚未有 canonical preferences 的生命週期**（bootstrap 前、資料載入前的首屏）；一旦 `DayPopUserData` 載入，這個 fallback 即失效。
 
+**跨午夜與前景恢復（DP-150，2026-10-13）：** 日曆與綜覽原本只在其他操作觸發 render 時重新讀「今天」，App 停在畫面上跨午夜時，日期標頭、高亮與待辦逾期會留在昨天。共用 `useTodayKey(preferences.timezone)` 透過 `useSyncExternalStore` 訂閱裝置時鐘：每 60 秒檢查、window focus 與 document 回到 visible 時立即檢查。snapshot 是顯示時區的日期字串，同日檢查不造成重畫，偏好時區變動立即重新計算；卸載時清掉 timer 與 listeners。瀏覽 cursor／selected day、展開狀態與表單草稿都不隨時鐘移動，只有使用者按「今天」才導航。這是 DP-064 已定義日期來源的刷新修正，不改日期／timezone 契約、UI 樣式、repository、schema、Auth 或公告。前景定時刷新最多延遲一分鐘；背景 timer 可能受瀏覽器節流，依 focus／visibility 恢復，不宣稱背景持續執行或可靠提醒（DP-042）。
+
+回歸涵蓋午夜無操作、前景恢復、修改 display timezone、同日不重畫及卸載清理；日曆保留原日期／草稿／durable bytes，綜覽保留瀏覽期間並更新逾期。Playwright 在 390×844／1280×900、實際 browser timezone America/New_York 與 display Asia/Taipei 實跑，經 Taipei 午夜時裝置仍是前一天；日期高亮、兩次午夜的逾期、輸入焦點與資料逐字保留均有斷言。沒有真實背景休眠、iOS／Android 或 staging 證據。
+
 它是**唯一**決定下列事情的時區：
 
 - occurrence 落在哪一個日格

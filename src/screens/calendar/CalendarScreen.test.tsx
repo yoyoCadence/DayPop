@@ -417,6 +417,48 @@ describe('CalendarScreen today sources', () => {
   });
 });
 
+describe('CalendarScreen midnight rollover (DP-150)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Taipei crosses midnight while UTC and New York are still September 30.
+    vi.setSystemTime(new Date('2026-09-30T15:59:30.000Z'));
+    const data = createEmptyUserData();
+    data.preferences.timezone = 'Asia/Taipei';
+    data.preferences.petEnabled = false;
+    writeUserData(data, 0);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('refreshes today without another interaction and preserves the browsed day and unsaved form', async () => {
+    await render({ kind: 'day', dateKey: '2026-09-30' });
+    await click(container.querySelector('.cal-day-new'));
+    const input = container.querySelector<HTMLInputElement>('[aria-label="標題"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '午夜前的草稿');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const bytes = window.localStorage.getItem('daypop.user-data');
+    expect(container.querySelector('.cal-today-full')?.textContent).toContain('2026 / 9 / 30');
+    await act(async () => { vi.advanceTimersByTime(60_000); });
+    expect(container.querySelector('.cal-today-full')?.textContent).toContain('2026 / 10 / 1');
+    expect(container.querySelector<HTMLElement>('[data-date-key="2026-10-01"] .cal-cell-day')?.style.color).toBe('var(--today-fg)');
+    expect(container.querySelector<HTMLElement>('[data-date-key="2026-09-30"] .cal-cell-day')?.style.color).not.toBe('var(--today-fg)');
+    expect(daySheet()?.getAttribute('aria-label')).toBe('9月30日 週三');
+    expect(input.value).toBe('午夜前的草稿');
+    expect(container.querySelector<HTMLInputElement>('[aria-label="日期"]')?.value).toBe('2026-09-30');
+    expect(window.localStorage.getItem('daypop.user-data')).toBe(bytes);
+  });
+
+  it('refreshes immediately on window focus after the browser slept past midnight', async () => {
+    await render(null);
+    vi.setSystemTime(new Date('2026-10-01T16:00:30.000Z'));
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(container.querySelector('.cal-today-full')?.textContent).toContain('2026 / 10 / 2');
+    // Returning to the app updates today but does not navigate the month.
+    expect(periodLabel()).toBe('2026年 9月');
+  });
+});
+
 /**
  * 覆驗抓到的第二個 blocking：Escape 關掉 sheet 之後，快速新增會重新打開舊事件。
  *
