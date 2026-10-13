@@ -118,6 +118,14 @@
 
 ---
 
+## 0.11 第 15／16 檔與 0.4.2 已完成部署（2026-10-13 紀錄，DP-149）
+
+§0.10 的待辦已於 2026-10-12 按順序完成：正式 CLI 核對遠端原為 14 檔，dry-run 精確列出第 15／16 檔，`db push --linked` 套用後遠端／repo 同為 16 檔，再成功部署 0.4.2。不要因歷史段落再次推資料庫或部署。
+
+MCP postflight 確認公開 10 表 RLS、三支 occurrence／calendar RPC 的 SECURITY INVOKER／空 `search_path`／authenticated execute 與 anon 拒絕；同一交易內 39 項固定假資料 pgTAP 全過並 rollback，之後測試帳號、日曆、extension 與 trigger function 均不存在。Generated types 的 schema／RPC 無 drift；advisor 前後只有既有 Auth 洩漏密碼保護未啟用警告，沒有新增 schema 警告，不得將歷史「advisor 0」誤當目前狀態。沒有查改正式使用者內容。
+
+詳見 [部署驗收紀錄](deployment-verification-2026-10-13.md)。本次文件 PR 只記錄既成操作；沒有再次使用 MCP 寫入或 CLI 推送。真實帳號與真機驗收仍未完成。
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：
