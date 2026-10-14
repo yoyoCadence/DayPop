@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAppStorage, type StorageLike } from '../storage/browserStorage';
 import { readSeenRelease, recordSeenRelease, shouldShowReleaseNotes } from './releaseNotesSeen';
-import { isNewerVersion, type ReleaseInfo } from './version';
+import { isNewerVersion, parseReleaseInfo, type ReleaseInfo } from './version';
 
 /** What a manual 檢查更新 found when it did not find an update — DP-090. */
 export type UpdateCheckResult =
@@ -128,7 +128,9 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
       const versionUrl = `${import.meta.env.BASE_URL}version.json?ts=${Date.now()}`;
       const response = await fetch(versionUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const release = (await response.json()) as ReleaseInfo;
+      // Checked here, not where it is rendered: a malformed answer is a failed
+      // check like any other, and never reaches the dialogs — DP-153.
+      const release = parseReleaseInfo(await response.json());
 
       if (release.version === __APP_VERSION__) setCurrentRelease(release);
       const newer = isNewerVersion(release.version, __APP_VERSION__);

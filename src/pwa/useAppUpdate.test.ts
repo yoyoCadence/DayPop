@@ -316,6 +316,41 @@ describe('useAppUpdate release notes and manual feedback', () => {
     expect(hook.current.checkResult).toEqual({ kind: 'failed', message: 'HTTP 503' });
   });
 
+  /*
+   * DP-153. These answers used to reach the dialogs, which threw while
+   * rendering them and took the whole App down to the root fallback. Now
+   * nothing they carry is kept: no release to render, an automatic check that
+   * stays silent, and a manual one that says it failed.
+   */
+  describe.each([
+    ['the running version', CURRENT],
+    ['a newer version', NEWER],
+  ])('a malformed answer for %s', (_label, release) => {
+    it.each([
+      ['changes missing', { ...release, changes: undefined }],
+      ['changes a string', { ...release, changes: '改了一件事' }],
+      ['changes holding an object', { ...release, changes: [{ text: '改了一件事' }] }],
+      ['title missing', { ...release, title: undefined }],
+      ['a null body', null],
+    ])('%s is a failed check, never a release to render', async (_case, body) => {
+      respondWith(body);
+      const hook = renderHook(new MemoryStorage());
+      await settle();
+      expect(hook.current.availableRelease).toBeNull();
+      expect(hook.current.currentRelease).toBeNull();
+      expect(hook.current.whatsNew).toBeNull();
+      expect(hook.current.checkResult).toBeNull();
+      expect(hook.current.error).toBe('更新資訊格式不正確');
+      expect(registration.update).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await hook.current.checkForUpdate();
+      });
+      expect(hook.current.availableRelease).toBeNull();
+      expect(hook.current.checkResult).toEqual({ kind: 'failed', message: '更新資訊格式不正確' });
+    });
+  });
+
   it('offers again an update the user put off, but only when they ask', async () => {
     respondWith(NEWER);
     const hook = renderHook(new MemoryStorage());
