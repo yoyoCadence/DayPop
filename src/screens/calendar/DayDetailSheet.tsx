@@ -17,6 +17,7 @@ import { calendarColor } from '../../domain/calendars';
 import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, Sticker, TodoItem, TodoPriority } from '../../domain/types';
+import { useModalFocus } from '../../shell/useModalFocus';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
@@ -111,8 +112,12 @@ function DayDetailSheetBody({
     }
   }
 
-  // Escape is handled by `CalendarScreen`, not here: the event sheet can be open
-  // on top of this one, and two window listeners would close both at once.
+  // Focus stays in the sheet, and Escape closes it only when it is the topmost
+  // layer: the event sheet can be open on top of it. The inline title and
+  // date editors claim their own Escape first, so cancelling one of them
+  // leaves the sheet open (DP-120, DP-130, DP-155).
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, { onEscape: onClose });
   const date = fromDateKey(dateKey);
   const dayLabel = `${date.getMonth() + 1}月${date.getDate()}日 ${WEEKDAY_NAMES[date.getDay()]}`;
 
@@ -194,7 +199,7 @@ function DayDetailSheetBody({
 
   return (
     <ViewportLayer>
-      <div className="cal-day-layer">
+      <div className="cal-day-layer" ref={layer}>
         <div className="cal-day-backdrop" onClick={onClose} />
         <div className="cal-day-sheet" role="dialog" aria-modal="true" aria-label={dayLabel}>
           <div className="cal-day-grip" aria-hidden="true" />

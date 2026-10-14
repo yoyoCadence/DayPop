@@ -28,6 +28,21 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 日曆的 sheet 接上共用焦點規則（DP-155，2026-10-14）
+
+`EventSheet`、`DayDetailSheet` 與疊在上面的 `ScopeDialog` 改用 `useModalFocus()`。原本 Escape 由三套各自的 listener 拼起來：`CalendarScreen` 在 window 冒泡階段決定關哪一層 sheet，`EventSheet` 在寫入等待中用 capture 階段吃掉 Escape，`ScopeDialog` 在 capture 階段自己處理 Tab 與 Escape、再 `stopPropagation()` 擋住下面的 sheet。三者都移除，由共用堆疊決定「最上層」。
+
+接上時 hook 改了兩處：
+
+- **Escape 改在冒泡階段處理**，Tab 仍在 capture 階段。日詳情的 inline 改名與換日編輯器在 React 的 `onKeyDown` 裡 `stopPropagation()`，靠的是事件到不了 window 的冒泡階段；DP-154 的 hook 在 capture 階段處理 Escape，會比它們先拿到，取消一個改名就會關掉整個日詳情。現在內層元素可以先認領，hook 也略過已被 `preventDefault()` 的事件。
+- **「開啟前是誰有焦點」改在 effect 裡決定。** 週格拖曳重複事件時，`WeekView` 會在自己的 effect 把焦點放回被拖的色塊，再由範圍對話框接手（DP-072）。只在 render 時記錄會拿到拖曳前的狀態，取消後焦點回不到色塊；完整 e2e 第一輪就是在這裡失敗。現在焦點若已被 `autoFocus` 搬進圖層，才用 render 時記下的元素，否則用 effect 執行當下有焦點的元素；只決定一次，StrictMode 的第二次執行不會覆蓋。
+
+行為變化：日詳情開啟時焦點進入 sheet；原本焦點留在觸發它的日期格，第一次 Tab 就到背後的 FAB。關閉後焦點回到日期格，月格的方向鍵移動（DP-069）可以接著用。
+
+既有契約都保留：範圍對話框的 Escape 只關自己、草稿留在事件 sheet；事件 sheet 疊在日詳情上時 Escape 只關事件 sheet；寫入等待中 Escape 不關（DP-133／134）；inline 編輯器的 Escape 只取消編輯（DP-120／130／132）。兩個既有單元測試的斷言改寫為守住原本的意圖：它們原本以「換日後焦點在 `body`」「Escape 沒被攔下」當基準，那是沒有焦點管理時的副作用。
+
+驗證：hook 新增 2 個單元案例（內層元素先認領 Escape；較早的 effect 給了焦點時，關閉後還給它）。新 e2e `calendar-sheet-focus.spec.ts`（手機＋桌面）按真實按鍵：日詳情、新增行程、日詳情上再開新增行程、重複事件範圍對話框各走一圈並按 Escape；還原修正後 4 個中有 3 個失敗，範圍對話框那個原本就有自己的循環，作為守衛。完整 e2e 第一輪 189 通過、7 跳過、2 失敗（上述跨午夜案例，手機與桌面各一）；修正後該 spec 與其他拖曳、焦點 spec 共 22 個全過。
+
 ### 對話框共用焦點規則，先套用日曆對話框（DP-154，2026-10-14）
 
 `aria-modal="true"` 只是告訴輔助科技「後面的頁面現在搆不到」，本身什麼都不擋。2026-10-13 審查在新增日曆對話框重現：輸入名稱後 Shift+Tab 兩次到了背景的「綜覽」分頁，按 Enter 就切頁，對話框與打好的名稱一起消失。複核量到七個對話框都能讓焦點跑到背景（`docs/review-2026-10-13-project-audit.md` §2.3）。原稿沒有焦點限制，所以這和 DP-141 一樣是狀態與可及性的擴充，不是搬移時弄壞的。

@@ -203,9 +203,11 @@ describe('EventSheet confirmed saves (DP-133)', () => {
     expect(previous.onClose).not.toHaveBeenCalled();
     expect(next.onClose).not.toHaveBeenCalled();
     expect(container.querySelector<HTMLInputElement>('[aria-label="標題"]')!.value).toBe('另一份草稿');
-    const escape = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
-    window.dispatchEvent(escape);
-    expect(escape.defaultPrevented).toBe(false);
+    // The finished save's lock went with its sheet: Escape closes the new one.
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    });
+    expect(next.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('does not steal focus from another control on failure', async () => {

@@ -21,7 +21,10 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
  *   let focus leave for the browser's own controls at either end.
  * - Escape goes to the topmost layer only, never while an input method is
  *   composing — the Escape that cancels a Chinese candidate list must not
- *   close the dialog holding the text.
+ *   close the dialog holding the text. It is read once the key press has
+ *   bubbled all the way up (DP-155), so a control inside the layer that
+ *   handles Escape itself — 日詳情's inline title and date editors — claims it
+ *   first with `stopPropagation()` or `preventDefault()`, and the layer stays.
  * - Focus returns to whatever had it before the layer opened, if that is
  *   still in the document and nothing else has taken focus since.
  *
@@ -56,11 +59,13 @@ export function useModalFocus(
   layerRef: RefObject<HTMLElement | null>,
   options: ModalFocusOptions = {},
 ): void {
-  // Read during the first render: `autoFocus` moves focus into the layer
-  // during commit, before any effect could see what had it.
-  const [returnFocus] = useState(() =>
+  // What had focus at the first render. `autoFocus` moves focus into the layer
+  // during commit, before any effect could see where it came from.
+  const [focusedAtRender] = useState(() =>
     typeof document === 'undefined' ? null : document.activeElement,
   );
+  // Where focus goes back to on close, decided once in the first effect run.
+  const returnFocus = useRef<Element | null | undefined>(undefined);
   const onEscape = useRef(options.onEscape);
   useEffect(() => {
     onEscape.current = options.onEscape;
@@ -69,48 +74,61 @@ export function useModalFocus(
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return;
+    // Already inside means `autoFocus` moved it in, so the render-time element
+    // is the opener. Otherwise whatever has focus now is: a component rendered
+    // earlier may have moved it there in its own effect — the week grid hands
+    // focus back to the dragged block before the scope question opens (DP-072).
+    // Decided once, so StrictMode's second run cannot replace it.
+    if (returnFocus.current === undefined) {
+      returnFocus.current = layer.contains(document.activeElement)
+        ? focusedAtRender
+        : document.activeElement;
+    }
     const entry: ModalLayer = { layer: () => layerRef.current, onEscape: () => onEscape.current };
     openLayers.push(entry);
     const release = makeOutsideInert(layer);
     if (!layer.contains(document.activeElement)) focusables(layer)[0]?.focus();
-    if (openLayers.length === 1) window.addEventListener('keydown', onKeyDown, true);
+    if (openLayers.length === 1) {
+      window.addEventListener('keydown', onTab, true);
+      window.addEventListener('keydown', onEscapeKey);
+    }
 
     return () => {
       const index = openLayers.indexOf(entry);
       if (index >= 0) openLayers.splice(index, 1);
-      if (openLayers.length === 0) window.removeEventListener('keydown', onKeyDown, true);
+      if (openLayers.length === 0) {
+        window.removeEventListener('keydown', onTab, true);
+        window.removeEventListener('keydown', onEscapeKey);
+      }
       release();
       // Still in the document means it did not close: StrictMode re-runs
       // effects in development without removing anything.
       if (layer.isConnected) return;
       const active = document.activeElement;
       const focusWasHere = !active || active === document.body || layer.contains(active);
-      if (focusWasHere && returnFocus instanceof HTMLElement && returnFocus.isConnected) {
-        returnFocus.focus();
-      }
+      const opener = returnFocus.current;
+      if (focusWasHere && opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
     // One registration per opened layer; the Escape handler is read through a ref.
-  }, [layerRef, returnFocus]);
+  }, [layerRef, focusedAtRender]);
 }
 
-function onKeyDown(event: KeyboardEvent) {
-  const top = openLayers.at(-1);
-  const layer = top?.layer();
-  if (!top || !layer) return;
+/** Bubble phase: whatever inside the layer handles Escape itself has had its turn. */
+function onEscapeKey(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  // Safari reports an input method's own keys as 229 rather than composing.
+  if (event.isComposing || event.keyCode === 229) return;
+  const close = openLayers.at(-1)?.onEscape();
+  if (!close) return;
+  event.preventDefault();
+  close();
+}
 
-  if (event.key === 'Escape') {
-    // Safari reports an input method's own keys as 229 rather than composing.
-    if (event.isComposing || event.keyCode === 229) return;
-    const close = top.onEscape();
-    if (!close) return;
-    // The layer below must not also act on the same key press.
-    event.preventDefault();
-    event.stopPropagation();
-    close();
-    return;
-  }
-
+/** Capture phase, so focus is kept in before anything else moves it. */
+function onTab(event: KeyboardEvent) {
   if (event.key !== 'Tab') return;
+  const layer = openLayers.at(-1)?.layer();
+  if (!layer) return;
   const candidates = focusables(layer);
   if (candidates.length === 0) {
     // Everything is disabled while a write is waiting (DP-141); stay put
