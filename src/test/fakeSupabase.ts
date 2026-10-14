@@ -32,8 +32,53 @@ export class FakeSupabase {
   /** Every RPC call, including its serialized argument payload. */
   readonly rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
   readonly objects = new Map<string, Blob>();
-  /** Server-controlled timestamp handed to inserted rows. */
-  serverTime = '2026-08-04T00:00:00.000Z';
+  #clock = Date.parse('2026-08-04T00:00:00.000Z');
+  #pinned = true;
+
+  /**
+   * The database's `now()` for the latest write: what it stamps on
+   * `created_at` and `updated_at`.
+   *
+   * Every write request is its own transaction, so each gets a later time
+   * than the one before, and the rows of one RPC share one — as in Postgres.
+   * It used to be a single constant, which left the fake's array order as the
+   * only trace of which row came first; `load()` orders by creation time since
+   * DP-152, so that difference now matters. Setting it pins the next write to
+   * exactly that time; later writes count on from there one millisecond each.
+   */
+  get serverTime(): string {
+    return new Date(this.#clock).toISOString();
+  }
+
+  set serverTime(value: string) {
+    this.#clock = Date.parse(value);
+    this.#pinned = true;
+  }
+
+  /** Starts one write transaction and returns its `now()`. */
+  beginWrite(): string {
+    if (this.#pinned) this.#pinned = false;
+    else this.#clock += 1;
+    return this.serverTime;
+  }
+  /**
+   * Rows per select response, like the project's `max_rows` — DP-152.
+   *
+   * Defaults to the `max_rows = 1000` of `supabase/config.toml`. Before this
+   * the fake returned every row, so a `load()` that never paged passed every
+   * test while the real API cut it off at 1,000 rows without a word. `null`
+   * lifts the cap.
+   */
+  maxRows: number | null = 1000;
+  /** Whether a `count: 'exact'` select reports its count, as PostgREST's Content-Range does. */
+  reportsCount = true;
+  /** Select requests per table since the map was last cleared, for counting pages. */
+  readonly selectRequests = new Map<string, number>();
+  /**
+   * Table name → the select request (1-based, counted in `selectRequests`)
+   * that fails, to imitate a page failing in the middle of a load — DP-152.
+   */
+  readonly pageFailures = new Map<string, { page: number; message: string }>();
 
   seed(table: string, rows: FakeRow[]) {
     this.tables.set(table, [...rows]);
@@ -103,6 +148,7 @@ export class FakeSupabase {
     this.rpcCalls.push({ name, args: structuredClone(args) });
     const failure = this.failures.get(`rpc:${name}`);
     if (failure) return { data: null, error: { message: failure } };
+    this.beginWrite();
     if (name === 'replace_daypop_data' || name === 'append_daypop_ics') {
       return this.#importData(name, args.p_payload);
     }
@@ -413,11 +459,15 @@ function isFakeRow(value: unknown): value is FakeRow {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-type QueryResult = { data: unknown; error: { message: string } | null };
+type QueryResult = { data: unknown; error: { message: string } | null; count?: number | null };
 
 class FakeQuery implements PromiseLike<QueryResult> {
   #filters: [string, unknown][] = [];
   #inFilters: [string, unknown[]][] = [];
+  #greaterThan: [string, string][] = [];
+  #order: [string, boolean][] = [];
+  #limit: number | null = null;
+  #countRequested = false;
   #mode: 'select' | 'insert' | 'upsert' | 'delete' | 'update' = 'select';
   #payload: FakeRow | null = null;
   #single = false;
@@ -427,12 +477,32 @@ class FakeQuery implements PromiseLike<QueryResult> {
     private readonly table: string,
   ) {}
 
-  select() {
+  select(_columns?: string, options?: { count?: 'exact' | 'planned' | 'estimated' }) {
+    this.#countRequested = options?.count === 'exact';
     return this;
   }
 
   eq(column: string, value: unknown) {
     this.#filters.push([column, value]);
+    return this;
+  }
+
+  /**
+   * Compared as strings. That matches Postgres for the lowercase UUIDs the
+   * keys are: `uuid` sorts by its bytes, and so does their hex text.
+   */
+  gt(column: string, value: string) {
+    this.#greaterThan.push([column, value]);
+    return this;
+  }
+
+  order(column: string, options?: { ascending?: boolean }) {
+    this.#order.push([column, options?.ascending ?? true]);
+    return this;
+  }
+
+  limit(count: number) {
+    this.#limit = count;
     return this;
   }
 
@@ -494,6 +564,16 @@ class FakeQuery implements PromiseLike<QueryResult> {
   #run(): QueryResult {
     const failure = this.db.failures.get(this.table);
     if (failure) return { data: null, error: { message: failure } };
+    if (this.#mode === 'select') {
+      const request = (this.db.selectRequests.get(this.table) ?? 0) + 1;
+      this.db.selectRequests.set(this.table, request);
+      const pageFailure = this.db.pageFailures.get(this.table);
+      if (pageFailure?.page === request) {
+        return { data: null, error: { message: pageFailure.message }, count: null };
+      }
+    } else {
+      this.db.beginWrite();
+    }
 
     const rows = this.db.rows(this.table);
     if (this.#mode === 'insert' || this.#mode === 'upsert') {
@@ -542,7 +622,25 @@ class FakeQuery implements PromiseLike<QueryResult> {
     }
 
     const matched = rows.filter((row) => this.#matches(row));
-    return { data: this.#single ? (matched[0] ?? null) : matched, error: null };
+    if (this.#single) return { data: matched[0] ?? null, error: null };
+
+    // Code-unit order, the same comparison `gt()` uses, so the fake's own
+    // pages neither skip nor repeat a row.
+    for (const [column, ascending] of [...this.#order].reverse()) {
+      matched.sort((left, right) => {
+        const [a, b] = [String(left[column]), String(right[column])];
+        const order = a < b ? -1 : a > b ? 1 : 0;
+        return ascending ? order : -order;
+      });
+    }
+    // PostgREST counts every matching row and then cuts the body to the
+    // smaller of the requested limit and `max_rows`, without saying it did.
+    const cap = Math.min(this.#limit ?? Infinity, this.db.maxRows ?? Infinity);
+    return {
+      data: matched.slice(0, cap),
+      error: null,
+      count: this.#countRequested && this.db.reportsCount ? matched.length : null,
+    };
   }
 
   /**
@@ -635,7 +733,8 @@ class FakeQuery implements PromiseLike<QueryResult> {
   #matches(row: FakeRow): boolean {
     return (
       this.#filters.every(([column, value]) => row[column] === value) &&
-      this.#inFilters.every(([column, values]) => values.includes(row[column]))
+      this.#inFilters.every(([column, values]) => values.includes(row[column])) &&
+      this.#greaterThan.every(([column, value]) => String(row[column]) > value)
     );
   }
 }

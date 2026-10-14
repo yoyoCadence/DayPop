@@ -74,11 +74,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-13 專案審查委託（任務於 2026-10-14 登記）**：一個 agent 完成全專案審查後額度用盡，專案擁有者要求另一個 agent 接手複核報告、把相關工作整理進本檔，之後由他接著開發。複核結果與原報告全文見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。**這次只登記任務**，沒有修改產品程式碼、依賴、migration、版號、公告或部署。已重現、不需要產品決策的修正（DP-152–DP-157）依建議順序放在這裡；需要設計或產品決策的（DP-158–DP-175）放在 Backlog，各自附建議。順序是 agent 的建議，專案擁有者可以直接調整。更下方「Next 目前是空的」是 2026-08 的歷史敘述。
 
-- [ ] **DP-152 — 帳號資料載入補上完整分頁（審查 R1，P1）：** `SupabaseDayPopRepository.load()`（[`supabaseRepository.ts:134-169`](src/data/supabaseRepository.ts#L134-L169)）對六個集合各只發一次 `select('*')`，沒有 range、排序或筆數核對，而 `supabase/config.toml:18` 是 `max_rows = 1000`。匯入上限（`dataTransfer.ts:39`）允許 10,000 筆行程、20,000 筆待辦、50,000 筆例外，一次 JSON 還原就能超過。**已重現**：1,001 筆行程只載入 1,000 筆，`buildJsonBackup()` 也只有 1,000 筆，沒有任何錯誤，events 只發一個不帶 Range 的請求。畫面、snapshot、帳號快取與 JSON／ICS 匯出都會缺列。`load()` 本身不刪伺服器資料，但截斷的備份再以「取代資料」匯回就會真的刪掉缺的列（推論，未重現）。
-  - **要做**：六個集合查詢共用一套完整載入。以主鍵做穩定且唯一的排序，分頁到確定沒有下一頁為止；任一頁失敗就整次失敗，不得 commit 部分 snapshot，也不得覆寫最後確認的帳號快取。`FakeSupabase` 要能模擬列數上限與頁間失敗，否則測試會像 DP-138 之前那樣永遠是綠的。
-  - **兩個實作陷阱**：(1) 不能假設伺服器上限等於自己要的頁大小。要 1,000 列而上限是 500 時，回來的 500 列看起來像「不足一頁」；結束條件要用空頁或 exact count。(2) `load()` 內的註解說明 table 名稱必須維持 literal，否則 generated row types 會退化成無法使用的 union。
-  - **驗收**：1,001 與 2,001 筆；最後一頁剛好滿頁；第二頁失敗時 snapshot 與快取維持最後確認內容，並走既有的讀取失敗狀態；跨頁的父子待辦與例外；reload、帳號快取、JSON、ICS 四處筆數一致。一般帳號（每個集合不到一頁）啟動時的請求數要記錄下來。
-  - **不在範圍**：只調高 `max_rows`（遠端設定不在 repo 裡，任何上限也都會再被超過）；讀取途中遠端被修改的一致性，MVP 是單裝置假設，把它明寫成已知限制記入 ADR §2。預期不需要 migration、RLS 或 Auth 變更。遠端專案實際的 Max rows 沒有量測。資料邊界屬高風險區，獨立 PR。
+- [x] **DP-152 — 已完成（2026-10-14），見 Done。**
 - [ ] **DP-153 — 更新資訊在讀取邊界做格式驗證（審查 R2，P2）：** `useAppUpdate.runCheck()`（[`useAppUpdate.ts:131`](src/pwa/useAppUpdate.ts#L131)）把 `response.json()` 直接斷言成 `ReleaseInfo`；`UpdateDialog.tsx:20`、`ReleaseNoticeDialog.tsx:34`／`:38` 與 `SettingsScaffoldScreen.tsx:600` 三處繪製直接信任 `changes`。**已重現兩條路徑**：較新版本（更新提示）與同一版本（版本公告，啟動時自動觸發），在 `changes` 缺漏、為字串或陣列含物件時都在繪製時丟錯。兩個對話框在分頁 `ErrorBoundary` 之外，所以整個 App 被 `RootErrorFallback` 取代。觸發條件很窄（合法 JSON、`version` 為字串且不比目前版本舊、`changes` 不是字串陣列），沒有發現線上 `version.json` 已損壞。
   - **要做**：在 fetch 邊界以 runtime 驗證取代型別斷言。`version`、`title`、`releasedAt` 為字串，`changes` 為字串陣列，條數與長度有合理上限。不合格就沿既有的檢查失敗路徑（自動檢查安靜、手動檢查顯示失敗結果），不要在繪製時用空陣列掩蓋。
   - **驗收**：缺欄位、`null`、非陣列、陣列含物件，各自在同版本與較新版本、手動與自動檢查下，App 都維持可用；合法更新、稍後提醒、`daypop.release-notes-seen` 與歷史公告的行為不變。
@@ -367,6 +363,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-152 — 帳號資料完整載入（2026-10-14，審查 R1）：** 由 Next 經 In Progress 完成。`load()` 的六個集合改由 `loadAllRows()` 以主鍵分頁（`id > 上一頁最後一筆`），結束條件看伺服器回傳的 exact count 而不是「這頁不滿」，沒有 count 時讀到空頁為止；任一頁失敗整次失敗，部分資料不進 snapshot 也不寫快取。載入後依建立時間 → `sort_order` → `id` 排序，讓重新載入的順序與寫入時一致、匯入那天的貼圖保持備份順序。一般帳號的請求數不變（8 個 select）。**回歸另外證實**：舊版在上限內「成功」載入第一頁時會蓋掉上一份完整的帳號快取；截在外面的系列或父待辦會讓整份資料驗證失敗。`FakeSupabase` 預設列數上限 1,000、支援分頁與 exact count、可讓第 N 頁失敗，並改成每個寫入請求有自己遞增的時間（原本是固定時間，陣列順序成了唯一的先後依據）；時鐘改了之後，一個契約測試與帳號 ICS e2e 的「匯入後 `createdAt` 不變」假設改為符合 DP-036 trigger 的實際行為。8 個 adapter 案例與 1 個快取案例在還原 adapter 後失敗 8 個（另一個是請求數守衛），其中一個以真正的 supabase-js 驗證請求格式。已知限制：分頁之間另一台裝置的寫入不保證包含；附件清理佇列仍單次讀取；遠端 Max rows 未量測、沒有對真實 Supabase 執行。不改 schema、RLS、Auth、版號、公告或部署。見 ADR §2。
 
 - [x] **DP-151 — 日期 helper 保留四位年份（2026-10-13）：** `toDateKey()`／`instantDateInZone()` 的數字年份補滿四位，使既有有效 0100／0999 日期不再變成三位數或在 native date 欄位留白；不放寬年份範圍、不裁切較長輸出、不改保存格式。十個回歸含兩端年份、0999／1000 跨年、own／display 日期與 EventSheet 預填／保存，六個在修正前失敗。原 main 基線的 1122 個單元與七項 posttest、lint、typecheck、build／check:build 通過；實際 Intl America/New_York 下 116 個相關案例通過。未改 schema、Auth、樣式、版號／公告或部署，見 ADR §6。
 

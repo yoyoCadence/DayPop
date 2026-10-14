@@ -31,6 +31,18 @@ const test = base.extend<{ browserHealth: void; guestBytes: string }>({
   },
 });
 
+/**
+ * A document with the server's timestamps taken out. The database stamps
+ * `created_at` on insert and `updated_at` on every write, so a restored row
+ * carries the restore's time, not the backup's (DP-036 triggers; the harness's
+ * fake clock advances per request since DP-152). Content is what has to match.
+ */
+function withoutServerTimes<Data>(data: Data): Data {
+  return JSON.parse(JSON.stringify(data), (key, value: unknown) =>
+    key === 'createdAt' || key === 'updatedAt' ? undefined : value,
+  ) as Data;
+}
+
 async function storageBytes(page: Page, key: string) {
   const raw = await page.evaluate((key) => localStorage.getItem(key), key);
   expect(raw).not.toBeNull();
@@ -155,14 +167,19 @@ test('帳號 JSON 還原會重新寫入並讀回，重登不依賴快取且遊�
   await expect(preview).toBeHidden();
   await expect(page.getByRole('status')).toContainText('還原 3 筆資料');
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
-  expect(await accountData(page)).toEqual(original);
+  const restoredData = await accountData(page);
+  expect(withoutServerTimes(restoredData)).toEqual(withoutServerTimes(original));
+  // Written again by the restore, not carried over from the file.
+  expect(Date.parse(restoredData.events[0]!.createdAt)).toBeGreaterThan(
+    Date.parse(original.events[0]!.createdAt),
+  );
   expect(await storageBytes(page, guestKey)).toBe(guestBytes);
 
   await reloadAccountWithoutCache(page, guestBytes);
-  expect(await accountData(page)).toEqual(original);
+  expect(await accountData(page)).toEqual(restoredData);
   await expect(page.getByLabel('寵物名字')).toHaveValue('帳號備份夥伴');
   const restored = await downloadBackup(page, testInfo);
-  expect(restored.backup.data).toEqual(backup.data);
+  expect(withoutServerTimes(restored.backup.data)).toEqual(withoutServerTimes(backup.data));
   await tabButton(page, '日曆').click();
   await calendarViewButton(page, '列表').click();
   await expect(agendaRow(page, '帳號備份行程')).toHaveCount(1);
