@@ -180,6 +180,32 @@ describe('搜尋', () => {
     expect(onOpenDay).not.toHaveBeenCalled();
   });
 
+  it('依日曆篩選時，待辦也只留那個日曆的（DP-174）', async () => {
+    const data = seeded();
+    const home = data.calendars[0]!;
+    const work = { ...home, id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', name: '工作', isDefault: false, sortOrder: 1 };
+    data.calendars.push(work);
+    data.todos.push(todo('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '整理報表', '2026-08-09', work.id));
+    await act(async () => {
+      root.render(
+        <DataProvider repository={fixedRepository(data)}>
+          <SearchScreen onOpenEvent={vi.fn()} onOpenDay={vi.fn()} />
+        </DataProvider>,
+      );
+    });
+    const chip = (name: string) =>
+      [...container.querySelectorAll('.search-chip')].find((element) => element.textContent?.includes(name));
+
+    await search('整理');
+    expect(titles()).toEqual(['整理照片', '整理報表']);
+    await click(chip('工作'));
+    expect(titles()).toEqual(['整理報表']);
+    await click(chip(home.name));
+    expect(titles()).toEqual(['整理照片']);
+    await click(chip('全部'));
+    expect(titles()).toEqual(['整理照片', '整理報表']);
+  });
+
   it('opens an event result on the 日曆 tab', async () => {
     const { onOpenEvent, onOpenDay } = await render();
 

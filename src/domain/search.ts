@@ -20,7 +20,7 @@ export interface SearchResult {
   title: string;
   /** Secondary line: time for events, 待辦 · date (· 已完成) for todos. */
   sub: string;
-  /** Owning calendar, for the result dot. Todos are not filtered by calendar. */
+  /** Owning calendar, for the result dot; set for events only, as in the原檔. */
   calendarId?: string;
   /**
    * Day a todo result opens. Absent when the todo has no due date, which the
@@ -31,10 +31,15 @@ export interface SearchResult {
 }
 
 /**
- * `calendarFilter` is the原檔's `searchCal`: `null` means 全部. It applies to
- * events only, because a todo has no calendar in the原檔 and filtering DayPop's
- * todos by one would silently hide every todo whenever a non-default calendar
- * is picked.
+ * `calendarFilter` is the原檔's `searchCal`: `null` means 全部.
+ *
+ * It applies to todos too, by each todo's own `calendarId` — DP-174, a
+ * deliberate departure. The原檔's todos have no calendar, so picking one there
+ * hid every todo (`if(fc==='all')` around the todo loop, `:1295`); this used to
+ * keep every todo instead and said it followed the原檔. DayPop's todos do
+ * belong to a calendar, so the filter now means the same thing for both kinds
+ * of result. A subtask is judged by its own calendar: one made in the App
+ * inherits its parent's (DP-116), and an imported one may not.
  */
 export function searchEntries(
   query: string,
@@ -68,6 +73,7 @@ export function searchEntries(
   }
 
   for (const todo of todos) {
+    if (calendarFilter !== null && todo.calendarId !== calendarFilter) continue;
     if (!todo.title.toLowerCase().includes(needle)) continue;
     results.push({
       kind: 'todo',

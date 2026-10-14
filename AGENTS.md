@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **搜尋的日曆篩選也篩待辦（DP-174，2026-10-14）：** 選了某個日曆時，行程與待辦都只留那個日曆的；待辦依每筆自己的 `calendarId`，子項不看父項。刻意偏離原稿（原稿選了日曆就整批隱藏待辦），見 ADR §2。
+
 - **使用者看到的文字不放任務編號（DP-163，2026-10-14）：** 設定、日詳情與新增行程原本直接顯示「DP-014」「原稿」「搬移」「domain」等工程用語，已改寫成使用者的話，「這些功能還沒有」的誠實說明保留；任務編號只寫在程式註解裡。`App.test.tsx` 會走過四個分頁、新增行程（行程與待辦）與日詳情，出現 `DP-\d{3}`、「原稿」「搬移」「domain」「scaffold」任一個就失敗。新增畫面文字時照這個規則。
 
 - **真正的 AuthProvider 有整合測試了；啟動時刷新失敗會卡住（DP-158，2026-10-14）：** `src/auth/AuthProvider.test.tsx` 用真正的 supabase-js client 驅動真正的 `AuthProvider`，只把網路換成模擬的 Auth 端點（每個案例 `vi.resetModules()` 取新 client）。改 Auth 流程時先跑它；e2e 與其他單元測試仍是直接給 `AuthContext`，碰不到這一層。**已知問題（DP-176，待決定）**：記住的登入已過期、啟動時刷新遇到網路錯誤或 503，約 25.5 秒後才結束初始化，接著當成未登入、顯示遊客資料；刷新請求沒回應時一直停在「載入中…」。這兩個行為目前由測試鎖住，修正時要一起改測試。

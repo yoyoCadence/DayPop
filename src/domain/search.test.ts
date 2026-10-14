@@ -74,6 +74,36 @@ function todo(id: string, title: string, dueDate: string, done: boolean): TodoIt
   };
 }
 
+describe('依日曆篩選（DP-174）', () => {
+  const WORK = 'calendar-2';
+  const events: CalendarEvent[] = [...EVENTS, { ...EVENTS[1]!, id: 'e3', calendarId: WORK, title: '客戶聚餐' }];
+  const todos: TodoItem[] = [
+    ...TODOS,
+    { ...todo('t3', '客戶回覆', '2026-08-10', false), calendarId: WORK },
+    // An imported subtask whose parent sits in the other calendar.
+    { ...todo('t4', '客戶附件', '2026-08-07', false), calendarId: WORK, parentId: 't1' },
+  ];
+  const ids = (filter: string | null) => searchEntries('客戶', events, todos, filter).map((result) => result.id);
+
+  it('全部 keeps every match', () => {
+    expect(ids(null)).toEqual(['e1', 'e3', 't1', 't3', 't4']);
+  });
+
+  it('a calendar keeps its own events and its own todos, not the others', () => {
+    expect(ids('calendar-1')).toEqual(['e1', 't1']);
+    expect(ids(WORK)).toEqual(['e3', 't3', 't4']);
+  });
+
+  it('judges a subtask by its own calendar rather than its parent', () => {
+    expect(ids(WORK)).toContain('t4');
+    expect(ids('calendar-1')).not.toContain('t4');
+  });
+
+  it('a calendar with nothing in it finds nothing', () => {
+    expect(ids('calendar-3')).toEqual([]);
+  });
+});
+
 describe('searchEntries', () => {
   it('returns nothing for an empty query', () => {
     expect(searchEntries('', EVENTS, TODOS)).toEqual([]);
