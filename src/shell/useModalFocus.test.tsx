@@ -1,7 +1,7 @@
 import { act, StrictMode, useEffect, useRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useModalFocus } from './useModalFocus';
+import { useModalFocus, useModalLayerOpen } from './useModalFocus';
 
 /**
  * DP-154. jsdom does not move focus on Tab, so these drive the edges the hook
@@ -182,6 +182,44 @@ describe('useModalFocus (DP-154)', () => {
     byText('完成').focus();
     press('Escape');
     expect(onEscape).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports the layers the person opened, not notices, so a notice can wait (DP-156)', () => {
+    const seen: boolean[] = [];
+    function Watcher() {
+      seen.push(useModalLayerOpen());
+      return null;
+    }
+    function Notice() {
+      const layer = useRef<HTMLDivElement>(null);
+      useModalFocus(layer, { notice: true });
+      return (
+        <div ref={layer}>
+          <button type="button">稍後提醒</button>
+        </div>
+      );
+    }
+    function Screen({ notice, dialog }: { notice: boolean; dialog: boolean }) {
+      return (
+        <>
+          <Watcher />
+          {notice && <Notice />}
+          {dialog && (
+            <Layer name="dialog">
+              <button type="button">儲存</button>
+            </Layer>
+          )}
+        </>
+      );
+    }
+    act(() => root.render(<Screen notice={false} dialog={false} />));
+    expect(seen.at(-1)).toBe(false);
+    act(() => root.render(<Screen notice dialog={false} />));
+    expect(seen.at(-1)).toBe(false);
+    act(() => root.render(<Screen notice={false} dialog />));
+    expect(seen.at(-1)).toBe(true);
+    act(() => root.render(<Screen notice={false} dialog={false} />));
+    expect(seen.at(-1)).toBe(false);
   });
 
   it('leaves Escape alone for a layer that does not close on it', () => {

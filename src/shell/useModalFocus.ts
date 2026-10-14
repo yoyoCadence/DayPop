@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 
 /**
  * Keyboard and focus rules every modal layer shares — DP-154.
@@ -34,15 +34,54 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 export interface ModalFocusOptions {
   /** Called on Escape when this is the topmost layer. Omit to leave Escape alone. */
   onEscape?: () => void;
+  /**
+   * A notice the App puts up on its own — the update prompt, release notes —
+   * rather than something the person opened. `useModalLayerOpen()` does not
+   * count notices, so a notice can wait for the person's layers to close
+   * instead of opening over them (DP-156).
+   */
+  notice?: boolean;
 }
 
 interface ModalLayer {
   layer: () => HTMLElement | null;
   onEscape: () => (() => void) | undefined;
+  notice: boolean;
 }
 
 /** Open layers, oldest first; only the last one answers the keyboard. */
 const openLayers: ModalLayer[] = [];
+const layerListeners = new Set<() => void>();
+
+function layersChanged() {
+  for (const listener of layerListeners) listener();
+}
+
+/**
+ * Whether a layer the person opened is open now; notices are not counted.
+ *
+ * The newest layer is the one the keyboard is held in, so it has to be the
+ * one on top. Everything the person opens stacks upward — 日詳情, then the
+ * event sheet, then the scope question — but a notice arrives whenever a
+ * version check finishes, and it sits below the calendar dialog, the import
+ * preview and the scope question (z-index 90 against 92–94). Opening it then
+ * would hold the keyboard in a layer nobody can see and make the visible one
+ * inert. So notices wait until this is false (DP-156).
+ */
+export function useModalLayerOpen(): boolean {
+  return useSyncExternalStore(
+    subscribeToLayers,
+    () => openLayers.some((entry) => !entry.notice),
+    () => false,
+  );
+}
+
+function subscribeToLayers(listener: () => void) {
+  layerListeners.add(listener);
+  return () => {
+    layerListeners.delete(listener);
+  };
+}
 
 const FOCUSABLE = [
   'a[href]',
@@ -67,6 +106,7 @@ export function useModalFocus(
   // Where focus goes back to on close, decided once in the first effect run.
   const returnFocus = useRef<Element | null | undefined>(undefined);
   const onEscape = useRef(options.onEscape);
+  const notice = options.notice ?? false;
   useEffect(() => {
     onEscape.current = options.onEscape;
   });
@@ -84,8 +124,13 @@ export function useModalFocus(
         ? focusedAtRender
         : document.activeElement;
     }
-    const entry: ModalLayer = { layer: () => layerRef.current, onEscape: () => onEscape.current };
+    const entry: ModalLayer = {
+      layer: () => layerRef.current,
+      onEscape: () => onEscape.current,
+      notice,
+    };
     openLayers.push(entry);
+    layersChanged();
     const release = makeOutsideInert(layer);
     if (!layer.contains(document.activeElement)) focusables(layer)[0]?.focus();
     if (openLayers.length === 1) {
@@ -96,6 +141,7 @@ export function useModalFocus(
     return () => {
       const index = openLayers.indexOf(entry);
       if (index >= 0) openLayers.splice(index, 1);
+      layersChanged();
       if (openLayers.length === 0) {
         window.removeEventListener('keydown', onTab, true);
         window.removeEventListener('keydown', onEscapeKey);
@@ -110,7 +156,7 @@ export function useModalFocus(
       if (focusWasHere && opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
     // One registration per opened layer; the Escape handler is read through a ref.
-  }, [layerRef, focusedAtRender]);
+  }, [layerRef, focusedAtRender, notice]);
 }
 
 /** Bubble phase: whatever inside the layer handles Escape itself has had its turn. */

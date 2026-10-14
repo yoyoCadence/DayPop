@@ -78,7 +78,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [x] **DP-153 — 已完成（2026-10-14），見 Done。**
 - [x] **DP-154 — 已完成（2026-10-14），見 Done。** 共用的 `useModalFocus()` 已在 `src/shell/useModalFocus.ts`，DP-155／156 直接接上即可。
 - [x] **DP-155 — 已完成（2026-10-14），見 Done。**
-- [ ] **DP-156 — 焦點限制套用到帳號、更新與匯入對話框（依賴 DP-154）：** **接手須知（DP-155 完成時補）**：`useModalFocus()` 的 Escape 現在在 window 的冒泡階段處理，對話框裡的元素若要自己處理 Escape，`stopPropagation()` 或 `preventDefault()` 即可先認領。沒有 `autoFocus` 的對話框，開啟時會把焦點移到圖層裡第一個可聚焦的元素；`UpdateDialog` 目前沒有初始焦點，接上後就會有。**接手須知（DP-154 完成時補）**：`DataImportDialog` 的背景是一個 `button`（「取消匯入」），在 `[role="dialog"]` 之外但在圖層內，`layerRef` 要包住它。e2e 斷言匯入預覽開啟時焦點在「取代資料」，那是 `autoFocus`；`useModalFocus()` 只在焦點不在圖層內時才移動焦點，所以不會搶走它。原條目：`AuthDialog`、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`。複核量到：`UpdateDialog` 開啟時焦點在 `body`，沒有初始焦點；`AuthDialog` 開啟後焦點仍在觸發它的「登入／註冊」鈕；`ReleaseNoticeDialog` Shift+Tab 一次就到分頁列；`DataImportDialog` Tab 兩次到背景的主題卡片。要注意三件事：`UpdateDialog` 在 `preparing` 時兩顆按鈕都停用，要決定那段時間焦點放哪；`update-dialog.spec.ts` 以畫面座標點擊驗證對話框可捲動（DP-089），不能被改壞；註冊成功後的終態（DP-023）沒有表單，也要有可聚焦的出口。
+- [x] **DP-156 — 已完成（2026-10-14），見 Done。**
 - [x] **DP-157 — 已完成（2026-10-14），見 Done。**
 
 
@@ -357,6 +357,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-156 — 帳號、更新、公告與匯入對話框接上共用焦點規則（2026-10-14，審查 R3）：** 由 Next 經 In Progress 完成，審查 R3 至此全部修正。`AuthDialog`（拆出開啟時才掛載的面板）、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`（移除自己的 Escape 處理）改用 `useModalFocus()`。Escape：登入等於 ×、更新提示等於「稍後提醒」、公告等於「知道了」、匯入等於取消；請求或準備中都不關。**新規則：通知（更新提示、版本公告）不會蓋在使用者打開的對話框上，等它關掉才出現。** 原因是鍵盤一定鎖在最新開啟的圖層，而通知（z-index 90）比日曆對話框、匯入預覽與範圍對話框（92–94）低；照原樣開啟，鍵盤會被鎖進看不見的通知、看得見的對話框反而變成 `inert`，使用者卡住。hook 新增 `notice` 標記與 `useModalLayerOpen()`，`App` 用它延後顯示。`UpdateDialog` 準備中兩顆按鈕都停用時，焦點會落到 `<body>`，Tab 被擋下不離開；失敗後按鈕恢復，下一次 Tab 會回到對話框。hook 新增 1 個單元案例；新 e2e `notice-dialog-focus.spec.ts` 4 個案例（手機＋桌面），還原修正後 4 個都失敗。見 ADR §2。
 
 - [x] **DP-155 — 日曆的 sheet 接上共用焦點規則（2026-10-14，審查 R3）：** 由 Next 經 In Progress 完成。`EventSheet`、`DayDetailSheet` 與 `ScopeDialog` 改用 DP-154 的 `useModalFocus()`；移除 `CalendarScreen` 的 Escape listener、`EventSheet` 等待中的 capture listener，以及 `ScopeDialog` 自己的 Tab 循環與焦點還原。`ScopeDialog` 拆出開啟時才掛載的 `ScopeQuestion`，hook 才會在問題出現時註冊。hook 本身改兩處：**Escape 移到 window 冒泡階段**，讓日詳情的 inline 改名、換日編輯器以 `stopPropagation()` 先認領；**開啟前是誰有焦點改在 effect 裡決定**（焦點已被 `autoFocus` 搬進圖層時才用 render 時記下的），因為週格拖曳會在自己的 effect 把焦點放回色塊（DP-072），完整 e2e 第一輪就是在這裡抓到退步。行為變化：日詳情開啟時焦點進入 sheet（原本留在日期格）。兩個既有單元測試的斷言改為守住原意（舊寫入不搶焦點、舊等待鎖不擋新 sheet 的 Escape）。hook 新增 2 個單元案例；新 e2e `calendar-sheet-focus.spec.ts` 4 個案例（手機＋桌面），拿掉修正時 3 個失敗，範圍對話框那個原本就有循環、作為守衛。完整 e2e 189 通過、7 跳過、2 失敗（就是上述跨午夜案例），修正後該 spec 與相關 spec 22 個全過。見 ADR §2。
 

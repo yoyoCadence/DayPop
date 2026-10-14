@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
+import { useModalFocus } from '../shell/useModalFocus';
 import { useAuth } from './authContext';
 
 type AuthMode = 'signin' | 'signup' | 'forgot';
@@ -9,6 +10,14 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ open, onClose }: AuthDialogProps) {
+  const auth = useAuth();
+  // Mounted only while shown, so the shared focus rules register as it opens
+  // and hand focus back as it closes (DP-156).
+  if (!open && !auth.isPasswordRecovery) return null;
+  return <AuthDialogPanel onClose={onClose} />;
+}
+
+function AuthDialogPanel({ onClose }: Pick<AuthDialogProps, 'onClose'>) {
   const auth = useAuth();
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
@@ -21,7 +30,13 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
     null,
   );
 
-  if (!open && !auth.isPasswordRecovery) return null;
+  // Escape is the × button, except while a request is in flight.
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, {
+    onEscape: () => {
+      if (!busy) close();
+    },
+  });
 
   const recoveryMode = auth.isPasswordRecovery;
 
@@ -100,7 +115,7 @@ export function AuthDialog({ open, onClose }: AuthDialogProps) {
   }
 
   return (
-    <div className="dialog-backdrop auth-backdrop" role="presentation" onMouseDown={(event) => {
+    <div ref={layer} className="dialog-backdrop auth-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) close();
     }}>
       <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">

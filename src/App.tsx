@@ -17,6 +17,7 @@ import { AppShell } from './shell/AppShell';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
+import { useModalLayerOpen } from './shell/useModalFocus';
 import { SHELL_TAB_LABELS, type ShellTab } from './shell/tabs';
 
 /**
@@ -34,6 +35,7 @@ export default function App() {
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
   const updater = useAppUpdateState();
+  const modalLayerOpen = useModalLayerOpen();
   const { user } = useAuth();
 
   const { state, refresh } = useDayPopDataState();
@@ -106,8 +108,9 @@ export default function App() {
           {/* At most one release dialog at a time, most actionable first: an
               update to take, then the answer to a 檢查更新 the user just
               pressed, then this version's notes if this device has not shown
-              them yet — DP-090. */}
-          {updater.availableRelease ? (
+              them yet — DP-090. None of them opens over a dialog the person
+              has open; each waits until it closes — DP-156. */}
+          {modalLayerOpen ? null : updater.availableRelease ? (
             <UpdateDialog
               release={updater.availableRelease}
               preparing={updater.preparing}

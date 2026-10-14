@@ -28,6 +28,20 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 帳號、更新、公告與匯入對話框接上共用焦點規則；通知不蓋在對話框上（DP-156，2026-10-14）
+
+`AuthDialog`、`UpdateDialog`、`ReleaseNoticeDialog` 與 `DataImportDialog` 改用 `useModalFocus()`，2026-10-13 審查量到的七個對話框至此都接上了。`AuthDialog` 的狀態原本寫在常駐元件裡、關閉時 `return null`，改為拆出開啟時才掛載的面板，hook 才會在開啟時註冊；關閉時本來就會清空所有欄位，所以行為不變。`DataImportDialog` 移除自己的 Escape 處理，初始焦點仍是「取代資料」。
+
+各自的 Escape：登入等於 ×，更新提示等於「稍後提醒」，版本公告等於「知道了」，匯入預覽等於取消；請求送出中、新版準備中都不關。
+
+**決策：通知不蓋在使用者打開的對話框上。** 共用堆疊把鍵盤鎖在最新開啟的圖層，並把其他圖層設為 `inert`。使用者自己打開的圖層一定往上疊（日詳情 65 → 事件 sheet 90 → 範圍對話框 92），但更新提示與版本公告是版本檢查完成時自己出現的，z-index 90，比日曆對話框（94）、匯入預覽（93）與範圍對話框（92）低。如果照原樣開啟，鍵盤會被鎖進被蓋住、看不見的通知，看得見的對話框卻變成 `inert`，使用者點不動也按不到，等於卡死。
+
+所以 hook 加上 `notice` 標記與 `useModalLayerOpen()`（只計算非通知的圖層），`App` 在它為 true 時先不畫通知；更新狀態仍留在 `useAppUpdate`，對話框一關通知就出現，焦點進入通知，關掉後回到原本的位置。另一個做法是把通知的 z-index 提到最高、讓它打斷使用者；沒有採用，因為那會在使用者填表時插進來，而原本的實際表現（被蓋在下面、關掉才看得到）就是「等」。
+
+`UpdateDialog` 準備新版時兩顆按鈕都停用，焦點會落到 `<body>`；這時 Tab 被擋下、不會離開，失敗後按鈕恢復，下一次 Tab 回到對話框。DP-089 的捲動驗證（以畫面座標點擊）與 DP-023 註冊完成後的終態（只剩 ×）都不受影響。
+
+驗證：hook 新增 1 個單元案例（`useModalLayerOpen()` 不計通知）。新 e2e `notice-dialog-focus.spec.ts`（手機＋桌面）：版本檢查在日曆對話框打字時回應，更新提示不出現、焦點與輸入都留在原地，按 Escape 關掉對話框後提示才出現並鎖住焦點，再按 Escape 等於「稍後提醒」、焦點回到「＋ 新增日曆」；版本公告、登入（dev harness）、匯入預覽各走一圈並按 Escape。還原修正後 4 個都失敗。
+
 ### 日曆的 sheet 接上共用焦點規則（DP-155，2026-10-14）
 
 `EventSheet`、`DayDetailSheet` 與疊在上面的 `ScopeDialog` 改用 `useModalFocus()`。原本 Escape 由三套各自的 listener 拼起來：`CalendarScreen` 在 window 冒泡階段決定關哪一層 sheet，`EventSheet` 在寫入等待中用 capture 階段吃掉 Escape，`ScopeDialog` 在 capture 階段自己處理 Tab 與 Escape、再 `stopPropagation()` 擋住下面的 sheet。三者都移除，由共用堆疊決定「最上層」。

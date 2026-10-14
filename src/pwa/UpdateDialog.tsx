@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { useModalFocus } from '../shell/useModalFocus';
 import type { ReleaseInfo } from './version';
 
 interface UpdateDialogProps {
@@ -9,8 +11,18 @@ interface UpdateDialogProps {
 }
 
 export function UpdateDialog({ release, preparing, error, onUpdate, onLater }: UpdateDialogProps) {
+  // A notice: it waits for the person's own dialogs to close (DP-156). Escape
+  // is 稍後提醒, except while the new version is being prepared.
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, {
+    notice: true,
+    onEscape: () => {
+      if (!preparing) onLater();
+    },
+  });
+
   return (
-    <div className="dialog-backdrop" role="presentation">
+    <div ref={layer} className="dialog-backdrop" role="presentation">
       <section className="update-dialog" role="dialog" aria-modal="true" aria-labelledby="update-title">
         <div className="update-kicker">NEW VERSION · v{release.version}</div>
         <h2 id="update-title">{release.title}</h2>

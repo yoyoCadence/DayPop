@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { useModalFocus } from '../shell/useModalFocus';
 import type { UpdateCheckResult } from './useAppUpdate';
 import type { ReleaseInfo } from './version';
 
@@ -20,8 +22,12 @@ interface ReleaseNoticeDialogProps {
 
 export function ReleaseNoticeDialog({ notice, onClose }: ReleaseNoticeDialogProps) {
   const content = describe(notice);
+  // A notice: it waits for the person's own dialogs to close (DP-156). Escape
+  // is 知道了.
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, { notice: true, onEscape: onClose });
   return (
-    <div className="dialog-backdrop" role="presentation">
+    <div ref={layer} className="dialog-backdrop" role="presentation">
       <section
         className="update-dialog"
         role="dialog"
