@@ -72,6 +72,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-14 專案擁有者定案（DP-152–157 完成後）**：保留 PR #149「通知等對話框關掉才出現」的做法；後續依序做 **DP-158 → DP-163 → DP-174 → DP-173**，各自開 PR、CI 通過後自主合併。DP-174 採建議 (b)，依每筆待辦自己的 `calendarId` 篩選；DP-173 採建議，先在綜覽做「未排日期」的管理出口，正式收件匣之後再擴充。`fix/review-data-update-dialog` 確認沒有獨有 commit，暫時保留。
+
 > **2026-10-13 專案審查委託（任務於 2026-10-14 登記）**：一個 agent 完成全專案審查後額度用盡，專案擁有者要求另一個 agent 接手複核報告、把相關工作整理進本檔，之後由他接著開發。複核結果與原報告全文見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。**這次只登記任務**，沒有修改產品程式碼、依賴、migration、版號、公告或部署。已重現、不需要產品決策的修正（DP-152–DP-157）依建議順序放在這裡；需要設計或產品決策的（DP-158–DP-175）放在 Backlog，各自附建議。順序是 agent 的建議，專案擁有者可以直接調整。更下方「Next 目前是空的」是 2026-08 的歷史敘述。
 
 - [x] **DP-152 — 已完成（2026-10-14），見 Done。**
@@ -288,11 +290,17 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-13 審查登記（DP-158–DP-162）**：以下五項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。它們都不是已確認的故障，是測試與量測上的缺口。
 
-- [ ] **DP-158 — 真實 `AuthProvider` 的整合測試：** 帳號 e2e 用 `FakeSupabase` 並在 `e2eAuthMain.tsx:99` 換掉 `AuthContext`；單元測試也都直接提供 context，沒有任何測試檔引用 `AuthProvider`。補上 initial session、逾時與失敗、token refresh、重設密碼（recovery）與使用者切換。另外確認啟動時 session 長時間沒有回應的畫面與出路；審查沒有把它列為已確認故障，只是沒測過。以 stub 的 auth client 或攔截 HTTP 進行，不使用 secret 或真實帳號。真實 Email／Google 流程在 2026-08-22 由專案擁有者手動驗過（DP-023），這一項補的是自動化回歸。
+- [x] **DP-158 — 已完成（2026-10-14），見 Done。** 測出的啟動問題另立為 DP-176。
 - [ ] **DP-159 — 加一個 WebKit smoke 專案：** `playwright.config.ts` 只有 `mobile-chrome` 與 `desktop-chrome`，而主要目標裝置是 iPhone；DP-077 是 Chromium 重現不了的類型。**決策點**：CI 時間。**建議**：先加一個只跑少數 smoke（開啟、建立行程、開關 sheet、設定頁）的 WebKit 專案，不整套重跑。Linux 上的 WebKit 不等於 iOS Safari，真機仍屬 DP-032／DP-077。
 - [ ] **DP-160 — 量測月曆長時間捲動：** `MonthView` 初始 53 週、每到邊界加 12 週（[`MonthView.tsx:46-48`](src/screens/calendar/MonthView.tsx#L46-L48)），只增不減。在大量重複事件加上長時間捲動下量 DOM 節點數、occurrence 展開耗時與記憶體，再決定要不要做有界 buffer 或 virtualization。這是靜態風險，沒有證明目前會卡。任何改動都要保住 DP-069 的 roving tabindex 與捲動補償。
 - [ ] **DP-161 — 評估重模組的載入時機：** 審查記錄主要 chunk 約 669 kB raw（複核沒有重新量），Vite 的 500 kB 警告仍在，總量在 DP-119 的 budget 內。評估備份、ICS、重複事件展開等只在特定操作才用到的模組改成動態載入。先量測再決定；不得為了拆分破壞 domain／repository 邊界，service worker 的 app shell 快取與已快取離線啟動（DP-099）要一起驗。
 - [ ] **DP-162 — 評估自動化可及性與視覺基線：** 目前沒有 coverage gate、axe gate 或截圖比對。**建議**：先加 axe smoke（四個分頁與主要 sheet），截圖基線延後。六套主題 × 淺／深 × 各檢視的成本高，字型繪製也容易造成不穩定的差異。axe 抓不到焦點逃逸，不能取代 DP-154 的 e2e。
+- [ ] **DP-176 — 啟動時登入狀態確認不了，App 不應卡在載入中（產品決策，DP-158 發現）：** `AuthProvider` 要等 supabase-js 的第一個事件才結束初始化，這段時間 `SessionDataProvider` 只顯示「載入中…」，連遊客資料都看不到。DP-158 以真正的 supabase-js（2.111.0）實測兩種情況，現在由 `AuthProvider.test.tsx` 鎖住：
+  - **記住的登入已過期、刷新遇到網路錯誤或 503**：supabase-js 重試 8 次，約 **25.5 秒**後才結束初始化，接著被當成**未登入**，畫面換成遊客資料，而不是這個帳號的快取；登入資訊仍留在 localStorage。之後在遊客模式的編輯會寫進遊客資料。實際情境：手機一晚沒開（token 一小時過期），早上在訊號差的地方打開。
+  - **刷新請求一直沒有回應**：沒有逾時，**一直停在「載入中…」**。
+  - **建議**：(1) `AuthProvider` 加一個啟動期限（例如 8 秒），到期還沒有事件就結束初始化。(2) 到期或刷新失敗時，如果 localStorage 裡有這台裝置記住的登入，就以那個使用者進入帳號模式。帳號快取已經有「無法連上雲端，正在顯示最後一次同步的資料」的處理（DP-026），不要退回遊客。(3) supabase-js 之後刷新成功時會再發事件，照常回到正常的帳號狀態。
+  - **要決定的**：期限多長；離線時能不能編輯。目前帳號快取模式下的寫入會失敗並保留草稿，所以建議維持「可看、寫入失敗時說明」，不做離線寫入佇列（MVP 範圍外）。
+  - 牽涉 Auth 與資料邊界，屬高風險區，獨立 PR；e2e 用 dev harness 模擬刷新失敗與無回應。
 
 ### 原型假功能與待補能力
 
@@ -357,6 +365,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-158 — 真實 `AuthProvider` 的整合測試（2026-10-14）：** 由 Backlog 依專案擁有者指定的順序完成。新增 `src/auth/AuthProvider.test.tsx`：真正的 `AuthProvider` 加上真正的 supabase-js client（`getSupabaseClient()`，記住 session、偵測網址裡的連結、自動刷新都照正式設定），只把網路換成模擬的 Auth 端點；每個案例以 `vi.resetModules()` 取得新的 client。涵蓋：沒有記住的登入時以遊客啟動；Google 登入狀態（啟用／停用／設定讀不到）；從 localStorage 還原登入且不打 API；過期的登入在啟動時刷新成功；登入、登出、改用另一個帳號登入，每次都清乾淨；密碼錯誤維持未登入；刷新後的 token 進到 context；重設密碼連結開啟 recovery、網址裡的 token 被清掉、改密碼、登出結束 recovery；註冊需要／不需要確認信兩種結果，且確認信導回 App；沒有設定時不建立 client 並說明原因。**另外測出兩個啟動問題並鎖住目前的行為**：刷新遇到網路錯誤或 503 時約 25.5 秒（8 次重試）才結束初始化，然後被當成未登入；刷新請求沒有回應時一直停在初始化。兩個都以假時鐘測試，修正另立為 DP-176（需產品決策）。14 個案例連跑三次都穩定，約 1 秒。沒有使用 secret 或真實帳號；真實 Email／Google 流程仍以 DP-023 的人工驗證為準。
 
 - [x] **DP-156 — 帳號、更新、公告與匯入對話框接上共用焦點規則（2026-10-14，審查 R3）：** 由 Next 經 In Progress 完成，審查 R3 至此全部修正。`AuthDialog`（拆出開啟時才掛載的面板）、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`（移除自己的 Escape 處理）改用 `useModalFocus()`。Escape：登入等於 ×、更新提示等於「稍後提醒」、公告等於「知道了」、匯入等於取消；請求或準備中都不關。**新規則：通知（更新提示、版本公告）不會蓋在使用者打開的對話框上，等它關掉才出現。** 原因是鍵盤一定鎖在最新開啟的圖層，而通知（z-index 90）比日曆對話框、匯入預覽與範圍對話框（92–94）低；照原樣開啟，鍵盤會被鎖進看不見的通知、看得見的對話框反而變成 `inert`，使用者卡住。hook 新增 `notice` 標記與 `useModalLayerOpen()`，`App` 用它延後顯示。`UpdateDialog` 準備中兩顆按鈕都停用時，焦點會落到 `<body>`，Tab 被擋下不離開；失敗後按鈕恢復，下一次 Tab 會回到對話框。hook 新增 1 個單元案例；新 e2e `notice-dialog-focus.spec.ts` 4 個案例（手機＋桌面），還原修正後 4 個都失敗。見 ADR §2。
 
