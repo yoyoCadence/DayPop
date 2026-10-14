@@ -16,7 +16,8 @@ export interface SearchScreenProps {
  * 搜尋 tab, ported from the search screen of `日曆桌寵 Calendar Pet.dc.html`.
  *
  * The chip row under the field is the原檔's `searchCal` filter: 全部 plus one
- * chip per calendar. It filters events only — see `searchEntries`.
+ * chip per calendar. It filters events and todos alike, each by its own
+ * calendar — see `searchEntries` (DP-174).
  */
 export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
   const { data } = useDayPopData();
