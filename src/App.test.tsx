@@ -115,6 +115,49 @@ describe('App', () => {
     }
   });
 
+  /**
+   * DP-163. Task numbers and the porting vocabulary are for the people building
+   * DayPop; they had leaked into 設定, 日詳情 and the event form, where the
+   * person using the App read "DP-014" and "原稿".
+   */
+  it('shows no task numbers or porting notes on any tab or sheet', async () => {
+    await mount();
+    const engineering = /DP-\d{3}|原稿|搬移|domain|scaffold/;
+    const click = async (element: Element | null | undefined) => {
+      await act(async () => {
+        (element as HTMLElement).click();
+      });
+    };
+    const tab = (name: string) =>
+      [...container.querySelectorAll('.dp-tabbar button')].find((button) =>
+        button.textContent?.includes(name),
+      );
+    const screens: [string, string][] = [];
+    const record = (label: string) => screens.push([label, container.textContent ?? '']);
+
+    for (const name of ['日曆', '搜尋', '綜覽', '設定']) {
+      await click(tab(name));
+      record(name);
+    }
+    await click(tab('日曆'));
+    await click(container.querySelector('.cal-fab'));
+    record('新增行程');
+    await click(
+      [...container.querySelectorAll('[aria-label="新增類型"] button')].find(
+        (button) => button.textContent === '待辦',
+      ),
+    );
+    record('新增待辦');
+    await click(container.querySelector('.cal-sheet-bar button'));
+    await click(container.querySelector('[data-date-key]'));
+    record('日詳情');
+
+    expect(screens.map(([label]) => label)).toEqual(['日曆', '搜尋', '綜覽', '設定', '新增行程', '新增待辦', '日詳情']);
+    for (const [label, text] of screens) {
+      expect({ label, found: text.match(engineering)?.[0] ?? null }).toEqual({ label, found: null });
+    }
+  });
+
   it('renders recovery instead of the tabs when the data cannot be read', async () => {
     localStorage.setItem('daypop.user-data', 'not-json');
 

@@ -427,11 +427,13 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
             但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
           */}
+          {/* DP-163: no task numbers in what the person reads. The pet rests at
+              the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
           <p className="set-pref-help">
-            目前牠會待在日曆右下角，顯示未完成待辦的數量。
+            目前牠會待在日曆左下角，顯示未完成待辦的數量。
             <br />
             <span className="set-pref-pending">
-              尚未提供（DP-040）：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
+              還沒有的功能：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
             </span>
           </p>
         </div>
@@ -609,18 +611,22 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           </section>
         </div>
 
-        <div className="dp-section-label">尚未搬移</div>
+        {/* What the原檔's 設定 has that DayPop does not yet, said plainly rather
+            than shown as controls that do nothing — DP-014's rule. Written for
+            the person using the App, without task numbers (DP-163). For
+            whoever picks these up: AI is DP-043, the level is DP-041, choosing
+            a partner DP-040／DP-172, swipe paging needs a preference field,
+            notifications DP-042. The原檔's developer and demo-data controls are
+            not something a person uses, so they are not listed. */}
+        <div className="dp-section-label">還沒有的功能</div>
         <div className="dp-note">
-          <span className="dp-note-task">DP-014</span>
-          <strong>設定的其餘區塊還在原稿裡</strong>
-          <p>這些區塊會依原稿逐段搬移，不會被合併或改成別的版面：</p>
+          <strong>這些功能目前還沒有</strong>
           <ul>
-            <li>AI 助理區塊（安全代理方案見 DP-043）</li>
-            <li>桌寵的等級與已完成待辦數（DP-041 才定義 XP 規則）</li>
-            <li>桌寵的「選擇夥伴」品種（DP-040 的素材，且偏好還沒有這個欄位）</li>
-            <li>一般偏好的「左右滑動翻頁」（偏好還沒有這個欄位）</li>
-            <li>通知提醒與預設提醒（DP-042）</li>
-            <li>開發／示範資料控制</li>
+            <li>AI 助理</li>
+            <li>桌寵的等級與成長</li>
+            <li>為桌寵選擇其他夥伴</li>
+            <li>左右滑動翻頁</li>
+            <li>通知與預設提醒</li>
           </ul>
         </div>
 

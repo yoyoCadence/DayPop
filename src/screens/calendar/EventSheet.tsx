@@ -789,18 +789,23 @@ function EventSheetForm({
                   <div ref={writeAlert} className="cal-day-title-error" role="alert" style={{ marginTop: 6 }}>{saveError.message}</div>
                 )}
 
+                {/* The原檔 also has 提醒 and 邀請對象. A reminder needs DP-042 to
+                    actually deliver it, and invitees have no data model yet, so
+                    neither is offered. Said without task numbers (DP-163). */}
                 <div className="cal-sheet-pending">
-                  <strong>原稿還有這些欄位，但接上會是空頭支票</strong>
-                  提醒要等 DP-042 真的送得出通知，否則只是一個不會響的提醒；
-                  邀請對象目前連 domain 型別都還沒有。
+                  <strong>提醒與邀請對象目前還沒有</strong>
+                  提醒要等能可靠送出通知才會提供；邀請對象目前也還不能設定。
                 </div>
               </>
             )}
 
             {!editing && mode === 'todo' && (
+              // The原檔 adds todos from the pet's speech bubble (DP-040); this
+              // form keeps a working way in until then. Ordering is DP-014.
+              // Said without task numbers (DP-163).
               <div className="cal-sheet-pending">
-                <strong>待辦之後會搬回原稿的位置</strong>
-                原稿是從寵物對話泡泡新增待辦（DP-040）；子項與優先度可在日詳情操作，排序仍待 DP-014。這裡先保留一個可用的入口，不讓現有能力消失。
+                <strong>待辦的其他設定在日詳情</strong>
+                新增後點日曆上的那一天，可加入子項、設定優先度或改日期；排序目前還不能調整。
               </div>
             )}
           </fieldset>
