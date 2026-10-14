@@ -135,35 +135,48 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const owner = this.userId;
     await this.#flushAttachmentCleanup();
     // Table names stay literal so the generated row types survive; a generic
-    // helper over table names collapses them into an unusable union.
+    // helper over table names collapses them into an unusable union. Every
+    // collection is read whole, however many pages that takes — DP-152.
     const [calendars, events, attachments, exceptions, todos, stickers, preferences] = await Promise.all([
-        this.client.from('calendars').select('*').eq('owner_id', owner),
-        this.client.from('events').select('*').eq('owner_id', owner),
-        this.client.from('event_attachments').select('*').eq('owner_id', owner),
-        this.client.from('event_exceptions').select('*').eq('owner_id', owner),
-        this.client.from('todos').select('*').eq('owner_id', owner),
-        this.client.from('stickers').select('*').eq('owner_id', owner),
+      loadAllRows('讀取日曆', (after) =>
+        pageAfter(this.client.from('calendars').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      loadAllRows('讀取行程', (after) =>
+        pageAfter(this.client.from('events').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      loadAllRows('讀取附件', (after) =>
+        pageAfter(this.client.from('event_attachments').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      loadAllRows('讀取例外', (after) =>
+        pageAfter(this.client.from('event_exceptions').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      loadAllRows('讀取待辦', (after) =>
+        pageAfter(this.client.from('todos').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      loadAllRows('讀取貼圖', (after) =>
+        pageAfter(this.client.from('stickers').select('*', { count: 'exact' }).eq('owner_id', owner), after),
+      ),
+      requestRemote(
+        '讀取偏好',
         this.client.from('user_preferences').select('*').eq('user_id', owner).maybeSingle(),
-      ]).catch((cause: unknown) => {
-        throw new RemoteDataError('讀取帳號資料', cause);
-      });
+      ),
+    ]);
 
-    const calendarRows = unwrap('讀取日曆', calendars);
     if (preferences.error) throw new RemoteDataError('讀取偏好', preferences.error);
     // DP-024 creates both rows in the auth.users transaction. Missing either
     // one is drift or a failed bootstrap, not permission to invent a second
     // initialization path in the browser.
-    if (calendarRows.length === 0 || !preferences.data) {
+    if (calendars.length === 0 || !preferences.data) {
       throw new AccountNotBootstrappedError();
     }
 
     return this.#commit({
-      calendars: calendarRows.map(calendarFromRow),
-      events: unwrap('讀取行程', events).map(eventFromRow),
-      eventAttachments: unwrap('讀取附件', attachments).map(eventAttachmentFromRow),
-      eventExceptions: unwrap('讀取例外', exceptions).map(eventExceptionFromRow),
-      todos: unwrap('讀取待辦', todos).map(todoFromRow),
-      stickers: unwrap('讀取貼圖', stickers).map(stickerFromRow),
+      calendars: inStoredOrder(calendars).map(calendarFromRow),
+      events: inStoredOrder(events).map(eventFromRow),
+      eventAttachments: inStoredOrder(attachments).map(eventAttachmentFromRow),
+      eventExceptions: inStoredOrder(exceptions).map(eventExceptionFromRow),
+      todos: inStoredOrder(todos).map(todoFromRow),
+      stickers: inStoredOrder(stickers).map(stickerFromRow),
       preferences: preferencesFromRow(preferences.data),
     });
   }
@@ -841,6 +854,90 @@ function omitKey<Row extends object, Key extends keyof Row>(row: Row, key: Key):
   const copy = { ...row };
   delete copy[key];
   return copy;
+}
+
+/**
+ * Rows per request while `load()` reads a collection — DP-152. The same as
+ * `max_rows` in `supabase/config.toml`; a project capped lower still loads
+ * completely, it only takes more requests.
+ */
+const LOAD_PAGE_SIZE = 1000;
+
+/** One PostgREST response with `count: 'exact'`; `count` is null if the server sent none. */
+type RowPage<Row> = { data: Row[] | null; error: unknown; count: number | null };
+
+/** The paging half of a collection query, typed only by what it needs. */
+interface KeyPagedQuery<Self> {
+  order(column: 'id', options: { ascending: true }): Self;
+  limit(count: number): Self;
+  gt(column: 'id', value: string): Self;
+}
+
+/** One page in key order, after the last key already read. */
+function pageAfter<Query extends KeyPagedQuery<Query>>(query: Query, after: string | null): Query {
+  const page = query.order('id', { ascending: true }).limit(LOAD_PAGE_SIZE);
+  return after === null ? page : page.gt('id', after);
+}
+
+/**
+ * Every row of one owner-scoped collection — DP-152.
+ *
+ * PostgREST cuts each response to the project's `max_rows` and says nothing
+ * when it does. Before this an account with 1,001 events loaded 1,000, and
+ * the backup and ICS export built from that snapshot were short too; a
+ * missing parent todo or series made the whole document fail validation.
+ *
+ * Pages are keyed on the primary key (`id > last`) rather than an offset, so
+ * a row deleted between two requests cannot push a later row out of view.
+ * The end is decided by the exact count each response carries, never by a
+ * page coming back short: a server capped below `LOAD_PAGE_SIZE` returns a
+ * short page while rows remain. Without a count the loop reads until a page
+ * is empty, which costs one more request but stays complete.
+ *
+ * A failed page fails the whole load, so a partial collection never reaches
+ * the snapshot or the account cache. Rows another device writes between two
+ * pages may or may not be included — DayPop is single-device for now (ADR §2).
+ */
+async function loadAllRows<Row extends { id: string }>(
+  operation: string,
+  requestPage: (after: string | null) => PromiseLike<RowPage<Row>>,
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  let after: string | null = null;
+  for (;;) {
+    const page: RowPage<Row> = await requestRemote(operation, requestPage(after));
+    const batch: Row[] = unwrap(operation, page);
+    for (const row of batch) rows.push(row);
+    const last: Row | undefined = batch.at(-1);
+    // `count` covers every row this request matched, this page included.
+    if (!last || (page.count !== null && batch.length >= page.count)) return rows;
+    after = last.id;
+  }
+}
+
+/**
+ * The order a collection is kept in once it is whole — DP-152.
+ *
+ * Paging reads in key order, and the keys are random UUIDs. Before paging
+ * there was no `ORDER BY` and rows came back roughly as they were inserted,
+ * which is what screens showing stored order rely on — a day's stickers above
+ * all (`stickersOn()`) — and what a write leaves in the snapshot, since the
+ * domain appends. Creation time restores that: every request is its own
+ * transaction, so rows made one at a time have distinct, increasing times,
+ * and a reload puts them where the write that made them did. Rows written by
+ * one RPC share a time; `sort_order`, where the table has one, keeps an
+ * imported day's stickers in the order the backup had them, and the key
+ * settles whatever is left.
+ */
+function inStoredOrder<Row extends { id: string; created_at: string; sort_order?: number }>(
+  rows: Row[],
+): Row[] {
+  return [...rows].sort(
+    (left, right) =>
+      Date.parse(left.created_at) - Date.parse(right.created_at) ||
+      (left.sort_order ?? 0) - (right.sort_order ?? 0) ||
+      (left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
+  );
 }
 
 /** Turns a PostgREST `{ data, error }` pair into rows or a `RemoteDataError`. */

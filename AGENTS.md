@@ -26,7 +26,9 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
-- **專案審查：三項已重現、尚未修正的缺陷（2026-10-13 審查，DP-152–175 於 2026-10-14 登記）：** 審查、複核與原報告全文見 `docs/review-2026-10-13-project-audit.md`；**只登記任務，沒有改任何程式、依賴、migration、版號或部署。** 三項都在未修改的 `main`（`bc6c16a`）重現：(1) 帳號端 `load()` 沒有分頁，任一集合超過 API 列數上限（repo 設定 `max_rows = 1000`，遠端實際值未量測）時靜默少列，帳號快取與 JSON／ICS 匯出跟著不完整（DP-152，P1）；(2) `version.json` 回傳合法 JSON 但 `changes` 不是字串陣列時，更新提示與版本公告在繪製時丟錯，整個 App 落到 `RootErrorFallback`（DP-153）；(3) 對話框都沒有限制焦點，量到的七個 Tab／Shift+Tab 都能到背景控制項，新增日曆對話框已確認會因此丟失草稿（DP-154–156）。另有開發相依 `source-map-js` 一項 high，production audit 仍為 0（DP-157）。**這些修好之前，不得宣稱帳號備份一定完整，也不得把 `aria-modal` 當成焦點已受限。** `FakeSupabase` 不模擬列數上限，既有測試因此發現不了第一項。DP-158–175 是需要設計或產品決策的 Backlog，各自附建議。
+- **帳號資料完整載入（DP-152，2026-10-14）：** `load()` 的六個集合以主鍵分頁（`id > 上一頁最後一筆`），結束看伺服器的 exact count，不看「這頁不滿」（伺服器上限比頁大小低時也會回不滿的一頁）；沒有 count 時讀到空頁。任一頁失敗整次失敗，部分資料不進 snapshot、不寫快取。載入後依建立時間 → `sort_order` → `id` 排序，重新載入的順序與寫入後的 snapshot 一致。一般帳號仍是 8 個 select。**`FakeSupabase` 現在預設 1,000 列上限，而且每個寫入請求有自己遞增的時間**（同一 RPC 共用一個）；測試要比對時間時讀 `db.serverTime`（最近一次寫入的時間），不要假設所有列同一個時間。修正前的回歸證實舊版會用截斷的資料蓋掉完整的帳號快取。分頁之間另一台裝置的寫入不保證包含；遠端 Max rows 未量測。不改 schema、Auth、版號或部署，見 ADR §2。
+
+- **專案審查：三項已重現的缺陷（2026-10-13 審查，DP-152–175 於 2026-10-14 登記；第一項已由 DP-152 修正）：** 審查、複核與原報告全文見 `docs/review-2026-10-13-project-audit.md`；**只登記任務，沒有改任何程式、依賴、migration、版號或部署。** 三項都在未修改的 `main`（`bc6c16a`）重現：(1) 帳號端 `load()` 沒有分頁，任一集合超過 API 列數上限（repo 設定 `max_rows = 1000`，遠端實際值未量測）時靜默少列，帳號快取與 JSON／ICS 匯出跟著不完整（DP-152，P1，**2026-10-14 已修正，見上方 DP-152 條目**）；(2) `version.json` 回傳合法 JSON 但 `changes` 不是字串陣列時，更新提示與版本公告在繪製時丟錯，整個 App 落到 `RootErrorFallback`（DP-153）；(3) 對話框都沒有限制焦點，量到的七個 Tab／Shift+Tab 都能到背景控制項，新增日曆對話框已確認會因此丟失草稿（DP-154–156）。另有開發相依 `source-map-js` 一項 high，production audit 仍為 0（DP-157）。**DP-154–156 修好之前，不得把 `aria-modal` 當成焦點已受限。**DP-158–175 是需要設計或產品決策的 Backlog，各自附建議。
 
 - **四位年份不丟前導零（DP-151，2026-10-13）：** `toDateKey()`／`instantDateInZone()` 將數字年份補滿四位，保持既有有效 date key（0100–9999 年）；原本 0100／0999 會變成三位數，使匯入行程的 native date 欄位空白。十個回歸涵蓋日期兩端、0999／1000 跨年及表單預填／保存，六個在修正前失敗。沒有放寬年份支援範圍、裁切長年份、修改 schema／migration、Auth、公告或樣式，見 ADR §6。
 

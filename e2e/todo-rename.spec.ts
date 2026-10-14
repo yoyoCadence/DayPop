@@ -107,7 +107,15 @@ test('帳號可改父／子標題，清快取重登仍讀回新標題與獨立�
   await rename(day, '雲端清單', '雲端新清單');
   await rename(day, '細項', '已完成的新細項');
   const saved = await read(page, accountKey);
-  expect(saved.todos).toEqual(before.todos.map((todo, index) => ({ ...todo, title: index === 0 ? '雲端新清單' : '已完成的新細項' })));
+  // A rename is a write, so the database restamps `updated_at` (DP-036).
+  expect(saved.todos).toEqual(before.todos.map((todo, index) => ({
+    ...todo,
+    title: index === 0 ? '雲端新清單' : '已完成的新細項',
+    updatedAt: saved.todos[index]!.updatedAt,
+  })));
+  for (const [index, todo] of saved.todos.entries()) {
+    expect(Date.parse(todo.updatedAt)).toBeGreaterThan(Date.parse(before.todos[index]!.updatedAt));
+  }
   await day.getByRole('button', { name: '完成', exact: true }).click();
   await tabButton(page, '設定').click();
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();

@@ -12,7 +12,21 @@ import {
 const accountCacheKey = 'daypop.account-cache.00000000-0000-4000-8000-000000000030';
 const guestKey = 'daypop.user-data';
 const testDate = '2026-09-30';
-const serverTime = '2026-08-09T00:00:00.000Z';
+
+/**
+ * The time the import RPC stamped. One RPC is one transaction, so every row
+ * it wrote carries the same time, later than anything the account had before
+ * (the harness's fake clock advances per request, as the database's does).
+ */
+function importTime(
+  incoming: DayPopUserData['events'],
+  source: DayPopUserData,
+): string {
+  const importedAt = incoming[0]!.createdAt;
+  const before = [...source.events, ...source.eventExceptions].map((row) => Date.parse(row.updatedAt));
+  expect(Date.parse(importedAt)).toBeGreaterThan(Math.max(...before));
+  return importedAt;
+}
 
 const test = base.extend<{ browserHealth: void; guestBytes: string }>({
   browserHealth: [async ({ page }, provide) => {
@@ -236,11 +250,12 @@ test('帳號 ICS 真實下載再附加會保留附件、重新命名碰撞 UID �
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
   const result = await accountData(page);
   const { incoming, incomingExceptions } = expectSourcePreserved(result, source, 3, 2);
+  const importedAt = importTime(incoming, source);
   for (const original of source.events) {
     const event = incoming.find((event) => event.title === original.title)!;
     expect(event).toEqual({
       ...original, id: expect.any(String), reminderMinutes: [],
-      createdAt: serverTime, updatedAt: serverTime,
+      createdAt: importedAt, updatedAt: importedAt,
     });
     expect(event.id).not.toBe(original.id);
   }
@@ -250,12 +265,12 @@ test('帳號 ICS 真實下載再附加會保留附件、重新命名碰撞 UID �
     {
       id: expect.any(String), eventId: newSeries.id,
       occurrence: { kind: 'timed', startsAt: '2026-10-01T01:00:00.000Z' },
-      isCancelled: true, replacementEventId: null, createdAt: serverTime, updatedAt: serverTime,
+      isCancelled: true, replacementEventId: null, createdAt: importedAt, updatedAt: importedAt,
     },
     {
       id: expect.any(String), eventId: newSeries.id,
       occurrence: { kind: 'timed', startsAt: '2026-10-02T01:00:00.000Z' },
-      isCancelled: false, replacementEventId: replacement.id, createdAt: serverTime, updatedAt: serverTime,
+      isCancelled: false, replacementEventId: replacement.id, createdAt: importedAt, updatedAt: importedAt,
     },
   ]));
   expect(await storageBytes(page, guestKey)).toBe(guestBytes);
@@ -317,9 +332,10 @@ test('帳號 ICS 後續非法時區整份拒絕，重新選有效檔可附加並
   expect(await storageBytes(page, accountCacheKey)).not.toBe(beforeValid);
   const result = await accountData(page);
   const { incoming } = expectSourcePreserved(result, source, 4, 0);
+  const importedAt = importTime(incoming, source);
   expect(incoming).toEqual(expect.arrayContaining(expectedExternalEvents.map((event) => ({
     ...event, id: expect.any(String), calendarId: source.calendars[0]!.id, recurrence: null,
-    reminderMinutes: [], createdAt: serverTime, updatedAt: serverTime,
+    reminderMinutes: [], createdAt: importedAt, updatedAt: importedAt,
   }))));
   await reloadAccountWithoutCache(page, guestBytes);
   expect(await accountData(page)).toEqual(result);

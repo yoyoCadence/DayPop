@@ -158,6 +158,46 @@ describe('CachedSupabaseDayPopRepository', () => {
     ).toBe(CALENDAR);
   });
 
+  it('keeps the cache bytes when a later page of a load fails, and falls back to them (DP-152)', async () => {
+    const storage = new MemoryStorage();
+    const db = bootstrapped();
+    db.maxRows = 2;
+    const event = (id: string): FakeRow => ({
+      id,
+      owner_id: OWNER,
+      calendar_id: CALENDAR,
+      title: '分頁行程',
+      location: null,
+      notes: null,
+      reminder_minutes: [],
+      recurrence_rule: null,
+      sharing_scope: 'inherit',
+      is_all_day: true,
+      start_date: '2026-10-13',
+      end_date: '2026-10-13',
+      starts_at: null,
+      ends_at: null,
+      timezone: 'Asia/Taipei',
+      created_at: '2026-08-01T00:00:00.000Z',
+      updated_at: '2026-08-01T00:00:00.000Z',
+    });
+    const ids = [1, 2, 3, 4].map((n) => `a0000000-0000-4000-8000-00000000000${n}`);
+    db.seed('events', ids.slice(0, 3).map(event));
+    await new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage).load();
+    const key = `daypop.account-cache.${OWNER}`;
+    const before = storage.getItem(key);
+    db.seed('events', ids.map(event));
+    db.selectRequests.clear();
+    db.pageFailures.set('events', { page: 2, message: 'connection reset' });
+
+    const repository = new CachedSupabaseDayPopRepository(db.asClient(), OWNER, storage);
+    const failure = await repository.load().catch((cause: unknown) => cause);
+
+    expect(failure).toBeInstanceOf(CachedRemoteLoadError);
+    expect(failure instanceof CachedRemoteLoadError ? failure.cachedData.events : null).toHaveLength(3);
+    expect(storage.getItem(key)).toBe(before);
+  });
+
   it('surfaces the remote error when this account has no valid cache', async () => {
     const storage = new MemoryStorage();
     const db = bootstrapped();

@@ -1,5 +1,8 @@
+import { createClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
+import { buildIcsExport, buildJsonBackup } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
+import type { Database } from '../lib/database.types';
 import { FakeSupabase, type FakeRow } from '../test/fakeSupabase';
 import {
   AccountNotBootstrappedError,
@@ -264,6 +267,247 @@ describe('SupabaseDayPopRepository load', () => {
   });
 });
 
+/** `count` lowercase UUIDs in key order, so a test can say which rows share a page. */
+function keyedIds(prefix: string, count: number): string[] {
+  return Array.from(
+    { length: count },
+    (_, index) => `${prefix}-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+  );
+}
+
+/** `keyedIds()` for destructuring a fixed number of keys. */
+function keyedTuple<Count extends 3 | 5>(
+  prefix: string,
+  count: Count,
+): Count extends 3 ? [string, string, string] : [string, string, string, string, string] {
+  return keyedIds(prefix, count) as never;
+}
+
+function allDayEventRow(id: string, overrides: FakeRow = {}): FakeRow {
+  return eventRow({
+    id,
+    is_all_day: true,
+    start_date: '2026-10-13',
+    end_date: '2026-10-13',
+    starts_at: null,
+    ends_at: null,
+    ...overrides,
+  });
+}
+
+describe('SupabaseDayPopRepository full load (DP-152)', () => {
+  it('loads every row past the 1,000-row cap, and the backup and ICS export keep all of them', async () => {
+    const { db, repository } = bootstrapped();
+    db.seed('events', keyedIds('a0000000', 1001).map((id) => allDayEventRow(id)));
+    db.selectRequests.clear();
+
+    const data = await repository.load();
+
+    expect(data.events).toHaveLength(1001);
+    expect(buildJsonBackup(data).data.events).toHaveLength(1001);
+    expect(buildIcsExport(data).match(/BEGIN:VEVENT/g)).toHaveLength(1001);
+    expect(db.selectRequests.get('events')).toBe(2);
+  });
+
+  it.each([
+    [2000, 2],
+    [2001, 3],
+  ])('reads %i rows in %i requests: a last page that is exactly full needs no extra request', async (rows, requests) => {
+    const { db, repository } = bootstrapped();
+    db.seed('events', keyedIds('a0000000', rows).map((id) => allDayEventRow(id)));
+    db.selectRequests.clear();
+
+    const data = await repository.load();
+
+    expect(data.events).toHaveLength(rows);
+    expect(db.selectRequests.get('events')).toBe(requests);
+  });
+
+  it('costs an ordinary account one request per collection, as before paging', async () => {
+    const { db, repository } = bootstrapped();
+    db.selectRequests.clear();
+
+    await repository.load();
+
+    expect(Object.fromEntries(db.selectRequests)).toEqual({
+      attachment_cleanup_jobs: 1,
+      calendars: 1,
+      events: 1,
+      event_attachments: 1,
+      event_exceptions: 1,
+      todos: 1,
+      stickers: 1,
+      user_preferences: 1,
+    });
+  });
+
+  it('loads everything when the server cap is below the page size, with parents, subtasks and exceptions split across pages', async () => {
+    const { db, repository } = bootstrapped();
+    // Smaller than the page the adapter asks for, so every page comes back
+    // "short" while more rows remain — the trap a short-page test falls into.
+    db.maxRows = 2;
+    const [subtaskA, subtaskB, other, single, parent] = keyedTuple('b0000000', 5);
+    db.seed('todos', [
+      todoRow({ id: parent, title: '父待辦', sort_order: 0 }),
+      todoRow({ id: subtaskA, parent_id: parent, title: '子項一', sort_order: 0 }),
+      todoRow({ id: subtaskB, parent_id: parent, title: '子項二', sort_order: 1 }),
+      todoRow({ id: other, title: '另一個', sort_order: 1 }),
+      todoRow({ id: single, title: '第三個', sort_order: 2 }),
+    ]);
+    const [firstEvent, secondEvent, series] = keyedTuple('c0000000', 3);
+    db.seed('events', [
+      allDayEventRow(firstEvent),
+      allDayEventRow(secondEvent),
+      allDayEventRow(series, {
+        start_date: '2026-10-01',
+        end_date: '2026-10-01',
+        recurrence_rule: 'FREQ=DAILY',
+      }),
+    ]);
+    db.seed(
+      'event_exceptions',
+      keyedIds('d0000000', 3).map((id, index) => ({
+        id,
+        owner_id: OWNER,
+        event_id: series,
+        occurrence_date: `2026-10-0${index + 2}`,
+        occurrence_starts_at: null,
+        is_cancelled: true,
+        replacement_event_id: null,
+        created_at: '2026-08-01T00:00:00.000Z',
+        updated_at: '2026-08-01T00:00:00.000Z',
+      })),
+    );
+    db.selectRequests.clear();
+
+    const data = await repository.load();
+
+    expect(data.todos).toHaveLength(5);
+    expect(data.todos.filter((todo) => todo.parentId === parent).map((todo) => todo.title).sort()).toEqual([
+      '子項一',
+      '子項二',
+    ]);
+    expect(data.events).toHaveLength(3);
+    expect(data.eventExceptions).toHaveLength(3);
+    expect(db.selectRequests.get('todos')).toBe(3);
+  });
+
+  it('keeps the order screens show — sort order, then creation — not the key order paging uses', async () => {
+    const { db, repository } = bootstrapped();
+    db.maxRows = 2;
+    const [late, early, middle] = keyedTuple('e0000000', 3);
+    db.seed('events', [
+      allDayEventRow(late, { title: '最後建立', created_at: '2026-08-03T00:00:00.000Z' }),
+      allDayEventRow(early, { title: '最先建立', created_at: '2026-08-01T00:00:00.000Z' }),
+      allDayEventRow(middle, { title: '第二個建立', created_at: '2026-08-02T00:00:00.000Z' }),
+    ]);
+    // A day's stickers are shown in stored order (`stickersOn()`); the keys
+    // here run the opposite way from it.
+    db.seed(
+      'stickers',
+      keyedIds('f0000000', 3).map((id, index) => ({
+        id,
+        owner_id: OWNER,
+        calendar_id: CALENDAR,
+        sticker_date: '2026-10-13',
+        glyph: ['⭐', '🎉', '☕'][index],
+        asset_key: null,
+        sort_order: 2 - index,
+        created_at: '2026-08-01T00:00:00.000Z',
+        updated_at: '2026-08-01T00:00:00.000Z',
+      })),
+    );
+
+    const data = await repository.load();
+
+    expect(data.events.map((event) => event.title)).toEqual(['最先建立', '第二個建立', '最後建立']);
+    expect(data.stickers.map((sticker) => sticker.glyph)).toEqual(['☕', '🎉', '⭐']);
+  });
+
+  it('fails the whole load when a later page fails, and keeps the last confirmed snapshot', async () => {
+    const { db, repository } = bootstrapped();
+    db.maxRows = 2;
+    db.seed('events', keyedIds('a0000000', 3).map((id) => allDayEventRow(id)));
+    const before = await repository.load();
+    db.seed('events', keyedIds('a0000000', 4).map((id) => allDayEventRow(id)));
+    db.selectRequests.clear();
+    db.pageFailures.set('events', { page: 2, message: 'connection reset' });
+
+    await expect(repository.load()).rejects.toThrow(RemoteDataError);
+
+    // The next confirmed write is built on the old document, not on page one.
+    const saved = await repository.addTodo({ title: '之後的待辦', date: '2026-10-13' });
+    expect(saved.events).toEqual(before.events);
+    expect(saved.events).toHaveLength(3);
+  });
+
+  it('reads until an empty page when the server does not report a count', async () => {
+    const { db, repository } = bootstrapped();
+    db.maxRows = 2;
+    db.reportsCount = false;
+    db.seed('events', keyedIds('a0000000', 3).map((id) => allDayEventRow(id)));
+    db.selectRequests.clear();
+
+    const data = await repository.load();
+
+    expect(data.events).toHaveLength(3);
+    expect(db.selectRequests.get('events')).toBe(3);
+  });
+
+  /**
+   * The fake proves the loop; only the real client proves the request. This
+   * drives the production adapter through supabase-js against a minimal
+   * PostgREST that honours `order`, `limit`, `id=gt.` and `Prefer:
+   * count=exact`, and caps every response at 1,000 rows.
+   */
+  it('pages through PostgREST with the real supabase-js request builder', async () => {
+    const events = keyedIds('a0000000', 1001).map((id) => allDayEventRow(id));
+    const tables: Record<string, FakeRow[]> = {
+      calendars: [calendarRow()],
+      events,
+      user_preferences: [preferencesRow()],
+    };
+    const requests: { table: string; params: URLSearchParams; prefer: string | null }[] = [];
+    const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input));
+      const table = url.pathname.split('/').at(-1) ?? '';
+      const prefer = new Headers(init?.headers).get('prefer');
+      requests.push({ table, params: url.searchParams, prefer });
+      const after = url.searchParams.get('id')?.replace(/^gt\./, '') ?? null;
+      const matching = (tables[table] ?? [])
+        .filter((row) => after === null || String(row.id) > after)
+        .sort((left, right) => (String(left.id) < String(right.id) ? -1 : 1));
+      const limit = Number(url.searchParams.get('limit') ?? Infinity);
+      const body = matching.slice(0, Math.min(limit, 1000));
+      const headers = new Headers({ 'content-type': 'application/json' });
+      if (prefer?.includes('count=exact')) {
+        headers.set(
+          'content-range',
+          body.length ? `0-${body.length - 1}/${matching.length}` : `*/${matching.length}`,
+        );
+      }
+      return new Response(JSON.stringify(body), { status: 200, headers });
+    };
+    const client = createClient<Database>('https://daypop.invalid', 'sb_publishable_test', {
+      global: { fetch: fetcher },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+
+    const data = await new SupabaseDayPopRepository(client, OWNER).load();
+
+    expect(data.events).toHaveLength(1001);
+    const eventPages = requests.filter((request) => request.table === 'events');
+    expect(eventPages).toHaveLength(2);
+    expect(eventPages.map((page) => page.params.get('order'))).toEqual(['id.asc', 'id.asc']);
+    expect(eventPages.map((page) => page.params.get('id'))).toEqual([
+      null,
+      `gt.${String(events[999]?.id)}`,
+    ]);
+    expect(eventPages.every((page) => page.prefer?.includes('count=exact'))).toBe(true);
+    expect(eventPages.every((page) => page.params.get('owner_id') === `eq.${OWNER}`)).toBe(true);
+  });
+});
+
 describe('SupabaseDayPopRepository writes', () => {
   it('refuses invalid all-day ranges before requests and retains the last confirmed snapshot after a failed extension (DP-127)', async () => {
     const { db, repository } = bootstrapped();
@@ -293,7 +537,8 @@ describe('SupabaseDayPopRepository writes', () => {
     db[failureKind].clear();
     // Uses the retained snapshot without a reload, so optimistic loss cannot hide.
     const next = await repository.toggleTodo(TODO);
-    expect(next.todos.map((todo) => todo.title)).toEqual(['既有待辦', '子項', '孫項']);
+    // Same sort order and creation time, so the key decides (DP-152).
+    expect(next.todos.map((todo) => todo.title)).toEqual(['子項', '既有待辦', '孫項']);
     expect(await repository.load()).toEqual(next);
   });
 

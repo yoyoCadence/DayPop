@@ -138,7 +138,14 @@ describe.each(adapters)('%s adapter reschedules todos (DP-129)', (_name, create)
       stickers: data.stickers, preferences: data.preferences, todos: [todo],
     } });
     const saved = await repository.rescheduleTodo(todo.id, '2028-02-29');
-    expect(saved.todos[0]).toEqual({ ...todo, dueDate: '2028-02-29', updatedAt: saved.todos[0]!.updatedAt });
+    // The account's import stamps its own creation time (DP-036 triggers); the
+    // guest keeps the file's. Both are legitimate, as the header says.
+    expect(saved.todos[0]).toEqual({
+      ...todo,
+      dueDate: '2028-02-29',
+      createdAt: saved.todos[0]!.createdAt,
+      updatedAt: saved.todos[0]!.updatedAt,
+    });
     for (const date of ['', '2026-02-29', null]) await expect(repository.rescheduleTodo(todo.id, date as string)).rejects.toThrow('有效');
     expect(await repository.load()).toEqual(saved);
   });
