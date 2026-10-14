@@ -1,4 +1,4 @@
-import { act, StrictMode, useRef, type ReactNode } from 'react';
+import { act, StrictMode, useEffect, useRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useModalFocus } from './useModalFocus';
@@ -156,6 +156,34 @@ describe('useModalFocus (DP-154)', () => {
     expect(onEscape).toHaveBeenCalledTimes(1);
   });
 
+  it('lets a control inside the layer claim Escape first (DP-155)', () => {
+    const onEscape = vi.fn();
+    function WithEditor() {
+      const layer = useRef<HTMLDivElement>(null);
+      useModalFocus(layer, { onEscape });
+      return (
+        <div ref={layer}>
+          {/* Like 日詳情's inline title editor: Escape cancels the edit only. */}
+          <input
+            aria-label="待辦標題"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') event.stopPropagation();
+            }}
+          />
+          <button type="button">完成</button>
+        </div>
+      );
+    }
+    act(() => root.render(<WithEditor />));
+    byText('待辦標題').focus();
+    press('Escape');
+    expect(onEscape).not.toHaveBeenCalled();
+
+    byText('完成').focus();
+    press('Escape');
+    expect(onEscape).toHaveBeenCalledTimes(1);
+  });
+
   it('leaves Escape alone for a layer that does not close on it', () => {
     function Plain() {
       const layer = useRef<HTMLDivElement>(null);
@@ -178,6 +206,39 @@ describe('useModalFocus (DP-154)', () => {
 
     act(() => root.render(<Page open={false} />));
     expect(document.activeElement).toBe(byText('開啟'));
+  });
+
+  it('returns focus to what an earlier effect focused as the layer opened (DP-072, DP-155)', () => {
+    // The week grid puts focus back on the dragged block in its own effect,
+    // after the scope question has rendered but before its effect runs.
+    function Grid({ asking }: { asking: boolean }) {
+      const block = useRef<HTMLButtonElement>(null);
+      useEffect(() => {
+        if (asking) block.current?.focus();
+      }, [asking]);
+      return (
+        <button ref={block} type="button">
+          跨午夜夜班
+        </button>
+      );
+    }
+    function Week({ asking }: { asking: boolean }) {
+      return (
+        <>
+          <Grid asking={asking} />
+          {asking && (
+            <Layer name="scope">
+              <button type="button">只改這一次</button>
+            </Layer>
+          )}
+        </>
+      );
+    }
+    act(() => root.render(<Week asking={false} />));
+    act(() => root.render(<Week asking />));
+    expect(document.activeElement).toBe(byText('只改這一次'));
+    act(() => root.render(<Week asking={false} />));
+    expect(document.activeElement).toBe(byText('跨午夜夜班'));
   });
 
   it('does not move focus off an autoFocus control when StrictMode re-runs effects', () => {

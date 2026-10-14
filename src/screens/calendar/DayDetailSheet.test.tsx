@@ -239,9 +239,12 @@ describe('DayDetailSheet subtasks (DP-116)', () => {
     const input = changeDate('2026-08-08');
     act(() => input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     act(() => root.render(<DayDetailSheet {...props} dateKey="2026-08-07" />));
-    expect(document.activeElement).toBe(document.body);
+    // The new day's sheet takes focus as it opens (DP-155); the old save's
+    // settlement must not move it anywhere else.
+    const opened = document.activeElement;
+    expect(container.querySelector('.cal-day-layer')!.contains(opened)).toBe(true);
     await act(async () => { finish(); });
-    expect(document.activeElement).toBe(document.body);
+    expect(document.activeElement).toBe(opened);
   });
   it.each(['取消', 'Escape'])('waits before %s in another date editor, preserving both drafts and returning focus after settlement', async (action) => {
     let fail!: (error: Error) => void;

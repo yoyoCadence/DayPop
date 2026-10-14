@@ -187,24 +187,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // a component that is gone.
   useEffect(() => () => window.clearTimeout(flashTimer.current), []);
 
-  // One Escape handler for both sheets, so a keypress closes only the topmost.
-  // The event sheet can be opened from inside 日詳情, and two independent window
-  // listeners would dismiss both at once.
-  useEffect(() => {
-    if (!sheetOpen && !dayDetailKey) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (sheetOpen) {
-        setSheetOpen(false);
-        setEditingId(null);
-        setQuickDraft(null);
-      } else {
-        setDayDetailKey(null);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [sheetOpen, dayDetailKey]);
+  // Escape is no longer handled here. Each sheet registers with the shared
+  // modal stack, which gives the key press to the topmost layer only — the
+  // event sheet opened from inside 日詳情 closes on its own (DP-155).
 
   const weekStartsOn = data.preferences.weekStartsOn;
   // DP-064: one grid, one timezone. Placement and clock labels in every pane

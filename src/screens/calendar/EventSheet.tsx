@@ -22,6 +22,7 @@ import type {
   EventOccurrence,
 } from '../../domain/types';
 import { createDomainId } from '../../domain/types';
+import { useModalFocus } from '../../shell/useModalFocus';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { eventTimezoneOptions } from '../timezoneOptions';
 import { ScopeDialog, type ScopeMode } from './ScopeDialog';
@@ -247,18 +248,17 @@ function EventSheetForm({
     return () => { mounted.current = false; };
   }, []);
 
-  useEffect(() => {
-    if (!saving) return;
-    // A disabled focused control can send Escape to body/window. Block it in
-    // capture before CalendarScreen's topmost-sheet close handler, anywhere.
-    const keepDraft = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-    };
-    window.addEventListener('keydown', keepDraft, true);
-    return () => window.removeEventListener('keydown', keepDraft, true);
-  }, [saving]);
+  // Focus stays in the sheet, and Escape closes only the topmost layer — this
+  // sheet, or the scope dialog above it, never 日詳情 underneath as well. While
+  // a write waits nothing closes it; focus may have fallen to <body> from a
+  // control that was disabled, and the shared handler still reaches this
+  // check (DP-133, DP-155).
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, {
+    onEscape: () => {
+      if (!pendingSave.current) onClose();
+    },
+  });
 
   useEffect(() => {
     if (saving || !saveError) return;
@@ -423,9 +423,6 @@ function EventSheetForm({
     }
   }
 
-  // Escape is handled by `CalendarScreen` so that, when this sheet is stacked on
-  // top of 日詳情, one keypress closes only the topmost sheet.
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pendingSave.current) return;
@@ -503,6 +500,7 @@ function EventSheetForm({
   return (
     <ViewportLayer>
       <div
+        ref={layer}
         className="cal-sheet-backdrop"
         onClick={(event) => {
           if (!pendingSave.current && event.target === event.currentTarget) onClose();
