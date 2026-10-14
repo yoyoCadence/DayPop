@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { previewTotal, type ImportPlan } from '../domain/dataTransfer';
 import { eventWallTime } from '../domain/eventTime';
 import type { Calendar } from '../domain/types';
+import { useModalFocus } from '../shell/useModalFocus';
 import { ViewportLayer } from '../shell/ViewportLayer';
 
 export interface DataImportDialogProps {
@@ -38,15 +39,18 @@ export function DataImportDialog({
   useEffect(() => {
     confirmRef.current?.focus();
   }, []);
+  // After the effect above, so focus is already on 取代資料 and stays there.
+  // The backdrop is a button inside the layer, so it stays reachable (DP-156).
+  const layer = useRef<HTMLDivElement>(null);
+  useModalFocus(layer, {
+    onEscape: () => {
+      if (!busy) onCancel();
+    },
+  });
 
   return (
     <ViewportLayer>
-      <div
-        className="data-import-layer"
-        onKeyDown={(event) => {
-          if (event.key === 'Escape' && !busy) onCancel();
-        }}
-      >
+      <div ref={layer} className="data-import-layer">
         <button
           className="data-import-backdrop"
           type="button"
