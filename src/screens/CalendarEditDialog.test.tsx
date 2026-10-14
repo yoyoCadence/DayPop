@@ -78,6 +78,48 @@ function dropFocus() {
   lost.remove();
 }
 
+function pressEscape(init: KeyboardEventInit = {}) {
+  act(() => {
+    (document.activeElement ?? document.body).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true, ...init }),
+    );
+  });
+}
+
+describe('CalendarEditDialog keyboard (DP-154)', () => {
+  it('closes on Escape, but not while a write is waiting', async () => {
+    let finish!: () => void;
+    const onSave = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const props = render({ onSave });
+    pressEscape();
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+
+    await submit();
+    pressEscape();
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+    await act(async () => { finish(); });
+    // Closed by the confirmed save, not by the Escape pressed while it waited.
+    expect(props.onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores the Escape that ends an input method composition in the name field', () => {
+    const props = render({ calendar: null });
+    expect(document.activeElement).toBe(nameInput());
+    pressEscape({ isComposing: true });
+    expect(props.onClose).not.toHaveBeenCalled();
+  });
+
+  it('keeps the page behind out of reach while it is open', () => {
+    const behind = document.createElement('button');
+    container.before(behind);
+    render();
+    expect(behind.hasAttribute('inert')).toBe(true);
+    act(() => root.render(<></>));
+    expect(behind.hasAttribute('inert')).toBe(false);
+    behind.remove();
+  });
+});
+
 describe('CalendarEditDialog confirmed writes (DP-141)', () => {
   it('a synchronous save still closes straight away', async () => {
     const props = render();

@@ -76,12 +76,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [x] **DP-152 — 已完成（2026-10-14），見 Done。**
 - [x] **DP-153 — 已完成（2026-10-14），見 Done。**
-- [ ] **DP-154 — 共用的對話框焦點限制，先套用日曆對話框（審查 R3，P2）：** **已重現**（Chromium 390×844）：設定 → 新增日曆 → 輸入名稱 → Shift+Tab 兩次 → Enter，App 切到綜覽，對話框與草稿都消失。`aria-modal="true"` 只是宣告，擋不住鍵盤焦點。複核另外量了七個對話框，Tab 或 Shift+Tab 都能到達背景控制項（表在審查文件 §2.3）；只有 `ScopeDialog` 自己做了按鈕間的循環。
-  - **要做**：建立一套共用的焦點管理，並套用到 `CalendarEditDialog`。內容是：Tab 與 Shift+Tab 留在最上層對話框、開啟時把焦點放進去、關閉時還給觸發的控制項、背景不能由鍵盤操作。DP-141 的等待規則不變，包括按鈕停用後焦點落到 `body` 時的還原。
-  - **驗收**：真實瀏覽器 e2e 重做上面的步驟，修正前失敗；Tab 與 Shift+Tab 各走完一圈不離開對話框；取消與 Escape 後焦點回到「＋ 新增日曆」或該日曆的編輯鈕；保存失敗與等待中的草稿契約（DP-141／142）不變。jsdom 不模擬 Tab 順序，不能只靠單元測試。
-  - **決策點與建議**：背景用 `inert` 還是只攔截 keydown。建議 `inert`，它連滑鼠與螢幕閱讀器一起擋；但對話框是 portal 進 `.dp-viewport` 的同層子節點，`inert` 要設在兄弟節點而不是 viewport 上。原稿沒有焦點限制，這是可及性擴充，比照 DP-141 記入 ADR §2。
-- [ ] **DP-155 — 焦點限制套用到日曆的 sheet（依賴 DP-154）：** `EventSheet`、`DayDetailSheet` 與疊在上面的 `ScopeDialog`。複核量到：`EventSheet` Shift+Tab 第 5 次到背景「設定」分頁；`DayDetailSheet` 開啟後焦點仍在觸發它的日期格、沒有進入 sheet，第一次 Tab 就到背景的 FAB。要保留的既有契約：`ScopeDialog` 的 Escape 只關自己、不關 `EventSheet`；日詳情的 inline 編輯（改名、換日、優先度）Escape 不關外層 sheet；DP-132／133／134／137 的等待鎖、草稿與焦點還原。驗收同 DP-154，另加巢狀對話框的 Escape 與焦點歸還順序。
-- [ ] **DP-156 — 焦點限制套用到帳號、更新與匯入對話框（依賴 DP-154）：** `AuthDialog`、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`。複核量到：`UpdateDialog` 開啟時焦點在 `body`，沒有初始焦點；`AuthDialog` 開啟後焦點仍在觸發它的「登入／註冊」鈕；`ReleaseNoticeDialog` Shift+Tab 一次就到分頁列；`DataImportDialog` Tab 兩次到背景的主題卡片。要注意三件事：`UpdateDialog` 在 `preparing` 時兩顆按鈕都停用，要決定那段時間焦點放哪；`update-dialog.spec.ts` 以畫面座標點擊驗證對話框可捲動（DP-089），不能被改壞；註冊成功後的終態（DP-023）沒有表單，也要有可聚焦的出口。
+- [x] **DP-154 — 已完成（2026-10-14），見 Done。** 共用的 `useModalFocus()` 已在 `src/shell/useModalFocus.ts`，DP-155／156 直接接上即可。
+- [ ] **DP-155 — 焦點限制套用到日曆的 sheet（依賴 DP-154）：** **接手須知（DP-154 完成時補）**：`EventSheet` 與 `ScopeDialog` 目前各自在 window 的 capture 階段聽 keydown，`ScopeDialog` 再以 `stopPropagation` 擋住 sheet 的 Escape。接上 `useModalFocus()` 時要把這兩個 listener 收進共用的堆疊，不要讓兩套同時處理同一個 Escape 或 Tab；`ScopeDialog` 自己的按鈕循環也一併拿掉。`useModalFocus()` 的 `layerRef` 要指向含背景的最外層元素。原條目： `EventSheet`、`DayDetailSheet` 與疊在上面的 `ScopeDialog`。複核量到：`EventSheet` Shift+Tab 第 5 次到背景「設定」分頁；`DayDetailSheet` 開啟後焦點仍在觸發它的日期格、沒有進入 sheet，第一次 Tab 就到背景的 FAB。要保留的既有契約：`ScopeDialog` 的 Escape 只關自己、不關 `EventSheet`；日詳情的 inline 編輯（改名、換日、優先度）Escape 不關外層 sheet；DP-132／133／134／137 的等待鎖、草稿與焦點還原。驗收同 DP-154，另加巢狀對話框的 Escape 與焦點歸還順序。
+- [ ] **DP-156 — 焦點限制套用到帳號、更新與匯入對話框（依賴 DP-154）：** **接手須知（DP-154 完成時補）**：`DataImportDialog` 的背景是一個 `button`（「取消匯入」），在 `[role="dialog"]` 之外但在圖層內，`layerRef` 要包住它。e2e 斷言匯入預覽開啟時焦點在「取代資料」，那是 `autoFocus`；`useModalFocus()` 只在焦點不在圖層內時才移動焦點，所以不會搶走它。原條目：`AuthDialog`、`UpdateDialog`、`ReleaseNoticeDialog`、`DataImportDialog`。複核量到：`UpdateDialog` 開啟時焦點在 `body`，沒有初始焦點；`AuthDialog` 開啟後焦點仍在觸發它的「登入／註冊」鈕；`ReleaseNoticeDialog` Shift+Tab 一次就到分頁列；`DataImportDialog` Tab 兩次到背景的主題卡片。要注意三件事：`UpdateDialog` 在 `preparing` 時兩顆按鈕都停用，要決定那段時間焦點放哪；`update-dialog.spec.ts` 以畫面座標點擊驗證對話框可捲動（DP-089），不能被改壞；註冊成功後的終態（DP-023）沒有表單，也要有可聚焦的出口。
 - [ ] **DP-157 — 更新開發依賴 `source-map-js` 到 1.2.2：** `npm audit` 回報 1 個 high（[GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)，影響 1.0.0–1.2.1）。它只經由 `vite` → `postcss` 與 `jsdom` → `css-tree` 進來，`npm audit --omit=dev` 是 0，不是已證明的 production 漏洞。只更新 lockfile 裡這一個套件，不跑會連帶升級其他套件的 `npm audit fix --force`；之後跑完整品質檢查。比照 DP-087。與其他修正沒有依賴，可以隨時插隊。
 
 
@@ -360,6 +357,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-154 — 對話框共用焦點規則，先套用日曆對話框（2026-10-14，審查 R3）：** 由 Next 經 In Progress 完成。新增 `useModalFocus(layerRef, { onEscape })`：開啟時圖層以外（兄弟與各層祖先的兄弟，到 `<body>`）設為 `inert`，關閉時只解除自己設的；Tab／Shift+Tab 在最上層循環，全部停用時擋下；Escape 只給最上層，輸入法組字時不處理；觸發元素在第一次 render 時記下，關閉後歸還；StrictMode 模擬卸載時不歸還。`CalendarEditDialog` 接上後，Escape 會關閉對話框（原本沒有處理），與點背景同規則，等待寫入時不關。決策點依建議採 `inert`。hook 7 個、對話框 3 個單元案例；新 e2e `calendar-dialog-focus.spec.ts` 依審查步驟按真實按鍵並各走一整圈，拿掉 hook 時在「第 1 次 Shift+Tab」失敗。既有 DP-141 單元測試與 `calendar-dialog-confirmation.spec.ts` 照常通過。其餘六個對話框依 DP-155／156 接上，接手須知已補在兩條目上。沒有 iOS Safari、實體鍵盤或螢幕閱讀器實測。見 ADR §2。
 
 - [x] **DP-153 — 更新資訊在讀取邊界驗證（2026-10-14，審查 R2）：** 由 Next 經 In Progress 完成。`version.ts` 新增 `parseReleaseInfo()`：`version`／`releasedAt`／`title` 為非空字串、`changes` 為字串陣列，每段最多 500 字、最多 50 條，只保留這四個欄位；`useAppUpdate` 在 fetch 之後就用它取代型別斷言。不合格的回應丟 `ReleaseInfoError`，走既有的失敗路徑：自動檢查安靜、設定頁顯示「本次檢查失敗：更新資訊格式不正確」、手動檢查顯示「暫時無法檢查更新」；沒有任何壞資料留給對話框繪製。所有已發布公告與目前的 `version.json` 都通過解析。hook 的 10 個案例（同版本／較新版本 × 缺 `changes`、字串、含物件、缺標題、`null`）與新 e2e `release-info-validation.spec.ts` 的 2 個案例（手機＋桌面）在還原修正後都失敗，e2e 失敗時整個 App 就是「日蹦暫時無法啟動」。不改 `release-notes.json`、`version.json`、`sw.js`、generator、版號或公告；修正隨下一次部署上線。見 ADR §5。
 

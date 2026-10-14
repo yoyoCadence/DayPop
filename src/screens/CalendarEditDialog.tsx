@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { calendarSwatches } from '../domain/calendars';
 import { createDomainId, type Calendar } from '../domain/types';
+import { useModalFocus } from '../shell/useModalFocus';
 import { ViewportLayer } from '../shell/ViewportLayer';
 import './calendarManage.css';
 
@@ -67,6 +68,14 @@ export function CalendarEditDialog({
   const [failure, setFailure] = useState<{ kind: WriteKind; message: string } | null>(null);
   const saveButton = useRef<HTMLButtonElement>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
+  const layer = useRef<HTMLDivElement>(null);
+  // Focus stays in the dialog and Escape closes it, under the same rule as the
+  // backdrop: never while a write is waiting (DP-141, DP-154).
+  useModalFocus(layer, {
+    onEscape: () => {
+      if (!pending.current) onClose();
+    },
+  });
 
   useEffect(() => {
     mounted.current = true;
@@ -111,7 +120,7 @@ export function CalendarEditDialog({
 
   return (
     <ViewportLayer>
-      <div className="cal-manage-layer">
+      <div className="cal-manage-layer" ref={layer}>
         <div
           className="cal-manage-backdrop"
           onClick={() => {
