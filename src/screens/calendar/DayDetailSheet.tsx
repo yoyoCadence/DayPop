@@ -312,10 +312,9 @@ function DayDetailSheetBody({
           {isTitleTooLong(todoDraft) && <div className="cal-day-title-error" role="alert">{TITLE_LENGTH_MESSAGE}</div>}
           {todoAdd.error && !isTitleTooLong(todoDraft) && <div className="cal-day-title-error" role="alert">{todoAdd.error}</div>}
 
-          <div className="cal-day-pending">
-            <span className="dp-note-task">DP-014</span>
-            拖曳排序欄位已可保存，後續依原稿補上操作介面。
-          </div>
+          {/* The原檔 reorders todos by dragging; the sort order is stored, the
+              control is still DP-014. Said without the task number (DP-163). */}
+          <div className="cal-day-pending">待辦目前還不能拖曳調整順序。</div>
         </div>
       </div>
     </ViewportLayer>

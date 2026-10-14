@@ -185,19 +185,6 @@
   color: var(--muted);
 }
 
-.dp-note-task {
-  display: inline-block;
-  margin-bottom: 7px;
-  border: 1.5px solid var(--border);
-  border-radius: calc(var(--radius) - 4px);
-  background: var(--surface-2);
-  padding: 2px 7px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
 .dp-screen-footnote {
   padding: 6px 0 12px;
   color: var(--muted);
