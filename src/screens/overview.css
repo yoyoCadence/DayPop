@@ -110,6 +110,39 @@
   text-align: center;
 }
 
+/* 未排日期 — DP-173. The day sheet's todo cards inside an overview card. */
+.overview-undated {
+  margin-bottom: 10px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 10px 12px 6px;
+}
+
+.overview-undated-title {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  gap: 8px;
+  color: var(--fg);
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: inherit;
+  letter-spacing: var(--title-ls);
+}
+
+.overview-undated-title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.overview-undated-hint {
+  margin: 2px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .overview-group {
   overflow: hidden;
   margin-bottom: 10px;

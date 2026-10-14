@@ -39,8 +39,12 @@ export function topLevelTodos(todos: TodoItem[]): TodoItem[] {
   return todos.filter((todo) => (todo.dueDate === null ? todo.parentId === null : roots.has(todo.id)));
 }
 
-/** Groups only the rows already visible on this date; never changes persisted data. */
-export function todoGroupsOn(todos: TodoItem[], date: string): DayTodoGroup[] {
+/**
+ * Groups only the rows already visible on this date; never changes persisted
+ * data. `null` groups the todos with no date at all, for 綜覽's 未排日期
+ * (DP-173) — the same cards, by the same rules.
+ */
+export function todoGroupsOn(todos: TodoItem[], date: string | null): DayTodoGroup[] {
   const ordered = todos.filter((todo) => todo.dueDate === date).sort((a, b) => a.sortOrder - b.sortOrder);
   const ids = new Set(ordered.map((todo) => todo.id));
   const children = new Map<string, TodoItem[]>();

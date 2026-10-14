@@ -13,6 +13,7 @@ import {
 } from '../domain/overview';
 import { topLevelTodos } from '../domain/todos';
 import { useDayPopData } from '../data/dataContext';
+import { UndatedTodos } from './UndatedTodos';
 import './screens.css';
 import './overview.css';
 
@@ -182,6 +183,10 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
       </div>
 
       <div className="overview-body">
+        {/* Undated todos belong to no period, so they lead the 待辦 list
+            whatever is being browsed — DP-173. */}
+        {type === 'todos' && <UndatedTodos todayKey={todayKey} />}
+
         {groups.length === 0 && (
           <div className="overview-empty">
             這個區間沒有資料
