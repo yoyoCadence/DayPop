@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../lib/database.types';
-import { getAuthRedirectUrl, getSupabaseClient, isGoogleAuthEnabled } from '../lib/supabase';
+import {
+  getAuthRedirectUrl,
+  getSupabaseClient,
+  isGoogleAuthEnabled,
+  readStoredSession,
+} from '../lib/supabase';
 import {
   AuthContext,
   type AuthContextValue,
@@ -13,6 +18,17 @@ interface ClientResolution {
   client: SupabaseClient<Database> | null;
   error: string | null;
 }
+
+/**
+ * How long launch waits for supabase-js to confirm the stored session — DP-176.
+ *
+ * Until it answers, the data layer can only show 載入中. An expired session
+ * whose refresh fails on the network or with a 5xx is retried for about 25 s,
+ * and one whose request never answers has no end at all (measured with
+ * supabase-js 2.111.0, DP-158). A session that is still valid, or no session,
+ * answers at once and never reaches this.
+ */
+export const AUTH_STARTUP_DEADLINE_MS = 8_000;
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [resolution] = useState<ClientResolution>(() => {
@@ -28,6 +44,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(Boolean(resolution.client));
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [sessionUnconfirmed, setSessionUnconfirmed] = useState(false);
   const [googleAuthStatus, setGoogleAuthStatus] = useState<GoogleAuthStatus>(
     resolution.client ? 'checking' : 'unavailable',
   );
@@ -37,9 +54,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!client) return;
 
     let active = true;
+    let answered = false;
+    // Past the deadline, go on as the account this device last stored. Its
+    // cached data opens with the existing "無法連上雲端" notice, instead of an
+    // endless 載入中 or a guest calendar that is not this person's (DP-176).
+    // supabase-js keeps trying, and its next event replaces this session.
+    const deadline = window.setTimeout(() => {
+      if (!active || answered) return;
+      const stored = readStoredSession();
+      setSession(stored);
+      setSessionUnconfirmed(stored !== null);
+      setInitializing(false);
+    }, AUTH_STARTUP_DEADLINE_MS);
+
     const { data } = client.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
-      setSession(nextSession);
+      answered = true;
+      // No initial session while one is still stored means its refresh failed
+      // in a way supabase-js will retry (network, 5xx); a refresh token the
+      // server refuses is removed from storage, and that reads as signed out.
+      const fallback = event === 'INITIAL_SESSION' && !nextSession ? readStoredSession() : null;
+      setSession(fallback ?? nextSession);
+      setSessionUnconfirmed(fallback !== null);
       if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
       if (event === 'SIGNED_OUT') setIsPasswordRecovery(false);
       setInitializing(false);
@@ -55,6 +91,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     return () => {
       active = false;
+      window.clearTimeout(deadline);
       data.subscription.unsubscribe();
     };
   }, [resolution.client]);
@@ -72,6 +109,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isPasswordRecovery,
       googleAuthStatus,
       configurationError: resolution.error,
+      sessionUnconfirmed,
       async signIn(email, password) {
         const { error } = await requireClient().auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -115,6 +153,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     googleAuthStatus,
     initializing,
     isPasswordRecovery,
+    sessionUnconfirmed,
     resolution.client,
     resolution.error,
     session,

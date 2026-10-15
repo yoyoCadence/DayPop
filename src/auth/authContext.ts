@@ -14,6 +14,14 @@ export interface AuthContextValue {
   isPasswordRecovery: boolean;
   googleAuthStatus: GoogleAuthStatus;
   configurationError: string | null;
+  /**
+   * True only while `session` is the one this device stored and supabase-js
+   * has not confirmed it yet: its refresh is retrying, failing on the network
+   * or not answering at launch (DP-176). Requests made with it would wait on
+   * supabase-js, so the data layer shows the account's cache instead and
+   * refuses writes until a real auth event arrives. Absent means confirmed.
+   */
+  sessionUnconfirmed?: boolean;
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string): Promise<SignUpResult>;
   signInWithGoogle(): Promise<void>;

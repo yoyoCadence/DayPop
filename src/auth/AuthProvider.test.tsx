@@ -1,7 +1,10 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createEmptyUserData } from '../domain/types';
+import { writeAccountCache } from '../storage/accountCache';
 import type { AuthContextValue } from './authContext';
+import { AUTH_STARTUP_DEADLINE_MS } from './AuthProvider';
 
 /**
  * DP-158 — the real `AuthProvider` over the real supabase-js client.
@@ -77,7 +80,7 @@ class FakeAuthServer {
   ]);
   googleEnabled: boolean | 'error' = true;
   /** How the next refresh-token requests are answered. */
-  refresh: 'ok' | 'network-error' | 'server-error' | 'never' = 'ok';
+  refresh: 'ok' | 'network-error' | 'server-error' | 'never' | 'revoked' = 'ok';
   signUpNeedsConfirmation = true;
 
   readonly fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -108,6 +111,9 @@ class FakeAuthServer {
       if (this.refresh === 'never') return 'never';
       if (this.refresh === 'network-error') return 'network-error';
       if (this.refresh === 'server-error') return json({ message: 'unavailable' }, 503);
+      if (this.refresh === 'revoked') {
+        return json({ code: 400, error_code: 'refresh_token_not_found', msg: 'Invalid Refresh Token' }, 400);
+      }
       const owner = [...this.accounts.values()].find((user) => body?.refresh_token === `refresh-${user.id}`);
       if (!owner) {
         return json({ code: 400, error_code: 'refresh_token_not_found', msg: 'Invalid Refresh Token' }, 400);
@@ -367,14 +373,15 @@ describe('AuthProvider over supabase-js (DP-158)', () => {
 });
 
 /*
- * What launch does today when a stored session has expired and cannot be
- * refreshed. These pin the current behaviour so that a supabase-js upgrade or
- * the fix registered as DP-176 changes them on purpose; they are not the
- * behaviour DayPop wants. Measured with real timers on 2026-10-14
- * (supabase-js 2.111.0): about 25.5 s and 8 refresh attempts before the
- * provider stops initializing, and no end at all when the request hangs.
+ * Launch with an expired session that cannot be refreshed — DP-176.
+ *
+ * Before the fix (measured with real timers, supabase-js 2.111.0, DP-158):
+ * about 25.5 s and 8 refresh attempts of 載入中 before starting signed out
+ * with the session still stored, and no end at all when the request hung.
+ * Now launch waits at most AUTH_STARTUP_DEADLINE_MS and goes on as the
+ * account this device stored; supabase-js keeps retrying behind it.
  */
-describe('AuthProvider launch with an expired session that cannot be refreshed — current behaviour (DP-158, see DP-176)', () => {
+describe('AuthProvider launch with an expired session that cannot be refreshed (DP-176)', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
   });
@@ -390,27 +397,162 @@ describe('AuthProvider launch with an expired session that cannot be refreshed �
   }
 
   it.each(['network-error', 'server-error'] as const)(
-    'with %s, keeps the App initializing through supabase-js retries, then starts signed out with the session still stored',
+    'with %s, stops waiting at the deadline as the stored account and stays it after supabase-js gives up',
     async (mode) => {
       storeSession(ALICE, { expiresIn: -60 });
       server.refresh = mode;
       await mountProvider();
-      await advance(10_000);
+      await advance(AUTH_STARTUP_DEADLINE_MS - 1_000);
       expect(auth().initializing).toBe(true);
-      await advance(30_000);
+      await advance(2_000);
       expect(auth().initializing).toBe(false);
-      expect(auth().user).toBeNull();
+      expect(auth().user?.id).toBe(ALICE.id);
+
+      // supabase-js finishes retrying with no session; the stored one stands.
+      await advance(30_000);
       expect(refreshRequests()).toBeGreaterThan(1);
+      expect(auth().user?.id).toBe(ALICE.id);
       expect(window.localStorage.getItem(STORAGE_KEY)).toContain(ALICE.id);
     },
   );
 
-  it('keeps the App initializing for as long as the refresh request hangs', async () => {
+  it('stops waiting at the deadline when the refresh request never answers', async () => {
     storeSession(ALICE, { expiresIn: -60 });
     server.refresh = 'never';
     await mountProvider();
-    await advance(120_000);
-    expect(auth().initializing).toBe(true);
+    await advance(AUTH_STARTUP_DEADLINE_MS + 1_000);
+    expect(auth().initializing).toBe(false);
+    expect(auth().user?.id).toBe(ALICE.id);
     expect(refreshRequests()).toBe(1);
+  });
+
+  it('confirms the session once the network is back and supabase-js refreshes it', async () => {
+    storeSession(ALICE, { expiresIn: -60 });
+    server.refresh = 'network-error';
+    await mountProvider();
+    await advance(40_000);
+    const stale = auth().session?.access_token;
+    expect(auth().user?.id).toBe(ALICE.id);
+
+    server.refresh = 'ok';
+    await advance(65_000);
+    expect(auth().session?.access_token).not.toBe(stale);
+    expect(auth().user?.id).toBe(ALICE.id);
+    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!) as { expires_at: number };
+    expect(stored.expires_at).toBeGreaterThan(Date.now() / 1000);
+  });
+
+  it('starts as a guest when the server refuses the stored refresh token', async () => {
+    storeSession(ALICE, { expiresIn: -60 });
+    server.refresh = 'revoked';
+    await mountProvider();
+    await advance(2_000);
+    expect(auth().initializing).toBe(false);
+    expect(auth().user).toBeNull();
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    // And the deadline does not bring the account back.
+    await advance(AUTH_STARTUP_DEADLINE_MS);
+    expect(auth().user).toBeNull();
+  });
+
+  it('opens the stored account’s cached calendar with the offline notice, not the guest one', async () => {
+    storeSession(ALICE, { expiresIn: -60 });
+    server.refresh = 'never';
+    const cached = createEmptyUserData({ now: '2026-08-01T00:00:00.000Z' });
+    cached.preferences.petName = '帳號快取的夥伴';
+    writeAccountCache(ALICE.id, cached, window.localStorage);
+    vi.resetModules();
+    const [{ AuthProvider }, { SessionDataProvider }, { useDayPopDataState }, { getSupabaseClient }] =
+      await Promise.all([
+        import('./AuthProvider'),
+        import('../data/SessionDataProvider'),
+        import('../data/dataContext'),
+        import('../lib/supabase'),
+      ]);
+    let state: ReturnType<typeof useDayPopDataState>['state'] | null = null;
+    function Probe() {
+      state = useDayPopDataState().state;
+      return null;
+    }
+    act(() =>
+      root.render(
+        <AuthProvider>
+          <SessionDataProvider>
+            <Probe />
+          </SessionDataProvider>
+        </AuthProvider>,
+      ),
+    );
+    stopClient = () => void getSupabaseClient().auth.stopAutoRefresh();
+    await advance(AUTH_STARTUP_DEADLINE_MS + 2_000);
+
+    const current = state as ReturnType<typeof useDayPopDataState>['state'] | null;
+    expect(current?.status).toBe('ready');
+    if (current?.status !== 'ready') return;
+    expect(current.data.preferences.petName).toBe('帳號快取的夥伴');
+    expect(current.warning).toBeTruthy();
+    // Nothing reached Supabase's data API: those requests would wait on auth.
+    expect(server.requests.some((request) => request.path.startsWith('/rest/'))).toBe(false);
+  });
+
+  /** The real tree, the stored account's cache, and a refresh that fails on the network. */
+  async function mountTree() {
+    storeSession(ALICE, { expiresIn: -60 });
+    server.refresh = 'network-error';
+    writeAccountCache(ALICE.id, createEmptyUserData({ now: '2026-08-01T00:00:00.000Z' }), window.localStorage);
+    vi.resetModules();
+    const [{ AuthProvider }, { SessionDataProvider }, { useDayPopDataState }, { getSupabaseClient }, { useAuth }] =
+      await Promise.all([
+        import('./AuthProvider'),
+        import('../data/SessionDataProvider'),
+        import('../data/dataContext'),
+        import('../lib/supabase'),
+        import('./authContext'),
+      ]);
+    const seen: { value: ReturnType<typeof useDayPopDataState> | null } = { value: null };
+    function Probe() {
+      latest = useAuth();
+      seen.value = useDayPopDataState();
+      return null;
+    }
+    act(() =>
+      root.render(
+        <AuthProvider>
+          <SessionDataProvider>
+            <Probe />
+          </SessionDataProvider>
+        </AuthProvider>,
+      ),
+    );
+    stopClient = () => void getSupabaseClient().auth.stopAutoRefresh();
+    await advance(AUTH_STARTUP_DEADLINE_MS + 2_000);
+    return seen;
+  }
+
+  it('refuses a write at once while unconfirmed, so a form keeps its draft instead of waiting', async () => {
+    const seen = await mountTree();
+    expect(seen.value?.state.status).toBe('ready');
+    let outcome: unknown = 'pending';
+    await act(async () => {
+      outcome = await seen.value!.actions.addTodo({ title: '離線新增', date: '2026-10-15' }).then(
+        () => 'saved',
+        (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)),
+      );
+    });
+    expect(outcome).toContain('還無法連上雲端確認登入');
+    expect(window.localStorage.getItem(`daypop.account-cache.${ALICE.id}`)).not.toContain('離線新增');
+  });
+
+  it('switches to Supabase once the session is confirmed', async () => {
+    const seen = await mountTree();
+    expect(server.requests.some((request) => request.path.startsWith('/rest/'))).toBe(false);
+    server.refresh = 'ok';
+    expect(auth().sessionUnconfirmed).toBe(true);
+    await advance(65_000);
+    expect(auth().user?.id).toBe(ALICE.id);
+    expect(auth().sessionUnconfirmed).toBe(false);
+    // The real repository took over and asked the data API.
+    expect(server.requests.some((request) => request.path.startsWith('/rest/'))).toBe(true);
+    expect(seen.value?.state.status).toBe('ready');
   });
 });

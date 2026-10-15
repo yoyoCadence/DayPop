@@ -28,6 +28,23 @@ storage 不可用時可提供「只維持到本次分頁關閉」的記憶體模
 
 ## 2. Domain contract 先於 repository adapter
 
+### 啟動時確認不了登入，不卡在載入中（DP-176，2026-10-15）
+
+DP-158 以真正的 supabase-js（2.111.0）量到：記住的登入已過期、啟動時刷新遇到網路錯誤或 5xx，supabase-js 重試約 25.5 秒才回報，接著被當成未登入、顯示遊客資料；刷新請求一直沒有回應時，則永遠停在「載入中…」。實際情境是手機一晚沒開（token 一小時過期），早上在訊號差的地方打開 App。
+
+**決策（專案擁有者 2026-10-15 核准建議）：** 啟動最多等 8 秒（`AUTH_STARTUP_DEADLINE_MS`）。到期，或 supabase-js 回報「沒有 session」但這台裝置仍存著登入時，就以存著的那個帳號繼續，顯示它的帳號快取與既有的「無法連上雲端」提示，不退回遊客。
+
+修的過程中發現只改 `AuthProvider` 不夠：**supabase-js 每個資料請求都會先等它自己還原完 session**，刷新卡住時，帳號快取的退路（`CachedRemoteLoadError`）永遠等不到那個失敗的請求。所以分兩層：
+
+- **登入層**：`AuthProvider` 的期限與退路。存著的登入由 `readStoredSession()` 讀出，key 是 supabase-js 的預設公式，現在明確傳入 `storageKey`，App 才讀得到同一筆；值不變，既有裝置不會被登出。`AuthContext.sessionUnconfirmed` 只在「用的是存著、還沒被確認的登入」時為 true。
+- **資料層**：`SessionDataProvider` 在未確認時改用一個只讀的帳號資料來源。讀取直接回帳號快取並附上離線提示；寫入立刻拒絕，表單保留草稿並說明原因，不會卡在「保存中…」；不送任何請求，也不寫快取。未確認是獨立的 DataProvider identity，確認之後重新掛上正常的帳號資料來源，向 Supabase 載入。舊版資料匯入在未確認時也不啟動，它的 RPC 同樣會等。
+
+supabase-js 照常在背景重試；網路恢復後它的自動刷新會發出事件，取代存著的 session。伺服器明確拒絕 refresh token 時，supabase-js 會清掉儲存，這時照常回到遊客，期限到了也不會把帳號找回來。沒有快取的帳號在未確認時顯示既有的讀取失敗與「重試載入」，不會顯示別人的或空白的資料。
+
+不在本項：離線寫入佇列（MVP 範圍外）；刷新永遠沒回應時，supabase-js 的鎖會一直被占住，自動刷新也跑不了，要重新開 App 才會再試。
+
+驗證：`AuthProvider.test.tsx` 以真正的 supabase-js 跑 19 個案例，新增或改寫 7 個：網路錯誤／503 時期限到即以帳號繼續、supabase-js 放棄後仍是該帳號；請求沒回應時期限到即繼續；網路恢復後自動確認；伺服器拒絕 token 時回到遊客；整棵 `AuthProvider`＋`SessionDataProvider` 顯示帳號快取與提示且不碰資料 API；未確認時寫入立刻失敗；確認後改由 Supabase 載入。拿掉資料層時 2 個失敗，整個修正拿掉時 7 個失敗。e2e 的登入 harness 直接提供 `AuthContext`，碰不到這一層，所以沒有瀏覽器案例；真機上的離線啟動也沒有實測。
+
 ### 沒有日期的待辦在綜覽有地方管理（DP-173，2026-10-14）
 
 畫面上建不出沒有日期的待辦（`NewTodoInput.date` 必填），它們只會從匯入進來（JSON 備份、legacy）。在此之前，這種待辦搜尋得到卻點不開，綜覽與日詳情都依日期列出，所以沒有任何畫面能改名、排日期、完成或刪除它。
