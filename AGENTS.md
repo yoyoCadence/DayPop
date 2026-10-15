@@ -26,13 +26,15 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **啟動時確認不了登入，不卡在載入中（DP-176，2026-10-15）：** `AuthProvider` 最多等 8 秒（`AUTH_STARTUP_DEADLINE_MS`）；到期或 supabase-js 回報沒有 session 但裝置仍存著登入時，以存著的帳號繼續，`AuthContext.sessionUnconfirmed` 為 true。**未確認時不能讓任何請求經過 supabase-js**：它的每個請求都會先等 session 還原，所以 `SessionDataProvider` 改用只讀的帳號資料來源（帳號快取＋離線提示、寫入立刻拒絕），確認後以新的 identity 換回正常資料來源。存著的登入由 `readStoredSession()` 讀，key 是 supabase-js 的預設公式並明確傳入 `storageKey`，**改它會登出所有裝置**。伺服器拒絕 refresh token 時照常回到遊客。見 ADR §2。
+
 - **綜覽的「未排日期」（DP-173，2026-10-14）：** 沒有日期的待辦（只會從匯入進來）在綜覽選「待辦」時列在最上方，用的就是日詳情的 `DayTodoCard`，管理規則與日詳情相同；排上日期就移到那一天。`todoGroupsOn()` 接受 `null`。不受年／月／週影響、不計入「共 N 筆」，沒有時不顯示。建立無日期待辦與清除日期仍未做（等 DP-169）。見 ADR §2。
 
 - **搜尋的日曆篩選也篩待辦（DP-174，2026-10-14）：** 選了某個日曆時，行程與待辦都只留那個日曆的；待辦依每筆自己的 `calendarId`，子項不看父項。刻意偏離原稿（原稿選了日曆就整批隱藏待辦），見 ADR §2。
 
 - **使用者看到的文字不放任務編號（DP-163，2026-10-14）：** 設定、日詳情與新增行程原本直接顯示「DP-014」「原稿」「搬移」「domain」等工程用語，已改寫成使用者的話，「這些功能還沒有」的誠實說明保留；任務編號只寫在程式註解裡。`App.test.tsx` 會走過四個分頁、新增行程（行程與待辦）與日詳情，出現 `DP-\d{3}`、「原稿」「搬移」「domain」「scaffold」任一個就失敗。新增畫面文字時照這個規則。
 
-- **真正的 AuthProvider 有整合測試了；啟動時刷新失敗會卡住（DP-158，2026-10-14）：** `src/auth/AuthProvider.test.tsx` 用真正的 supabase-js client 驅動真正的 `AuthProvider`，只把網路換成模擬的 Auth 端點（每個案例 `vi.resetModules()` 取新 client）。改 Auth 流程時先跑它；e2e 與其他單元測試仍是直接給 `AuthContext`，碰不到這一層。**已知問題（DP-176，待決定）**：記住的登入已過期、啟動時刷新遇到網路錯誤或 503，約 25.5 秒後才結束初始化，接著當成未登入、顯示遊客資料；刷新請求沒回應時一直停在「載入中…」。這兩個行為目前由測試鎖住，修正時要一起改測試。
+- **真正的 AuthProvider 有整合測試了；啟動時刷新失敗會卡住（DP-158，2026-10-14）：** `src/auth/AuthProvider.test.tsx` 用真正的 supabase-js client 驅動真正的 `AuthProvider`，只把網路換成模擬的 Auth 端點（每個案例 `vi.resetModules()` 取新 client）。改 Auth 流程時先跑它；e2e 與其他單元測試仍是直接給 `AuthContext`，碰不到這一層。它測出的兩個啟動問題（刷新失敗時約 25.5 秒後被當成未登入、刷新沒回應時永遠「載入中…」）已由 DP-176 修正，見上方條目。
 
 - **對話框共用焦點規則（DP-154，2026-10-14）：** 模態圖層一律用 `src/shell/useModalFocus.ts` 的 `useModalFocus(layerRef, { onEscape })`，不要各自寫 Tab 循環或 window keydown listener。它把圖層以外設為 `inert`（只解除自己設的）、Tab 在最上層循環、Escape 只給最上層且輸入法組字時不處理、關閉後把焦點還給觸發元素。**`layerRef` 指向含背景的最外層元素**，否則可點擊關閉的背景自己也會變 `inert`。已接上：`CalendarEditDialog`（Escape 關閉為新增行為，等待寫入時不關），以及 DP-155 的 `EventSheet`／`DayDetailSheet`／`ScopeDialog`（`CalendarScreen` 不再處理 Escape）。**Escape 在 window 冒泡階段處理**，內層元素（日詳情的 inline 編輯器）以 `stopPropagation()` 先認領；**開啟前是誰有焦點在 effect 裡決定**，週格拖曳把焦點還給色塊後範圍對話框才拿得到（DP-072）。DP-156 再接上登入、更新提示、版本公告與匯入預覽，**七個對話框全部接上**。**通知（更新提示、版本公告）以 `notice: true` 註冊，使用者打開的對話框還在時 `App` 不畫它們**（`useModalLayerOpen()`），否則鍵盤會被鎖進被蓋住的通知。新增任何自己冒出來的對話框都要比照。見 ADR §2。
 
