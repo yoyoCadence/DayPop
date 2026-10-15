@@ -32,6 +32,7 @@ import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/rec
 import { stickerFontSize } from '../../domain/stickerGlyphs';
 import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../domain/types';
 import { smoothScrollBehavior } from '../../shell/motion';
+import { cellChipBudget } from './monthCellLayout';
 
 /**
  * Continuously scrolling month grid, ported from the `data-month-scroll` block
@@ -49,8 +50,6 @@ const INITIAL_BUFFER_WEEKS = 53;
 const BUFFER_GROWTH_WEEKS = 12;
 const MIN_ROW_HEIGHT = 58;
 const INITIAL_ROW_HEIGHT = 96;
-/** Events drawn inside a cell before collapsing into a `+N` line. */
-const MAX_CELL_EVENTS = 3;
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
@@ -410,7 +409,11 @@ export function MonthView({
             {cells.map((cell) => {
               const isToday = cell.key === todayKey;
               const isSelected = cell.key === selectedDate;
-              const hidden = cell.dayEvents.length - MAX_CELL_EVENTS;
+              const { shown, hidden } = cellChipBudget(
+                rowHeight,
+                cell.dayEvents.length,
+                cell.dayStickers.length > 0 ? stickerFontSize(cell.dayStickers.length) : null,
+              );
               return (
                 <button
                   className="cal-cell"
@@ -450,18 +453,21 @@ export function MonthView({
                   </div>
                   {isToday && flashToday && <div className="cal-cell-flash" aria-hidden="true" />}
                   {cell.hasConflict && <div className="cal-cell-conflict" aria-hidden="true" />}
-                  {cell.dayEvents.slice(0, MAX_CELL_EVENTS).map((entry) => (
+                  {cell.dayEvents.slice(0, shown).map((entry) => (
                     <div
                       className="cal-cell-event"
                       // A cross-midnight event has one entry per day, so the
                       // event id alone is not unique across the grid.
                       key={`${entry.key}:${entry.isContinuation ? 'cont' : 'start'}`}
+                      // The clock stays in the tooltip and the order; the day
+                      // sheet carries the full times (DP-165).
+                      title={entry.time ? `${entry.time} ${entry.event.title}` : entry.event.title}
                       style={{
                         background: calendarColor(calendars, entry.event.calendarId),
                         color: calendarTextColor(calendarColor(calendars, entry.event.calendarId)),
                       }}
                     >
-                      {entry.time ? `${entry.time} ${entry.event.title}` : entry.event.title}
+                      {chipLabel(entry)}
                     </div>
                   ))}
                   {hidden > 0 && <div className="cal-cell-more">+{hidden}</div>}
@@ -485,6 +491,19 @@ export function MonthView({
       </div>
     </div>
   );
+}
+
+/**
+ * A chip shows the title, not the clock — DP-165.
+ *
+ * The原檔 drew `10:00 團隊週會`. A phone cell is about 50px wide, so at 8.5px the
+ * clock alone filled it and every chip read `10:00 …`. The cell's job is the
+ * date, how many and which; the day sheet a tap opens lists the times in full.
+ * A later day of a spanning event keeps its `續`, because without it the chip
+ * would look like a separate event starting that day.
+ */
+function chipLabel(entry: MonthCellEntry): string {
+  return entry.isContinuation ? `${CONTINUATION_LABEL} ${entry.event.title}` : entry.event.title;
 }
 
 function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean): string {

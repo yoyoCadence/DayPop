@@ -234,6 +234,17 @@
   text-align: initial;
 }
 
+/* The cell draws only the chips that fit (monthCellLayout.ts), so nothing in it
+   shrinks: a squeezed column crushed the chips and the lunar line to a few
+   pixels (DP-165). Whatever still overflows — stickers past their first line —
+   is cut off at the bottom. */
+.cal-cell-day,
+.cal-cell-lunar,
+.cal-cell-event,
+.cal-cell-more {
+  flex-shrink: 0;
+}
+
 .cal-cell-day {
   padding-right: 2px;
   font-size: 12px;
