@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **動效與「減少動態效果」（DP-168，2026-10-15）：** 會移動的東西一律用 `transform`／`opacity`，並在 `prefers-reduced-motion: reduce` 下停掉（或只寫在 `no-preference` 區塊裡）；`src/theme/reducedMotion.test.ts` 從磁碟讀全部 CSS 把關，顏色 transition 不算移動。由程式啟動的捲動用 `src/shell/motion.ts` 的 `smoothScrollBehavior()`。既有時長來自原稿（0.2–0.26 s），不要改。見 ADR §3。
+
 - **啟動時確認不了登入，不卡在載入中（DP-176，2026-10-15）：** `AuthProvider` 最多等 8 秒（`AUTH_STARTUP_DEADLINE_MS`）；到期或 supabase-js 回報沒有 session 但裝置仍存著登入時，以存著的帳號繼續，`AuthContext.sessionUnconfirmed` 為 true。**未確認時不能讓任何請求經過 supabase-js**：它的每個請求都會先等 session 還原，所以 `SessionDataProvider` 改用只讀的帳號資料來源（帳號快取＋離線提示、寫入立刻拒絕），確認後以新的 identity 換回正常資料來源。存著的登入由 `readStoredSession()` 讀，key 是 supabase-js 的預設公式並明確傳入 `storageKey`，**改它會登出所有裝置**。伺服器拒絕 refresh token 時照常回到遊客。見 ADR §2。
 
 - **綜覽的「未排日期」（DP-173，2026-10-14）：** 沒有日期的待辦（只會從匯入進來）在綜覽選「待辦」時列在最上方，用的就是日詳情的 `DayTodoCard`，管理規則與日詳情相同；排上日期就移到那一天。`todoGroupsOn()` 接受 `null`。不受年／月／週影響、不計入「共 N 筆」，沒有時不顯示。建立無日期待辦與清除日期仍未做（等 DP-169）。見 ADR §2。

@@ -87,11 +87,21 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  transition: left 0.2s;
+  /* Moved with transform rather than `left`, so sliding never re-lays out the
+     row (DP-168). Same 17px travel as the原檔's left: 2px → 19px. */
+  transition: transform 0.2s;
 }
 
 .cal-manage-toggle[aria-pressed='true'] .cal-manage-knob {
-  left: 19px;
+  transform: translateX(17px);
+}
+
+/* The review found this knob still sliding with reduced motion on (DP-168). */
+@media (prefers-reduced-motion: reduce) {
+  .cal-manage-toggle,
+  .cal-manage-knob {
+    transition: none;
+  }
 }
 
 .cal-manage-add {
