@@ -340,6 +340,48 @@ describe('CalendarScreen focus', () => {
 });
 
 /**
+ * DP-167. Three days start at the cursor, the header names them, and ‹ › move
+ * by three. Turning the mode off goes back to the week holding the cursor.
+ */
+describe('CalendarScreen 三日模式（DP-167）', () => {
+  const toggle = () => container.querySelector('.cal-week-days-toggle');
+  const step = (label: '上一頁' | '下一頁') => container.querySelector(`[aria-label="${label}"]`);
+
+  it('從 cursor 起三天，上下頁一次三天，關掉回到所在的那一週', async () => {
+    await render({ kind: 'day', dateKey: '2026-08-06' });
+    await click([...container.querySelectorAll('.cal-day-sheet button')].find((button) => button.textContent === '完成'));
+    await click(weekButton());
+    expect(periodLabel()).toBe('8/2 – 8/8');
+
+    await click(toggle());
+    expect(periodLabel()).toBe('8/6 – 8/8');
+    expect(container.querySelectorAll('.cal-week-col')).toHaveLength(3);
+
+    await click(step('下一頁'));
+    expect(periodLabel()).toBe('8/9 – 8/11');
+    await click(step('上一頁'));
+    await click(step('上一頁'));
+    expect(periodLabel()).toBe('8/3 – 8/5');
+
+    await click(toggle());
+    expect(periodLabel()).toBe('8/2 – 8/8');
+    expect(container.querySelectorAll('.cal-week-col')).toHaveLength(7);
+  });
+
+  it('今天把今天放在第一欄', async () => {
+    await render({ kind: 'day', dateKey: '2026-08-06' });
+    await click([...container.querySelectorAll('.cal-day-sheet button')].find((button) => button.textContent === '完成'));
+    await click(weekButton());
+    await click(toggle());
+    await click([...container.querySelectorAll('button')].find((button) => button.textContent === '今天'));
+
+    const today = new Date(`${screenTodayKey()}T00:00:00`);
+    const end = addDays(today, 2);
+    expect(periodLabel()).toBe(`${today.getMonth() + 1}/${today.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`);
+  });
+});
+
+/**
  * DP-064. "Today" is a day on this grid, so every use of it has to be read in
  * the grid's zone. They were moved one at a time and drifted apart: the
  * highlight sat on one day while 今天 selected and scrolled to another.

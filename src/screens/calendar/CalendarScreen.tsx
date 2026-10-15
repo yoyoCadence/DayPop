@@ -104,6 +104,9 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   // An unusable focus is dropped here rather than propagated into the screen.
   const focusDay = focus?.kind === 'day' && isDateKey(focus.dateKey) ? focus.dateKey : null;
   const [view, setView] = useState<CalendarView>('month');
+  // DP-167. Interface state like `view`: not a preference, so it resets with
+  // the screen and needs no preferences field or migration.
+  const [weekDays, setWeekDays] = useState<3 | 7>(7);
   const [cursor, setCursor] = useState(focusDay ?? todayKey);
   const [selected, setSelected] = useState(focusDay ?? todayKey);
   const [monthLabel, setMonthLabel] = useState(
@@ -244,10 +247,10 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
   const periodLabel = useMemo(() => {
     if (view === 'month') return monthLabel;
     if (view === 'agenda') return '即將到來';
-    const start = startOfWeek(fromDateKey(cursor), weekStartsOn);
-    const end = addDays(start, 6);
+    const start = weekDays === 7 ? startOfWeek(fromDateKey(cursor), weekStartsOn) : fromDateKey(cursor);
+    const end = addDays(start, weekDays - 1);
     return `${start.getMonth() + 1}/${start.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`;
-  }, [cursor, monthLabel, view, weekStartsOn]);
+  }, [cursor, monthLabel, view, weekDays, weekStartsOn]);
 
   // The原檔 badge counts top-level todos only; its subtasks live inside them
   // (`:1304`). DayPop stores them as rows, so drop those — DP-121.
@@ -262,7 +265,7 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
       monthRef.current?.page(direction);
       return;
     }
-    setCursor((current) => toDateKey(addDays(fromDateKey(current), direction * (view === 'week' ? 7 : 1))));
+    setCursor((current) => toDateKey(addDays(fromDateKey(current), direction * (view === 'week' ? weekDays : 1))));
   }
 
   function goToday() {
@@ -408,6 +411,8 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         {view === 'week' && (
           <WeekView
             weekStartsOn={weekStartsOn}
+            dayCount={weekDays}
+            onDayCountChange={setWeekDays}
             displayTimezone={displayTimezone}
             cursor={cursor}
             todayKey={todayKey}

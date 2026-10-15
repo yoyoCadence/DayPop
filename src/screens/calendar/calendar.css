@@ -354,8 +354,37 @@
 }
 
 .cal-week-rail-spacer {
+  display: flex;
   width: 36px;
   flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DP-167. The corner chip that switches to three days; filled while on. */
+.cal-week-days-toggle {
+  min-width: 30px;
+  min-height: 28px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 0 3px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cal-week-days-toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.cal-week-days-toggle:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 1px;
 }
 
 .cal-week-col-head {
@@ -466,8 +495,21 @@
 
 .cal-week-col {
   position: relative;
+  width: 60px;
   flex: none;
   border-right: 1px solid var(--line);
+}
+
+/* DP-167. Three days fit the pane, so the columns share its width and the
+   pane no longer scrolls sideways. */
+.cal-week.three-day .cal-week-inner {
+  min-width: 0;
+}
+
+.cal-week.three-day :is(.cal-week-col-head, .cal-week-all-day-col, .cal-week-col) {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .cal-week-event {

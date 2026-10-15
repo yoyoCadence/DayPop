@@ -47,11 +47,17 @@ const CONTINUATION_LABEL = '續';
 export interface WeekViewProps {
   weekStartsOn: 0 | 1;
   /**
+   * Seven columns from the start of the cursor's week, or three from the
+   * cursor itself — DP-167. Everything else about the grid is the same.
+   */
+  dayCount: 3 | 7;
+  onDayCountChange(next: 3 | 7): void;
+  /**
    * The one timezone this grid is drawn in — DP-064. A drag therefore hands
    * back a wall coordinate in *this* zone, not in the event's own.
    */
   displayTimezone: string;
-  /** Any date inside the week to show. */
+  /** Any date inside the week to show; the first of the three in three-day mode. */
   cursor: string;
   todayKey: string;
   /**
@@ -92,9 +98,16 @@ interface DragState {
  * to the screen's 單次／全部 dialog. Unlike the原檔's silent split, no mutation
  * happens until scope is chosen. DP-072 moves complete cross-midnight intervals
  * from any segment; only their final segment exposes the resize handle.
+ *
+ * DP-167 adds a three-day mode for phones, where seven 60px columns need a
+ * sideways scroll. It draws the same grid over three days from the cursor, with
+ * columns that fill the pane; drags, cross-midnight segments, the all-day strip
+ * and the now line are the week's, bounded to the days on screen.
  */
 export function WeekView({
   weekStartsOn,
+  dayCount,
+  onDayCountChange,
   displayTimezone,
   cursor,
   todayKey,
@@ -128,13 +141,16 @@ export function WeekView({
     return () => window.clearInterval(timer);
   }, []);
 
+  // `weekStart` is the first visible day. In three-day mode that is the cursor
+  // itself rather than the start of its week (DP-167); every window below is
+  // these visible days, so the rest of the grid needs no other change.
   const weekStart = useMemo(
-    () => startOfWeek(fromDateKey(cursor), weekStartsOn),
-    [cursor, weekStartsOn],
+    () => (dayCount === 7 ? startOfWeek(fromDateKey(cursor), weekStartsOn) : fromDateKey(cursor)),
+    [cursor, dayCount, weekStartsOn],
   );
 
   const weekStartKey = toDateKey(weekStart);
-  const weekEndKey = toDateKey(addDays(weekStart, 6));
+  const weekEndKey = toDateKey(addDays(weekStart, dayCount - 1));
 
   // Cut once for the whole week, not once per column — DP-064. The window is
   // the week itself, so a multi-month event walks seven days rather than its
@@ -215,7 +231,7 @@ export function WeekView({
   );
 
   const columns = useMemo(() => {
-    return Array.from({ length: 7 }, (_, index) => {
+    return Array.from({ length: dayCount }, (_, index) => {
       const date = addDays(weekStart, index);
       const key = toDateKey(date);
       const blocks = (drawnSegmentsByDate.get(key) ?? [])
@@ -241,7 +257,7 @@ export function WeekView({
         });
       return { key, date, isToday: key === todayKey, blocks };
     });
-  }, [drawnSegmentsByDate, intervalPreview, preview, range, todayKey, weekStart]);
+  }, [dayCount, drawnSegmentsByDate, intervalPreview, preview, range, todayKey, weekStart]);
 
   // Both the "is now inside this week" test and the line's height are read in
   // the display zone — the columns are, so the line has to be too (DP-064).
@@ -301,6 +317,13 @@ export function WeekView({
       return grid.getBoundingClientRect().height / grid.offsetHeight || 1;
     }
 
+    // The three-day columns fill the pane, so their width is measured; the
+    // week's are the fixed 60px either way (DP-167).
+    function shiftTo(deltaPixels: number, fromIndex: number): number {
+      const column = gridRef.current?.querySelector<HTMLElement>('.cal-week-col');
+      return columnShift(deltaPixels, fromIndex, column?.offsetWidth || COLUMN_WIDTH, dayCount);
+    }
+
     function onMove(domEvent: PointerEvent) {
       const drag = dragRef.current;
       if (!drag || domEvent.pointerId !== drag.pointerId) return;
@@ -314,7 +337,7 @@ export function WeekView({
       const delta = snapMinutes((domEvent.clientY - drag.startY) / factor);
       if (drag.intervalEvent) {
         const from = daysBetween(weekStart, fromDateKey(drag.dateKey));
-        const to = columnShift((domEvent.clientX - drag.startX) / factor, from);
+        const to = shiftTo((domEvent.clientX - drag.startX) / factor, from);
         const interval = draggedInterval(drag.intervalEvent, displayTimezone, delta, to - from, drag.mode);
         setIntervalPreview(interval ? { key: drag.key, interval } : null);
         return;
@@ -340,7 +363,7 @@ export function WeekView({
       if (drag.intervalEvent) {
         const factor = scale();
         const from = daysBetween(weekStart, fromDateKey(drag.dateKey));
-        const to = columnShift((domEvent.clientX - drag.startX) / factor, from);
+        const to = shiftTo((domEvent.clientX - drag.startX) / factor, from);
         const interval = draggedInterval(drag.intervalEvent, displayTimezone,
           snapMinutes((domEvent.clientY - drag.startY) / factor), to - from, drag.mode);
         const target = targetsByOccurrence.get(drag.key);
@@ -361,7 +384,7 @@ export function WeekView({
 
       const factor = scale();
       const fromIndex = daysBetween(weekStart, fromDateKey(drag.dateKey));
-      const toIndex = columnShift((domEvent.clientX - drag.startX) / factor, fromIndex);
+      const toIndex = shiftTo((domEvent.clientX - drag.startX) / factor, fromIndex);
       // Always include the displayed day: a recurring target is a later
       // occurrence, not the series anchor, even for a vertical-only drag.
       patch.date = toDateKey(addDays(weekStart, toIndex));
@@ -386,15 +409,28 @@ export function WeekView({
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
     };
-  }, [displayTimezone, openOccurrence, onDragEvent, preview, targetsByOccurrence, weekStart]);
+  }, [dayCount, displayTimezone, openOccurrence, onDragEvent, preview, targetsByOccurrence, weekStart]);
 
   const rail = hourRail(range);
 
   return (
-    <div className="cal-view-pane cal-week">
+    <div className={`cal-view-pane cal-week${dayCount === 3 ? ' three-day' : ''}`}>
       <div className="cal-week-inner">
         <div className="cal-week-head">
-          <div className="cal-week-rail-spacer" />
+          {/* DP-167: the corner above the hour rail holds the three-day toggle.
+              It is a mode of this view, not a fourth entry in the原檔's 月／週／
+              列表 control. */}
+          <div className="cal-week-rail-spacer">
+            <button
+              className="cal-week-days-toggle"
+              type="button"
+              aria-pressed={dayCount === 3}
+              aria-label="3日檢視"
+              onClick={() => onDayCountChange(dayCount === 3 ? 7 : 3)}
+            >
+              3日
+            </button>
+          </div>
           {columns.map((column) => (
             <div
               className="cal-week-col-head"
@@ -413,7 +449,7 @@ export function WeekView({
         </div>
 
         {allDayByDate.size > 0 && (
-          <section className="cal-week-all-day" aria-label="本週全天事件">
+          <section className="cal-week-all-day" aria-label={dayCount === 7 ? '本週全天事件' : '這三天的全天事件'}>
             <div className="cal-week-all-day-label">全天</div>
             {columns.map((column) => (
               <div className="cal-week-all-day-col" key={column.key} role="group" aria-label={`${column.key} 全天事件`}>
@@ -452,7 +488,7 @@ export function WeekView({
             ))}
             <div className="cal-week-columns">
               {columns.map((column) => (
-                <div className="cal-week-col" key={column.key} style={{ width: `${COLUMN_WIDTH}px` }}>
+                <div className="cal-week-col" key={column.key}>
                   {column.blocks.map((block) => (
                     <div
                       className={`cal-week-event${block.dragging ? ' dragging' : ''}`}

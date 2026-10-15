@@ -83,14 +83,18 @@ function spanning(
 
 const onOpenEvent = vi.fn();
 const onDragEvent = vi.fn();
+const onDayCountChange = vi.fn();
 
-function render(events: CalendarEvent[]) {
+function render(events: CalendarEvent[], dayCount: 3 | 7 = 7) {
   onOpenEvent.mockClear();
   onDragEvent.mockClear();
+  onDayCountChange.mockClear();
   act(() =>
     root.render(
       <WeekView
         weekStartsOn={0}
+        dayCount={dayCount}
+        onDayCountChange={onDayCountChange}
         displayTimezone={ZONE}
         cursor={CURSOR}
         todayKey={CURSOR}
@@ -399,6 +403,8 @@ describe('WeekView 重複事件（DP-081）', () => {
       root.render(
         <WeekView
           weekStartsOn={0}
+          dayCount={7}
+          onDayCountChange={vi.fn()}
           displayTimezone={ZONE}
           cursor={CURSOR}
           todayKey={CURSOR}
@@ -414,5 +420,90 @@ describe('WeekView 重複事件（DP-081）', () => {
     );
 
     expect(windows).toEqual([{ startDate: '2026-08-09', endDate: '2026-08-15' }]);
+  });
+});
+
+/**
+ * DP-167. Three columns from the cursor that fill the pane. The grid is the
+ * week's: the same windows, segments and drags, bounded to the days on screen.
+ */
+describe('WeekView 三日模式（DP-167）', () => {
+  function pointer(element: HTMLElement | Window, type: string, x: number, y: number) {
+    act(() => {
+      const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+      Object.defineProperty(event, 'pointerId', { value: 1 });
+      element.dispatchEvent(event);
+    });
+  }
+
+  it('從 cursor 起畫三欄，只展開這三天', () => {
+    const windows: OccurrenceWindow[] = [];
+    act(() =>
+      root.render(
+        <WeekView
+          weekStartsOn={0} dayCount={3} onDayCountChange={vi.fn()}
+          displayTimezone={ZONE} cursor={CURSOR} todayKey={CURSOR}
+          resolveOccurrences={(window) => {
+            windows.push(window);
+            return [];
+          }}
+          calendars={[]} onDragEvent={vi.fn()} onOpenEvent={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(windows).toEqual([{ startDate: '2026-08-12', endDate: '2026-08-14' }]);
+    expect([...container.querySelectorAll('.cal-week-col-date')].map((date) => date.textContent)).toEqual(['12', '13', '14']);
+    expect(container.querySelectorAll('.cal-week-col')).toHaveLength(3);
+    expect(container.querySelector('.cal-week')?.classList.contains('three-day')).toBe(true);
+  });
+
+  it('全天與跨午夜片段都只畫在這三天內', () => {
+    render([
+      allDay('trip', '旅行', '2026-08-10', '2026-08-13'),
+      timed('overnight', '夜班', { date: '2026-08-14', start: '23:00', end: '00:30' }),
+    ], 3);
+
+    const cols = Array.from(container.querySelectorAll('.cal-week-all-day-col'));
+    expect(cols.map((col) => col.textContent)).toEqual(['續 旅行', '續 旅行', '']);
+    expect(container.querySelector('.cal-week-all-day')?.getAttribute('aria-label')).toBe('這三天的全天事件');
+    expect(blocksByColumn().map((column) => column.map((block) => block.label))).toEqual([[], [], ['23:00–24:00 夜班']]);
+  });
+
+  it('橫向拖曳以量到的欄寬換算日期，並夾在最後一天', () => {
+    // jsdom has no layout. Without the measured 118px, a 118px drag would read
+    // as two 60px week columns and land on the 14th.
+    const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('cal-week-col') ? 118 : 0;
+    });
+    try {
+      render([timed('meeting', '會議', { date: CURSOR, start: '09:00', end: '10:00' })], 3);
+      pointer(blocksByColumn()[0]![0]!.element, 'pointerdown', 100, 100);
+      pointer(window, 'pointermove', 218, 100);
+      pointer(window, 'pointerup', 218, 100);
+      expect(onDragEvent.mock.calls[0]![1]).toEqual(expect.objectContaining({ date: '2026-08-13', start: '09:00', end: '10:00' }));
+
+      render([timed('meeting', '會議', { date: CURSOR, start: '09:00', end: '10:00' })], 3);
+      pointer(blocksByColumn()[0]![0]!.element, 'pointerdown', 100, 100);
+      pointer(window, 'pointermove', 900, 100);
+      pointer(window, 'pointerup', 900, 100);
+      expect(onDragEvent.mock.calls[0]![1]).toEqual(expect.objectContaining({ date: '2026-08-14' }));
+    } finally {
+      width.mockRestore();
+    }
+  });
+
+  it('角落的 3日 按鈕切換兩種模式，按下狀態跟著目前模式', () => {
+    render([], 7);
+    const toggle = () => container.querySelector<HTMLButtonElement>('.cal-week-days-toggle')!;
+    expect(toggle().getAttribute('aria-pressed')).toBe('false');
+    expect(toggle().getAttribute('aria-label')).toBe('3日檢視');
+    act(() => toggle().click());
+    expect(onDayCountChange).toHaveBeenLastCalledWith(3);
+
+    render([], 3);
+    expect(toggle().getAttribute('aria-pressed')).toBe('true');
+    act(() => toggle().click());
+    expect(onDayCountChange).toHaveBeenLastCalledWith(7);
   });
 });
