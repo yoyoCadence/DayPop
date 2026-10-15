@@ -222,6 +222,10 @@
   display: flex;
   overflow: hidden;
   flex-direction: column;
+  /* A cell is a <button>. Without this, the browser's own 2px outset border
+     stayed on its top and left, in the text colour — white in dark mode — and
+     every grid line was three pixels instead of the原檔's one (DP-166). */
+  border: 0;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: transparent;
