@@ -121,11 +121,12 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  transition: left 0.2s;
+  /* transform rather than `left` (DP-168): the原檔's left: 2px → 21px. */
+  transition: transform 0.2s;
 }
 
 .set-pref-toggle[aria-pressed='true'] .set-pref-knob {
-  left: 21px;
+  transform: translateX(19px);
 }
 
 @media (prefers-reduced-motion: reduce) {

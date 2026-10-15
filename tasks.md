@@ -322,7 +322,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-165 — 手機月格的行程標籤與選定日清單（設計決策）：** 審查的 360×640 截圖顯示月格標籤只剩「15:00 …」。**方向**：月格負責日期、數量與簡短標題，選日之後提供清楚的當日清單，不再靠縮字。牽涉 DP-064 的 display segments、DP-126 的續日、DP-069 的鍵盤移動與月曆列數偏好，先出設計稿。同一張截圖裡寵物與 FAB 都蓋在日期格上（原稿同樣是浮動層），設計稿要一併交代。
 - [ ] **DP-166 — 深色主題格線的視覺份量：** 審查認為深色下一般格線太亮，搶過內容。**複核沒能確認**：留下來的 `theme-*-dark.png` 抽看兩張都是設定頁，不是月曆。所以動工前先重新截十二組月曆。做法是加語意化的格線 token，減弱一般格線、保留今天與選取的層級；`themes.ts` 的新值比照 DP-140 註明原稿值，並重跑 `textContrast`／`lunarContrast` 測試。
 - [ ] **DP-167 — 週檢視三日模式（產品決策）：** 七欄在手機上閱讀與拖曳都吃力。保留完整週檢視，另加三日模式。要先定：切換入口、起始日怎麼選、拖曳／跨午夜／全天列／now line 是否與週檢視一致、要不要記住選擇。**建議**：第一版不保存偏好，留在裝置端的介面狀態，避開 preferences 欄位與 migration。
-- [ ] **DP-168 — 動效與「減少動態效果」盤點：** 2026-10-13 的數字是 23 個 transition／animation 宣告、10 個 `prefers-reduced-motion` 區塊，分布在 5 個 CSS 檔。已知漏掉的一處：`calendarManage.css:74`、`:90` 的開關 transition 不在 `:151` 的 reduced-motion 區塊內。逐一盤點後統一：操作回饋 160–240ms、以 transform／opacity 為主、reduced-motion 下移除非必要的位移；不加持續播放的慶祝效果。先盤點並列表，再分批改。
+- [x] **DP-168 — 已完成（2026-10-15），見 Done。**
 
 ### Deferred product features
 
@@ -360,6 +360,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-168 — 動效與「減少動態效果」（2026-10-15）：** 專案擁有者指示先做視覺改版，這是第一項。盤點：7 個 animation（今天閃爍、寵物眨眼、日詳情、行程表單、範圍／日曆／匯入三個對話框彈出）與 3 種開關各自的背景色與滑鈕 transition，時長 0.2–0.26 秒（閃爍 1.3 秒、眨眼 4.4 秒是刻意的），都在建議範圍內且來自原稿，所以**不改時長、不新增慶祝或按壓動效**。修正三處：日曆管理開關的滑鈕在「減少動態效果」下仍會滑動（審查找到的那一處）；三種開關的滑鈕改用 `transform` 移動而不是 `left`，量到開／關位置與原本完全相同；月曆「今天」與翻頁的平滑捲動改由 `smoothScrollBehavior()` 決定，使用者要求減少動態時直接跳到位置。新增 `reducedMotion.test.ts` 從磁碟讀所有 CSS，任何 animation 或會移動東西的 transition 沒有對應的 reduced-motion 覆寫（或不是寫在 `no-preference` 區塊裡）就失敗；還原修正時它正好抓到日曆管理的滑鈕。另有 `motion.test.ts` 3 個案例。見 ADR §3。
 
 - [x] **DP-176 — 啟動時確認不了登入，不再卡在載入中（2026-10-15）：** 專案擁有者核准建議（「176 可以修」）。`AuthProvider` 啟動最多等 8 秒；到期，或 supabase-js 回報沒有 session 但這台裝置仍存著登入（刷新失敗、它之後還會重試）時，以存著的帳號繼續。**修的過程發現只改登入層不夠**：supabase-js 每個資料請求都會先等它還原完 session，所以帳號快取的退路等不到。因此 `SessionDataProvider` 在登入未確認時改用只讀的帳號資料來源：直接顯示帳號快取與既有的「無法連上雲端」提示，寫入立刻拒絕、表單保留草稿，不送請求也不寫快取；supabase-js 確認後重新掛上正常資料來源向 Supabase 載入。伺服器明確拒絕 refresh token 時照常回到遊客。`supabase.ts` 明確傳入與預設相同的 `storageKey`，並提供 `readStoredSession()`；`AuthContext` 多一個可選的 `sessionUnconfirmed`。`AuthProvider.test.tsx` 改寫 DP-158 鎖住的舊行為並新增情境，共 19 個，拿掉資料層時 2 個失敗、整個修正拿掉時 7 個失敗。e2e 登入 harness 碰不到真正的 `AuthProvider`，沒有瀏覽器案例；真機離線啟動未實測。不做離線寫入佇列。見 ADR §2。
 

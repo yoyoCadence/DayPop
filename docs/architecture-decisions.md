@@ -383,6 +383,30 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 ## 3. 偏好設定語意
 
+### 動效與「減少動態效果」（DP-168，2026-10-15）
+
+視覺改版的第一項。盤點 `src` 下全部 CSS 與會捲動的程式：
+
+| 動效 | 時長 | 減少動態效果 |
+| --- | --- | --- |
+| 今天格閃爍 `cal-flash` | 1.3 s | 關閉 |
+| 寵物眨眼 `cal-pet-blink` | 4.4 s 循環 | 關閉 |
+| 日詳情浮起 `cal-fadeup` | 0.26 s | 關閉 |
+| 行程表單上滑 `cal-sheet-up` | 0.22 s | 關閉 |
+| 範圍、日曆、匯入三個對話框彈出 | 0.24 s | 關閉 |
+| 三種開關的滑鈕 | 0.2 s | 關閉（日曆管理的原本漏掉） |
+| 三種開關的背景色 | 0.2 s | 保留，顏色變化不是移動 |
+| 月曆「今天」與翻頁的平滑捲動 | 瀏覽器 | 改為直接跳到位置 |
+
+**決策：**
+
+- **不改時長，也不新增按壓或完成的慶祝動效。** 時長都來自原稿，落在 0.2–0.26 秒，已在審查建議的範圍；閃爍與眨眼較長是刻意的。新增動效屬於後續寵物互動（DP-169 起）的範圍。
+- **移動一律用 `transform`／`opacity`。** 三種開關的滑鈕原本動的是 `left`，改成 `transform: translateX(…)`；開與關的終點位置在瀏覽器量過，與原本完全相同。
+- **所有會移動的東西都要在 `prefers-reduced-motion: reduce` 下停掉**，或一開始就寫在 `no-preference` 區塊裡。由程式啟動的捲動用 `smoothScrollBehavior()`（`src/shell/motion.ts`）決定。
+- `src/theme/reducedMotion.test.ts` 從磁碟讀所有 CSS 檢查這條規則（Vitest 給測試的 CSS 內容是空字串，`?raw` 也一樣，所以不能用 import）。顏色的 transition 不算移動。
+
+### 偏好設定
+
 - `theme` 保留，目標行為為 `system | light | dark`。實作時要一起處理 CSS、`prefers-color-scheme`、`meta[name=theme-color]` 與 PWA manifest 顏色，不能只保存欄位。
 - `month_weeks` 不作為長期模型。它會由明確的二選一設定取代：固定六列或依當月自動顯示 4–6 列；migration 前採用 `fixed_six_week_grid boolean` 作為資料庫名稱，domain 可用語意化 enum 暴露給 UI。
 - `pet_enabled` 保留。浮動寵物可以暫時拖走，也必須可以永久關閉。

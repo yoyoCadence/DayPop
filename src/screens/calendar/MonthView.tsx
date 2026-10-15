@@ -31,6 +31,7 @@ import { lunarCell } from '../../domain/lunar';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import { stickerFontSize } from '../../domain/stickerGlyphs';
 import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../domain/types';
+import { smoothScrollBehavior } from '../../shell/motion';
 
 /**
  * Continuously scrolling month grid, ported from the `data-month-scroll` block
@@ -164,7 +165,7 @@ export function MonthView({
         fromDateKey(bufferStart),
         startOfWeek(fromDateKey(todayKey), weekStartsOn),
       );
-      element.scrollTo({ top: Math.max(0, index * row), behavior: smooth ? 'smooth' : 'auto' });
+      element.scrollTo({ top: Math.max(0, index * row), behavior: smooth ? smoothScrollBehavior() : 'auto' });
     },
     [bufferStart, rowHeight, todayKey, weekStartsOn],
   );
@@ -176,7 +177,7 @@ export function MonthView({
       page: (direction: 1 | -1) => {
         scrollRef.current?.scrollBy({
           top: direction * rowHeight * weeksShown,
-          behavior: 'smooth',
+          behavior: smoothScrollBehavior(),
         });
       },
     }),
