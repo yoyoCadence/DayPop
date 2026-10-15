@@ -156,6 +156,14 @@ describe('drag maths', () => {
     expect(columnShift(600, 2)).toBe(6);
     expect(columnShift(20, 2)).toBe(2);
   });
+
+  it('uses the measured width and count of the three-day columns — DP-167', () => {
+    expect(columnShift(118, 0, 118, 3)).toBe(1);
+    expect(columnShift(60, 0, 118, 3)).toBe(1);
+    expect(columnShift(50, 0, 118, 3)).toBe(0);
+    expect(columnShift(600, 0, 118, 3)).toBe(2);
+    expect(columnShift(-600, 2, 118, 3)).toBe(0);
+  });
 });
 
 describe('now line', () => {

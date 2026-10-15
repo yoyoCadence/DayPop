@@ -126,10 +126,20 @@ export function resizeRange(range: DragRange, deltaMinutes: number): DragRange {
   return { startMinutes: range.startMinutes, endMinutes: end };
 }
 
-/** Horizontal drag converted to a column shift, clamped to the visible week. */
-export function columnShift(deltaPixels: number, fromIndex: number): number {
-  const shift = Math.round(deltaPixels / COLUMN_WIDTH);
-  return Math.max(0, Math.min(6, fromIndex + shift));
+/**
+ * Horizontal drag converted to a column shift, clamped to the visible days.
+ *
+ * The week's columns are a fixed 60px; the three-day mode's fill the pane, so
+ * it passes the width it measured and its own column count — DP-167.
+ */
+export function columnShift(
+  deltaPixels: number,
+  fromIndex: number,
+  columnWidth = COLUMN_WIDTH,
+  columnCount = 7,
+): number {
+  const shift = Math.round(deltaPixels / columnWidth);
+  return Math.max(0, Math.min(columnCount - 1, fromIndex + shift));
 }
 
 /**

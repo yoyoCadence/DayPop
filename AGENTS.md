@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **週檢視三日模式（DP-167，2026-10-15）：** `WeekView` 收 `dayCount: 3 | 7`。三日從 cursor 起算（不對齊週起始日），欄寬平分畫面，橫向拖曳用量到的欄寬（`columnShift()` 的第 3、4 個參數）。拖曳、跨午夜、全天列、現在線與週檢視共用同一套程式，**改週檢視時兩種模式都要測**（`three-day-week.spec.ts`）。選擇是 `CalendarScreen` 的畫面狀態，不保存。見 ADR §6。
+
 - **設定頁分組（DP-164，2026-10-15）：** 設定分成「外觀、夥伴、日曆、帳號與資料、關於」五組，每組是 `.dp-settings-group` 裡的 `<h2 className="dp-settings-group-title">`，組內各部分沿用 `.dp-section-label` 小標。原稿「一般」改名「顯示與時區」放進「日曆」。**新增設定區塊時放進對應的組**；`SettingsPreferences.test.tsx` 的「設定 分組」固定了各組內容。偏離原稿的順序與「登入移到第四組」的取捨見 ADR §3。
 
 - **月格標籤只放標題（DP-165，2026-10-15）：** 月格色塊只顯示標題（續日保留「續」），時間在 `title` 提示、排序與日詳情。格子由 `monthCellLayout.ts` 的 `cellChipBudget()` 依列高決定畫幾個完整色塊（最多三個），其餘算進「+N」，格內元素不再縮小。**它的高度常數對應 calendar.css 的 `.cal-cell` 系列規則，改那些規則要一起改，`e2e/month-cell-fit.spec.ts` 會抓出不一致。** 刻意偏離原稿，見 ADR §3。
