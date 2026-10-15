@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **月格標籤只放標題（DP-165，2026-10-15）：** 月格色塊只顯示標題（續日保留「續」），時間在 `title` 提示、排序與日詳情。格子由 `monthCellLayout.ts` 的 `cellChipBudget()` 依列高決定畫幾個完整色塊（最多三個），其餘算進「+N」，格內元素不再縮小。**它的高度常數對應 calendar.css 的 `.cal-cell` 系列規則，改那些規則要一起改，`e2e/month-cell-fit.spec.ts` 會抓出不一致。** 刻意偏離原稿，見 ADR §3。
+
 - **月格回到 1px；漫畫深色細線改灰（DP-166，2026-10-15）：** `.cal-cell` 是 `<button>`，必須先 `border: 0` 再設右／下線，否則瀏覽器內建的 2px outset 邊框會留在上／左，深色時是白的（2026-08-02 起的漂移，十二組主題都受影響）。**任何當成版面格子用的 `<button>` 都要歸零邊框**；`e2e/month-grid-lines.spec.ts` 會檢查月、週、列表、設定沒有帶立體邊框的控制項。漫畫深色 `line` 改為 `#5a5a5a`（原稿 `#ffffff`），粗外框仍是白色的 `border`，不要改回。見 ADR §3。
 
 - **動效與「減少動態效果」（DP-168，2026-10-15）：** 會移動的東西一律用 `transform`／`opacity`，並在 `prefers-reduced-motion: reduce` 下停掉（或只寫在 `no-preference` 區塊裡）；`src/theme/reducedMotion.test.ts` 從磁碟讀全部 CSS 把關，顏色 transition 不算移動。由程式啟動的捲動用 `src/shell/motion.ts` 的 `smoothScrollBehavior()`。既有時長來自原稿（0.2–0.26 s），不要改。見 ADR §3。

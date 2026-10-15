@@ -279,16 +279,75 @@ describe('MonthView display timezone', () => {
 
     // Without segments the 7th showed nothing at all, which is what made a
     // 23:00–隔天 14:00 event vanish for the whole of its second morning.
-    expect(cellText('2026-08-06')).toContain('23:00 夜班');
-    expect(cellText('2026-08-07')).toContain('續 夜班');
+    expect(chips('2026-08-06')).toEqual([{ text: '夜班', title: '23:00 夜班' }]);
+    expect(chips('2026-08-07')).toEqual([{ text: '續 夜班', title: '續 夜班' }]);
   });
 
-  it('labels the event with the display timezone’s clock', () => {
+  it('gives the tooltip the display timezone’s clock', () => {
     renderWithZone('Asia/Taipei');
-    expect(cellText('2026-08-07')).toContain('08:00');
+    expect(chips('2026-08-07')).toEqual([{ text: '跨時區會議', title: '08:00 跨時區會議' }]);
 
     renderWithZone('America/New_York');
-    expect(cellText('2026-08-06')).toContain('20:00');
+    expect(chips('2026-08-06')).toEqual([{ text: '跨時區會議', title: '20:00 跨時區會議' }]);
+  });
+});
+
+/** Each chip in a cell: what it shows, and the tooltip that keeps the clock. */
+function chips(dateKey: string): Array<{ text: string; title: string }> {
+  return [...(cell(dateKey)?.querySelectorAll<HTMLElement>('.cal-cell-event') ?? [])].map((chip) => ({
+    text: chip.textContent ?? '',
+    title: chip.title,
+  }));
+}
+
+/**
+ * DP-165. A phone cell is about 50px wide; at 8.5px the clock alone filled a
+ * chip, so every one read `10:00 …`. Chips now carry the title, the order still
+ * follows the clock, and the day sheet lists the times.
+ */
+describe('MonthView chip labels (DP-165)', () => {
+  const base = {
+    calendarId: 'calendar', location: null, notes: null, reminderMinutes: [], recurrence: null,
+    sharingScope: 'inherit' as const,
+    createdAt: '2026-08-01T00:00:00.000Z', updatedAt: '2026-08-01T00:00:00.000Z',
+  };
+  const timed = (id: string, title: string, startsAt: string, endsAt: string): CalendarEvent => ({
+    ...base, id, title, allDay: false, startsAt, endsAt, timezone: 'Asia/Taipei',
+  });
+
+  it('shows titles only, all-day first and then by start time, with the clock in the tooltip', () => {
+    const events: CalendarEvent[] = [
+      timed('dentist', '牙醫回診', '2026-08-06T07:30:00.000Z', '2026-08-06T08:30:00.000Z'),
+      timed('standup', '團隊週會', '2026-08-06T02:00:00.000Z', '2026-08-06T03:00:00.000Z'),
+      { ...base, id: 'birthday', title: '小美生日', allDay: true, startDate: '2026-08-06', endDate: '2026-08-06' },
+    ];
+    act(() => root.render(<MonthView
+      weekStartsOn={0} displayTimezone="Asia/Taipei" calendarGridMode="fixed-six"
+      resolveOccurrences={occurrenceResolver(events)} stickers={[]} calendars={[]}
+      selectedDate="2026-08-06" todayKey="2026-08-06" flashToday={false}
+      onSelectDate={vi.fn()} onPeriodLabelChange={vi.fn()}
+    />));
+
+    expect(chips('2026-08-06')).toEqual([
+      { text: '小美生日', title: '小美生日' },
+      { text: '團隊週會', title: '10:00 團隊週會' },
+      { text: '牙醫回診', title: '15:30 牙醫回診' },
+    ]);
+  });
+
+  it('still collapses a fourth event into +1', () => {
+    const events = ['一', '二', '三', '四'].map((label, index) =>
+      timed(`e${index}`, `會議${label}`, `2026-08-06T0${index + 1}:00:00.000Z`, `2026-08-06T0${index + 1}:30:00.000Z`));
+    act(() => root.render(<MonthView
+      weekStartsOn={0} displayTimezone="Asia/Taipei" calendarGridMode="fixed-six"
+      resolveOccurrences={occurrenceResolver(events)} stickers={[]} calendars={[]}
+      selectedDate="2026-08-06" todayKey="2026-08-06" flashToday={false}
+      onSelectDate={vi.fn()} onPeriodLabelChange={vi.fn()}
+    />));
+
+    expect(chips('2026-08-06').map((chip) => chip.text)).toEqual(['會議一', '會議二', '會議三']);
+    expect(cell('2026-08-06')?.querySelector('.cal-cell-more')?.textContent).toBe('+1');
+    expect(cell('2026-08-06')?.getAttribute('aria-label')).toBe('2026-08-06，4 個行程');
   });
 });
 
