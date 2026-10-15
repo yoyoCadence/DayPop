@@ -254,384 +254,401 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
         <h1 className="dp-screen-title">設定</h1>
       </div>
       <div className="dp-screen-body">
-        <div className="dp-section-label">外觀主題</div>
-        <div className="dp-theme-grid">
-          {THEME_IDS.map((id) => {
-            const theme = THEMES[id];
-            const active = id === themeId;
-            return (
-              <button
-                key={id}
-                className="dp-theme-card"
-                type="button"
-                aria-pressed={active}
-                onClick={() => selectTheme(id)}
-              >
-                <div className="dp-theme-preview" aria-hidden="true">
-                  <div
-                    className="dp-theme-swatch"
-                    style={{ background: theme.light.surface, border: `2px solid ${theme.light.fg}` }}
-                  >
-                    <i style={{ background: theme.light.accent }} />
-                  </div>
-                  <div className="dp-theme-lines">
-                    <i style={{ width: '80%', background: theme.light.fg, opacity: 0.85 }} />
-                    <i style={{ width: '55%', background: theme.light.accent }} />
-                    <i style={{ width: '68%', background: theme.light.fg, opacity: 0.4 }} />
-                  </div>
-                </div>
-                <div className="dp-theme-name">
-                  {theme.name}
-                  <span aria-hidden="true">{active ? '✓' : ''}</span>
-                </div>
-                <div className="dp-theme-desc">{theme.desc}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="dp-mode-toggle" role="group" aria-label="淺色或深色">
-          {MODE_OPTIONS.map((option) => (
-            <button
-              key={option.mode}
-              className="dp-mode-button"
-              type="button"
-              aria-pressed={mode === option.mode}
-              onClick={() => selectMode(option.mode)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="dp-section-label" style={{ marginTop: 18 }}>
-          我的日曆
-        </div>
-        <div className="cal-manage-list">
-          {calendars.map((calendar) => (
-            <div className="cal-manage-row" key={calendar.id}>
-              <button
-                className="cal-manage-open"
-                type="button"
-                onClick={() => setEditing(calendar.id)}
-              >
-                <span className="cal-manage-dot" style={{ background: calendar.color }} />
-                <span className="cal-manage-name">{calendar.name}</span>
-                <span className="cal-manage-edit-hint">編輯</span>
-              </button>
-              <button
-                className="cal-manage-toggle"
-                type="button"
-                aria-pressed={calendar.isVisible}
-                aria-label={`${calendar.isVisible ? '隱藏' : '顯示'} ${calendar.name}`}
-                onClick={() => updateCalendar(calendar.id, { isVisible: !calendar.isVisible })}
-              >
-                <span className="cal-manage-knob" aria-hidden="true" />
-              </button>
-            </div>
-          ))}
-        </div>
-        <button className="cal-manage-add" type="button" onClick={() => setEditing('new')}>
-          ＋ 新增日曆
-        </button>
-
-        {editing && (
-          <CalendarEditDialog
-            calendar={editingCalendar}
-            suggestedColor={nextCalendarColor(calendars.length)}
-            canDelete={canDelete}
-            itemCount={itemsOn(editingCalendar)}
-            reassignTargetName={
-              calendars.find(
-                (calendar) => calendar.isDefault && calendar.id !== editingCalendar?.id,
-              )?.name ??
-              calendars.find((calendar) => calendar.id !== editingCalendar?.id)?.name ??
-              ''
-            }
-            onSave={saveCalendar}
-            onDelete={() => (editingCalendar ? deleteCalendar(editingCalendar.id) : undefined)}
-            onClose={() => setEditing(null)}
-          />
-        )}
-
-        <div className="dp-section-label" style={{ marginTop: 18 }}>
-          帳號
-        </div>
-        <div className="dp-account-blocks">
-          <section className={`storage-scope-banner${auth.user ? ' authenticated' : ''}`} aria-live="polite">
-            <div>
-              <strong>{auth.user ? '帳號已登入' : '目前是遊客模式'}</strong>
-              <p>
-                {auth.configurationError
-                  ? `Supabase 尚未就緒：${auth.configurationError} 日曆仍安全保存在這台裝置。`
-                  : auth.user
-                    ? `${auth.user.email ?? '這個帳號'} 已完成登入；行程、待辦與設定會保存至此帳號。這台裝置只保留版本化快取，遊客資料不會自動上傳。`
-                    : '行程、待辦與設定只保存在這台裝置。登入不會刪除或自動上傳這些資料。'}
-              </p>
-              {auth.user ? (
-                <span
-                  className={`account-sync-status${
-                    dataState.status === 'ready' && !syncProblem && !dataState.saving
-                      ? ' synced'
-                      : ''
-                  }`}
-                >
-                  ● {syncLabel}
-                </span>
-              ) : null}
-              {authActionError && <p className="auth-action-error">{authActionError}</p>}
-            </div>
-            {auth.user ? (
-              <button className="button secondary" type="button" onClick={() => void signOut()}>登出</button>
-            ) : (
-              <button className="button primary" type="button" onClick={onOpenAuth} disabled={Boolean(auth.configurationError)}>登入／註冊</button>
-            )}
-          </section>
-          <LegacyImportCard />
-        </div>
-
-        {/* 原稿 :317-326。等級／XP 區塊屬 DP-041、選擇夥伴屬 DP-040，都還沒搬。 */}
-        <div className="dp-section-label">桌寵</div>
-        <div className="set-pref-card">
-          <div className="set-pref-toggle-row">
-            <span className="set-pref-toggle-label" id="pet-enabled-label">
-              顯示桌寵
-            </span>
-            <button
-              className="set-pref-toggle"
-              type="button"
-              aria-pressed={preferences.petEnabled}
-              aria-labelledby="pet-enabled-label"
-              onClick={togglePet}
-            >
-              <span className="set-pref-knob" aria-hidden="true" />
-            </button>
-          </div>
-          <label className="set-pref-field-label" htmlFor="pet-name">
-            寵物名字
-          </label>
-          <input
-            id="pet-name"
-            className="set-pref-input"
-            type="text"
-            value={petNameValue}
-            placeholder="幫牠取名"
-            maxLength={40}
-            onChange={(event) => changePetName(event.target.value)}
-            onBlur={commitPetName}
-          />
-          {/*
-            原稿 :323 的說明描述的是四個 DP-040 才會有的能力（走動、對話泡泡、
-            透過牠新增待辦、行程建議）。現在的寵物層只有固定位置與待辦數 badge
-            （見 `PetLayer.tsx` 的說明），所以照搬那句話會變成宣告不存在的功能。
-            依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
-            但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
-          */}
-          {/* DP-163: no task numbers in what the person reads. The pet rests at
-              the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
-          <p className="set-pref-help">
-            目前牠會待在日曆左下角，顯示未完成待辦的數量。
-            <br />
-            <span className="set-pref-pending">
-              還沒有的功能：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
-            </span>
-          </p>
-        </div>
-
-        {/* 原稿 :329-337。預設提醒與通知提醒屬 DP-042，雲端同步已在上面的帳號區塊。 */}
-        <div className="dp-section-label">一般</div>
-        <div className="set-pref-rows">
-          <div className="set-pref-row">
-            {/* 原稿這一列是「月檢視週數 4／5／6」。DP-018 已定案 DayPop 改用
-                自動／固定兩種列數模式，所以沿用該模型，只把它放回原稿的位置。 */}
-            <span className="set-pref-row-label" id="grid-mode-label">
-              月曆列數
-            </span>
-            <div className="set-pref-segment" role="group" aria-labelledby="grid-mode-label">
-              {GRID_OPTIONS.map((option) => (
+        {/* DP-164: the review's four groups — 外觀、夥伴、日曆、帳號與資料 — and
+            關於 for the rest. The原檔 lists its sections flat (外觀 → 我的日曆 →
+            桌寵 → 一般 → 資料備份); DayPop added the account, privacy, version
+            and not-yet sections around them, and the page had become nine blocks
+            of equal weight. Each group is an <h2> under the screen's <h1>; the
+            small labels stay for the parts inside a group. */}
+        <div className="dp-settings-group">
+          <h2 className="dp-settings-group-title">外觀</h2>
+          <div className="dp-theme-grid">
+            {THEME_IDS.map((id) => {
+              const theme = THEMES[id];
+              const active = id === themeId;
+              return (
                 <button
-                  key={option.mode}
-                  className="set-pref-segment-button"
+                  key={id}
+                  className="dp-theme-card"
                   type="button"
-                  aria-pressed={preferences.calendarGridMode === option.mode}
-                  onClick={() => updatePreferences({ calendarGridMode: option.mode })}
+                  aria-pressed={active}
+                  onClick={() => selectTheme(id)}
                 >
-                  {option.label}
+                  <div className="dp-theme-preview" aria-hidden="true">
+                    <div
+                      className="dp-theme-swatch"
+                      style={{ background: theme.light.surface, border: `2px solid ${theme.light.fg}` }}
+                    >
+                      <i style={{ background: theme.light.accent }} />
+                    </div>
+                    <div className="dp-theme-lines">
+                      <i style={{ width: '80%', background: theme.light.fg, opacity: 0.85 }} />
+                      <i style={{ width: '55%', background: theme.light.accent }} />
+                      <i style={{ width: '68%', background: theme.light.fg, opacity: 0.4 }} />
+                    </div>
+                  </div>
+                  <div className="dp-theme-name">
+                    {theme.name}
+                    <span aria-hidden="true">{active ? '✓' : ''}</span>
+                  </div>
+                  <div className="dp-theme-desc">{theme.desc}</div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          <div className="set-pref-row">
-            <span className="set-pref-row-label" id="week-start-label">
-              每週起始日
-            </span>
-            <div className="set-pref-segment" role="group" aria-labelledby="week-start-label">
-              {WEEK_START_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  className="set-pref-segment-button"
-                  type="button"
-                  aria-pressed={preferences.weekStartsOn === option.value}
-                  onClick={() => updatePreferences({ weekStartsOn: option.value })}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+
+          <div className="dp-mode-toggle" role="group" aria-label="淺色或深色">
+            {MODE_OPTIONS.map((option) => (
+              <button
+                key={option.mode}
+                className="dp-mode-button"
+                type="button"
+                aria-pressed={mode === option.mode}
+                onClick={() => selectMode(option.mode)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-          <div className="set-pref-row">
-            <label className="set-pref-row-label" htmlFor="default-timezone">
-              預設時區
+        </div>
+
+        <div className="dp-settings-group">
+          <h2 className="dp-settings-group-title">夥伴</h2>
+          {/* 原稿 :317-326。等級／XP 區塊屬 DP-041、選擇夥伴屬 DP-040，都還沒搬。 */}
+          <div className="set-pref-card">
+            <div className="set-pref-toggle-row">
+              <span className="set-pref-toggle-label" id="pet-enabled-label">
+                顯示桌寵
+              </span>
+              <button
+                className="set-pref-toggle"
+                type="button"
+                aria-pressed={preferences.petEnabled}
+                aria-labelledby="pet-enabled-label"
+                onClick={togglePet}
+              >
+                <span className="set-pref-knob" aria-hidden="true" />
+              </button>
+            </div>
+            <label className="set-pref-field-label" htmlFor="pet-name">
+              寵物名字
             </label>
-            <select
-              id="default-timezone"
-              className="set-pref-select"
-              value={preferences.timezone}
-              onChange={(event) => updatePreferences({ timezone: event.target.value })}
-            >
-              {timezoneOptions(preferences.timezone, now).map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <input
+              id="pet-name"
+              className="set-pref-input"
+              type="text"
+              value={petNameValue}
+              placeholder="幫牠取名"
+              maxLength={40}
+              onChange={(event) => changePetName(event.target.value)}
+              onBlur={commitPetName}
+            />
+            {/*
+              原稿 :323 的說明描述的是四個 DP-040 才會有的能力（走動、對話泡泡、
+              透過牠新增待辦、行程建議）。現在的寵物層只有固定位置與待辦數 badge
+              （見 `PetLayer.tsx` 的說明），所以照搬那句話會變成宣告不存在的功能。
+              依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
+              但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
+            */}
+            {/* DP-163: no task numbers in what the person reads. The pet rests at
+                the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
+            <p className="set-pref-help">
+              目前牠會待在日曆左下角，顯示未完成待辦的數量。
+              <br />
+              <span className="set-pref-pending">
+                還沒有的功能：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
+              </span>
+            </p>
           </div>
         </div>
 
-        <div className="dp-section-label">資料備份</div>
-        <div className="data-transfer-actions">
-          <button
-            className="data-transfer-button"
-            type="button"
-            disabled={importing}
-            onClick={exportJson}
-          >
-            ⬇ 匯出資料
+        <div className="dp-settings-group">
+          <h2 className="dp-settings-group-title">日曆</h2>
+          <div className="dp-section-label">我的日曆</div>
+          <div className="cal-manage-list">
+            {calendars.map((calendar) => (
+              <div className="cal-manage-row" key={calendar.id}>
+                <button
+                  className="cal-manage-open"
+                  type="button"
+                  onClick={() => setEditing(calendar.id)}
+                >
+                  <span className="cal-manage-dot" style={{ background: calendar.color }} />
+                  <span className="cal-manage-name">{calendar.name}</span>
+                  <span className="cal-manage-edit-hint">編輯</span>
+                </button>
+                <button
+                  className="cal-manage-toggle"
+                  type="button"
+                  aria-pressed={calendar.isVisible}
+                  aria-label={`${calendar.isVisible ? '隱藏' : '顯示'} ${calendar.name}`}
+                  onClick={() => updateCalendar(calendar.id, { isVisible: !calendar.isVisible })}
+                >
+                  <span className="cal-manage-knob" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button className="cal-manage-add" type="button" onClick={() => setEditing('new')}>
+            ＋ 新增日曆
           </button>
-          <button
-            className="data-transfer-button"
-            type="button"
-            disabled={importing}
-            onClick={() => jsonInputRef.current?.click()}
-          >
-            ⬆ 匯入資料
-          </button>
-          <input
-            ref={jsonInputRef}
-            className="data-transfer-json-input"
-            type="file"
-            accept="application/json,.json"
-            aria-label="選擇 DayPop JSON 備份"
-            hidden
-            onChange={(event) => void chooseImport('json', event)}
-          />
-        </div>
-        <p className="data-transfer-help">
-          匯出成 JSON 存到裝置；換手機或清除瀏覽器資料前先備份。備份不含附件，匯入前會先預覽且確認後才取代資料。
-        </p>
-        <div className="data-transfer-actions">
-          <button
-            className="data-transfer-button"
-            type="button"
-            disabled={importing}
-            onClick={exportIcs}
-          >
-            ⬇ 匯出 .ics
-          </button>
-          <button
-            className="data-transfer-button"
-            type="button"
-            disabled={importing}
-            onClick={() => icsInputRef.current?.click()}
-          >
-            ⬆ 匯入 .ics
-          </button>
-          <input
-            ref={icsInputRef}
-            className="data-transfer-ics-input"
-            type="file"
-            accept=".ics,text/calendar"
-            aria-label="選擇 iCalendar 檔案"
-            hidden
-            onChange={(event) => void chooseImport('ics', event)}
-          />
-        </div>
-        <p className="data-transfer-help">
-          .ics 是 Google 日曆、Apple 日曆與 Outlook 等服務共用的格式；匯入只會附加行程，不會取代現有資料。
-        </p>
-        {transferMessage ? (
-          <p className="data-transfer-status" role="status">
-            {transferMessage}
-          </p>
-        ) : null}
-        {transferError && !pendingImport ? (
-          <p className="data-transfer-status error" role="alert">
-            {transferError}
-          </p>
-        ) : null}
 
-        {pendingImport ? (
-          <DataImportDialog
-            fileName={pendingImport.fileName}
-            plan={pendingImport.plan}
-            currentCalendars={data.calendars}
-            busy={importing}
-            error={transferError}
-            onConfirm={() => void confirmImport()}
-            onCancel={() => {
-              if (!importing) {
-                setPendingImport(null);
-                setTransferError(null);
+          {editing && (
+            <CalendarEditDialog
+              calendar={editingCalendar}
+              suggestedColor={nextCalendarColor(calendars.length)}
+              canDelete={canDelete}
+              itemCount={itemsOn(editingCalendar)}
+              reassignTargetName={
+                calendars.find(
+                  (calendar) => calendar.isDefault && calendar.id !== editingCalendar?.id,
+                )?.name ??
+                calendars.find((calendar) => calendar.id !== editingCalendar?.id)?.name ??
+                ''
               }
-            }}
-          />
-        ) : null}
+              onSave={saveCalendar}
+              onDelete={() => (editingCalendar ? deleteCalendar(editingCalendar.id) : undefined)}
+              onClose={() => setEditing(null)}
+            />
+          )}
 
-        <DataPrivacyCard />
 
-        <div className="dp-section-label">版本與更新</div>
-        <div className="dp-account-blocks">
-          <section className="release-panel">
-            <div>
-              <h2>版本與更新</h2>
-              <p>目前版本 v{updater.currentVersion}。DayPop 會在啟動、回到前景與連線恢復時檢查新版。</p>
-              {updater.currentRelease && (
-                <details className="current-release">
-                  <summary>查看這個版本更新了什麼</summary>
-                  <ul>
-                    {updater.currentRelease.changes.map((change) => <li key={change}>{change}</li>)}
-                  </ul>
-                </details>
-              )}
-              {updater.error && <p className="update-error">本次檢查失敗：{updater.error}</p>}
+          {/* 原稿 :329-337 的「一般」。預設提醒與通知提醒屬 DP-042，雲端同步在帳號區塊。
+              All three rows are about the calendar, so the label says so (DP-164). */}
+          <div className="dp-section-label">顯示與時區</div>
+          <div className="set-pref-rows">
+            <div className="set-pref-row">
+              {/* 原稿這一列是「月檢視週數 4／5／6」。DP-018 已定案 DayPop 改用
+                  自動／固定兩種列數模式，所以沿用該模型，只把它放回原稿的位置。 */}
+              <span className="set-pref-row-label" id="grid-mode-label">
+                月曆列數
+              </span>
+              <div className="set-pref-segment" role="group" aria-labelledby="grid-mode-label">
+                {GRID_OPTIONS.map((option) => (
+                  <button
+                    key={option.mode}
+                    className="set-pref-segment-button"
+                    type="button"
+                    aria-pressed={preferences.calendarGridMode === option.mode}
+                    onClick={() => updatePreferences({ calendarGridMode: option.mode })}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <button className="button secondary" type="button" onClick={() => void updater.checkForUpdate()} disabled={updater.checking}>
-              {updater.checking ? '檢查中…' : '檢查更新'}
+            <div className="set-pref-row">
+              <span className="set-pref-row-label" id="week-start-label">
+                每週起始日
+              </span>
+              <div className="set-pref-segment" role="group" aria-labelledby="week-start-label">
+                {WEEK_START_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    className="set-pref-segment-button"
+                    type="button"
+                    aria-pressed={preferences.weekStartsOn === option.value}
+                    onClick={() => updatePreferences({ weekStartsOn: option.value })}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="set-pref-row">
+              <label className="set-pref-row-label" htmlFor="default-timezone">
+                預設時區
+              </label>
+              <select
+                id="default-timezone"
+                className="set-pref-select"
+                value={preferences.timezone}
+                onChange={(event) => updatePreferences({ timezone: event.target.value })}
+              >
+                {timezoneOptions(preferences.timezone, now).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="dp-settings-group">
+          <h2 className="dp-settings-group-title">帳號與資料</h2>
+          <div className="dp-section-label">帳號</div>
+          <div className="dp-account-blocks">
+            <section className={`storage-scope-banner${auth.user ? ' authenticated' : ''}`} aria-live="polite">
+              <div>
+                <strong>{auth.user ? '帳號已登入' : '目前是遊客模式'}</strong>
+                <p>
+                  {auth.configurationError
+                    ? `Supabase 尚未就緒：${auth.configurationError} 日曆仍安全保存在這台裝置。`
+                    : auth.user
+                      ? `${auth.user.email ?? '這個帳號'} 已完成登入；行程、待辦與設定會保存至此帳號。這台裝置只保留版本化快取，遊客資料不會自動上傳。`
+                      : '行程、待辦與設定只保存在這台裝置。登入不會刪除或自動上傳這些資料。'}
+                </p>
+                {auth.user ? (
+                  <span
+                    className={`account-sync-status${
+                      dataState.status === 'ready' && !syncProblem && !dataState.saving
+                        ? ' synced'
+                        : ''
+                    }`}
+                  >
+                    ● {syncLabel}
+                  </span>
+                ) : null}
+                {authActionError && <p className="auth-action-error">{authActionError}</p>}
+              </div>
+              {auth.user ? (
+                <button className="button secondary" type="button" onClick={() => void signOut()}>登出</button>
+              ) : (
+                <button className="button primary" type="button" onClick={onOpenAuth} disabled={Boolean(auth.configurationError)}>登入／註冊</button>
+              )}
+            </section>
+            <LegacyImportCard />
+          </div>
+
+
+          <div className="dp-section-label">資料備份</div>
+          <div className="data-transfer-actions">
+            <button
+              className="data-transfer-button"
+              type="button"
+              disabled={importing}
+              onClick={exportJson}
+            >
+              ⬇ 匯出資料
             </button>
-          </section>
+            <button
+              className="data-transfer-button"
+              type="button"
+              disabled={importing}
+              onClick={() => jsonInputRef.current?.click()}
+            >
+              ⬆ 匯入資料
+            </button>
+            <input
+              ref={jsonInputRef}
+              className="data-transfer-json-input"
+              type="file"
+              accept="application/json,.json"
+              aria-label="選擇 DayPop JSON 備份"
+              hidden
+              onChange={(event) => void chooseImport('json', event)}
+            />
+          </div>
+          <p className="data-transfer-help">
+            匯出成 JSON 存到裝置；換手機或清除瀏覽器資料前先備份。備份不含附件，匯入前會先預覽且確認後才取代資料。
+          </p>
+          <div className="data-transfer-actions">
+            <button
+              className="data-transfer-button"
+              type="button"
+              disabled={importing}
+              onClick={exportIcs}
+            >
+              ⬇ 匯出 .ics
+            </button>
+            <button
+              className="data-transfer-button"
+              type="button"
+              disabled={importing}
+              onClick={() => icsInputRef.current?.click()}
+            >
+              ⬆ 匯入 .ics
+            </button>
+            <input
+              ref={icsInputRef}
+              className="data-transfer-ics-input"
+              type="file"
+              accept=".ics,text/calendar"
+              aria-label="選擇 iCalendar 檔案"
+              hidden
+              onChange={(event) => void chooseImport('ics', event)}
+            />
+          </div>
+          <p className="data-transfer-help">
+            .ics 是 Google 日曆、Apple 日曆與 Outlook 等服務共用的格式；匯入只會附加行程，不會取代現有資料。
+          </p>
+          {transferMessage ? (
+            <p className="data-transfer-status" role="status">
+              {transferMessage}
+            </p>
+          ) : null}
+          {transferError && !pendingImport ? (
+            <p className="data-transfer-status error" role="alert">
+              {transferError}
+            </p>
+          ) : null}
+
+          {pendingImport ? (
+            <DataImportDialog
+              fileName={pendingImport.fileName}
+              plan={pendingImport.plan}
+              currentCalendars={data.calendars}
+              busy={importing}
+              error={transferError}
+              onConfirm={() => void confirmImport()}
+              onCancel={() => {
+                if (!importing) {
+                  setPendingImport(null);
+                  setTransferError(null);
+                }
+              }}
+            />
+          ) : null}
+
+          <DataPrivacyCard />
         </div>
 
-        {/* What the原檔's 設定 has that DayPop does not yet, said plainly rather
-            than shown as controls that do nothing — DP-014's rule. Written for
-            the person using the App, without task numbers (DP-163). For
-            whoever picks these up: AI is DP-043, the level is DP-041, choosing
-            a partner DP-040／DP-172, swipe paging needs a preference field,
-            notifications DP-042. The原檔's developer and demo-data controls are
-            not something a person uses, so they are not listed. */}
-        <div className="dp-section-label">還沒有的功能</div>
-        <div className="dp-note">
-          <strong>這些功能目前還沒有</strong>
-          <ul>
-            <li>AI 助理</li>
-            <li>桌寵的等級與成長</li>
-            <li>為桌寵選擇其他夥伴</li>
-            <li>左右滑動翻頁</li>
-            <li>通知與預設提醒</li>
-          </ul>
-        </div>
+        <div className="dp-settings-group">
+          <h2 className="dp-settings-group-title">關於</h2>
+          <div className="dp-account-blocks">
+            <section className="release-panel">
+              <div>
+                <h3>版本與更新</h3>
+                <p>目前版本 v{updater.currentVersion}。DayPop 會在啟動、回到前景與連線恢復時檢查新版。</p>
+                {updater.currentRelease && (
+                  <details className="current-release">
+                    <summary>查看這個版本更新了什麼</summary>
+                    <ul>
+                      {updater.currentRelease.changes.map((change) => <li key={change}>{change}</li>)}
+                    </ul>
+                  </details>
+                )}
+                {updater.error && <p className="update-error">本次檢查失敗：{updater.error}</p>}
+              </div>
+              <button className="button secondary" type="button" onClick={() => void updater.checkForUpdate()} disabled={updater.checking}>
+                {updater.checking ? '檢查中…' : '檢查更新'}
+              </button>
+            </section>
+          </div>
 
-        <div className="dp-screen-footnote">
-          使用者資料與 App cache 分開保存・更新不會清除行程與設定
+          {/* What the原檔's 設定 has that DayPop does not yet, said plainly rather
+              than shown as controls that do nothing — DP-014's rule. Written for
+              the person using the App, without task numbers (DP-163). For
+              whoever picks these up: AI is DP-043, the level is DP-041, choosing
+              a partner DP-040／DP-172, swipe paging needs a preference field,
+              notifications DP-042. The原檔's developer and demo-data controls are
+              not something a person uses, so they are not listed. */}
+          <div className="dp-section-label">還沒有的功能</div>
+          <div className="dp-note">
+            <strong>這些功能目前還沒有</strong>
+            <ul>
+              <li>AI 助理</li>
+              <li>桌寵的等級與成長</li>
+              <li>為桌寵選擇其他夥伴</li>
+              <li>左右滑動翻頁</li>
+              <li>通知與預設提醒</li>
+            </ul>
+          </div>
+
+          <div className="dp-screen-footnote">
+            使用者資料與 App cache 分開保存・更新不會清除行程與設定
+          </div>
         </div>
       </div>
     </div>

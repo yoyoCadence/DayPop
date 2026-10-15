@@ -758,7 +758,7 @@ input:focus-visible {
   gap: 16px;
 }
 
-.release-panel h2,
+.release-panel h3,
 .release-panel p {
   margin: 0;
 }
@@ -781,7 +781,7 @@ input:focus-visible {
   line-height: 1.55;
 }
 
-.release-panel h2 {
+.release-panel h3 {
   font-size: 1rem;
 }
 

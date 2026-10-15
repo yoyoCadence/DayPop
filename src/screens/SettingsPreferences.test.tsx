@@ -307,3 +307,36 @@ describe('設定 一般', () => {
     expect(timezoneSelect().value).toBe('Pacific/Auckland');
   });
 });
+
+/**
+ * DP-164. Each group is an <h2> under the screen's <h1>, and its parts keep
+ * the small labels. This pins which part sits in which group, so a later block
+ * does not land in the wrong place unnoticed.
+ */
+describe('設定 分組', () => {
+  it('依外觀、夥伴、日曆、帳號與資料、關於分組，各組內是原本的區塊', async () => {
+    await render();
+    const groups = [...container.querySelectorAll('.dp-settings-group')].map((group) => ({
+      title: group.querySelector(':scope > h2')?.textContent,
+      labels: [...group.querySelectorAll('.dp-section-label')].map((label) => label.textContent),
+    }));
+    expect(groups).toEqual([
+      { title: '外觀', labels: [] },
+      { title: '夥伴', labels: [] },
+      { title: '日曆', labels: ['我的日曆', '顯示與時區'] },
+      { title: '帳號與資料', labels: ['帳號', '資料備份', '資料與隱私'] },
+      { title: '關於', labels: ['還沒有的功能'] },
+    ]);
+
+    const groupOf = (selector: string) =>
+      container.querySelector(selector)?.closest('.dp-settings-group')?.querySelector('h2')?.textContent;
+    expect(groupOf('.dp-theme-grid')).toBe('外觀');
+    expect(groupOf('#pet-name')).toBe('夥伴');
+    expect(groupOf('#default-timezone')).toBe('日曆');
+    expect(groupOf('.storage-scope-banner')).toBe('帳號與資料');
+    expect(groupOf('.data-privacy-card')).toBe('帳號與資料');
+    expect(groupOf('.release-panel')).toBe('關於');
+    expect(container.querySelector('.release-panel h3')?.textContent).toBe('版本與更新');
+    expect(container.querySelectorAll('h2')).toHaveLength(5);
+  });
+});

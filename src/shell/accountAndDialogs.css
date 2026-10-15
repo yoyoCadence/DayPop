@@ -31,7 +31,7 @@
   overflow-wrap: anywhere;
 }
 
-.dp-account-blocks :is(.storage-scope-banner strong, .release-panel h2) {
+.dp-account-blocks :is(.storage-scope-banner strong, .release-panel h3) {
   font-size: 14px;
   font-weight: 800;
 }
