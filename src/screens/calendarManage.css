@@ -105,6 +105,9 @@
 }
 
 .cal-manage-add {
+  /* A block, so its margin collapses with the next label's like every other
+     part of 設定; as an inline-block button the two added up to 36px. */
+  display: block;
   width: 100%;
   margin-bottom: 18px;
   border: 1.5px dashed var(--border);

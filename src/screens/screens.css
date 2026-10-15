@@ -44,6 +44,42 @@
   text-transform: uppercase;
 }
 
+/*
+ * 設定 groups — DP-164. Not in the原檔, whose sections are a flat list of the
+ * small labels above. A group title uses the screen title's face at a smaller
+ * size, so it reads as the level between the two; groups after the first open
+ * with a thin rule in the theme's divider colour.
+ */
+.dp-settings-group + .dp-settings-group {
+  margin-top: 22px;
+  border-top: 1.5px solid var(--line);
+  padding-top: 18px;
+}
+
+.dp-settings-group-title {
+  margin: 0 0 12px;
+  color: var(--fg);
+  font-weight: inherit;
+  font-family: var(--font-head);
+  font-size: 20px;
+  letter-spacing: var(--title-ls);
+  text-transform: var(--title-tt);
+}
+
+/* A label after other content in the same group starts a new part. Sibling
+   margins collapse, so blocks that already keep 18px below are unchanged. */
+.dp-settings-group > * + .dp-section-label {
+  margin-top: 18px;
+}
+
+.dp-settings-group-title + .dp-section-label {
+  margin-top: 0;
+}
+
+.dp-settings-group > :last-child {
+  margin-bottom: 0;
+}
+
 /* ---------- theme picker ---------- */
 
 .dp-theme-grid {

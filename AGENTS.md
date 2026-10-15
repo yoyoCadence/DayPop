@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **設定頁分組（DP-164，2026-10-15）：** 設定分成「外觀、夥伴、日曆、帳號與資料、關於」五組，每組是 `.dp-settings-group` 裡的 `<h2 className="dp-settings-group-title">`，組內各部分沿用 `.dp-section-label` 小標。原稿「一般」改名「顯示與時區」放進「日曆」。**新增設定區塊時放進對應的組**；`SettingsPreferences.test.tsx` 的「設定 分組」固定了各組內容。偏離原稿的順序與「登入移到第四組」的取捨見 ADR §3。
+
 - **月格標籤只放標題（DP-165，2026-10-15）：** 月格色塊只顯示標題（續日保留「續」），時間在 `title` 提示、排序與日詳情。格子由 `monthCellLayout.ts` 的 `cellChipBudget()` 依列高決定畫幾個完整色塊（最多三個），其餘算進「+N」，格內元素不再縮小。**它的高度常數對應 calendar.css 的 `.cal-cell` 系列規則，改那些規則要一起改，`e2e/month-cell-fit.spec.ts` 會抓出不一致。** 刻意偏離原稿，見 ADR §3。
 
 - **月格回到 1px；漫畫深色細線改灰（DP-166，2026-10-15）：** `.cal-cell` 是 `<button>`，必須先 `border: 0` 再設右／下線，否則瀏覽器內建的 2px outset 邊框會留在上／左，深色時是白的（2026-08-02 起的漂移，十二組主題都受影響）。**任何當成版面格子用的 `<button>` 都要歸零邊框**；`e2e/month-grid-lines.spec.ts` 會檢查月、週、列表、設定沒有帶立體邊框的控制項。漫畫深色 `line` 改為 `#5a5a5a`（原稿 `#ffffff`），粗外框仍是白色的 `border`，不要改回。見 ADR §3。
