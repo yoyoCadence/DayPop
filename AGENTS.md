@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **月格回到 1px；漫畫深色細線改灰（DP-166，2026-10-15）：** `.cal-cell` 是 `<button>`，必須先 `border: 0` 再設右／下線，否則瀏覽器內建的 2px outset 邊框會留在上／左，深色時是白的（2026-08-02 起的漂移，十二組主題都受影響）。**任何當成版面格子用的 `<button>` 都要歸零邊框**；`e2e/month-grid-lines.spec.ts` 會檢查月、週、列表、設定沒有帶立體邊框的控制項。漫畫深色 `line` 改為 `#5a5a5a`（原稿 `#ffffff`），粗外框仍是白色的 `border`，不要改回。見 ADR §3。
+
 - **動效與「減少動態效果」（DP-168，2026-10-15）：** 會移動的東西一律用 `transform`／`opacity`，並在 `prefers-reduced-motion: reduce` 下停掉（或只寫在 `no-preference` 區塊裡）；`src/theme/reducedMotion.test.ts` 從磁碟讀全部 CSS 把關，顏色 transition 不算移動。由程式啟動的捲動用 `src/shell/motion.ts` 的 `smoothScrollBehavior()`。既有時長來自原稿（0.2–0.26 s），不要改。見 ADR §3。
 
 - **啟動時確認不了登入，不卡在載入中（DP-176，2026-10-15）：** `AuthProvider` 最多等 8 秒（`AUTH_STARTUP_DEADLINE_MS`）；到期或 supabase-js 回報沒有 session 但裝置仍存著登入時，以存著的帳號繼續，`AuthContext.sessionUnconfirmed` 為 true。**未確認時不能讓任何請求經過 supabase-js**：它的每個請求都會先等 session 還原，所以 `SessionDataProvider` 改用只讀的帳號資料來源（帳號快取＋離線提示、寫入立刻拒絕），確認後以新的 identity 換回正常資料來源。存著的登入由 `readStoredSession()` 讀，key 是 supabase-js 的預設公式並明確傳入 `storageKey`，**改它會登出所有裝置**。伺服器拒絕 refresh token 時照常回到遊客。見 ADR §2。

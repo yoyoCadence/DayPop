@@ -172,7 +172,11 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       lunarMuted: '#989898',
       dangerText: '#ef6c85',
       border: '#ffffff',
-      line: '#ffffff',
+      // 原稿 #ffffff. The thin dividers — month and week grid, list and card
+      // rules — only; thick outlines stay white through `border` (DP-166).
+      // Inverting light mode's black lines into pure white ones made them the
+      // loudest thing on a dark screen; this keeps them visible at about 2.8:1.
+      line: '#5a5a5a',
       accent: '#ff2d4b',
       accentText: '#ff5f76',
       accentFg: '#111111',
