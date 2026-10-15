@@ -683,3 +683,43 @@ DP-034 清單的「錯誤監控」拆成兩半，本項只做不需要外部服�
 本項只修改候選公告，不提升 release／schema、不改 Auth／worker、不觸發部署。**部署前仍需先依 §5.22 推第 16 檔 migration。**
 
 **同日發現的部署阻礙（DP-148）：** staging 線上 bundle 指向的 Supabase 主機，在本機路由器、8.8.8.8 與 1.1.1.1 都查不到（名稱不存在），`supabase.co` 本身正常。若屬實，staging 的登入與帳號同步目前不可用，§5.22 的 `db push` 也無法執行。原因沒有驗證，需要專案擁有者到 Supabase 後台確認。本機跑 e2e 時，`.env.local` 的這個主機會讓「主控台必須乾淨」的檢查失敗；暫時以 `VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY=`（環境變數優先於 `.env.local`）執行即可排除，CI 沒有 `.env.local`，不受影響。
+
+### 5.24 v0.4.3 發布候選（DP-177，2026-10-15）
+
+直接 GET staging `version.json`（唯一 query）確認線上是 **0.4.2「日常安排更完整」／2026-10-04**，0.4.2 公告不可回寫，所以新增 **0.4.3「畫面更好讀」**。0.4.2（`e7c95ed`）之後的 PR #136–#159 都在 main 上，**沒有新的 migration**（仍是 16 檔，§5.22 的前置已在 2026-10-12 完成），所以這次部署不需要先動 Supabase。
+
+package／lock 版號改為 0.4.3，`release-notes.json` 新增條目，`version.json`／`sw.js` 由既有 generator 產生（worker 只換版號）。user-data schema 仍是 v4，Auth、worker template 與部署 workflow 不變。公告六條、152 個 Unicode code point：
+
+| 公告 | 對應 |
+| --- | --- |
+| 月曆格子改顯示行程標題，放不下的以 +N 表示；格線恢復細線 | DP-165、DP-166 |
+| 週檢視新增「3日」模式，手機上不必左右捲動 | DP-167 |
+| 設定分成外觀、夥伴、日曆、帳號與資料、關於五組 | DP-164（DP-163 的文案改寫也在設定裡） |
+| 綜覽列出沒有日期的待辦；搜尋選定日曆時也篩選待辦 | DP-173、DP-174 |
+| 帳號資料完整載入；離線開啟不再卡住或顯示成遊客資料 | DP-152、DP-176 |
+| 文字對比、鍵盤操作與減少動態效果改善；過了午夜自動更新今天 | DP-144／145、DP-154–156、DP-168、DP-150 |
+
+沒有寫進公告的：DP-151（0100–0999 年的日期）、DP-153（版本資訊格式錯誤時不再讓 App 無法啟動）、DP-157（開發相依）、DP-158（測試）。都已在 main 上，只是一般使用者碰不到或看不出差別。
+
+**舊版對話框量測（方法同 §5.20／§5.23）**：`5891034` 以 git archive 取出、用它自己的 lockfile `npm ci --ignore-scripts`，**在 PowerShell** 執行 `npm run build -- --base=/DayPop/`，建出真正的 0.3.0 production App（不可捲動的 `.update-dialog`），只 route 候選 `version.json`。先以 0.4.0 校準得到 932×430 的 `15.0..418.5`，並逐一重現 §5.23 的 0.4.2 五種數值，再量 0.4.3。每個 mobile Chromium context 等待 fonts ready，實際 Intl 為 Asia/Taipei。
+
+| 尺寸 | 0.4.3 對話框 top..bottom | 兩顆按鈕 top..bottom | 完整放得下 |
+| --- | --- | --- | --- |
+| 430×932 | 243.4..688.5 | 618.5..664.5 | 是 |
+| 390×844 | 178.6..665.4 | 595.4..641.4 | 是 |
+| 375×667 | 90.1..576.9 | 506.9..552.9 | 是 |
+| 360×640 | 66.2..573.8 | 503.8..549.8 | 是 |
+| 932×430 | 23.7..406.3 | 336.3..382.3 | 是 |
+
+五種尺寸都比 0.4.2 短。每種尺寸都確認六條、內容含「+N」「3日」「五組」「沒有日期」「離線」「午夜」，無水平溢出，console error／warning 與 pageerror 為 0，「稍後提醒」可點擊關閉且遊客原始 envelope 逐字不變。第一版最後一條是「…跨過午夜自動換到新的一天」，932×430 會把「天」單獨折到下一行（仍放得下），改短後兩邊各留出約 24px。腳本、量測 JSON 與截圖在 `%TEMP%/daypop-dp177-qa.mjs`／`daypop-dp177-proof/`；本機暫存的舊 source／node_modules／dist 於驗證後清理。
+
+lint、typecheck、單元 1,229 個（73 檔）、posttest、build、check:build 通過；`npm run check:release-notes -- https://yoyocadence.github.io/DayPop/version.json` 回報 **0.4.3 replaces 0.4.2, whose notes are unchanged**。既有 `release-notice`、`production-update`、`update-dialog`、`release-info-validation` 共 20 通過、2 跳過（mobile＋desktop，production 實際 Intl Asia/Taipei）。
+
+**發布交接**：合併只代表 main 上的候選完成，**agent 未觸發部署**。由專案擁有者執行 **Actions → Deploy staging → Run workflow → main**（§3.4）；workflow 會重跑品質閘門與 `check:release-notes`。部署後建議核對：
+
+1. 開啟 `https://yoyocadence.github.io/DayPop/`，已安裝的 PWA 會出現更新提示或新版公告，設定 → 關於顯示 v0.4.3。
+2. 登入帳號，確認行程、待辦與設定都還在，同步狀態為已同步。
+3. 月曆格子顯示標題、週檢視左上角有「3日」、設定分成五組，設定頁不再出現「DP-014」等開發字樣。
+4. 設定 → 資料備份 → 匯出資料，下載一份 JSON 留著。
+
+**0.4.3 一經部署，這個條目就不可回寫。** DP-034 的放行（是否不等 DP-032）仍由專案擁有者決定。
