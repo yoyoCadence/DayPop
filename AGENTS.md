@@ -28,6 +28,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 - **v0.4.3 發布候選（DP-177，2026-10-15）：** main 上的版號是 0.4.3「畫面更好讀」，staging 在這之前是 0.4.2。0.4.2 之後沒有新 migration（仍 16 檔），部署不需要先動 Supabase。公告六條、152 code point，已用真正的 0.3.0 舊版對話框在五種尺寸量過（docs/deployment.md §5.24）。**部署由專案擁有者執行；0.4.3 一經部署即不可回寫**，之後的修改要開新版號。
 
+- **axe 可及性 smoke（DP-162，2026-10-16）：** `e2e/accessibility.spec.ts` 用 `@axe-core/playwright`（固定 4.13.0）檢查 WCAG 2.0–2.2 A／AA，涵蓋四個分頁、三種日曆檢視、主要 sheet 與六套主題 × 淺／深色，目前 0 違規、沒有例外清單。**`.dp-texture` 紋理層（`z-index: 38`、`pointer-events: none`）蓋在整個 App 上，axe 有它在時一個對比都量不到**，所以 spec 稽核時隱藏它，並要求每次至少量到 5 個對比節點。新增全畫面覆蓋層、或在 spec 加新畫面時，先確認 axe 真的量得到。網點／漸層背景上的文字與焦點行為 axe 量不到，各由 `textContrast.test.ts` 與焦點 e2e 負責。見 ADR §7。
+
 - **設定顯示「這台裝置上次匯出」（DP-175，2026-10-16）：** 資料備份按鈕下方顯示上次匯出的時間（依 `preferences.timezone`）與那份檔案的筆數。紀錄在 `src/screens/lastBackup.ts`，是裝置層級介面狀態（`daypop.last-backup.guest`／`daypop.last-backup.account.<encoded id>`），**遊客與每個帳號分開**，不進 user data、不需要 schema。**只在 `downloadJsonBackup()` 裡寫入**，設定匯出與錯誤畫面的下載都經過它；新增其他備份出口時也要經過它。`.ics` 不算備份。記的是檔案交給瀏覽器的時間，取消存檔也算。見 ADR §3。
 
 - **週檢視三日模式（DP-167，2026-10-15）：** `WeekView` 收 `dayCount: 3 | 7`。三日從 cursor 起算（不對齊週起始日），欄寬平分畫面，橫向拖曳用量到的欄寬（`columnShift()` 的第 3、4 個參數）。拖曳、跨午夜、全天列、現在線與週檢視共用同一套程式，**改週檢視時兩種模式都要測**（`three-day-week.spec.ts`）。選擇是 `CalendarScreen` 的畫面狀態，不保存。見 ADR §6。
