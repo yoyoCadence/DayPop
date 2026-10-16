@@ -146,7 +146,9 @@ export default function App() {
           <ScreenErrorFallback
             {...caught}
             screen={SHELL_TAB_LABELS[tab]}
-            onDownloadBackup={() => downloadJsonBackup(state.data, updater.currentVersion)}
+            onDownloadBackup={() =>
+              downloadJsonBackup(state.data, updater.currentVersion, user?.id ?? null).omittedAttachments
+            }
             onReload={() => window.location.reload()}
           />
         )}

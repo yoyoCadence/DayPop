@@ -21,6 +21,25 @@
   opacity: 0.6;
 }
 
+/* DP-175: when this device last exported, above the help text. */
+.data-backup-last {
+  margin: 0 0 6px;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.data-backup-last strong {
+  font-weight: 800;
+}
+
+.data-backup-coverage {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .data-transfer-help {
   margin: 0 0 16px;
   color: var(--muted);

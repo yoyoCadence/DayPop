@@ -14,9 +14,11 @@ import {
 import type { Calendar, CalendarGridMode, ThemePreference } from '../domain/types';
 import type { AppUpdateState } from '../pwa/useAppUpdate';
 import { LegacyImportCard } from '../legacy/LegacyImportCard';
+import { getAppStorage } from '../storage/browserStorage';
 import { useTheme } from '../theme/themeContext';
 import { THEMES, THEME_IDS } from '../theme/themes';
 import { downloadJsonBackup } from './backupDownload';
+import { backupCoverage, formatBackupTime, readLastBackup } from './lastBackup';
 import { CalendarEditDialog } from './CalendarEditDialog';
 import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
@@ -80,6 +82,10 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   const [transferMessage, setTransferMessage] = useState<string | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  // Whose data this screen shows: `SessionDataProvider` remounts it when that
+  // changes, so reading the record once is enough — DP-175.
+  const accountId = auth.user?.id ?? null;
+  const [lastBackup, setLastBackup] = useState(() => readLastBackup(getAppStorage(), accountId));
   /**
    * 寵物名字的未送出草稿；`null` 代表畫面直接顯示已保存的值。
    *
@@ -179,10 +185,11 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
     setTransferError(null);
     try {
       // Shared with the screen error fallback, so both export the same file — DP-143.
-      const attachments = downloadJsonBackup(data, updater.currentVersion);
+      const record = downloadJsonBackup(data, updater.currentVersion, accountId);
+      setLastBackup(record);
       setTransferMessage(
-        attachments > 0
-          ? `已開始下載備份；${attachments} 個附件未包含在檔案內。`
+        record.omittedAttachments > 0
+          ? `已開始下載備份；${record.omittedAttachments} 個附件未包含在檔案內。`
           : '已開始下載 DayPop 備份。',
       );
     } catch (error) {
@@ -540,6 +547,20 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               onChange={(event) => void chooseImport('json', event)}
             />
           </div>
+          {/* DP-175: not in the原檔. Recorded on this device only, per guest or
+              account, so the wording says 這台裝置. */}
+          <p className="data-backup-last">
+            {lastBackup ? (
+              <>
+                <strong>這台裝置上次匯出：{formatBackupTime(lastBackup.exportedAt, preferences.timezone)}</strong>{' '}
+                <span className="data-backup-coverage">{backupCoverage(lastBackup)}</span>
+              </>
+            ) : accountId ? (
+              '這台裝置還沒有匯出過這個帳號的備份。'
+            ) : (
+              '這台裝置還沒有匯出過備份。'
+            )}
+          </p>
           <p className="data-transfer-help">
             匯出成 JSON 存到裝置；換手機或清除瀏覽器資料前先備份。備份不含附件，匯入前會先預覽且確認後才取代資料。
           </p>
