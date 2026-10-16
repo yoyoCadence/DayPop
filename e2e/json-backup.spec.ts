@@ -72,12 +72,25 @@ test.beforeEach(async ({ page }) => {
 
 test('JSON 真實下載、取消預覽、確認取代與 reload 保留完整遊客資料', async ({ page }, testInfo) => {
   const sourceBytes = await storedBytes(page);
+  const lastBackup = page.locator('.data-backup-last');
+  await expect(lastBackup).toHaveText('這台裝置還沒有匯出過備份。');
   const { path, backup } = await downloadBackup(page, testInfo);
   expect(backup.format).toBe('daypop.backup');
   expect(backup.formatVersion).toBe(1);
   expect(backup.omitted).toEqual({ eventAttachments: 0 });
   expect(backup.data).toEqual(portableData);
   expect(await storedBytes(page), 'export must not write user data').toBe(sourceBytes);
+
+  // DP-175: 04:00Z in the fixture's Asia/Taipei, whatever the browser's zone.
+  const lastBackupText = '這台裝置上次匯出：2026/9/30 12:00 含 2 個日曆、4 筆行程、2 筆待辦、1 張貼圖與設定；不含附件。';
+  await expect(lastBackup).toHaveText(lastBackupText);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('daypop.last-backup.guest')!))).toEqual({
+    exportedAt: backup.exportedAt, calendars: 2, events: 4, todos: 2, stickers: 1, omittedAttachments: 0,
+  });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await reloadApp(page);
+  await tabButton(page, '設定').click();
+  await expect(lastBackup).toHaveText(lastBackupText);
 
   // Make the live document different through the UI: a no-op import, append,
   // or an import that merely shows success must all fail the assertions below.

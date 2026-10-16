@@ -11,6 +11,7 @@
 | 附件需登入、存於私人空間，下載 link 到期 | `src/data/repository.ts` 的 attachment capability、`supabaseRepository.ts` 的 signed URL（60 秒），及 private bucket／owner policies。卡片不固定承諾時長，避免將來調整時造成過時文案。 |
 | JSON 備份不含附件、匯出檔未加密 | `src/domain/dataTransfer.ts` 的明確 allowlist、`serializeJsonBackup()` 與 ICS 純文字輸出；`src/browser/dataTransferFiles.ts` 的下載。附件需個別下載，副本需自行管理。 |
 | 登出不刪雲端資料，device 可能仍留 guest／account cache | `AuthProvider.signOut()` 僅撤銷 session；SessionDataProvider 切 identity，沒有刪除 guest／account-cache 的 handler。不能把登出稱為清空資料。 |
+| 瀏覽器也保留上次匯出的時間和筆數（DP-175，2026-10-16 加入這句） | `src/screens/lastBackup.ts`：`daypop.last-backup.guest` 與 `daypop.last-backup.account.<encoded user id>`，只有匯出時間與日曆／行程／待辦／貼圖／未含附件的筆數，沒有標題或內容；不進 user data、不同步、不在備份裡，登出也不刪除。key 帶 user id，與既有帳號快取相同。 |
 | 可逐筆刪除事件／待辦／貼圖；父待辦連子孫一併刪除 | 現有 repository 操作與 DP-115 的 `withoutTodo()` 完整子樹邊界；不宣稱附件實體即時完成清理或伺服器備份保留期間。 |
 | 刪除日曆會移動內容 | `calendarDeletionPlan()`／`withoutCalendar()`，若刪原 default，倖存 calendar 會被提升為 default。不是刪掉其事件、待辦與貼圖。**DP-138（2026-10-07）起**帳號端由 `delete_calendar_with_reassignment` RPC 在一個交易內完成同一件事（遊客端仍用 `withoutCalendar()`）；卡片的說明文字不需更動。 |
 | 尚無一鍵清空全部資料或刪除帳號 | 現有 Settings／Auth／repository 沒有這些入口。復原畫面的 blocked guest reset 是另一條受備份閘門保護的流程，不冒充一般資料全刪除。 |

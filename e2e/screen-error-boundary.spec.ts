@@ -113,6 +113,10 @@ test('設定畫面本身出錯時，錯誤畫面仍可直接下載完整備份',
   expect(await download.failure()).toBeNull();
   const backup = JSON.parse(await readFile(path, 'utf8'));
   expect(backup.data.events.map((event: { title: string }) => event.title)).toEqual(['設定壞掉時的行程']);
+  // Counted for 設定's 上次匯出 like an export from 設定 itself — DP-175.
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('daypop.last-backup.guest')!))).toEqual({
+    exportedAt: backup.exportedAt, calendars: 1, events: 1, todos: 0, stickers: 0, omittedAttachments: 0,
+  });
   await expect(page.getByRole('status')).toHaveText('已開始下載備份。');
   await expect(page.getByRole('status')).toBeInViewport();
   expect(await guestBytes(page)).toBe(stored);

@@ -197,8 +197,17 @@ test('帳號有附件時拒絕 JSON 取代，快取、重新讀回的資料與�
   await expect(eventDialog.locator('.cal-attachment-list li')).toContainText('e2e-note.txt');
   await eventDialog.getByRole('button', { name: '取消', exact: true }).click();
   await tabButton(page, '設定').click();
+  const lastBackup = page.locator('.data-backup-last');
+  await expect(lastBackup).toHaveText('這台裝置還沒有匯出過這個帳號的備份。');
   const { path, backup } = await downloadBackup(page, testInfo);
   expect(backup.omitted).toEqual({ eventAttachments: 1 });
+  // DP-175: recorded for this account only, and it says what the file leaves out.
+  await expect(lastBackup).toContainText('這台裝置上次匯出：2026/10/1 12:00');
+  await expect(lastBackup).toContainText('1 筆行程');
+  await expect(lastBackup).toContainText('1 個附件不在備份內。');
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('daypop.last-backup.')))).toEqual([
+    expect.stringMatching(/^daypop\.last-backup\.account\./),
+  ]);
   expect(backup.data).not.toHaveProperty('eventAttachments');
   const attachment = (await accountData(page)).eventAttachments[0];
   expect(attachment).toBeDefined();

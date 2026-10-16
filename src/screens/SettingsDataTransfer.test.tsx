@@ -18,8 +18,10 @@ vi.mock('../browser/dataTransferFiles', () => ({
   readTextFile: fileIo.read,
 }));
 
+const authState = vi.hoisted(() => ({ user: null as { id: string; email: string } | null }));
+
 vi.mock('../auth/authContext', () => ({
-  useAuth: () => ({ user: null, configurationError: null, signOut: () => Promise.resolve() }),
+  useAuth: () => ({ user: authState.user, configurationError: null, signOut: () => Promise.resolve() }),
 }));
 
 const updater = {
@@ -59,6 +61,7 @@ let root: Root;
 
 beforeEach(() => {
   localStorage.clear();
+  authState.user = null;
   fileIo.download.mockReset();
   fileIo.read.mockReset();
   container = document.createElement('div');
@@ -199,5 +202,82 @@ describe('設定 資料備份', () => {
     expect(container.querySelector('[aria-label="匯入預覽"]')).toBeNull();
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('不是 DayPop 備份');
     expect(localStorage.getItem('daypop.user-data')).toBe(before);
+  });
+});
+
+describe('設定 上次匯出', () => {
+  const guestKey = 'daypop.last-backup.guest';
+
+  function lastBackupLine(): string {
+    return container.querySelector('.data-backup-last')?.textContent ?? '';
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('records the exported file and shows it in the display timezone, also after a remount', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-16T06:05:00.000Z'));
+    await render();
+    expect(lastBackupLine()).toBe('這台裝置還沒有匯出過備份。');
+    expect(localStorage.getItem(guestKey)).toBeNull();
+
+    await click(button('匯出資料'));
+
+    const file = JSON.parse(fileIo.download.mock.calls[0]![1]);
+    expect(JSON.parse(localStorage.getItem(guestKey)!)).toEqual({
+      exportedAt: file.exportedAt,
+      calendars: file.data.calendars.length,
+      events: 0,
+      todos: 0,
+      stickers: 0,
+      omittedAttachments: 0,
+    });
+    // The default preferences use Asia/Taipei, not the process timezone.
+    expect(lastBackupLine()).toBe(
+      '這台裝置上次匯出：2026/10/16 14:05 含 1 個日曆、0 筆行程、0 筆待辦、0 張貼圖與設定；不含附件。',
+    );
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    await render();
+    expect(lastBackupLine()).toContain('這台裝置上次匯出：2026/10/16 14:05');
+  });
+
+  it('does not count an .ics export or a download that failed', async () => {
+    await render();
+
+    await click(button('匯出 .ics'));
+    expect(localStorage.getItem(guestKey)).toBeNull();
+
+    fileIo.download.mockImplementationOnce(() => {
+      throw new Error('瀏覽器拒絕下載');
+    });
+    await click(button('匯出資料'));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('瀏覽器拒絕下載');
+    expect(localStorage.getItem(guestKey)).toBeNull();
+    expect(lastBackupLine()).toBe('這台裝置還沒有匯出過備份。');
+  });
+
+  it('keeps a signed-in account apart from the guest record', async () => {
+    const guestRecord = JSON.stringify({
+      exportedAt: '2026-10-01T00:00:00.000Z',
+      calendars: 1,
+      events: 3,
+      todos: 0,
+      stickers: 0,
+      omittedAttachments: 0,
+    });
+    localStorage.setItem(guestKey, guestRecord);
+    authState.user = { id: 'account-a', email: 'a@example.com' };
+    await render();
+    // A guest backup is not a backup of this account.
+    expect(lastBackupLine()).toBe('這台裝置還沒有匯出過這個帳號的備份。');
+
+    await click(button('匯出資料'));
+    expect(localStorage.getItem('daypop.last-backup.account.account-a')).not.toBeNull();
+    expect(localStorage.getItem(guestKey)).toBe(guestRecord);
+    expect(lastBackupLine()).toContain('這台裝置上次匯出：');
   });
 });
