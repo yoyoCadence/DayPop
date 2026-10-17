@@ -1,0 +1,309 @@
+/* ---------- 寵物對話泡泡（原稿 :488-530）—— DP-169 ----------
+   The原檔 draws the bubble in fixed comic colours, white paper and #141414 ink,
+   in every theme and in dark mode too, so these are literal values rather than
+   theme tokens. Two of them differ from the原檔, both measured on its own
+   rendering (ADR §4):
+   - Todo titles used the theme's `--fg`, which is near-white in every dark
+     theme; on the white bubble they vanished. They use the bubble's ink.
+   - Done titles (`--faint`), the empty note (#999) and × (#bbb) were
+     1.9–2.9:1 on white. They are #666, 5.7:1.
+   The layer sits at the原檔's z-index 55 (its bubble is 60): above the tab bar
+   (35), the floating layer (40) and the FAB (44); below 日詳情 (65). */
+
+.cal-pet-bubble-layer {
+  position: absolute;
+  z-index: 55;
+  inset: 0;
+}
+
+/* Tapping anywhere outside the bubble closes it, the tab bar included, as the
+   原檔's full-screen catcher does. */
+.cal-pet-bubble-catcher {
+  position: absolute;
+  inset: 0;
+}
+
+/* The原檔 pins the bubble 12px from the phone's left edge and 150px from its
+   bottom, which puts the tail over the resting pet (`.cal-pet`). This layer
+   lives in the viewport rather than the app body, so it adds back what the
+   app body sits inside: the side safe area and the tab bar's own bottom
+   safe-area padding. The height is capped so the bubble and its ✕ stay on
+   screen; the lists scroll inside instead. */
+.cal-pet-bubble {
+  position: absolute;
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  left: calc(12px + env(safe-area-inset-left));
+  display: flex;
+  width: 270px;
+  max-width: calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  max-height: calc(100% - 175px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  flex-direction: column;
+  border: 3px solid #141414;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.2);
+  color: #141414;
+  font-family: "Noto Sans TC", sans-serif;
+  animation: cal-pet-bubble-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* The原檔's `cppop`, frame for frame. */
+@keyframes cal-pet-bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+
+  62% {
+    transform: scale(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-pet-bubble {
+    animation: none;
+  }
+}
+
+/* The tail: an ink triangle with a paper one inside it, overlapping the
+   bubble's bottom border so the outline runs on into the point. */
+.cal-pet-bubble::before,
+.cal-pet-bubble::after {
+  position: absolute;
+  width: 0;
+  height: 0;
+  content: "";
+}
+
+.cal-pet-bubble::before {
+  bottom: -15px;
+  left: 26px;
+  border-top: 16px solid #141414;
+  border-right: 13px solid transparent;
+  border-left: 13px solid transparent;
+}
+
+.cal-pet-bubble::after {
+  bottom: -10px;
+  left: 29px;
+  border-top: 11px solid #fff;
+  border-right: 9px solid transparent;
+  border-left: 9px solid transparent;
+}
+
+.cal-pet-bubble-body {
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 17px;
+  padding: 15px 15px 13px;
+  overscroll-behavior: contain;
+}
+
+.cal-pet-bubble-close {
+  position: absolute;
+  z-index: 1;
+  top: -13px;
+  right: -13px;
+  display: flex;
+  width: 29px;
+  height: 29px;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  background: #141414;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* ---------- greeting ---------- */
+
+.cal-pet-greeting {
+  margin: 0 0 11px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.cal-pet-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.cal-pet-show-todos {
+  flex: 1;
+  border: 2.5px solid #141414;
+  border-radius: 11px;
+  background: #ffd23f;
+  padding: 9px 0;
+  color: #141414;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---------- 今日／明日待辦 ---------- */
+
+.cal-pet-section + .cal-pet-section {
+  margin-top: 12px;
+}
+
+.cal-pet-heading {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: normal;
+}
+
+/* Focused only by script, to keep focus in the bubble; it is not a control. */
+.cal-pet-heading:focus {
+  outline: none;
+}
+
+.cal-pet-todos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cal-pet-todo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.cal-pet-check {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #141414;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cal-pet-check[aria-pressed="true"] {
+  background: #141414;
+}
+
+.cal-pet-todo-title {
+  min-width: 0;
+  flex: 1;
+  color: #141414;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cal-pet-todo-title.done {
+  color: #666;
+  text-decoration: line-through;
+}
+
+.cal-pet-overdue {
+  flex: none;
+  color: #e4002b;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* The原檔's × has no box of its own; 24 × 24 keeps it a reachable target. */
+.cal-pet-delete {
+  display: flex;
+  min-width: 24px;
+  min-height: 24px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #666;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cal-pet-empty {
+  margin: 0 0 6px;
+  color: #666;
+  font-size: 12px;
+}
+
+.cal-pet-add {
+  display: flex;
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.cal-pet-add input {
+  min-width: 0;
+  flex: 1;
+  border: 2px solid #141414;
+  border-radius: 9px;
+  background: #fff;
+  padding: 6px 9px;
+  color: #141414;
+  /* 16px rather than the原檔's 12px: iOS Safari zooms the whole page into a
+     field smaller than that when it takes focus. */
+  font-size: 16px;
+}
+
+.cal-pet-add input::placeholder {
+  color: #666;
+}
+
+.cal-pet-add button {
+  flex: none;
+  border: 2px solid #141414;
+  border-radius: 9px;
+  background: #141414;
+  padding: 0 12px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cal-pet-add button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cal-pet-error {
+  margin-top: 4px;
+  color: #666;
+  font-size: 12px;
+}
+
+/* Ink on paper whatever the theme, so the ring does not depend on `--accent`,
+   which is pale in some dark themes. */
+.cal-pet-bubble-layer button:focus-visible,
+.cal-pet-bubble-layer input:focus-visible {
+  outline: 2px solid #141414;
+  outline-offset: 2px;
+}
+
+/* ---------- short viewports (phone landscape) — DP-078 ----------
+   The tab bar comes down to 50px there (`shell.css`), and the pet with it, so
+   the bubble follows by the same 14px. Same media conditions as that rule. */
+@media (max-height: 500px) and (pointer: coarse),
+  (max-height: 500px) and (max-width: 899px) {
+  .cal-pet-bubble {
+    bottom: calc(136px + env(safe-area-inset-bottom));
+    max-height: calc(100% - 161px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  }
+}

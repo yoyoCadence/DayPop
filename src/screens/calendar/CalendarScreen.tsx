@@ -4,7 +4,6 @@ import { eventWallTime } from '../../domain/eventTime';
 import { visibleOccurrences } from '../../domain/calendars';
 import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
-import { topLevelTodos } from '../../domain/todos';
 import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
 import { useTodayKey } from '../useTodayKey';
@@ -35,6 +34,12 @@ export interface CalendarScreenProps {
    * always a fresh mount.
    */
   focus?: CalendarFocus | null;
+  /**
+   * Whether the pet has greeted in this App session (DP-169). Held by `App`
+   * because this screen unmounts on every tab switch; see `PetLayer`.
+   */
+  petGreeted: boolean;
+  onPetGreeted(): void;
 }
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
@@ -51,7 +56,12 @@ const VIEW_OPTIONS: { view: CalendarView; label: string }[] = [
  * three view panes, the FAB, the floating pet position and the two sheets
  * (日詳情 and 新增／編輯行程).
  */
-export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps) {
+export function CalendarScreen({
+  onGoSearch,
+  focus = null,
+  petGreeted,
+  onPetGreeted,
+}: CalendarScreenProps) {
   const {
     data,
     addEvent,
@@ -252,12 +262,6 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
     return `${start.getMonth() + 1}/${start.getDate()} – ${end.getMonth() + 1}/${end.getDate()}`;
   }, [cursor, monthLabel, view, weekDays, weekStartsOn]);
 
-  // The原檔 badge counts top-level todos only; its subtasks live inside them
-  // (`:1304`). DayPop stores them as rows, so drop those — DP-121.
-  const openTodoCount = topLevelTodos(data.todos).filter(
-    (todo) => todo.completedAt === null && todo.dueDate !== null && todo.dueDate <= todayKey,
-  ).length;
-
   const handlePeriodLabelChange = useCallback((label: string) => setMonthLabel(label), []);
 
   function step(direction: 1 | -1) {
@@ -436,9 +440,19 @@ export function CalendarScreen({ onGoSearch, focus = null }: CalendarScreenProps
         )}
       </div>
 
-      {/* 設定的「顯示桌寵」開關（原稿 :320）永久關閉整個寵物層。 */}
+      {/* 設定的「顯示桌寵」開關（原稿 :320）永久關閉整個寵物層，泡泡也在其中。
+          徽章只算最上層的待辦（DP-121），和泡泡共用 `petBubbleTodos()`。 */}
       {data.preferences.petEnabled && (
-        <PetLayer badge={openTodoCount} petName={data.preferences.petName} />
+        <PetLayer
+          petName={data.preferences.petName}
+          todos={data.todos}
+          todayKey={todayKey}
+          greeted={petGreeted}
+          onGreeted={onPetGreeted}
+          onAddTodo={addTodo}
+          onToggleTodo={toggleTodo}
+          onDeleteTodo={deleteTodo}
+        />
       )}
 
       <button

@@ -34,7 +34,7 @@ async function render(focus: CalendarFocus | null) {
   await act(async () => {
     root.render(
       <DataProvider>
-        <CalendarScreen focus={focus} onGoSearch={vi.fn()} />
+        <CalendarScreen focus={focus} onGoSearch={vi.fn()} petGreeted={false} onPetGreeted={vi.fn()} />
       </DataProvider>,
     );
   });
@@ -64,7 +64,7 @@ describe('confirmed todo date moves (DP-130)', () => {
     const gate = new Promise<void>((resolve) => { finish = resolve; });
     const reschedule = repository.rescheduleTodo.bind(repository);
     repository.rescheduleTodo = async (id, date) => { await gate; return reschedule(id, date); };
-    await act(async () => root.render(<DataProvider repository={repository}><CalendarScreen focus={{ kind: 'day', dateKey: '2026-08-06' }} onGoSearch={vi.fn()} /></DataProvider>));
+    await act(async () => root.render(<DataProvider repository={repository}><CalendarScreen focus={{ kind: 'day', dateKey: '2026-08-06' }} onGoSearch={vi.fn()} petGreeted={false} onPetGreeted={vi.fn()} /></DataProvider>));
     await click(container.querySelector('[aria-label="展開 旅行 的子項"]'));
     const title = target === 'parent' ? '旅行' : '訂房';
     await click(container.querySelector(`button[aria-label="修改 ${title} 的日期"]`));
@@ -498,6 +498,53 @@ describe('CalendarScreen midnight rollover (DP-150)', () => {
     expect(container.querySelector('.cal-today-full')?.textContent).toContain('2026 / 10 / 2');
     // Returning to the app updates today but does not navigate the month.
     expect(periodLabel()).toBe('2026年 9月');
+  });
+});
+
+describe('CalendarScreen pet bubble (DP-169)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Already 10/18 in Kiritimati (UTC+14) while UTC, Taipei and New York are
+    // all still on 10/17: only the display zone can make "today" the 18th.
+    vi.setSystemTime(new Date('2026-10-17T12:00:00.000Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const stored = () => JSON.parse(window.localStorage.getItem('daypop.user-data')!).data;
+
+  it('is not drawn, and has no bubble to open, when 顯示桌寵 is off', async () => {
+    const data = createEmptyUserData();
+    data.preferences.petEnabled = false;
+    writeUserData(data, 0);
+    await render(null);
+    expect(container.querySelector('.cal-pet')).toBeNull();
+    expect(container.querySelector('.cal-pet-bubble')).toBeNull();
+  });
+
+  it('adds to today and tomorrow in the display timezone, through the real repository', async () => {
+    const data = createEmptyUserData();
+    data.preferences.timezone = 'Pacific/Kiritimati';
+    writeUserData(data, 0);
+    await render(null);
+    await click(container.querySelector('button.cal-pet'));
+    expect(container.querySelector('.cal-pet-greeting')?.textContent).toContain('今天的待辦都清光啦');
+    await click([...container.querySelectorAll('.cal-pet-bubble button')].find((button) => button.textContent === '看待辦'));
+    for (const [label, title] of [['新增今日待辦', '買牛奶'], ['新增明日待辦', '寄包裹']] as const) {
+      const input = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, title);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => {
+        input.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      });
+    }
+    expect(stored().todos.map((todo: { title: string; dueDate: string }) => [todo.title, todo.dueDate])).toEqual([
+      ['買牛奶', '2026-10-18'],
+      ['寄包裹', '2026-10-19'],
+    ]);
+    expect(container.querySelector('.cal-pet-badge')?.textContent).toBe('1');
+    expect(container.querySelector('button.cal-pet')?.getAttribute('aria-label')).toBe('摩卡，今天還有 1 件待辦');
   });
 });
 

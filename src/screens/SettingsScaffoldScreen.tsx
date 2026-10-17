@@ -151,7 +151,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   }
 
   function togglePet() {
-    // 原稿 :995 同時關掉寵物對話泡泡；DayPop 的泡泡屬 DP-040，目前還沒有。
+    // 原稿 :995 同時關掉寵物對話泡泡。DayPop 的泡泡在日曆分頁（DP-169），
+    // 那個畫面在設定分頁時已卸載；關掉之後日曆也不再畫寵物層與泡泡。
     updatePreferences({ petEnabled: !preferences.petEnabled });
   }
 
@@ -351,20 +352,19 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               onBlur={commitPetName}
             />
             {/*
-              原稿 :323 的說明描述的是四個 DP-040 才會有的能力（走動、對話泡泡、
-              透過牠新增待辦、行程建議）。現在的寵物層只有固定位置與待辦數 badge
-              （見 `PetLayer.tsx` 的說明），所以照搬那句話會變成宣告不存在的功能。
-              依 `docs/prototype-behavior-baseline.md` 的規則保留原文與版面位置，
-              但把還沒有的能力明講成尚未提供，不以假的成功狀態充數。
+              原稿 :323 的說明列了四個能力：在角落走動、用漫畫對話框提醒今日與
+              明日的待辦、透過牠新增待辦、請牠給行程建議。DP-169 接上了對話泡泡
+              與新增；走動屬 DP-170、行程建議屬 DP-043，這兩項依
+              `docs/prototype-behavior-baseline.md` 的規則明講成還沒有，不以假的
+              成功狀態充數。「提醒」改說「列出」：泡泡只在點牠時出現，不是會自己
+              跳出來的提醒（可靠提醒是 DP-042）。
             */}
             {/* DP-163: no task numbers in what the person reads. The pet rests at
                 the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
             <p className="set-pref-help">
-              目前牠會待在日曆左下角，顯示未完成待辦的數量。
+              牠待在日曆左下角，顯示今天還有幾件待辦。點牠會用漫畫對話框列出今日與明日的待辦，也能直接透過牠新增待辦。
               <br />
-              <span className="set-pref-pending">
-                還沒有的功能：在角落走動、用漫畫對話框提醒你今日與明日的待辦、直接透過牠新增待辦或請牠給行程建議。
-              </span>
+              <span className="set-pref-pending">還沒有的功能：在角落走動、請牠給行程建議。</span>
             </p>
           </div>
         </div>

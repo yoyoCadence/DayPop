@@ -52,7 +52,7 @@ async function settle(page: Page) {
   );
 }
 
-async function audit(page: Page, label: string) {
+async function audit(page: Page, label: string, minimumMeasured = MIN_MEASURED_TEXT) {
   await settle(page);
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   const violations = results.violations.flatMap((violation) =>
@@ -60,7 +60,7 @@ async function audit(page: Page, label: string) {
   );
   expect(violations, `${label}: axe violations`).toEqual([]);
   const measured = results.passes.find((rule) => rule.id === 'color-contrast')?.nodes.length ?? 0;
-  expect(measured, `${label}: axe has to have measured text contrast`).toBeGreaterThanOrEqual(MIN_MEASURED_TEXT);
+  expect(measured, `${label}: axe has to have measured text contrast`).toBeGreaterThanOrEqual(minimumMeasured);
 }
 
 async function addEntry(page: Page, title: string, kind: '行程' | '待辦', allDay = false) {
@@ -132,6 +132,21 @@ for (const mode of MODES) {
     await openDayDetail(page);
     await audit(page, '日詳情');
     await closeDayDetail(page);
+
+    // DP-169. The bubble keeps the原檔's white paper and black ink in every
+    // theme, so one theme in each mode covers its own colours. Behind it the
+    // page sits under the transparent catcher that closes it on a tap, which
+    // axe rightly leaves undecided, so the greeting has only its own two lines
+    // to measure: the question and 看待辦.
+    await page.locator('button.cal-pet').click();
+    const bubble = page.locator('.cal-pet-bubble');
+    await expect(bubble).toBeVisible();
+    await audit(page, '寵物問候', 2);
+    await bubble.getByRole('button', { name: '看待辦', exact: true }).click();
+    await expect(bubble.getByRole('button', { name: '完成 買牛奶', exact: true })).toBeVisible();
+    await audit(page, '寵物待辦');
+    await page.keyboard.press('Escape');
+    await expect(bubble).toHaveCount(0);
 
     await tabButton(page, '搜尋').click();
     await audit(page, '搜尋');

@@ -98,10 +98,11 @@ export function SearchScreen({ onOpenEvent, onOpenDay }: SearchScreenProps) {
             className="search-result"
             key={`${result.kind}-${result.id}`}
             type="button"
-            // A todo without a due date has no day to open — DayPop substitutes
-            // the day for the原檔's pet bubble (DP-040), and there is no honest
-            // substitute when the todo is not on a day at all. The row stays
-            // visible and its 無到期日 sub line says why it cannot be opened.
+            // The原檔 opens the pet bubble here (`:1295`). Its todos were only
+            // ever 今天 or 明天; DayPop's can be due any day, and the bubble
+            // lists only those two, so the todo's own day stays the place that
+            // shows it (DP-169). A todo without a due date has no day to open:
+            // the row stays visible and its 無到期日 sub line says why.
             disabled={result.kind === 'todo' && !result.dueDate}
             onClick={() => {
               if (result.kind === 'event') onOpenEvent(result.id);

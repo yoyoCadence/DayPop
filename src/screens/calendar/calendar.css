@@ -688,9 +688,11 @@
 }
 
 /* ---------- App 內浮動寵物 ----------
-   DP-051 owns the layer geometry only. The seven-state machine, drag handling
-   and real assets are DP-040; until then the CSS character keeps the原檔's
-   60 × 60 footprint and outline so the layout it competes with is honest. */
+   DP-051 owns the layer geometry. The seven-state machine, drag handling and
+   real assets are DP-170／171; until then the CSS character keeps the原檔's
+   60 × 60 footprint and outline so the layout it competes with is honest.
+   DP-169 made the character a button that opens its speech bubble
+   (`petBubble.css`); the layer itself still lets taps through. */
 
 .cal-pet-layer {
   position: absolute;
@@ -702,16 +704,26 @@
   pointer-events: none;
 }
 
+/* A `<button>`: no browser border or padding (DP-166's rule), and taps reach
+   it although the layer around it passes them through, as the原檔's
+   `pointer-events: auto` on the pet. */
 .cal-pet {
   position: absolute;
   bottom: 0;
   left: 14px;
   width: 60px;
   height: 60px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .cal-pet-body {
   position: relative;
+  display: block;
   width: 100%;
   height: 100%;
   transform-origin: bottom center;
