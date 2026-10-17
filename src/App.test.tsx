@@ -151,11 +151,47 @@ describe('App', () => {
     await click(container.querySelector('.cal-sheet-bar button'));
     await click(container.querySelector('[data-date-key]'));
     record('日詳情');
+    await click(container.querySelector('.cal-day-done'));
+    await click(container.querySelector('.cal-pet'));
+    record('寵物問候');
+    await click(
+      [...container.querySelectorAll('.cal-pet-bubble button')].find((button) => button.textContent === '看待辦'),
+    );
+    record('寵物待辦');
 
-    expect(screens.map(([label]) => label)).toEqual(['日曆', '搜尋', '綜覽', '設定', '新增行程', '新增待辦', '日詳情']);
+    expect(screens.map(([label]) => label)).toEqual([
+      '日曆', '搜尋', '綜覽', '設定', '新增行程', '新增待辦', '日詳情', '寵物問候', '寵物待辦',
+    ]);
     for (const [label, text] of screens) {
       expect({ label, found: text.match(engineering)?.[0] ?? null }).toEqual({ label, found: null });
     }
+  });
+
+  /**
+   * DP-169. The原檔 greets once, then the pet opens straight on the lists. The
+   * calendar screen unmounts on every tab switch, so `App` has to remember it.
+   */
+  it('lets the pet greet once per session, across tab switches', async () => {
+    await mount();
+    const click = async (element: Element | null | undefined) => {
+      if (!element) throw new Error('element not found');
+      await act(async () => {
+        (element as HTMLElement).click();
+      });
+    };
+    const tab = (name: string) =>
+      [...container.querySelectorAll('.dp-tabbar button')].find((button) =>
+        button.textContent?.includes(name),
+      );
+
+    await click(container.querySelector('.cal-pet'));
+    expect(container.querySelector('.cal-pet-greeting')).not.toBeNull();
+    await click(container.querySelector('.cal-pet-bubble-close'));
+    await click(tab('設定'));
+    await click(tab('日曆'));
+    await click(container.querySelector('.cal-pet'));
+    expect(container.querySelector('.cal-pet-greeting')).toBeNull();
+    expect(container.querySelector('.cal-pet-heading')?.textContent).toBe('📋 今日待辦');
   });
 
   it('renders recovery instead of the tabs when the data cannot be read', async () => {

@@ -34,6 +34,10 @@ export default function App() {
   // Screens unmount when the tab changes, so `CalendarScreen` reads this once as
   // its initial state — no effect needed.
   const [calendarFocus, setCalendarFocus] = useState<CalendarFocus | null>(null);
+  // The pet greets once per App session, then its bubble opens on the lists —
+  // the原檔's `greeted` (DP-169). Here rather than in `CalendarScreen`, which
+  // unmounts on every tab switch.
+  const [petGreeted, setPetGreeted] = useState(false);
   const updater = useAppUpdateState();
   const modalLayerOpen = useModalLayerOpen();
   const { user } = useAuth();
@@ -154,7 +158,12 @@ export default function App() {
         )}
       >
         {tab === 'cal' && (
-          <CalendarScreen focus={calendarFocus} onGoSearch={() => changeTab('search')} />
+          <CalendarScreen
+            focus={calendarFocus}
+            onGoSearch={() => changeTab('search')}
+            petGreeted={petGreeted}
+            onPetGreeted={() => setPetGreeted(true)}
+          />
         )}
         {tab === 'search' && (
           <SearchScreen

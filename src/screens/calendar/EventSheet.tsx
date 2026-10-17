@@ -141,8 +141,8 @@ type WriteKind = 'save' | 'delete';
  * attachment upload/download/delete only after the event exists.
  *
  * 待辦 is a mode here rather than its own screen because the原檔 adds todos
- * through the pet bubble, which is DP-040. Keeping it reachable avoids losing a
- * capability the app already had.
+ * through the pet bubble. The bubble exists since DP-169, but it only adds to
+ * today and tomorrow; this mode stays the way to add a todo on any other day.
  */
 export function EventSheet({ open, ...rest }: EventSheetProps) {
   // Mounting the form only while open means the draft resets itself on every
@@ -800,8 +800,9 @@ function EventSheetForm({
             )}
 
             {!editing && mode === 'todo' && (
-              // The原檔 adds todos from the pet's speech bubble (DP-040); this
-              // form keeps a working way in until then. Ordering is DP-014.
+              // The原檔 adds todos from the pet's speech bubble; since DP-169
+              // that covers today and tomorrow, and this form any day. Ordering
+              // is DP-014.
               // Said without task numbers (DP-163).
               <div className="cal-sheet-pending">
                 <strong>待辦的其他設定在日詳情</strong>

@@ -28,6 +28,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 - **v0.4.3 發布候選（DP-177，2026-10-15）：** main 上的版號是 0.4.3「畫面更好讀」，staging 在這之前是 0.4.2。0.4.2 之後沒有新 migration（仍 16 檔），部署不需要先動 Supabase。公告六條、152 code point，已用真正的 0.3.0 舊版對話框在五種尺寸量過（docs/deployment.md §5.24）。**部署由專案擁有者執行；0.4.3 一經部署即不可回寫**，之後的修改要開新版號。
 
+- **寵物對話泡泡（DP-169，2026-10-17）：** 日曆頁的寵物是按鈕（`PetLayer`），點一下或 Enter／Space 打開原稿的漫畫泡泡（`PetBubble`）：每個 App session 第一次是問候（今天還有幾件、其中幾件重要），之後直接是今日（含逾期未完成）與明日清單，可勾選、刪除、新增。**「問候過了」放在 `App` 的 state**，因為日曆畫面切換分頁就卸載；不寫 storage。清單、徽章與問候的數字都由 `src/domain/petBubble.ts` 的 `petBubbleTodos()` 一次算出，只算最上層待辦（DP-121），**要改徽章或泡泡的計數就改這一處**。泡泡經 `ViewportLayer` 放進 viewport（z-index 55），透明捕捉層蓋住整個 App 含分頁列，**點泡泡外面只會關掉泡泡**；它是 modal（`useModalFocus`），新增沿用 `useConfirmedTodoAdd`。白紙黑字寫死、不吃主題（原稿如此）。與原稿不同的七處（不自動問候、沒有 AI 按鈕、勾選沒有讚美／XP、深色時標題改用墨色、淡灰字改 `#666`、欄位 16px、搜尋點待辦仍開那一天）見 ADR §4。**泡泡的位置跟著分頁列高度**：`petBubble.css` 在 DP-078 的矮螢幕條件下下移 14px，改分頁列高度要一起改。axe 在問候畫面只量得到兩段文字，那一次稽核的最低量測數是 2。
+
 - **axe 可及性 smoke（DP-162，2026-10-16）：** `e2e/accessibility.spec.ts` 用 `@axe-core/playwright`（固定 4.13.0）檢查 WCAG 2.0–2.2 A／AA，涵蓋四個分頁、三種日曆檢視、主要 sheet 與六套主題 × 淺／深色，目前 0 違規、沒有例外清單。**`.dp-texture` 紋理層（`z-index: 38`、`pointer-events: none`）蓋在整個 App 上，axe 有它在時一個對比都量不到**，所以 spec 稽核時隱藏它，並要求每次至少量到 5 個對比節點。新增全畫面覆蓋層、或在 spec 加新畫面時，先確認 axe 真的量得到。網點／漸層背景上的文字與焦點行為 axe 量不到，各由 `textContrast.test.ts` 與焦點 e2e 負責。見 ADR §7。
 
 - **設定顯示「這台裝置上次匯出」（DP-175，2026-10-16）：** 資料備份按鈕下方顯示上次匯出的時間（依 `preferences.timezone`）與那份檔案的筆數。紀錄在 `src/screens/lastBackup.ts`，是裝置層級介面狀態（`daypop.last-backup.guest`／`daypop.last-backup.account.<encoded id>`），**遊客與每個帳號分開**，不進 user data、不需要 schema。**只在 `downloadJsonBackup()` 裡寫入**，設定匯出與錯誤畫面的下載都經過它；新增其他備份出口時也要經過它。`.ics` 不算備份。記的是檔案交給瀏覽器的時間，取消存檔也算。見 ADR §3。
@@ -48,7 +50,7 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 - **搜尋的日曆篩選也篩待辦（DP-174，2026-10-14）：** 選了某個日曆時，行程與待辦都只留那個日曆的；待辦依每筆自己的 `calendarId`，子項不看父項。刻意偏離原稿（原稿選了日曆就整批隱藏待辦），見 ADR §2。
 
-- **使用者看到的文字不放任務編號（DP-163，2026-10-14）：** 設定、日詳情與新增行程原本直接顯示「DP-014」「原稿」「搬移」「domain」等工程用語，已改寫成使用者的話，「這些功能還沒有」的誠實說明保留；任務編號只寫在程式註解裡。`App.test.tsx` 會走過四個分頁、新增行程（行程與待辦）與日詳情，出現 `DP-\d{3}`、「原稿」「搬移」「domain」「scaffold」任一個就失敗。新增畫面文字時照這個規則。
+- **使用者看到的文字不放任務編號（DP-163，2026-10-14）：** 設定、日詳情與新增行程原本直接顯示「DP-014」「原稿」「搬移」「domain」等工程用語，已改寫成使用者的話，「這些功能還沒有」的誠實說明保留；任務編號只寫在程式註解裡。`App.test.tsx` 會走過四個分頁、新增行程（行程與待辦）與日詳情（DP-169 起另含寵物泡泡的問候與清單），出現 `DP-\d{3}`、「原稿」「搬移」「domain」「scaffold」任一個就失敗。新增畫面文字時照這個規則。
 
 - **真正的 AuthProvider 有整合測試了；啟動時刷新失敗會卡住（DP-158，2026-10-14）：** `src/auth/AuthProvider.test.tsx` 用真正的 supabase-js client 驅動真正的 `AuthProvider`，只把網路換成模擬的 Auth 端點（每個案例 `vi.resetModules()` 取新 client）。改 Auth 流程時先跑它；e2e 與其他單元測試仍是直接給 `AuthContext`，碰不到這一層。它測出的兩個啟動問題（刷新失敗時約 25.5 秒後被當成未登入、刷新沒回應時永遠「載入中…」）已由 DP-176 修正，見上方條目。
 
