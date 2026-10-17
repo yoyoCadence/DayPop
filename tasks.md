@@ -65,12 +65,42 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | 18 | ~~DP-032 行動裝置 QA~~ | 不使用 | **2026-08-26 專案擁有者決定移回 Backlog**（理由：剩下的 Android、螢幕閱讀器與實體鍵盤三項對自己的實際使用情境用不太到）。已完成的兩輪結果仍然有效，見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) 與 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)。 |
 | 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。**原本排在 DP-032 之後；DP-032 移回 Backlog 後，DP-034 是否改為不等它，尚未定案** —— 需要專案擁有者決定，agent 不自行放行。 |
 | 20 | DP-014 其餘 canonical UI 搬移 | 不使用 | 進行中，逐段搬移。2026-08-26 完成設定的桌寵與一般偏好區塊。 |
+| 21 | DP-044 家庭群組產品規則 | 不使用（規則定案） | **2026-10-17 專案擁有者指定為下一次優先，由 Codex 實作。** 只產出規則與定案，不寫 migration；決策點與建議見 Next。 |
+| 22 | DP-047 家庭群組與安全邀請 | 需要 | **由 Codex 實作。** migration 由專案擁有者以 CLI 套用，MCP 只做套用前後驗證、型別核對與 rollback 測試；推上遠端後才部署前端。 |
+| 23 | DP-048 日曆分享與單項私人 | 需要 | **由 Codex 實作。** 同上；「不分享」寫既有的 `sharing_scope`。 |
+| 24 | DP-049 家庭 RLS 多帳號驗證 | 需要 | **由 Codex 實作。** pgTAP 進 repo 並在 CI 跑，遠端以 MCP 跑同一份 rollback 測試。 |
 
 > DP-023 的 Google OAuth client、Supabase provider 與 production redirect allowlist 是「專案擁有者人工設定」檢查點，不等同於 MCP schema 工作；**三項均已於 2026-08-22 完成，DP-023 已結案**。這條規則保留給日後同類的人工設定檢查點：agent 應在需要設定時提醒專案擁有者，且不得要求或輸出任何 secret 值。
 
 > 進入 MCP 階段後仍禁止透過 MCP 直接執行 DDL、禁止 remote reset，也不得查改正式使用者資料。MCP 只用於任務必要的專案狀態檢查、read-only schema／advisor 驗證與安全測試；所有 schema 變更必須先存在於 migration 檔並由可追蹤的 migration workflow 套用。
 
 ## Next
+
+> **2026-10-17 專案擁有者指定：家庭群組與分享列為下一次優先處理，由 Codex 實作。** 專案擁有者問「能不能不同帳號登入，並把新的記事設為共用或私人」，答案是還不行（見下方「現況」），隨即指定把 DP-044 → DP-047 → DP-048 → DP-049 從 Backlog 移到這裡。**這四項指定由 Codex 實作，因為需要 Supabase MCP**（套用前後的 schema／advisor 驗證、從遠端核對 generated types、rollback 安全測試）。Claude Code 的 agent 不接這四項；被要求時先提醒專案擁有者這是指定給 Codex 的。MCP 的使用界線照上方「建議執行順序」表後的規則：不得經 MCP 直接下 DDL、不得 remote reset、不得查改正式使用者資料；schema 變更一律先寫成 `supabase/migrations/` 的檔案，由專案擁有者以 CLI dry-run／push 套用，**migration 推上遠端之後才能部署前端**（比照 DP-138）。依序做，一次一項、一個中文 PR；DP-044 的產品規則定案前不寫 migration。
+>
+> **現況（2026-10-17 核對 `main` 的 `c53f3ef`）**
+> - 不同帳號都能登入（Email＋密碼、Google），但每個帳號只看得到自己的資料：所有公開資料表的 RLS 是 `(select auth.uid()) = owner_id`，`SupabaseDayPopRepository.load()` 的六個集合也都以 `owner_id` 過濾。
+> - `events` 與 `todos` 已有 `sharing_scope`（`inherit`／`private`，預設 `inherit`，第 1 檔 migration），`databaseMapping.ts` 兩向都有對應，domain 型別是 `SharingScope`；**但沒有任何畫面讀寫它**，也沒有任何規則依它判斷。
+> - 沒有 `family_groups`／`family_memberships`／`family_invitations`／`calendar_group_shares`。目前 16 檔 migration、6 檔 pgTAP。
+> - 行程、待辦與貼圖以 `(calendar_id, owner_id)` 複合外鍵綁定日曆擁有者，所以成員在別人日曆裡新增的列，`owner_id` 必須是**日曆擁有者**；這會影響 DP-047／048 的資料模型（見 DP-044 第 6 點）。
+> - 遊客模式只存在本機，不參與家庭功能。
+>
+> **DP-044 需要專案擁有者決定的事，附 agent 建議（僅供起點，Codex 接手時與專案擁有者確認）**
+> 1. 前置條件「owner-only 模型完整驗證前不開始」：建議視為已滿足。owner RLS 的 pgTAP 自 DP-084 起在 CI 實跑，2026-08-22 已在 staging 以真實帳號驗收登入、保存、登出隔離與重登。
+> 2. 人數上限：建議 6 人，由 RPC 檢查，不只靠前端。
+> 3. 角色：建議只有 owner／member 兩種，不做 admin。owner 可改名、邀請、移除成員、解散；member 可退出。
+> 4. 退出與解散：member 隨時可退出；owner 要先解散（或轉移，第一版可不做轉移）。解散只刪群組、成員與分享設定，不刪任何人的日曆資料。
+> 5. 邀請：建議第一版是**綁定受邀 Email 的邀請連結**，由 owner 複製後自己傳給家人；token 只存 hash、7 天到期、單次使用、可撤銷，接受時比對登入帳號的 Email。App 自己寄信需要伺服器端（Edge Function 或寄信服務），前端不能持有 `service_role`，留到之後。
+> 6. 共同維護的資料歸屬：建議成員在共享日曆新增的行程／待辦，`owner_id` 仍是日曆擁有者（符合現有複合外鍵），另加 `created_by` 記錄是誰建的；成員移出後那些列留在擁有者的日曆。
+> 7. 分享權限：照 2026-08 規劃，共享日曆預設 `edit`，每個分享可切成 `view`。
+> 8. 單項私人：沿用既有的 `sharing_scope = 'private'`。私人事項只有擁有者看得到，成員連讀都不行，由 RLS 判斷，不靠前端隱藏。
+>
+> **實作時要一起處理的既有邊界**：帳號端 `load()` 要改成也讀別人分享給我的日曆；domain 文件若因此多出欄位（例如列的擁有者、分享權限），guest 與帳號快取的 schema version 要提升（目前 v4），先做 write barrier 與遷移回歸（AGENTS.md）；本機可用 Docker 實跑 `supabase:reset`／`supabase:test`，CI 的 `database` job 也會跑；`database.types.ts` 以 `npm run supabase:types` 的本機輸出為準（DP-085）。
+
+- [ ] **DP-044 — 定案家庭群組產品規則（Codex，第 1 項）：** 確認群組人數上限、owner／admin／member 能力、退出與解散規則、Email 邀請與重送／撤銷／過期流程，以及共享日曆是 `edit` 預設或可切唯讀；在 owner-only 模型完整驗證前不開始。產出是寫進 ADR 的規則與專案擁有者的定案，不寫 migration。決策點與建議見上方。
+- [ ] **DP-047 — 建立家庭群組與安全邀請（Codex，第 2 項，依賴 DP-044）：** 以 migrations 建立 `family_groups`、`family_memberships`、`family_invitations`，提供建立／更名／邀請／接受／拒絕／退出的受控 service 或 RPC；預設名稱為「家庭」，token 僅保存 hash 並設有效期限。需要 MCP 驗證；migration 由專案擁有者 push 後才能部署前端。
+- [ ] **DP-048 — 建立日曆分享與單項私人覆寫（Codex，第 3 項，依賴 DP-047）：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。「不分享」寫的是既有的 `sharing_scope`。需要 MCP 驗證。
+- [ ] **DP-049 — 驗證家庭 RLS 與共同維護（Codex，第 4 項，依賴 DP-048）：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。pgTAP 進 repo 並在 CI 的 `database` job 跑；遠端以 MCP 跑同一份 rollback 測試。
 
 > **2026-10-14 專案擁有者定案（DP-152–157 完成後）**：保留 PR #149「通知等對話框關掉才出現」的做法；後續依序做 **DP-158 → DP-163 → DP-174 → DP-173**，各自開 PR、CI 通過後自主合併。DP-174 採建議 (b)，依每筆待辦自己的 `calendarId` 篩選；DP-173 採建議，先在綜覽做「未排日期」的管理出口，正式收件匣之後再擴充。`fix/review-data-update-dialog` 確認沒有獨有 commit，暫時保留。
 
@@ -337,10 +367,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-13 審查補充（動工前要先有答案）**：(1) 回饋與獎勵只能在「待辦已確認保存為完成」之後發生。`toggleTodo` 目前對 UI 回傳 `void`（`dataContext.ts:74`），第一步是比照 DP-133／134／141 讓它回傳既有 queue 的確認結果。(2) 先定規則：重複勾選與取消完成、父子待辦、匯入的資料、重試（DP-142）與帳號切換，同一來源不得重複給獎勵。(3) 成長資料走既有 repository；如果需要 ledger 或新表，獨立 migration 加 RLS 測試，不與動畫 PR 混在一起。(4) 優先解鎖表情、配件與日常互動，不用斷連續天數或扣生命值來懲罰。上方 Proposed data architecture 寫的是「寵物 XP 優先由已完成待辦推導」，若改成 ledger 要同步那一句。
 - [ ] **DP-042 — 可靠背景提醒／推播：** 另行設計 Web Push subscription、排程、撤銷、時區與權限；目前頁面開啟時的 Notification timer 不視為可靠提醒。
 - [ ] **DP-043 — 安全 AI 助理：** 若產品決定保留 AI，改由 Supabase Edge Function／受控 server endpoint 管理 provider secret、rate limit、輸入最小化與稽核；禁止在 browser localStorage 保存 secret。
-- [ ] **DP-044 — 定案家庭群組產品規則：** 確認群組人數上限、owner／admin／member 能力、退出與解散規則、Email 邀請與重送／撤銷／過期流程，以及共享日曆是 `edit` 預設或可切唯讀；在 owner-only 模型完整驗證前不開始。
-- [ ] **DP-047 — 建立家庭群組與安全邀請：** 以 migrations 建立 `family_groups`、`family_memberships`、`family_invitations`，提供建立／更名／邀請／接受／拒絕／退出的受控 service 或 RPC；預設名稱為「家庭」，token 僅保存 hash 並設有效期限。
-- [ ] **DP-048 — 建立日曆分享與單項私人覆寫：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。
-- [ ] **DP-049 — 驗證家庭 RLS 與共同維護：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。
+- [ ] **DP-044、DP-047、DP-048、DP-049 — 2026-10-17 已移到 Next（專案擁有者指定優先處理，由 Codex 實作），見 Next。**
 - [ ] **DP-045 — 外部日曆整合：** Google／Apple／Outlook 雙向同步另列專案，先維持經驗證的 ICS 匯入匯出。
 - [ ] **DP-046 — 進階跨裝置同步：** 產品真的出現多裝置需求後，再設計 Realtime、`updated_at` 衝突規則、tombstone、pending queue、可觀測 sync status 與多 client 測試。
 
