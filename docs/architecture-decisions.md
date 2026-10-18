@@ -864,3 +864,71 @@ fallback 沿用復原畫面（`recovery.css`）的版面與 token，不另立一
 | CI、domain ↔ DB mapping、PNG icons | 採用並調高任務優先度。 |
 | Node pin、更新節流、日期／提醒／時區約束、release note 不可變 | 採用並併入對應任務／規則。 |
 | LICENSE | 延後，等待專案擁有者選擇。 |
+
+## 9. 家庭群組與分享（DP-044，2026-10-18 定案）
+
+專案擁有者在 Mode A 審閱並採納 Codex 的八項建議及 A–I 補充規則，再授權依序完成 DP-044 → DP-047 → DP-048 → DP-049，每項一個中文 PR，驗證與 CI 通過後自主合併再開始下一項。這是私人日曆 MVP 之後的新產品階段，不回寫原型，也不表示本節能力已實作。DP-044 只記錄決策，不寫程式、migration、版號或公告。
+
+### 基線與開工條件
+
+2026-10-18 核對 `main` 的 `429dcb5`（PR #164）：repo 有 16 檔 migration、6 檔 pgTAP、10 張啟用 RLS 的 public 表，沒有家庭相關資料表；`SupabaseDayPopRepository.load()` 六個集合均以本人 `owner_id` 過濾。`profiles` 與 `user_preferences` 分別以 `id`／`user_id` 隔離，其餘為 owner-scoped；附件清理 policy 還有 orphan 條件，不能將所有 policy 簡化成同一個 predicate。
+
+`events`／`todos` 自第一檔 migration 就有 `sharing_scope = inherit | private`，預設 `inherit`；domain、runtime validation 與雙向 mapping 已保留此欄位，新增、複製與子項繼承也會保存它。尚無 UI 分享控制項或跨帳號授權規則。行程／待辦／貼圖的 `(calendar_id, owner_id)` 複合外鍵仍綁定日曆擁有者（第四檔改為 `ON DELETE NO ACTION`）；guest 與帳號快取 schema 為 v4。
+
+owner-only 模型的前置驗證視為滿足：2026-08-22 的真實帳號驗收紀錄及最新 main CI `39041544928` 的本機 DB reset／pgTAP／types 比對均通過。這不替代 DP-032 真機驗收或 DP-034 正式放行。DP-044 按任務表不使用 Supabase MCP；上面是 repo 核對，並非本日遠端 schema／advisor postflight。最近一次遠端 16 檔基準見 `deployment-verification-2026-10-13.md`，DP-047 開工必須重新檢查 drift。
+
+### 群組、名額與角色（決策 2–4、A）
+
+- 每帳號同時限一個有效群組，包含自己建立的群組；預設群名為「家庭」，owner 可更名。模型保持 group／membership 分離，日後若開放多群再另作決策。
+- 每群最多六人，包含 owner。未過期、未撤銷且未終結的邀請保留名額；過期、拒絕、撤銷釋放名額，接受將保留名額轉成 membership。建立邀請及接受必須由伺服器在同一交易下檢查，不能只信任畫面上的人數。
+- 只有 owner／member，第一版不做 admin、owner 轉移或成員自行升權。owner 管理群名、邀請、移除成員與解散；member 可隨時退出。
+- **群組 owner 與日曆擁有者是兩種不同的權限。** 群組 owner 不能強制任何人分享，不能管理別人的日曆設定，也不能因此讀到別人的私人事項。
+- owner 第一版不能直接退出，必須解散。解散撤銷全部邀請、membership 與分享設定，不刪除任何人的日曆內容。member 退出或被移除時，撤銷本人對該群的分享及其讀寫資格；其他人不再藉該群取得離群者的日曆。
+- 成員曾在別人日曆建立的事項留在原日曆，不隨退出搬走或刪除。重新加入需新邀請，原分享不自動恢復，由日曆擁有者重新開啟。
+
+### 綁定 Email 的邀請（決策 5）
+
+- 第一版由 owner 建立邀請並複製連結自行傳送；App 不自行寄信、不新增寄信服務。這也不改變既有 Supabase Auth 驗證信流程。
+- 邀請綁定受邀 Email，接受必須登入且目前帳號的 Email 已驗證並相符。伺服器確認目前 Auth 身分與 Email，不能相信 client 傳入的 user id、Email、role 或可自行修改的 user metadata，也不能只依賴可能過期的 Email claim。
+- 比對僅做去除頭尾空白與大小寫正規化，不自行合併 Gmail 點號、`+alias` 或不同 Email。轉傳連結不會讓其他帳號取得 membership；不提供查詢任意 Email 是否已註冊的入口。
+- token 使用不可猜測的隨機值，資料庫只保存 hash；七天到期、單次使用、owner 可撤銷。重發輪替 token 並立即使舊連結失效，不多佔一個名額；拒絕後該邀請終結，要再加入需新邀請。
+- 接受、拒絕、撤銷、重發、到期與群組解散之間必須有原子狀態檢查。開啟 URL 只預覽，不自動接受；失敗不建立部分 membership，重試不得重複入群。
+
+### 日曆授權與資料歸屬（決策 6–8、B）
+
+- 入群不自動分享日曆。每位日曆擁有者明確選擇分享自己的哪一本日曆；每個分享預設 `edit`，可切 `view` 或關閉，確認畫面明講授予的權限。只有日曆擁有者能調整分享。
+- `view` 只能讀取獲准內容；`edit` 可新增、修改、完成及刪除所有可見的非私人行程／待辦，不限本人建立的列，刪除需確認。成員不能刪除整本日曆、修改日曆管理設定或分享設定，也不能變更列的歸屬冒用權限。
+- 成員在共享日曆新增的列，`owner_id` 仍是日曆擁有者，以保留現有複合外鍵與生命週期；新列另記由伺服器確認、不可被任意改寫的 `created_by`。作者身分只是歸屬資訊，不是獨立授權。既有資料不能憑空捏造原始作者。
+- `sharing_scope = private` 的事項只有日曆擁有者可讀寫，群組 owner 也不例外；不回傳內容、標題或供畫面統計使用的私人列。成員不能在別人的日曆建立或改成私人事項，需要保密時應選自己的日曆；此處的私人不是「只讓建立者看」。
+- 授權必須由 RLS 依當下有效 membership、日曆分享與事項隱私共同決定，所有新增、修改、刪除及 RPC 都要覆蓋，不以 UI 篩選或 `created_by` 判定取代。撤銷 membership／分享後的新請求即拒絕，不等待 JWT 更新。
+
+### 分享範圍、階層與重複事件（C、D）
+
+- 開啟分享包含既有及未來的非私人行程與待辦，必須明示「包含歷史內容」，不默默將既有 `inherit` 全部改寫。第一版附件、邀請對象聯絡資料、貼圖仍只供本人使用；寵物、偏好與其他帳號資料不隨日曆分享。
+- 成員不得藉刪除可見行程連帶刪除不可存取的附件；此類刪除由日曆擁有者執行。不能為了讓既有清理 RPC 可用而直接放寬 Storage、metadata 或 cleanup queue 的 owner-only 權限。
+- 私人父待辦的全部後代也隱藏，即使後代自己的 scope 為 `inherit`。若刪除可見父項會 cascade 到不可見私人後代，拒絕成員的刪除，交由日曆擁有者處理；不得依賴 child RLS 自動攔住 FK cascade。
+- 第一版重複行程以整個系列切換私人。既有混合隱私例外若無法安全呈現，先阻擋該系列分享，保留原資料並請擁有者明確處理；不能公開隱藏 replacement，也不能漏掉取消／替換結果而使原始 occurrence 重新出現。
+- 共用 resolver／domain validation 必須能處理 RLS 回傳的合法可見集合，維持父子與 replacement 參照一致。不能僅拿掉 `load()` 的 owner filter 就把多個 owner 文件拼成一份；現有 exactly-one-default-calendar 與 mapping 會丟失 owner 的假設也必須明確處理。
+
+### 快取、撤權與同時修改（E、F）
+
+- 第一版收到的分享只放目前 session 的記憶體，不持久化進帳號快取；本人資料沿既有版本化快取與 fail-closed 規則。離線或 DP-176 的 session 未確認狀態只顯示本人的有效快取，分享內容暫不可用。
+- 重新載入與回到前景時重新確認分享資格及內容；權限拒絕後撤掉相關可見資料，不自動重送舊草稿。畫面已開啟時沒有 Realtime 的瞬間清除保證；「立即失權」指撤銷提交後的新伺服器授權檢查，不是能追回已看過、截圖或下載的副本。
+- 不新增 Realtime、離線寫入佇列或自動合併。共享事項修改採過期版本拒絕：伺服器確認提交所依據的版本仍有效，否則保留草稿、明示衝突並提供重新載入；不能無聲地讓最後寫入覆蓋他人的變更。此規則需涵蓋一般修改、完成、刪除及重複事件 RPC，保留既有回應遺失重試的安全性。
+
+### 備份、匯入、遊客與個人檢視（G–I）
+
+- JSON／ICS 匯出只包含本人擁有的資料（含成員在本人的日曆建立的列），不含收到的分享、membership、邀請或分享授權。備份與匯入不得冒用 `created_by` 或其他人的 ownership；帳號匯入只寫自己的日曆。
+- JSON 取代前需先關閉本人對外分享，避免重建內容突然公開；不更動其他人的日曆。刪除日曆沿 DP-138 的交易式搬移規則，但搬移到已分享日曆或改變可見對象時必須明確確認，不能默默擴大分享範圍；取消不寫入。
+- 遊客設定保留「家庭群組」說明與登入入口，不能建立、加入或分享。邀請連結先要求登入，成功後回到加入確認，不自動接受、不自動上傳或刪除遊客資料。
+- 成員名單只提供必要顯示名稱與角色；受邀 Email 僅 owner 與對應受邀者可見，不因此開放完整 profiles／preferences。前端仍只用 publishable key。
+- 收到的日曆依檢視者本人的時區與顯示偏好呈現；本人隱藏某個分享不影響別人，不改成自己的預設日曆。新增 UI 沿 canonical 設定／dialog／sheet 與 token，不改四分頁資訊架構。
+
+### 實作順序與驗收界線
+
+1. DP-044：只提交本節定案、任務板與交接，沒有可做反向驗證的程式修正，不新增只對照文件字串的測試；仍跑約定的品質檢查及既有核心 e2e。
+2. DP-047：group／membership／invitation 與受控服務、RPC、登入後邀請確認及管理入口；先有會失敗的回歸，再實作並還原修正驗證失敗。新表 RLS、名額／競態、Email 與 token 邊界在本項就要有 pgTAP，不把安全性延到 DP-049 才補。
+3. DP-048：calendar shares、單項私人、owner／permission-aware domain／repository、過期寫入拒絕、快取／匯出／階層／清理邊界及 UI。domain 文件若增加欄位，先完成 guest 與帳號快取 write barrier／遷移回歸，才提升目前 v4；App release 不跟著提升。
+4. DP-049：補齊多帳號權限矩陣、撤權、升權拒絕與共同維護的整合驗證；pgTAP 進 repo／CI，遠端同份測試必須使用固定假資料、完整 rollback 並確認零殘留，不查改正式使用者資料。
+
+schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最後一次 `create or replace` 的 migration 為準。MCP 僅做必要的 read-only schema／advisor preflight、types 核對與安全 rollback 測試，不套 DDL、不 remote reset；migration 由專案擁有者用 CLI dry-run／push，**先推 migration，再部署前端**。本機實跑 `supabase:start` → `supabase:reset` → `supabase:test`，types 以本機 `supabase:types` 為準，不提交遠端 `__InternalSupabase`。自動合併授權不等於自動部署、代替擁有者 push migration 或放寬正式資料界線。

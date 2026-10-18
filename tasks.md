@@ -65,7 +65,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 | 18 | ~~DP-032 行動裝置 QA~~ | 不使用 | **2026-08-26 專案擁有者決定移回 Backlog**（理由：剩下的 Android、螢幕閱讀器與實體鍵盤三項對自己的實際使用情境用不太到）。已完成的兩輪結果仍然有效，見 [`docs/mobile-qa-2026-08-13.md`](docs/mobile-qa-2026-08-13.md) 與 [`docs/mobile-qa-2026-08-22.md`](docs/mobile-qa-2026-08-22.md)。 |
 | 19 | DP-034 正式上線檢查 | 不使用 | 通過後主動提醒專案擁有者已達可開始日常使用的驗收點。**原本排在 DP-032 之後；DP-032 移回 Backlog 後，DP-034 是否改為不等它，尚未定案** —— 需要專案擁有者決定，agent 不自行放行。 |
 | 20 | DP-014 其餘 canonical UI 搬移 | 不使用 | 進行中，逐段搬移。2026-08-26 完成設定的桌寵與一般偏好區塊。 |
-| 21 | DP-044 家庭群組產品規則 | 不使用（規則定案） | **2026-10-17 專案擁有者指定為下一次優先，由 Codex 實作。** 只產出規則與定案，不寫 migration；決策點與建議見 Next。 |
+| ~~21~~ | ~~DP-044 家庭群組產品規則~~ | 不使用（規則定案） | **2026-10-18 專案擁有者已採納 1–8 與 A–I 建議。** 定案見 ADR §9；本項只改文件，不寫 migration。 |
 | 22 | DP-047 家庭群組與安全邀請 | 需要 | **由 Codex 實作。** migration 由專案擁有者以 CLI 套用，MCP 只做套用前後驗證、型別核對與 rollback 測試；推上遠端後才部署前端。 |
 | 23 | DP-048 日曆分享與單項私人 | 需要 | **由 Codex 實作。** 同上；「不分享」寫既有的 `sharing_scope`。 |
 | 24 | DP-049 家庭 RLS 多帳號驗證 | 需要 | **由 Codex 實作。** pgTAP 進 repo 並在 CI 跑，遠端以 MCP 跑同一份 rollback 測試。 |
@@ -76,16 +76,18 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-18 專案擁有者定案及執行授權：** 已採納 Codex 的八項及 A–I 補充建議，完整規則以 [`docs/architecture-decisions.md` §9](docs/architecture-decisions.md#9-家庭群組與分享dp-0442026-10-18-定案) 為準。以下 2026-10-17 的八點保留作為歷史起點，不再是待確認問題。依序 DP-044 → DP-047 → DP-048 → DP-049，一次一項、一個中文 PR；本次授權每項驗證與 CI 通過後由 Codex 自主合併，再繼續下一項，取代先前「開完 PR 等擁有者合併」的要求。**遠端 migration 仍由擁有者以 CLI dry-run／push 套用；PR 合併不等於部署授權。**
+
 > **2026-10-17 專案擁有者指定：家庭群組與分享列為下一次優先處理，由 Codex 實作。** 專案擁有者問「能不能不同帳號登入，並把新的記事設為共用或私人」，答案是還不行（見下方「現況」），隨即指定把 DP-044 → DP-047 → DP-048 → DP-049 從 Backlog 移到這裡。**這四項指定由 Codex 實作，因為需要 Supabase MCP**（套用前後的 schema／advisor 驗證、從遠端核對 generated types、rollback 安全測試）。Claude Code 的 agent 不接這四項；被要求時先提醒專案擁有者這是指定給 Codex 的。MCP 的使用界線照上方「建議執行順序」表後的規則：不得經 MCP 直接下 DDL、不得 remote reset、不得查改正式使用者資料；schema 變更一律先寫成 `supabase/migrations/` 的檔案，由專案擁有者以 CLI dry-run／push 套用，**migration 推上遠端之後才能部署前端**（比照 DP-138）。依序做，一次一項、一個中文 PR；DP-044 的產品規則定案前不寫 migration。
 >
-> **現況（2026-10-17 核對 `main` 的 `c53f3ef`）**
-> - 不同帳號都能登入（Email＋密碼、Google），但每個帳號只看得到自己的資料：所有公開資料表的 RLS 是 `(select auth.uid()) = owner_id`，`SupabaseDayPopRepository.load()` 的六個集合也都以 `owner_id` 過濾。
-> - `events` 與 `todos` 已有 `sharing_scope`（`inherit`／`private`，預設 `inherit`，第 1 檔 migration），`databaseMapping.ts` 兩向都有對應，domain 型別是 `SharingScope`；**但沒有任何畫面讀寫它**，也沒有任何規則依它判斷。
+> **現況（2026-10-18 重新核對 `main` 的 `429dcb5`；本輪未查遠端 schema）**
+> - 不同帳號都能登入（Email＋密碼、Google），但每個帳號只看得到自己的資料：公開表以本人隔離，`profiles`／`user_preferences` 分別核對 `id`／`user_id`，其餘以 `owner_id` 判斷（附件清理還有 orphan 條件）；`SupabaseDayPopRepository.load()` 的六個集合也都以 `owner_id` 過濾。
+> - `events` 與 `todos` 已有 `sharing_scope`（`inherit`／`private`，預設 `inherit`，第 1 檔 migration），`databaseMapping.ts` 兩向都有對應，domain 型別是 `SharingScope`；新增、複製及子項繼承會保存它，但**沒有分享控制項或依它授予跨帳號存取的規則**。
 > - 沒有 `family_groups`／`family_memberships`／`family_invitations`／`calendar_group_shares`。目前 16 檔 migration、6 檔 pgTAP。
 > - 行程、待辦與貼圖以 `(calendar_id, owner_id)` 複合外鍵綁定日曆擁有者，所以成員在別人日曆裡新增的列，`owner_id` 必須是**日曆擁有者**；這會影響 DP-047／048 的資料模型（見 DP-044 第 6 點）。
 > - 遊客模式只存在本機，不參與家庭功能。
 >
-> **DP-044 需要專案擁有者決定的事，附 agent 建議（僅供起點，Codex 接手時與專案擁有者確認）**
+> **DP-044 的歷史決策起點（2026-10-18 已定案，以 ADR §9 的完整規則取代下列簡述）**
 > 1. 前置條件「owner-only 模型完整驗證前不開始」：建議視為已滿足。owner RLS 的 pgTAP 自 DP-084 起在 CI 實跑，2026-08-22 已在 staging 以真實帳號驗收登入、保存、登出隔離與重登。
 > 2. 人數上限：建議 6 人，由 RPC 檢查，不只靠前端。
 > 3. 角色：建議只有 owner／member 兩種，不做 admin。owner 可改名、邀請、移除成員、解散；member 可退出。
@@ -97,7 +99,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 >
 > **實作時要一起處理的既有邊界**：帳號端 `load()` 要改成也讀別人分享給我的日曆；domain 文件若因此多出欄位（例如列的擁有者、分享權限），guest 與帳號快取的 schema version 要提升（目前 v4），先做 write barrier 與遷移回歸（AGENTS.md）；本機可用 Docker 實跑 `supabase:reset`／`supabase:test`，CI 的 `database` job 也會跑；`database.types.ts` 以 `npm run supabase:types` 的本機輸出為準（DP-085）。
 
-- [ ] **DP-044 — 定案家庭群組產品規則（Codex，第 1 項）：** 確認群組人數上限、owner／admin／member 能力、退出與解散規則、Email 邀請與重送／撤銷／過期流程，以及共享日曆是 `edit` 預設或可切唯讀；在 owner-only 模型完整驗證前不開始。產出是寫進 ADR 的規則與專案擁有者的定案，不寫 migration。決策點與建議見上方。
 - [ ] **DP-047 — 建立家庭群組與安全邀請（Codex，第 2 項，依賴 DP-044）：** 以 migrations 建立 `family_groups`、`family_memberships`、`family_invitations`，提供建立／更名／邀請／接受／拒絕／退出的受控 service 或 RPC；預設名稱為「家庭」，token 僅保存 hash 並設有效期限。需要 MCP 驗證；migration 由專案擁有者 push 後才能部署前端。
 - [ ] **DP-048 — 建立日曆分享與單項私人覆寫（Codex，第 3 項，依賴 DP-047）：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。「不分享」寫的是既有的 `sharing_scope`。需要 MCP 驗證。
 - [ ] **DP-049 — 驗證家庭 RLS 與共同維護（Codex，第 4 項，依賴 DP-048）：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。pgTAP 進 repo 並在 CI 的 `database` job 跑；遠端以 MCP 跑同一份 rollback 測試。
@@ -388,6 +389,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-044 — 家庭群組與分享產品規則定案（2026-10-18）：** 由 Next 經 In Progress 完成。專案擁有者採納 Codex 的 1–8 及 A–I 建議，ADR §9 記錄六人／每帳號一群、owner／member、有效邀請保留名額、七天 Email 綁定連結、退出與解散、日曆與事項 ownership、edit／view、private、父子／重複例外、附件清理、快取／撤權、過期寫入、備份／匯入、遊客與個人顯示規則。AGENTS.md §0.1、MCP handoff 及 Next 基線同步更新，另補記今日 0.4.3 已部署，不回寫公告。**只改四份文件，沒有 migration、程式、schema／release version 或 Supabase MCP 操作。** 文件定案沒有可還原的程式修正，未新增鏡像文件字串的測試。lint／typecheck／build／check:build／diff check 通過；完整單元 76 檔 1267 項＋7 項 Node 測試通過（首次預設 worker 數有 15 個 worker 啟動逾時，以兩個 worker、30 秒案例逾時完整重跑通過）；核心 e2e 7 passed／1 個桌面不適用 skipped，兩個 Supabase env 以空值啟動（首次手機 auth harness 冷載入逾時，相同指令重跑全部通過，e2e 逾時未調整）。依本次授權每項 PR 驗證及 CI 通過後自主合併再接下一項；下一項 DP-047，遠端 migration 仍由擁有者 CLI 套用，先 migration 再部署。
 
 - [x] **DP-169 — 寵物對話泡泡（DP-040 第一段，2026-10-17）：** 專案擁有者指示「繼續完成下一個任務」，Next 為空；從 Backlog 選了這項，因為不需要 schema、真機或遠端 migration，而且 DP-173 交接寫著收件匣等泡泡需要落點時再擴充。**開工前修正條目**：原條目的「今日剩餘待辦數、下一個行程、查看與新增入口」是 2026-10-13 審查的提議，與原稿衝突；`docs/claude-design-source-of-truth.md` 規定原型的對話泡泡是行為基準，所以照原稿 `:488-530`、`:1138-1157`、`:1307` 搬。日曆頁的寵物改成按鈕（名稱帶今天還有幾件待辦），點一下或 Enter／Space 打開：每個 App session 第一次是問候（今天還有幾件、其中幾件重要；清空時改問明天）＋「看待辦」，之後直接是今日（含逾期未完成，標「逾期・原M/D」）與明日清單，可勾選、刪除、新增。位置照原稿（距左 12、距底 150、寬 270，尾巴在寵物頭上），白紙黑字不隨主題；點外面（連分頁列）、✕、Escape 只關泡泡。「問候過了」放在 `App`，切分頁不重來；清單、徽章與問候共用 `petBubbleTodos()`。**七處刻意偏離**（ADR §4）：不在啟動時自己問候、沒有「給我建議」、勾選沒有讚美／XP（DP-041）、深色主題的待辦標題改用泡泡墨色（**實際渲染原稿量到漫畫深色是白字配白底**）、淡灰字改 `#666`、新增欄位 16px、搜尋點待辦仍開那一天。設定頁桌寵說明改成現況，只剩「在角落走動」「請牠給行程建議」列為還沒有。沒有 schema、storage、repository、版號或公告變更。驗證：lint／typecheck；新增 26 個單元案例（domain 9、`PetLayer` 15、`CalendarScreen` 2）與 `App.test.tsx` 的跨分頁問候及工程用語掃描；整套 1267 個第一次在預設逾時下全過，之後兩次本機負載下有 3–4 個不同案例逾時（含無關的 DP-130），單獨跑與 `--testTimeout=30000` 全過，以 CI 為準；build／check:build 通過（JS 683 KB／gzip 201 KB）；新 `e2e/pet-bubble.spec.ts` 8 passed、2 個桌面不適用 skipped，`accessibility.spec.ts` 加入問候與清單後 5 passed；完整 e2e 228 passed、12 skipped、0 failed（13.7 分鐘，瀏覽器時區 `Asia/Taipei`）；pet 相關單元測試另在 `TZ=America/New_York`（實際生效時區已印出）下通過。反向驗證：還原 App 層問候狀態、顯示時區、逾期排除、逾期勾選時的焦點移動、矮螢幕位置修正，各自對應的測試都會失敗（焦點那一個第一版量不到差別，已改成先讓按鈕取得焦點）。**沒驗**：真機與 Safari（焦點歸還、safe area、鍵盤推擠）。這是 agent 依原稿與既有規則的判斷，PR 審查即是否決點。
 
