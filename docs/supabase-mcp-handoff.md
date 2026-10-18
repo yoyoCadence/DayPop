@@ -128,6 +128,26 @@ MCP postflight 確認公開 10 表 RLS、三支 occurrence／calendar RPC 的 SE
 
 詳見 [部署驗收紀錄](deployment-verification-2026-10-13.md)。本次文件 PR 只記錄既成操作；沒有再次使用 MCP 寫入或 CLI 推送。真實帳號與真機驗收仍未完成。
 
+## 0.12 DP-047 本機候選與第 17 檔交接（2026-10-18，待擁有者 CLI）
+
+**目前狀態：本機實作完成、遠端未套用，DP-047 仍 In Progress。** 基線為 PR #165 合併後的 `d903e77`，本次只做家庭管理與邀請，日曆 RLS 仍 owner-only；DP-048／049 尚未開始。CLI 步驟見 [`deployment.md` §5.25](deployment.md#525-dp-047-家庭管理與邀請第-17-檔待套用2026-10-18)。下方各階段紀錄保留歷史狀態，新 migration 不得經 MCP 下 DDL。
+
+preflight 只讀 schema／migration history／advisor／types：DayPop `aquhcaduovkxyfhzywgc` 為 ACTIVE_HEALTHY（Postgres 17.6），遠端 16 檔至 `20261007000000_delete_calendar_rpc`；10 張 public tables RLS 開啟，owner policies、兩表 `sharing_scope`、calendar 複合 FK 及三支 occurrence／calendar RPC 的 INVOKER／空 path／execute grants 與 repo 一致。遠端 types 的 schema／RPC 無 drift，只有 `__InternalSupabase` 的 PostgREST 14.15 與泛型 helper 括號差異，沒有提交遠端輸出。security 只有既有 `auth_leaked_password_protection` WARN（[修正說明](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)），performance 為 10 個既有 unused-index INFO，未刪索引或改 Auth 設定。沒有查改正式使用者列。
+
+本機第 17 檔 `20261018045829_family_groups_and_invitations.sql`：
+
+- 三張家庭表 RLS／必要 FK indexes／欄位 grants；沒有 client direct DML。只存 256-bit 邀請 token 的 SHA-256 hash，七天有效、單次使用，Email 以 Auth 當前已驗證值核對；group 鎖保證六席（含有效 pending），移除／退出後舊 token 不復活。
+- `family_snapshot()`／`family_invitation_preview(text)`／`family_command(text,jsonb)` 為 public INVOKER、空 `search_path`、只允許 authenticated；受控 DEFINER helper 在非 exposed 的 `daypop_family`，caller 固定來自 `auth.uid()`。helper 的額外權限只處理家庭資料、Auth 驗證 Email 與必要 roster 名稱；不開放 raw profiles／preferences、不接受任意 owner／role。既有 RPC 未重寫。
+- 這台 Windows **已有 Docker Desktop**，本次啟動 daemon 並把 `C:\Program Files\Docker\Docker\resources\bin` 加進該次 PowerShell PATH，沿 CI 的 exclude 清單只啟動 Postgres，實跑 `supabase:start` → `supabase:reset` → `supabase:test`：7 檔 247 項全過。`supabase:test:concurrency` 的雙連線最後名額也通過且零假資料／trigger 殘留；暫時拿掉 group 鎖後同一測試會因兩條均成功而失敗，已還原並重新 reset／測試。
+- `src/lib/database.types.ts` 以該本機 `supabase:types` 原樣產生，沒有 `__InternalSupabase`。user-data v4／App 0.4.3／已部署公告不變。
+
+**CLI push 後仍須做的 postflight（目前未執行）：**
+
+1. MCP 核對 migration history 已 17 檔、13 張 public tables 全 RLS、新表欄位／constraints／indexes／grants 與新 RPC／private helper 設定；舊 owner policies、sharing_scope 與複合 FK 仍一致。
+2. 重新取 security／performance advisor，對照上述 preflight，任何新增警告需解釋；unused-index 不代表可以擅自刪除。重新生成遠端 types 只用於核對三表／三 RPC，不能覆寫本機輸出。
+3. 使用 repo 的 `family_groups.test.sql` **同一份**固定 `...0471`–`...0476` 假身分 pgTAP，在同一 transaction 完整 rollback；預先只查這些固定測試 ID 是否不存在，若已存在就停止，不碰已有列。之後再次只查固定 ID、測試 context 與 extension 前後狀態，確認零殘留。不查正式日曆或 Auth 使用者內容、不在遠端執行會 commit fixtures 的本機 concurrency script。
+4. 將結果補入本節、AGENTS §0.1 與 tasks，DP-047 才可結案。CI 通過後依本次授權合併，再開始 DP-048。部署仍由擁有者決定，先 migration、再部署前端。
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：

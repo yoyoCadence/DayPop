@@ -179,6 +179,9 @@ jobs:
       - name: Database tests (pgTAP)
         run: npm run supabase:test
 
+      - name: Family final-seat concurrency (two local connections)
+        run: npm run supabase:test:concurrency
+
       # DP-085：型別檔必須就是從 migration 重建的資料庫產生出來的結果。
       # 以本機產生為準：--linked 需要 access token，而 CI 不使用 secret。
       # 本機產生不含 linked 才有的 __InternalSupabase 段落，所以 linked 或

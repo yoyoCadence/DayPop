@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **家庭管理與邀請候選（DP-047，2026-10-18，遠端待套用）：** 第 17 檔 `20261018045829_family_groups_and_invitations.sql` 增加三張全開 RLS 的家庭表；三支 exposed RPC 採 INVOKER／空 `search_path`，受控實作放非 exposed 的 `daypop_family`，以 `auth.uid()` 與 Auth 當前已驗證 Email 判斷身分，禁止直接改 membership。群組鎖序列化六人名額（含有效邀請）、重發換 token、退出後舊連結不復活；token 只保存 SHA-256 hash。`src/family` 是獨立的 session-only service，不進 `DayPopUserData`／帳號快取，**user-data 仍 v4、日曆仍 owner-only，分享留 DP-048**。設定「帳號與資料」有管理入口，邀請先登入再明確接受；session 未確認不呼叫 service。待確認 token 只用 `sessionStorage` 銜接 OAuth，七天讀取期限、接受／拒絕／關閉即清除。已在本機 Docker 跑 start → reset → 7 檔 247 項 pgTAP、雙連線最後名額競態與本機 generated types；移除群組鎖會重現第七名額，還原後通過。**開工 MCP 確認遠端仍 16 檔、10 表 RLS，只有既有 Auth 洩漏密碼保護警告與 10 個 unused-index INFO；尚未套用第 17 檔或做 postflight，DP-047 保持 In Progress。** 順序與擁有者 CLI 步驟見 `docs/deployment.md` §5.25、`docs/supabase-mcp-handoff.md` §0.12；合併授權不代替擁有者 push、不授權部署。
+
 - **家庭群組與分享規則已定案（DP-044，2026-10-18）：** 專案擁有者採納八項與 A–I 補充建議，完整規則見 `docs/architecture-decisions.md` §9。六人（含 owner、有效邀請保留名額）、每帳號一群、owner／member、綁已驗證 Email 的七天單次邀請連結，App 暫不寄信；各自明確分享日曆，預設 edit／可切 view，private 僅日曆擁有者可見，群組 owner 不越權。事項歸日曆擁有者，另記伺服器確認的作者；退出撤分享不刪內容，重新加入不恢復舊分享。收到的分享不進持久快取，過期寫入拒絕並保留草稿，附件／聯絡資料／貼圖第一版仍本人使用。**這是規則，不是已實作能力：repo 仍 16 檔 migration、6 檔 pgTAP、schema v4；DP-044 未使用 Supabase MCP。** 本次授權 DP-044 → DP-047 → DP-048 → DP-049 依序每項開中文 PR、完成驗證及 CI 後自主合併再繼續；取代先前開 PR 後等待擁有者合併的要求，**遠端 migration 仍由擁有者 CLI dry-run／push，先 migration 再部署，不授權自動部署。**
 
 - **0.4.3 已部署（2026-10-18 核對）：** `deploy-staging` run `39093740111` 成功部署 `main` 的 `429dcb5`；公開 `version.json` 已是 0.4.3「畫面更好讀」。因此下方 DP-177 的「發布候選」是歷史狀態，0.4.3 公告自此也不可回寫；本次只記錄已發生的部署，不再次部署、不改版號或公告。

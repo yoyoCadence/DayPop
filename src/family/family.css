@@ -1,0 +1,25 @@
+/* DayPop-owned extension: reuse DP-113's canonical account card/dialog tokens. */
+.family-backdrop { padding: 20px; }
+.dp-viewport .family-dialog { width: 100%; max-width: 480px; }
+.family-dialog h3 { margin: 18px 0 8px; font-size: 15px; color: var(--fg); }
+.family-dialog .family-group-name { font-family: var(--font-head); font-size: 20px; }
+.family-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.family-dialog .auth-form { margin: 12px 0; }
+.dp-viewport .family-dialog :is(input,textarea) { font-size: 16px; }
+.family-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.family-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; border-bottom: 1px solid var(--line); padding: 8px 0; overflow-wrap: anywhere; }
+.family-list li > div { min-width: 0; }
+.family-list p,.family-help { margin: 6px 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.family-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.family-actions .button { flex: 1 1 auto; }
+.family-footer { margin-top: 16px; }
+.family-feedback { border: 1px solid var(--border); border-left: var(--bd) solid var(--accent); border-radius: var(--radius); padding: 10px; color: var(--fg); background: var(--surface-2); font-size: 13px; line-height: 1.6; }
+.family-link { margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; background: var(--surface-2); }
+.family-link label { display: block; margin-bottom: 8px; color: var(--fg); font-size: 13px; font-weight: 700; }
+.family-link textarea { display: block; width: 100%; resize: vertical; border: var(--bd) solid var(--border); border-radius: var(--radius); padding: 8px; color: var(--fg); background: var(--bg); font-family: var(--font-body); overflow-wrap: anywhere; }
+.family-dialog textarea:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.family-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; border: var(--bd) solid var(--border); border-radius: var(--radius); padding: 12px 13px; background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.family-card > div { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.family-card strong { color: var(--fg); font-family: var(--font-body); font-size: 14px; font-weight: 800; }
+.family-card p { max-width: 100%; margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.family-card > button { flex-shrink: 0; }

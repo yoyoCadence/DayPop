@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
+import { FamilyCard } from '../family/FamilyCard';
 import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
@@ -517,7 +518,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             </section>
             <LegacyImportCard />
           </div>
-
+          <FamilyCard timezone={preferences.timezone} onOpenAuth={onOpenAuth} />
 
           <div className="dp-section-label">資料備份</div>
           <div className="data-transfer-actions">

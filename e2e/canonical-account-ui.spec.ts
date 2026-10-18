@@ -26,6 +26,11 @@ for (const mode of ['light', 'dark'] as const) {
       await expect(account).toHaveCSS('border-top-color', rgb(palette.border));
       await expect(account).toHaveCSS('border-top-width', `${theme.borderWidth}px`);
       await expect(account).toHaveCSS('border-top-left-radius', `${theme.radius}px`);
+      const family = page.locator('.family-card');
+      await expect(family).toHaveCSS('background-color', rgb(palette.surface));
+      await expect(family).toHaveCSS('color', rgb(palette.fg));
+      await expect(family).toHaveCSS('border-top-width', `${theme.borderWidth}px`);
+      await expect(family).toHaveCSS('border-top-left-radius', `${theme.radius}px`);
       await expect(page.locator('.release-panel')).toHaveCSS('background-color', rgb(palette.surface));
 
       await page.getByRole('button', { name: '登入／註冊', exact: true }).click();

@@ -99,7 +99,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 >
 > **實作時要一起處理的既有邊界**：帳號端 `load()` 要改成也讀別人分享給我的日曆；domain 文件若因此多出欄位（例如列的擁有者、分享權限），guest 與帳號快取的 schema version 要提升（目前 v4），先做 write barrier 與遷移回歸（AGENTS.md）；本機可用 Docker 實跑 `supabase:reset`／`supabase:test`，CI 的 `database` job 也會跑；`database.types.ts` 以 `npm run supabase:types` 的本機輸出為準（DP-085）。
 
-- [ ] **DP-047 — 建立家庭群組與安全邀請（Codex，第 2 項，依賴 DP-044）：** 以 migrations 建立 `family_groups`、`family_memberships`、`family_invitations`，提供建立／更名／邀請／接受／拒絕／退出的受控 service 或 RPC；預設名稱為「家庭」，token 僅保存 hash 並設有效期限。需要 MCP 驗證；migration 由專案擁有者 push 後才能部署前端。
 - [ ] **DP-048 — 建立日曆分享與單項私人覆寫（Codex，第 3 項，依賴 DP-047）：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。「不分享」寫的是既有的 `sharing_scope`。需要 MCP 驗證。
 - [ ] **DP-049 — 驗證家庭 RLS 與共同維護（Codex，第 4 項，依賴 DP-048）：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。pgTAP 進 repo 並在 CI 的 `database` job 跑；遠端以 MCP 跑同一份 rollback 測試。
 
@@ -197,6 +196,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+- [ ] **DP-047 — 建立家庭群組與安全邀請（2026-10-18）：** DP-044 PR #165 已合併，從 `d903e77` 開獨立分支。依 ADR §9 實作 group／membership／invitation、受控 RPC／service、家庭管理與邀請確認入口；日曆分享與 user-data schema 仍留 DP-048。MCP preflight：DayPop ACTIVE_HEALTHY、遠端與 repo 同為 16 檔、10 表 RLS、owner policies／sharing_scope／複合 FK 與三支 RPC 權限吻合；security 僅既有 Auth 洩漏密碼保護警告，performance 為 10 個既有 unused-index INFO，不擅自移除。migration 仍由擁有者 CLI dry-run／push，先 migration 再部署前端。
+
+  本機候選已完成：第 17 檔 `20261018045829_family_groups_and_invitations.sql`、三張 RLS 表／三支受控 RPC、六席與有效邀請預留、綁當前已驗證 Email 的七天 hash token、重發／撤銷／退出／解散；`src/family` 獨立 session-only service 與 runtime parsing，不把家庭資料寫入 v4 文件／快取。先在 16 檔基準失敗的 pgTAP，實作後 7 檔 247 項通過；雙連線移除 group 鎖會重現第七席，還原並 reset 後全過且假資料／trigger 清除。types 本機產生；lint／typecheck／1,290 單元＋7 Node／build／check:build／17 檔 migration 結構檢查通過；family／canonical account／responsive e2e 13 passed、3 桌面不適用 skipped，空 Supabase env、實際時區 Asia/Taipei。原稿與三種尺寸淺／深色已比對，詳見 deployment §5.25。**遠端仍 16 檔，等待擁有者 CLI dry-run／push、第 17 檔 MCP postflight 及 PR CI，尚不能移 Done；DP-048／049 未開始。**
 
 
 
