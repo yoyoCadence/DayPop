@@ -26,6 +26,10 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **家庭群組與分享規則已定案（DP-044，2026-10-18）：** 專案擁有者採納八項與 A–I 補充建議，完整規則見 `docs/architecture-decisions.md` §9。六人（含 owner、有效邀請保留名額）、每帳號一群、owner／member、綁已驗證 Email 的七天單次邀請連結，App 暫不寄信；各自明確分享日曆，預設 edit／可切 view，private 僅日曆擁有者可見，群組 owner 不越權。事項歸日曆擁有者，另記伺服器確認的作者；退出撤分享不刪內容，重新加入不恢復舊分享。收到的分享不進持久快取，過期寫入拒絕並保留草稿，附件／聯絡資料／貼圖第一版仍本人使用。**這是規則，不是已實作能力：repo 仍 16 檔 migration、6 檔 pgTAP、schema v4；DP-044 未使用 Supabase MCP。** 本次授權 DP-044 → DP-047 → DP-048 → DP-049 依序每項開中文 PR、完成驗證及 CI 後自主合併再繼續；取代先前開 PR 後等待擁有者合併的要求，**遠端 migration 仍由擁有者 CLI dry-run／push，先 migration 再部署，不授權自動部署。**
+
+- **0.4.3 已部署（2026-10-18 核對）：** `deploy-staging` run `39093740111` 成功部署 `main` 的 `429dcb5`；公開 `version.json` 已是 0.4.3「畫面更好讀」。因此下方 DP-177 的「發布候選」是歷史狀態，0.4.3 公告自此也不可回寫；本次只記錄已發生的部署，不再次部署、不改版號或公告。
+
 - **v0.4.3 發布候選（DP-177，2026-10-15）：** main 上的版號是 0.4.3「畫面更好讀」，staging 在這之前是 0.4.2。0.4.2 之後沒有新 migration（仍 16 檔），部署不需要先動 Supabase。公告六條、152 code point，已用真正的 0.3.0 舊版對話框在五種尺寸量過（docs/deployment.md §5.24）。**部署由專案擁有者執行；0.4.3 一經部署即不可回寫**，之後的修改要開新版號。
 
 - **寵物對話泡泡（DP-169，2026-10-17）：** 日曆頁的寵物是按鈕（`PetLayer`），點一下或 Enter／Space 打開原稿的漫畫泡泡（`PetBubble`）：每個 App session 第一次是問候（今天還有幾件、其中幾件重要），之後直接是今日（含逾期未完成）與明日清單，可勾選、刪除、新增。**「問候過了」放在 `App` 的 state**，因為日曆畫面切換分頁就卸載；不寫 storage。清單、徽章與問候的數字都由 `src/domain/petBubble.ts` 的 `petBubbleTodos()` 一次算出，只算最上層待辦（DP-121），**要改徽章或泡泡的計數就改這一處**。泡泡經 `ViewportLayer` 放進 viewport（z-index 55），透明捕捉層蓋住整個 App 含分頁列，**點泡泡外面只會關掉泡泡**；它是 modal（`useModalFocus`），新增沿用 `useConfirmedTodoAdd`。白紙黑字寫死、不吃主題（原稿如此）。與原稿不同的七處（不自動問候、沒有 AI 按鈕、勾選沒有讚美／XP、深色時標題改用墨色、淡灰字改 `#666`、欄位 16px、搜尋點待辦仍開那一天）見 ADR §4。**泡泡的位置跟著分頁列高度**：`petBubble.css` 在 DP-078 的矮螢幕條件下下移 14px，改分頁列高度要一起改。axe 在問候畫面只量得到兩段文字，那一次稽核的最低量測數是 2。
