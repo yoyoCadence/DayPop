@@ -197,10 +197,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-047 — 建立家庭群組與安全邀請（2026-10-18）：** DP-044 PR #165 已合併，從 `d903e77` 開獨立分支。依 ADR §9 實作 group／membership／invitation、受控 RPC／service、家庭管理與邀請確認入口；日曆分享與 user-data schema 仍留 DP-048。MCP preflight：DayPop ACTIVE_HEALTHY、遠端與 repo 同為 16 檔、10 表 RLS、owner policies／sharing_scope／複合 FK 與三支 RPC 權限吻合；security 僅既有 Auth 洩漏密碼保護警告，performance 為 10 個既有 unused-index INFO，不擅自移除。migration 仍由擁有者 CLI dry-run／push，先 migration 再部署前端。
-
-  本機候選已完成：第 17 檔 `20261018045829_family_groups_and_invitations.sql`、三張 RLS 表／三支受控 RPC、六席與有效邀請預留、綁當前已驗證 Email 的七天 hash token、重發／撤銷／退出／解散；`src/family` 獨立 session-only service 與 runtime parsing，不把家庭資料寫入 v4 文件／快取。先在 16 檔基準失敗的 pgTAP，實作後 7 檔 247 項通過；雙連線移除 group 鎖會重現第七席，還原並 reset 後全過且假資料／trigger 清除。types 本機產生；lint／typecheck／1,290 單元＋7 Node／build／check:build／17 檔 migration 結構檢查通過；family／canonical account／responsive e2e 13 passed、3 桌面不適用 skipped，空 Supabase env、實際時區 Asia/Taipei。原稿與三種尺寸淺／深色已比對，詳見 deployment §5.25。**遠端仍 16 檔，等待擁有者 CLI dry-run／push、第 17 檔 MCP postflight 及 PR CI，尚不能移 Done；DP-048／049 未開始。**
-
 
 
 
@@ -392,6 +388,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-047 — 家庭群組與安全邀請（2026-10-18，PR #166）：** 由 Next 經 In Progress 完成，基線 `d903e77`。第 17 檔增加三張全 RLS 家庭表、三 public INVOKER RPC／受控 private helper、六席含有效邀請預留、綁當前已驗證 Email 的七天 hash token、重發／撤銷／退出／解散；session-only service 與家庭管理／邀請確認 UI 不改 user-data v4／帳號快取／日曆 owner RLS。回歸先缺表／RPC 失敗；移除 group 鎖也會重現第七席而失敗，還原 reset 後本機 7 檔 247 pgTAP、雙連線競態及 types 全過。lint／typecheck／1,290 單元＋7 Node／build／check:build／migration 結構檢查及相關 e2e 13 passed／3 skipped；原稿與三種尺寸淺／深色已比對。擁有者 CLI dry-run 精確一檔、push 成功；MCP postflight 17 檔／13 表 RLS、舊 39 policies 不變、types 一致、同份 73 pgTAP 完整 rollback，固定假帳號／家庭／context／暫時 extension 零殘留。security 仍僅既有 Auth WARN，performance 10 → 13 unused-index INFO（新增邀請表三個必要索引，保留）。程式提交 `8c804ff` 的 CI `39121407670` 三項全過，完整 e2e 232 passed／12 skipped、無 flaky；結案文件最新 CI 仍須重跑通過才合併。**前端未部署，真實帳號／OAuth／真機未驗，不改 0.4.3 公告；DP-048／049 尚未開始。** 詳見 ADR §9、deployment §5.25、MCP handoff §0.12；下一項 DP-048 於本項合併後從最新 main 開新分支。
 
 - [x] **DP-044 — 家庭群組與分享產品規則定案（2026-10-18）：** 由 Next 經 In Progress 完成。專案擁有者採納 Codex 的 1–8 及 A–I 建議，ADR §9 記錄六人／每帳號一群、owner／member、有效邀請保留名額、七天 Email 綁定連結、退出與解散、日曆與事項 ownership、edit／view、private、父子／重複例外、附件清理、快取／撤權、過期寫入、備份／匯入、遊客與個人顯示規則。AGENTS.md §0.1、MCP handoff 及 Next 基線同步更新，另補記今日 0.4.3 已部署，不回寫公告。**只改四份文件，沒有 migration、程式、schema／release version 或 Supabase MCP 操作。** 文件定案沒有可還原的程式修正，未新增鏡像文件字串的測試。lint／typecheck／build／check:build／diff check 通過；完整單元 76 檔 1267 項＋7 項 Node 測試通過（首次預設 worker 數有 15 個 worker 啟動逾時，以兩個 worker、30 秒案例逾時完整重跑通過）；核心 e2e 7 passed／1 個桌面不適用 skipped，兩個 Supabase env 以空值啟動（首次手機 auth harness 冷載入逾時，相同指令重跑全部通過，e2e 逾時未調整）。依本次授權每項 PR 驗證及 CI 通過後自主合併再接下一項；下一項 DP-047，遠端 migration 仍由擁有者 CLI 套用，先 migration 再部署。
 

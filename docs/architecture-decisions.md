@@ -933,7 +933,7 @@ owner-only 模型的前置驗證視為滿足：2026-08-22 的真實帳號驗收�
 
 schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最後一次 `create or replace` 的 migration 為準。MCP 僅做必要的 read-only schema／advisor preflight、types 核對與安全 rollback 測試，不套 DDL、不 remote reset；migration 由專案擁有者用 CLI dry-run／push，**先推 migration，再部署前端**。本機實跑 `supabase:start` → `supabase:reset` → `supabase:test`，types 以本機 `supabase:types` 為準，不提交遠端 `__InternalSupabase`。自動合併授權不等於自動部署、代替擁有者 push migration 或放寬正式資料界線。
 
-### DP-047 實作邊界（2026-10-18，遠端尚待擁有者套用）
+### DP-047 實作邊界（2026-10-18）
 
 - 新增 group／membership／invitation 三表；沒有修改既有日曆、事項 RLS、domain 文件或 schema v4。家庭資料由 `src/family/familyService.ts` 的獨立 service 提供，只在管理／邀請畫面開啟時讀取，離開畫面或換帳號即丟棄，不放進 repository 的使用者文件、備份或持久快取。待確認邀請的 token 與捕捉時間例外放目前分頁的 `sessionStorage`，只為 OAuth 導回後仍能明確確認加入，讀取上限七天；捕捉時移除家庭 URL fragment，保留 Auth 自己的 hash，接受／拒絕／關閉清除。
 - direct table DML 不授權給 client；RLS 只允許成員讀群組／membership、owner 或相符已驗證受邀者讀邀請的允許欄位，hash 欄不開放。三支 public RPC 是 INVOKER，私有 `daypop_family` helper 是必要的受控 DEFINER：membership 不能由前端偽造，當前驗證 Email 又位於 Auth schema；helper 一律固定空 `search_path`、只授權 authenticated、從 `auth.uid()` 推導 caller，不接受 caller／owner／role 欄位、不使用 dynamic SQL，也不回傳原始 Auth／profile。既有 `daypop_private` bootstrap 邊界不動。
@@ -941,4 +941,4 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 - 設定入口沿既有「帳號與資料」分組與 DP-113 卡片／dialog token；guest 只提供登入、session 未確認不建立 service。接受／拒絕前只 preview，不會自動加入或處理遊客資料。表單等伺服器確認、失敗保留輸入，移除／撤銷／退出／解散二次確認；`ViewportLayer`＋`useModalFocus` 沿既有焦點規則。畫面明示日曆分享尚未開放。
 - 回歸先在 16 檔基準失敗（缺表／RPC），17 檔後 73 項通過；另用兩條真實本機 Postgres 連線同搶最後一席，拿掉 group `FOR UPDATE` 可提交第七個保留名額而測試失敗，還原鎖後只一條成功、另一條回 `family_full`，測試假資料／trigger 隨後清除。CI database job 也跑此競態；前端 fake 只驗證流程，不冒充 RLS 證據。
 
-CLI 套用、MCP postflight 與真實帳號／OAuth／手機驗收尚未完成，不能把本機測試說成遠端功能已上線；下一項仍是 DP-048，須在本項完成後才開始。
+本日擁有者已完成 CLI dry-run／push，MCP postflight 確認 17 檔／13 表 RLS、舊 39 policies 不變、types 一致，並以同份 73 項 pgTAP 完整 rollback／零假資料與暫時 extension 殘留，詳見 handoff §0.12。**尚未部署前端或做真實帳號／OAuth／手機驗收**，不能把本機／DB 測試說成使用者端功能已上線；下一項仍是 DP-048，須在本項完成合併後才開始。

@@ -724,7 +724,7 @@ lint、typecheck、單元 1,229 個（73 檔）、posttest、build、check:build
 
 **0.4.3 一經部署，這個條目就不可回寫。** DP-034 的放行（是否不等 DP-032）仍由專案擁有者決定。
 
-### 5.25 DP-047 家庭管理與邀請：第 17 檔待套用（2026-10-18）
+### 5.25 DP-047 家庭管理與邀請：第 17 檔套用順序（2026-10-18）
 
 0.4.3 已於 2026-10-18 部署（run `39093740111`，main `429dcb5`），該公告不可回寫。本項不提升 App 或 user-data 版本、不觸發部署。家庭管理與邀請的前端需要新的三表／三 RPC；**一定先由擁有者推 migration，再部署前端**，沿 §5.22 的順序。日曆共同維護仍留 DP-048，不把本項說成日曆分享已上線。
 
@@ -742,10 +742,12 @@ npx supabase db push --linked
 npx supabase migration list --linked
 ```
 
-之後由 Codex 依 [MCP handoff §0.12](supabase-mcp-handoff.md#012-dp-047-本機候選與第-17-檔交接2026-10-18待擁有者-cli) 做 metadata／advisor／types 與同份 pgTAP 的 rollback postflight，才可把遠端驗證標成完成。預期 17 檔、13 張 public tables 全 RLS；新三支 RPC 只 authenticated 可執行，public wrapper INVOKER、私有 helper 固定 path／caller，沒有 raw token 欄位、沒有 client membership DML。不得查改正式使用者資料；本機雙連線測試有 committed synthetic fixtures，只能對本機 Docker 跑。
+之後由 Codex 依 [MCP handoff §0.12](supabase-mcp-handoff.md#012-dp-047-本機候選與第-17-檔交接2026-10-18當日已套用) 做 metadata／advisor／types 與同份 pgTAP 的 rollback postflight，才可把遠端驗證標成完成。預期 17 檔、13 張 public tables 全 RLS；新三支 RPC 只 authenticated 可執行，public wrapper INVOKER、私有 helper 固定 path／caller，沒有 raw token 欄位、沒有 client membership DML。不得查改正式使用者資料；本機雙連線測試有 committed synthetic fixtures，只能對本機 Docker 跑。
 
 本機已跑 start → reset → 7 檔 247 項 pgTAP、雙連線名額競態、本機 types；先缺表／RPC 回歸失敗，再實作通過，並移除 group 鎖證明競態測試可抓到第七名額，還原後全過。lint／typecheck／1,290 個單元案例（80 檔）＋7 項 Node 測試／build／check:build 通過；JS 704,861 raw／207,214 gzip bytes、CSS 111,010 raw／27,030 gzip bytes，均在原本 budget 內，保留既有 500kB chunk 提示。相關 e2e 13 passed／3 個桌面不適用 skipped（family／canonical account／responsive shell），Supabase URL／publishable key 以 Node 明確設空值，沒有連 `.env.local` 的遠端。
 
 原稿設定頁實際渲染後比對既有控制項，新增家庭入口沿 DP-113 自有卡片／dialog tokens；六套主題 × 淺／深色的卡片配色、手機／桌面流程、focus trap／焦點還原及 axe 0 違規（隱藏紋理且至少量到 5 個對比節點）通過。另量 390×844、375×667、932×430 漫畫淺／深色：dialog 分別為 `15..829`、`15..652`、`15..415`，皆留在 App viewport，可捲至末端、確認按鈕可見、無水平溢出；實際 Intl 為 Asia/Taipei。證據在 `%TEMP%/daypop-dp047-proof/`。前端 auth harness／family fake 只驗證 UI，DB 授權由真實本機 pgTAP／競態驗證；未做遠端 postflight、真實帳號／OAuth／真機或 staging 驗收。
 
-**目前停止在擁有者 CLI 套用前，沒有部署。** postflight 與 CI 通過後依授權合併本項，下一項 DP-048 另開分支與 PR。未來擁有者決定部署時，仍須先確認該次 main 所需全部 migrations 已推送，不能只因第 17 檔完成而跳過後續 migration。
+**本日後續：擁有者已完成上述 CLI dry-run／push，第 17 檔已套用；尚未部署前端。** MCP 確認 17 檔／13 表全 RLS、舊 39 條 policies 不變、RPC／private helper grants／path 正確、remote public types 與本機一致；同份 73 項固定假資料 pgTAP 完整 rollback，測試帳號／家庭資料／context／暫時 extension 皆零殘留。security 仍僅既有 Auth WARN，performance 新增三個剛建立的 invitation indexes 的 unused-index INFO，保留必要索引，詳見 handoff §0.12。postflight 已完成，CI 通過後依授權合併本項；下一項 DP-048 另開分支與 PR。未來擁有者決定部署時，仍須先確認該次 main 所需全部 migrations 已推送，不能只因第 17 檔完成而跳過後續 migration。
+
+程式提交 `8c804ff` 的 CI [39121407670](https://github.com/yoyoCadence/DayPop/actions/runs/39121407670) 三項全過：程式檢查 1m45s、DB 1m48s（247 pgTAP／雙連線競態／types 比對）、完整 e2e 17m52s（232 passed／12 skipped，無失敗或 flaky）。後續只提交 postflight／任務結案文件，最新 PR CI 仍須重跑通過才合併。
