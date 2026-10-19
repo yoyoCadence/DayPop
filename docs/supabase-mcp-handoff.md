@@ -128,6 +128,28 @@ MCP postflight 確認公開 10 表 RLS、三支 occurrence／calendar RPC 的 SE
 
 詳見 [部署驗收紀錄](deployment-verification-2026-10-13.md)。本次文件 PR 只記錄既成操作；沒有再次使用 MCP 寫入或 CLI 推送。真實帳號與真機驗收仍未完成。
 
+## 0.12 DP-047 本機候選與第 17 檔交接（2026-10-18，當日已套用）
+
+**目前狀態：第 17 檔已由擁有者 CLI 套用，MCP postflight／rollback 通過；尚未部署前端。** 基線為 PR #165 合併後的 `d903e77`，本次只做家庭管理與邀請，日曆 RLS 仍 owner-only；DP-048／049 尚未開始。CLI 順序見 [`deployment.md` §5.25](deployment.md#525-dp-047-家庭管理與邀請第-17-檔套用順序2026-10-18)。下方各階段紀錄保留歷史狀態，新 migration 不得經 MCP 下 DDL。
+
+preflight 只讀 schema／migration history／advisor／types：DayPop `aquhcaduovkxyfhzywgc` 為 ACTIVE_HEALTHY（Postgres 17.6），遠端 16 檔至 `20261007000000_delete_calendar_rpc`；10 張 public tables RLS 開啟，owner policies、兩表 `sharing_scope`、calendar 複合 FK 及三支 occurrence／calendar RPC 的 INVOKER／空 path／execute grants 與 repo 一致。遠端 types 的 schema／RPC 無 drift，只有 `__InternalSupabase` 的 PostgREST 14.15 與泛型 helper 括號差異，沒有提交遠端輸出。security 只有既有 `auth_leaked_password_protection` WARN（[修正說明](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)），performance 為 10 個既有 unused-index INFO，未刪索引或改 Auth 設定。沒有查改正式使用者列。
+
+本機第 17 檔 `20261018045829_family_groups_and_invitations.sql`：
+
+- 三張家庭表 RLS／必要 FK indexes／欄位 grants；沒有 client direct DML。只存 256-bit 邀請 token 的 SHA-256 hash，七天有效、單次使用，Email 以 Auth 當前已驗證值核對；group 鎖保證六席（含有效 pending），移除／退出後舊 token 不復活。
+- `family_snapshot()`／`family_invitation_preview(text)`／`family_command(text,jsonb)` 為 public INVOKER、空 `search_path`、只允許 authenticated；受控 DEFINER helper 在非 exposed 的 `daypop_family`，caller 固定來自 `auth.uid()`。helper 的額外權限只處理家庭資料、Auth 驗證 Email 與必要 roster 名稱；不開放 raw profiles／preferences、不接受任意 owner／role。既有 RPC 未重寫。
+- 這台 Windows **已有 Docker Desktop**，本次啟動 daemon 並把 `C:\Program Files\Docker\Docker\resources\bin` 加進該次 PowerShell PATH，沿 CI 的 exclude 清單只啟動 Postgres，實跑 `supabase:start` → `supabase:reset` → `supabase:test`：7 檔 247 項全過。`supabase:test:concurrency` 的雙連線最後名額也通過且零假資料／trigger 殘留；暫時拿掉 group 鎖後同一測試會因兩條均成功而失敗，已還原並重新 reset／測試。
+- `src/lib/database.types.ts` 以該本機 `supabase:types` 原樣產生，沒有 `__InternalSupabase`。user-data v4／App 0.4.3／已部署公告不變。
+
+**當日 CLI／MCP postflight 結果（已完成）：**
+
+1. 擁有者先 `migration list --linked` 確認前 16 檔一致，`db push --linked --dry-run` 精確只列第 17 檔，再 `db push --linked` 成功套用、重新 list 兩側同為 17 檔。MCP history 也核對最新為 `20261018045829`；沒有 agent 代推 migration 或經 MCP 套用正式 DDL。
+2. MCP 確認 13 張 public tables 全 RLS，新三表 21 欄、11 個 indexes／unique indexes、constraints／grants 與 migration 相符。沒有 client direct DML 或 hash 欄 SELECT；public 三支新 RPC 是 INVOKER，六支私有 helper 是受控 DEFINER，全部空 path、anon 無 execute、authenticated 可 execute。原有 39 條 policies 逐項與 preflight 相同，sharing_scope、calendar 複合 FK 與三支既有 occurrence／calendar RPC 設定未變。遠端 types 的完整 public schema 與本機輸出逐字一致；僅 remote Internals／泛型 helper 括號不同，未覆寫本機檔。
+3. security 仍只有上述既有 Auth WARN。performance 10 → 13 個 `unused_index` INFO：增加的是新表 `family_invitations_group_expiry_idx`、`family_invitations_inviter_idx`、`family_invitations_accepted_by_idx`，剛套用尚無使用統計，且服務名額查詢／FK 需要這些索引，保留而不移除；沒有新增 RLS／function-search-path 等警告。[advisor 說明](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index)。
+4. repo `8c804ff` 的 `family_groups.test.sql` **同一份**固定 `...0471`–`...0476` 假身分，在單一 transaction 跑完並 rollback；`finish()` 為 `1..73`、無 failure diagnostics。測試前後只查固定 IDs，users／groups／memberships／invitations 全 0，`pg_temp.family_test_context` 不存在、測試內暫時 pgTAP extension 前後皆不存在。沒有查改正式使用者列、沒有遠端跑會 commit fixtures 的本機 concurrency script；不是 CLI `test db --linked` 的紀錄。
+
+程式提交 `8c804ff` 的 CI `39121407670` 三項全部通過：1,290 單元＋7 Node、247 pgTAP／雙連線競態／types 比對、完整 e2e 232 passed／12 skipped，無 flaky。結案文件更新後最新 CI 仍須通過才合併。**此段不代表前端已部署或真實帳號／OAuth／真機已驗收。** 下一項 DP-048 仍須本項合併後另開分支。
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：

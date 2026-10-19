@@ -11,6 +11,8 @@ import { createEmptyUserData } from '../domain/types';
 import { AppUpdateProvider } from '../pwa/AppUpdateProvider';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { FakeSupabase } from './fakeSupabase';
+import { FamilyServiceContext } from '../family/familyContext';
+import { FakeFamilyService } from './fakeFamilyService';
 import '../theme/fonts.css';
 import '../styles.css';
 
@@ -29,6 +31,15 @@ const E2E_NOW = '2026-08-09T00:00:00.000Z';
  * authenticated repository and attachment boundary.
  */
 export const fakeSupabase = new FakeSupabase();
+export const familyServices = new Map<string, FakeFamilyService>();
+// Expose this dev-only test seam without importing the React entry a second
+// time (which would create another root and reset the synthetic Auth session).
+Object.defineProperty(window, '__daypopFamilyServices', { value: familyServices, configurable: true });
+function familyServiceForUser(userId: string) {
+  let service = familyServices.get(userId);
+  if (!service) { service = new FakeFamilyService(userId); familyServices.set(userId, service); }
+  return service;
+}
 seedAccount(fakeSupabase);
 
 function seedAccount(database: FakeSupabase) {
@@ -129,11 +140,13 @@ function createSession(email: string): Session {
 createRoot(document.getElementById('root')!).render(
   <AppUpdateProvider>
     <E2EAuthProvider>
+      <FamilyServiceContext.Provider value={familyServiceForUser}>
       <SessionDataProvider client={fakeSupabase.asClient()} storage={window.localStorage}>
         <ThemeProvider>
           <App />
         </ThemeProvider>
       </SessionDataProvider>
+      </FamilyServiceContext.Provider>
     </E2EAuthProvider>
   </AppUpdateProvider>,
 );

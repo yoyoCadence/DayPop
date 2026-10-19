@@ -131,6 +131,8 @@
 
 ## 每段搬移的 smoke checklist
 
+DP-047（2026-10-18）另依 ADR §9 增加原稿沒有的家庭管理／邀請入口，沿既有設定分組與 DP-113 控制項。guest 先登入、邀請明確確認、owner 管理與 member 退出、失敗保留草稿、焦點及遊客／帳號快取不變由 `e2e/family-groups.spec.ts` 驗證；family fake 不冒充 RLS，真實本機 DB 測試與部署前置見 `deployment.md` §5.25。日曆分享尚未開放；本日擁有者已 CLI 套用第 17 檔、MCP rollback postflight 通過，**前端未部署**，不能把本項說成上線完成。
+
 - [ ] 390px 手機寬度沒有水平溢出，觸控目標可操作。
 - [ ] 使用相同資料狀態與原始 `.dc.html` 逐畫面比對，不以單張截圖或現有 React scaffold 當作設計來源。
 - [ ] 漫畫淺色主題的資訊層級、色彩、字級、間距、粗黑邊框、底部 sheet、FAB、底部導覽與浮動寵物一致。

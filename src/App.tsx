@@ -3,6 +3,7 @@ import { AuthDialog } from './auth/AuthDialog';
 import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
 import { useStorageMode } from './hooks/useStorageMode';
+import { FamilyInvitationGate } from './family/FamilyInvitationGate';
 import { ReleaseNoticeDialog } from './pwa/ReleaseNoticeDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdateState } from './pwa/appUpdateContext';
@@ -109,6 +110,7 @@ export default function App() {
       dialogs={
         <>
           <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
+          <FamilyInvitationGate timezone={state.data.preferences.timezone} onOpenAuth={() => setAuthOpen(true)} />
           {/* At most one release dialog at a time, most actionable first: an
               update to take, then the answer to a 檢查更新 the user just
               pressed, then this version's notes if this device has not shown

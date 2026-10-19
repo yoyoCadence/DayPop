@@ -7,7 +7,9 @@
 | 遊客存在目前瀏覽器，換裝置不自動轉移；storage 降級時先匯出未保存內容 | `src/storage/localRepository.ts`、`browserStorage.ts` 與持續 `StorageWarningBanner`。不把記憶體模式說成可持久保存。 |
 | 帳號資料保存至 Supabase，device 留 cache，guest 不自動上傳 | `src/data/SessionDataProvider.tsx`、`supabaseRepository.ts`、`cachedSupabaseRepository.ts` 與 `src/storage/accountCache.ts`。guest／account identity 與 storage key 分離，cache 不整份上傳。 |
 | 帳號驗證用 Supabase Auth，Google 登入連到 Google | `src/auth/AuthProvider.tsx` 的 signInWithPassword／signInWithOAuth(provider: google)。沒有在此變更 provider 或 redirect。 |
-| 目前只有個人帳號存取，沒有家庭／他人分享 | 現有 owner RLS migrations 與 rollback pgTAP；`sharingScope` 不等於目前已提供家庭模型。這不是「管理員也無法存取」或絕對保密承諾。 |
+| 行程與待辦仍只供本人存取；可管理家庭與邀請，日曆分享尚未開放 | DP-047 只增加 group／membership／invitation，既有日曆 owner RLS 不變；`sharingScope` 不等於已提供分享。這不是「管理員也無法存取」或絕對保密承諾。 |
+| 家庭名稱、成員關係與受邀 Email 保存在 Supabase；成員只見必要名稱／角色 | `family_groups`／`family_memberships`／`family_invitations` 的 RLS、欄位 grant 與受控 RPC。受邀 Email 只供 owner 與對應已驗證帳號查看，token 只存 hash，App 不寄家庭邀請信。接受前需登入及確認，群組 owner 不因此取得私人日曆內容。 |
+| 待確認的邀請只以 sessionStorage 銜接登入，不進帳號快取或備份 | `src/family/invitationIntent.ts`／`invitationStore.ts`，`daypop.pending-family-invitation` 只放 token 與捕捉時間，讀取超過七天的紀錄即丟棄。接受／拒絕／使用者關閉時清除，storage 不可用時保留記憶體並提醒 OAuth 後重新開連結。Auth hash 不移除；URL 的家庭 token 捕捉後從網址移除。 |
 | 附件需登入、存於私人空間，下載 link 到期 | `src/data/repository.ts` 的 attachment capability、`supabaseRepository.ts` 的 signed URL（60 秒），及 private bucket／owner policies。卡片不固定承諾時長，避免將來調整時造成過時文案。 |
 | JSON 備份不含附件、匯出檔未加密 | `src/domain/dataTransfer.ts` 的明確 allowlist、`serializeJsonBackup()` 與 ICS 純文字輸出；`src/browser/dataTransferFiles.ts` 的下載。附件需個別下載，副本需自行管理。 |
 | 登出不刪雲端資料，device 可能仍留 guest／account cache | `AuthProvider.signOut()` 僅撤銷 session；SessionDataProvider 切 identity，沒有刪除 guest／account-cache 的 handler。不能把登出稱為清空資料。 |

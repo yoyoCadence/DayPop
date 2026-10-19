@@ -273,6 +273,112 @@ export type Database = {
           },
         ]
       }
+      family_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      family_invitations: {
+        Row: {
+          accepted_by: string | null
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          group_id: string
+          id: string
+          invited_by: string
+          status: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_by?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          group_id: string
+          id?: string
+          invited_by: string
+          status?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_by?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_id?: string
+          id?: string
+          invited_by?: string
+          status?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_memberships: {
+        Row: {
+          created_at: string
+          group_id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -476,6 +582,12 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: boolean
       }
+      family_command: {
+        Args: { p_action: string; p_payload: Json }
+        Returns: Json
+      }
+      family_invitation_preview: { Args: { p_token: string }; Returns: Json }
+      family_snapshot: { Args: never; Returns: Json }
       finalize_event_attachment_upload: {
         Args: {
           p_event_id: string
