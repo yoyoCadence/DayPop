@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { calendarToInsert, eventToInsert, preferencesToInsert } from '../domain/databaseMapping';
 import { createEmptyUserData } from '../domain/types';
 import { MemoryStorage } from '../storage/browserStorage';
 import { readAccountCache } from '../storage/accountCache';
 import { FakeSupabase } from '../test/fakeSupabase';
-import { CachedSupabaseDayPopRepository } from './cachedSupabaseRepository';
+import { CachedRemoteLoadError, CachedSupabaseDayPopRepository } from './cachedSupabaseRepository';
 import { SupabaseDayPopRepository } from './supabaseRepository';
 
 const SELF='00000000-0000-4000-8000-000000000481';
@@ -106,5 +106,41 @@ describe('session-only received calendars',()=>{
     await repository.addEvent(input);await repository.load();
     await expect(repository.addEvent({...input,title:'重試前修改的草稿'})).rejects.toThrow();
     expect(db.rows('events').find(e=>e.id===id)?.title).toBe('已保存的原草稿');
+  });
+  it.each(['update','cancel','replace'] as const)('rejects a versioned %s after revalidation removes its target',async operation=>{
+    const {db}=fixture();db.rows('events')[0]!.recurrence_rule='FREQ=DAILY;COUNT=3';
+    const repository=new SupabaseDayPopRepository(db.asClient(),SELF);await repository.load();
+    const versions=repository.captureSharingVersions();db.sharingManifest=[];await repository.load();
+    const occurrence={kind:'all-day' as const,date:'2026-10-20'};
+    const save=()=>operation==='update'?repository.updateEvent(EVENT,{title:'仍需保留的草稿'}):
+      operation==='cancel'?repository.cancelEventOccurrence(EVENT,occurrence):repository.replaceEventOccurrence(EVENT,occurrence,{title:'單次草稿'});
+    await expect(repository.withSharingVersions(versions,save)).rejects.toThrow('草稿已保留');
+    expect(db.writes).toEqual([]);
+    expect(repository.personalData().events).toEqual([]);
+  });
+  it.each([[false,'manifest'],[false,'received-page'],[true,'manifest'],[true,'received-page']] as const)(
+    'keeps fresh owned rows on a sharing-only outage (prior cache: %s, failure: %s)',async(priorCache,failure)=>{
+      const {db}=fixture();const storage=new MemoryStorage();
+      const repository=new CachedSupabaseDayPopRepository(db.asClient(),SELF,storage);
+      if(priorCache)await repository.load();
+      const personalId='20000000-0000-4000-8000-000000000489';
+      db.seed('events',[...db.rows('events'),{...db.rows('events')[0],id:personalId,owner_id:SELF,calendar_id:CAL,title:'雲端剛載入的本人資料'}]);
+      if(failure==='manifest')db.failures.set('rpc:calendar_sharing_manifest','sharing unavailable');
+      else {
+        const rpc=db.rpc.bind(db);
+        vi.spyOn(db,'rpc').mockImplementation((name,args)=>{
+          if(name==='calendar_sharing_manifest')db.failures.set('events','received page unavailable');
+          return rpc(name,args);
+        });
+      }
+      let failureResult:unknown;
+      await repository.load().catch(error=>{failureResult=error;});
+      expect(failureResult).toBeInstanceOf(CachedRemoteLoadError);
+      expect((failureResult as CachedRemoteLoadError).cachedData.events.map(e=>e.id)).toEqual([personalId]);
+      expect((failureResult as Error).message).toContain('分享');
+      const cached=readAccountCache(SELF,storage);
+      expect(cached.status==='ready'?cached.envelope.data.events.map(e=>e.id):[]).toEqual([personalId]);
+      expect(repository.sharingSession().available).toBe(false);
+      expect(storage.getItem(`daypop.account-cache.${SELF}`)).not.toContain('收到的行程');
   });
 });

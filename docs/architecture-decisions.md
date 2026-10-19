@@ -945,6 +945,8 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 
 ### DP-048 實作邊界（2026-10-19，本機候選）
 
+2026-10-20 合併前審查補上兩個回歸邊界。前景重查先於儲存而撤掉 target 時，若 expected versions 證明表單原本編輯過該行程，一般／單次寫入必須拒絕，不能用「已不存在」的 no-op 關閉表單。本人各頁已完整驗證後，分享 RPC 或 received page 失敗則保留並快取最新本人文件、收起 received 並顯示分享警告；只有本人頁本身失敗才沿既有舊快取 fallback，壞資料與 future-schema barrier 不放寬。八個新增單元回歸先失敗，暫時還原兩個修正也同樣失敗；修正後完整 1,312 單元＋7 Node 通過。新增兩個手機／桌面 e2e 實測草稿不關閉、本人新資料可搜尋且只將本人內容寫進快取；沒有修改已套用的 migration。
+
 **2026-10-20 已完成擁有者 CLI 第 18 檔套用與 MCP postflight；下文候選狀態是 2026-10-19 歷史。** 遠端 18 檔／14 表全 RLS／46 policies，remote public types 與本機一致，同份 55 分享＋73 家庭 pgTAP 完整 rollback、固定假資料／context／extension 零殘留。候選 `db3a2ec` 的 CI `39277931771` 三項全過，完整 e2e 241 passed／13 skipped；結案文件最新 CI 仍須通過才合併 PR #167。新 covering-index INFO 由 `calendar_id` UNIQUE 與 EXPLAIN 支持保留現有索引，證據及 advisor 連結見 handoff §0.13。前端未部署、不改 v4／0.4.3／公告，DP-049 待本項合併才開始。
 
 離線事件會立即收起 received；在途讀取／寫入成功也不能將收到的資料重新放回離線畫面，online 後才重查。共享新增在回應遺失後重新載入，仍交由 server 比對完整內容與作者，不因 snapshot 已有 id 就誤報改稿成功；一般修改只有當前完整內容已相同才可不寫入而確認，其他舊版本一律拒絕。單次替代的新 ID 若已被其他行程占用，即使同 owner 也拒絕，只有已保存的 replacement 才可沿用重試；回歸已先重現覆寫再驗證阻擋。inline 待辦標題／日期／子項輸入若因撤權卸載，dirty input 暫留 `DataProvider` 記憶體，從「未保存的輸入」選取複製；不保留原列在可見資料、不寫 storage，成功／明確取消或登出清除。EventSheet 本身維持掛載與原草稿。

@@ -28,8 +28,9 @@ import { RemoteDataError, SupabaseDayPopRepository } from './supabaseRepository'
 export class CachedRemoteLoadError extends Error {
   readonly cachedData: DayPopUserData;
 
-  constructor(cachedData: DayPopUserData, cause: RemoteDataError) {
-    super('目前無法連上雲端，正在顯示這台裝置最後一次同步的帳號資料。');
+  constructor(cachedData: DayPopUserData, cause: RemoteDataError,
+    message='目前無法連上雲端，正在顯示這台裝置最後一次同步的帳號資料。') {
+    super(message);
     this.name = 'CachedRemoteLoadError';
     this.cachedData = structuredClone(cachedData);
     this.cause = cause;
@@ -64,6 +65,10 @@ export class CachedSupabaseDayPopRepository
     try {
       return this.#persist(await this.#remote.load());
     } catch (cause) {
+      if(cause instanceof RemoteDataError && cause.currentData) {
+        const personal=this.#persist(cause.currentData);
+        throw new CachedRemoteLoadError(personal,cause,'自己的資料已同步；目前無法確認分享權限，暫時不顯示收到的內容。');
+      }
       // Missing bootstrap rows and invalid domain data are not connectivity
       // failures and must never be hidden behind an old cache.
       if (cause instanceof RemoteDataError && this.#cachedData) {

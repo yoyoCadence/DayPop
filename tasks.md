@@ -221,6 +221,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -389,7 +390,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Done
 
-- [x] **DP-048 — 日曆分享與單項私人覆寫（2026-10-20，PR #167）：** 由 Next 經 In Progress 完成，基線 `40ac192`。第 18 檔新增 share RLS、nullable server 作者與完整版本／系列／階層／清理邊界；分享、私人、只讀、刪除及搬移確認已接線，session metadata 與本人快取／備份分離，user-data 仍 v4。先失敗的回歸、反向 CAS 移除及替代 ID 碰撞驗證皆完成；本機 302 pgTAP、家庭／共享雙連線競態、types、1,304 單元＋7 Node、lint／typecheck／build／check:build 與相關 e2e 通過。候選 `db3a2ec` 的 CI `39277931771` 三項全過，完整 e2e 241 passed／13 skipped。擁有者 CLI dry-run 只有第 18 檔、push／list 成功；MCP postflight 18 檔／14 表全 RLS／46 policies、26 條非本項 policies 與 24 個既有 constraints 不變、public types 一致；同份 55＋73 pgTAP 完整 rollback、固定假資料與暫時 context／extension 零殘留。security 僅既有 Auth WARN；performance 的一個新 FK INFO 由 `calendar_id` UNIQUE／EXPLAIN 支持不新增重複索引，unused INFO 在 rollback 後為 7，詳見 handoff §0.13。**沒有部署前端或實帳號／OAuth／真機驗收，不改 0.4.3／公告；結案文件最新 CI 通過才合併，DP-049 隨後另開分支及 PR。**
+- [x] **DP-048 — 日曆分享與單項私人覆寫（2026-10-20，PR #167）：** 由 Next 經 In Progress 完成，基線 `40ac192`。第 18 檔新增 share RLS、nullable server 作者與完整版本／系列／階層／清理邊界；分享、私人、只讀、刪除及搬移確認已接線，session metadata 與本人快取／備份分離，user-data 仍 v4。先失敗的回歸、反向 CAS 移除及替代 ID 碰撞驗證皆完成；本機 302 pgTAP、家庭／共享雙連線競態、types、1,312 單元＋7 Node、lint／typecheck／build／check:build 與相關 e2e 通過。候選 `db3a2ec` 的 CI `39277931771` 三項全過，完整 e2e 241 passed／13 skipped。擁有者 CLI dry-run 只有第 18 檔、push／list 成功；MCP postflight 18 檔／14 表全 RLS／46 policies、26 條非本項 policies 與 24 個既有 constraints 不變、public types 一致；同份 55＋73 pgTAP 完整 rollback、固定假資料與暫時 context／extension 零殘留。security 僅既有 Auth WARN；performance 的一個新 FK INFO 由 `calendar_id` UNIQUE／EXPLAIN 支持不新增重複索引，unused INFO 在 rollback 後為 7，詳見 handoff §0.13。**沒有部署前端或實帳號／OAuth／真機驗收，不改 0.4.3／公告；結案文件最新 CI 通過才合併，DP-049 隨後另開分支及 PR。** 合併前審查的兩項缺口亦已修正：重查先撤掉 target 時版本化儲存拒絕並留草稿；分享 RPC／received page 故障保存新載入的完整本人資料與快取，顯示分享警告且收起 received。新增 8 單元回歸先失敗並反向驗證同樣失敗，完整 1,312 單元＋7 Node 通過；新增兩個手機／桌面 e2e，相關 46 項為 43 passed／3 skipped。僅前端修正，migration／types／已完成 MCP postflight 不變，最新 CI 通過才合併。
+
 
 - [x] **DP-047 — 家庭群組與安全邀請（2026-10-18，PR #166）：** 由 Next 經 In Progress 完成，基線 `d903e77`。第 17 檔增加三張全 RLS 家庭表、三 public INVOKER RPC／受控 private helper、六席含有效邀請預留、綁當前已驗證 Email 的七天 hash token、重發／撤銷／退出／解散；session-only service 與家庭管理／邀請確認 UI 不改 user-data v4／帳號快取／日曆 owner RLS。回歸先缺表／RPC 失敗；移除 group 鎖也會重現第七席而失敗，還原 reset 後本機 7 檔 247 pgTAP、雙連線競態及 types 全過。lint／typecheck／1,290 單元＋7 Node／build／check:build／migration 結構檢查及相關 e2e 13 passed／3 skipped；原稿與三種尺寸淺／深色已比對。擁有者 CLI dry-run 精確一檔、push 成功；MCP postflight 17 檔／13 表 RLS、舊 39 policies 不變、types 一致、同份 73 pgTAP 完整 rollback，固定假帳號／家庭／context／暫時 extension 零殘留。security 仍僅既有 Auth WARN，performance 10 → 13 unused-index INFO（新增邀請表三個必要索引，保留）。程式提交 `8c804ff` 的 CI `39121407670` 三項全過，完整 e2e 232 passed／12 skipped、無 flaky；結案文件最新 CI 仍須重跑通過才合併。**前端未部署，真實帳號／OAuth／真機未驗，不改 0.4.3 公告；DP-048／049 尚未開始。** 詳見 ADR §9、deployment §5.25、MCP handoff §0.12；下一項 DP-048 於本項合併後從最新 main 開新分支。
 

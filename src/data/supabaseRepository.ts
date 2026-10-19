@@ -86,7 +86,7 @@ import {
  * does not match the domain contract".
  */
 export class RemoteDataError extends Error {
-  /** Validated view after a rejected sharing write; never includes stale grants. */
+  /** Validated view after a sharing failure; never includes stale grants. */
   currentData?: DayPopUserData;
   constructor(
     readonly operation: string,
@@ -223,7 +223,14 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       stickers: inStoredOrder(stickers).map(stickerFromRow),
       preferences: preferencesFromRow(preferences.data),
     });
-    return this.#loadSharing();
+    try { return await this.#loadSharing(); }
+    catch(cause) {
+      // Owner pages already validated. A sharing-only outage must not replace
+      // these fresh rows with an older device cache, or leave received rows.
+      const error=new RemoteDataError('確認日曆分享',cause);
+      error.currentData=this.clearReceived();
+      throw error;
+    }
   }
 
   async #loadSharing(): Promise<DayPopUserData> {
@@ -295,7 +302,10 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async updateEvent(id: string, patch: EventPatch, options?: SharingWriteOptions): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const event = findEvent(data, id);
-    if (!event) return data;
+    if (!event) {
+      this.#rejectMissingVersionedEvent(id,options?.versions);
+      return data;
+    }
     const draft = applyEventPatch(
       event,
       patch,
@@ -332,7 +342,10 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
-    if (!canEditOccurrencesOf(data, eventId)) return data;
+    if (!canEditOccurrencesOf(data, eventId)) {
+      this.#rejectMissingVersionedEvent(eventId,options?.versions);
+      return data;
+    }
 
     const next = cancelEventOccurrence(data, eventId, occurrence, occurrenceWriteContext());
     if (this.#shared(findEvent(data,eventId)!.calendarId)) {
@@ -371,7 +384,10 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
-    if (!canEditOccurrencesOf(data, eventId)) return data;
+    if (!canEditOccurrencesOf(data, eventId)) {
+      this.#rejectMissingVersionedEvent(eventId,options?.versions);
+      return data;
+    }
 
     const next = replaceEventOccurrence(
       data,
@@ -778,6 +794,13 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     if (received?.permission==='view') throw new RemoteDataError('修改共享事項','這本日曆目前只能查看。');
     if (received && scope==='private') throw new RemoteDataError('設定不分享','需要保密的事項請存到自己的日曆。');
   }
+  #rejectMissingVersionedEvent(id:string,versions?:SharingVersions) {
+    if(!(versions ?? this.#writeVersions)?.events?.[id])return;
+    const error=new RemoteDataError('保存共享事項','內容或權限已變更，草稿已保留；請重新載入後再確認。');
+    error.currentData=structuredClone(this.#requireSnapshot());
+    throw error;
+  }
+
   #selectVersions(collection: 'events'|'todos'|'event_exceptions',ids: Set<string>,override?: SharingVersions): Record<string,string> {
     const source=(override ?? this.#writeVersions ?? this.captureSharingVersions())[collection] ?? {};
     return Object.fromEntries(Object.entries(source).filter(([id])=>ids.has(id)));

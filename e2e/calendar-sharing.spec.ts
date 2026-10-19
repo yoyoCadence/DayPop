@@ -105,6 +105,35 @@ test('共享衝突保留草稿，刪除確認在行程 sheet 上方且取消不�
   expect(await page.evaluate(()=> (window as HarnessWindow).__daypopSharingHarness!.rows('events').length)).toBe(0);clean();
 });
 
+test('重查撤權後儲存保留行程草稿，不把已消失的分享當成成功',async({page})=>{
+  const clean=monitorBrowser(page);await login(page);await received(page,'edit');
+  const dialog=await openReceivedEvent(page);await dialog.getByLabel('標題').fill('撤權後不能丟掉的行程草稿');
+  await expect(dialog.getByText(/家人甲的日曆/)).toBeVisible();
+  await page.evaluate(()=>{const db=(window as HarnessWindow).__daypopSharingHarness!;db.sharingManifest=[];window.dispatchEvent(new Event('focus'));});
+  await expect(dialog.getByText(/家人甲的日曆/)).toHaveCount(0);
+  await dialog.getByRole('button',{name:'儲存',exact:true}).click();
+  await expect(dialog.getByRole('alert')).toContainText('草稿已保留');
+  await expect(dialog.getByLabel('標題')).toHaveValue('撤權後不能丟掉的行程草稿');
+  expect(await page.evaluate(()=> (window as HarnessWindow).__daypopSharingHarness!.rows('events')[0]?.title)).toBe('家人的共享行程');
+  expect(await page.evaluate(()=>JSON.stringify(localStorage))).not.toContain('撤權後不能丟掉的行程草稿');clean();
+});
+
+test('分享查詢故障仍顯示並快取剛載入的本人資料，收到的內容收起',async({page})=>{
+  const clean=monitorBrowser(page);await login(page);await received(page,'edit');
+  await page.evaluate(({SELF})=>{
+    const db=(window as HarnessWindow).__daypopSharingHarness!;
+    const calendar=db.rows('calendars').find(c=>c.owner_id===SELF && c.is_default)!;
+    db.seed('events',[...db.rows('events'),{...db.rows('events')[0],id:'20000000-0000-4000-8000-00000000048c',owner_id:SELF,calendar_id:calendar.id,title:'雲端剛載入的本人行程'}]);
+    db.failures.set('rpc:calendar_sharing_manifest','sharing unavailable');window.dispatchEvent(new Event('focus'));
+  },{SELF});
+  await expect(page.getByText(/自己的資料已同步/)).toBeVisible();
+  await expect(page.getByText('收到的日曆',{exact:true})).toHaveCount(0);
+  await tabButton(page,'搜尋').click();await page.getByRole('textbox',{name:'搜尋',exact:true}).fill('雲端剛載入的本人行程');
+  await expect(page.locator('.search-result')).toHaveCount(1);
+  const cache=await page.evaluate(key=>localStorage.getItem(key),`daypop.account-cache.${SELF}`);
+  expect(cache).toContain('雲端剛載入的本人行程');expect(cache).not.toContain('家人的共享行程');clean();
+});
+
 test('擁有者明確確認歷史內容與 edit/view，新增私人事項保留既有 schema',async({page})=>{
   const clean=monitorBrowser(page);await login(page);
   await page.getByRole('button',{name:'設定日曆分享',exact:true}).click();

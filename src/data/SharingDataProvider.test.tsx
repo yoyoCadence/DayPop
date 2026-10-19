@@ -1,6 +1,6 @@
 import { act,useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach,describe,expect,it } from 'vitest';
+import { afterEach,describe,expect,it,vi } from 'vitest';
 import { calendarToInsert,eventToInsert,preferencesToInsert } from '../domain/databaseMapping';
 import { createEmptyUserData } from '../domain/types';
 import { FakeSupabase } from '../test/fakeSupabase';
@@ -24,6 +24,31 @@ function fixture() {
   return {db,repository:new SupabaseDayPopRepository(db.asClient(),OWNER)};
 }
 describe('sharing in the mounted data boundary',()=>{
+  it('rejects a save queued behind a focus revalidation that revokes its row',async()=>{
+    const {repository,db}=fixture();
+    const other='00000000-0000-4000-8000-000000000482',calendar='10000000-0000-4000-8000-000000000482';
+    const event='20000000-0000-4000-8000-000000000482';
+    db.seed('calendars',[...db.rows('calendars'),{...db.rows('calendars')[0],id:calendar,owner_id:other}]);
+    db.seed('events',[...db.rows('events'),{...db.rows('events')[0],id:event,owner_id:other,calendar_id:calendar}]);
+    db.sharingManifest=[{calendarId:calendar,ownerId:other,ownerName:'家人',permission:'edit',groupId:'30000000-0000-4000-8000-000000000481',updatedAt:NOW}];
+    let latest!:DataContextValue;
+    function Probe(){latest=useDayPopDataState();return null;}
+    host=document.createElement('div');document.body.append(host);root=createRoot(host);
+    await act(async()=>root!.render(<DataProvider repository={repository}><Probe/></DataProvider>));
+    const load=repository.load.bind(repository);let release!:()=>void;
+    const gate=new Promise<void>(resolve=>{release=resolve;});
+    vi.spyOn(repository,'load').mockImplementationOnce(async()=>{await gate;return load();});
+    db.sharingManifest=[];let saveError:unknown;
+    await act(async()=>{
+      window.dispatchEvent(new Event('focus'));
+      const save=latest.actions.updateEvent(event,{title:'撤權後保留的草稿'}).catch(error=>{saveError=error;});
+      release();await save;
+    });
+    expect(saveError).toBeInstanceOf(Error);
+    expect(latest.state).toMatchObject({status:'ready',warning:{kind:'write-failed'}});
+    expect(latest.state.status==='ready'?latest.state.data.events.map(e=>e.id):[]).toEqual([EVENT]);
+    expect(db.writes).toEqual([]);
+  });
   it('captures the version at the UI call, before another queued write changes the snapshot',async()=>{
     const {repository,db}=fixture();let latest!:DataContextValue;
     function Probe(){latest=useDayPopDataState();return null;}

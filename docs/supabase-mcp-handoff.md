@@ -166,6 +166,8 @@ postflight／CI 完成才更新 tasks Done、依授權合併本項，再從 main
 
 ### 2026-10-20 CLI 與 MCP postflight 完成紀錄
 
+**同日 PR 審查後續：** 僅修正前端 repository／cache 的兩項缺口：重查撤權後版本化儲存必須拒絕並留草稿；分享查詢故障保留完整新載入的本人文件與快取，received 仍 fail closed。八個新增單元回歸先失敗並完成反向驗證，完整 1,312 單元＋7 Node 與 build 檢查通過，另加手機／桌面 UI 回歸。下面的第 18 檔、schema、types 與 55＋73 rollback 證據未變；沒有重推或回改 migration，最新前端修正仍須 CI 通過才合併。
+
 1. 擁有者先核對 linked project `aquhcaduovkxyfhzywgc`、前 17 檔一致，dry-run 精確只列 `20261019104837_calendar_group_sharing.sql`；push 成功後 list 兩側同為 18 檔，MCP history 亦一致。沒有 agent 代推、migration DDL 或 remote reset。
 2. metadata 確認 14 張 public tables 全 RLS／46 policies，share 表六欄、三個索引、兩個複合 FK 與 permission check 均相符；24 個既有 constraints 及非本項修改的 26 條 policies 與 preflight 一致，附件、attendee、貼圖、profile／preferences 不開給 receiver。九支受檢 public RPC（含三支新分享 RPC）皆 INVOKER、空 path、anon 無 execute、authenticated 可 execute；private internal graph／內部 exception predicate／trigger helper 不授權 client。remote types 的完整 public schema 與本機 generated types 逐字一致，遠端檔只留忽略的 output，未覆寫本機 types 或提交 Internals。
 3. repo 同份 `calendar_sharing.test.sql` 55 項、`family_groups.test.sql` 73 項分別在單一 transaction 執行並完整 rollback，`finish()` 分別 `1..55`／`1..73`、無 failure diagnostics。測試前固定假 users／groups／shares 為 0；測試後只查固定 `...0471`–`...0476`／`...0481`–`...0483`，users、日曆、事項、exceptions、附件、attendee、貼圖、cleanup jobs、groups、memberships、invitations、shares 全 0；三個暫時 context 不存在、pgTAP extension 前後皆不存在。沒有查改正式使用者內容，也沒有在遠端執行會 commit fixtures 的 concurrency scripts。
