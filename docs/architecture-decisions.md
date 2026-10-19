@@ -945,6 +945,8 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 
 ### DP-048 實作邊界（2026-10-19，本機候選）
 
+**2026-10-20 已完成擁有者 CLI 第 18 檔套用與 MCP postflight；下文候選狀態是 2026-10-19 歷史。** 遠端 18 檔／14 表全 RLS／46 policies，remote public types 與本機一致，同份 55 分享＋73 家庭 pgTAP 完整 rollback、固定假資料／context／extension 零殘留。候選 `db3a2ec` 的 CI `39277931771` 三項全過，完整 e2e 241 passed／13 skipped；結案文件最新 CI 仍須通過才合併 PR #167。新 covering-index INFO 由 `calendar_id` UNIQUE 與 EXPLAIN 支持保留現有索引，證據及 advisor 連結見 handoff §0.13。前端未部署、不改 v4／0.4.3／公告，DP-049 待本項合併才開始。
+
 離線事件會立即收起 received；在途讀取／寫入成功也不能將收到的資料重新放回離線畫面，online 後才重查。共享新增在回應遺失後重新載入，仍交由 server 比對完整內容與作者，不因 snapshot 已有 id 就誤報改稿成功；一般修改只有當前完整內容已相同才可不寫入而確認，其他舊版本一律拒絕。單次替代的新 ID 若已被其他行程占用，即使同 owner 也拒絕，只有已保存的 replacement 才可沿用重試；回歸已先重現覆寫再驗證阻擋。inline 待辦標題／日期／子項輸入若因撤權卸載，dirty input 暫留 `DataProvider` 記憶體，從「未保存的輸入」選取複製；不保留原列在可見資料、不寫 storage，成功／明確取消或登出清除。EventSheet 本身維持掛載與原草稿。
 
 - 第 18 檔 `20261019104837_calendar_group_sharing.sql` 新增 RLS grant 表，以 `(calendar_id, owner_id)` 綁日曆、`(group_id, owner_id)` 綁有效 membership。退出／移除／解散 cascade 撤掉 grant，不刪內容，重新加入不恢復。既有複合外鍵維持；新 `created_by` 從 `auth.uid()` 產生，UPDATE 不可改作者或 ownership。歷史作者保留 NULL，不造假；作者 UUID 不設 Auth cascade FK，避免作者刪帳號改動別人保留的事項。

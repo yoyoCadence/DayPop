@@ -754,6 +754,8 @@ npx supabase migration list --linked
 
 ### 5.26 DP-048 日曆分享：第 18 檔套用順序（2026-10-19）
 
+**2026-10-20 第 18 檔已套用、MCP postflight 通過，尚未部署前端。** 擁有者已核對正確 project、dry-run 唯一一檔後 push，list／MCP history 同為 18 檔；14 表全 RLS、types 一致、55 分享＋73 家庭 pgTAP 完整 rollback／零殘留，詳見 handoff §0.13 完成紀錄。候選 `db3a2ec` 的 CI `39277931771` 三項全過，完整 e2e 241 passed／13 skipped。下方「尚未套用」與 CLI 指令保留為當時部署交接歷史，**不要重推或修改已套用的第 18 檔**；前端部署仍由擁有者另行決定，App 0.4.3／公告未改。
+
 最終本機 build 的 JS 為 733,853 raw／215,524 gzip bytes，CSS 111,244 raw／27,088 gzip bytes，均在既有 budget；保留原有 >500kB chunk 提示，不提高上限。新增輸入副本僅留目前帳號的記憶體，沒有新增 user-data v4 欄位或持久 storage。
 
 **目前是本機候選；遠端第 18 檔尚未套用，尚未部署。** DP-047 PR #166 已合併至 `40ac192`（最新 CI `39122797987` 三項全過），本項獨立分支新增 `20261019104837_calendar_group_sharing.sql`。它增加 calendar share、server 作者及 RLS／版本檢查，前端依賴新 manifest／寫入 RPC；順序仍是 **先推 migration，再部署前端**。本輪不改 App 0.4.3／公告，也沒有自動部署授權。
