@@ -784,4 +784,4 @@ npx supabase migration list --linked
 
 回覆兩份輸出後，Codex 依 [MCP handoff §0.13](supabase-mcp-handoff.md#013-dp-048-日曆分享第-18-檔候選2026-10-19) 核對 18 檔／14 表 RLS、public RPC 的 INVOKER／path／grant、private helper 與舊 owner-only 附件／Storage 邊界、advisor、public types，並以 repo 同份固定假資料 pgTAP 完整 rollback、核對零殘留；不查改正式使用者內容。兩個本機 concurrency scripts 會 commit 假 fixtures，**不得跑遠端**。
 
-本機 8 檔 302 pgTAP、兩連線 CAS／家庭名額、1,304 單元＋7 Node、lint／typecheck／build／check:build 與八個新共享 e2e 已通過；相關回歸與最後檢查仍進行中。反向移除 CAS 比較會讓兩筆舊版本均提交，還原後恢復一筆成功／一筆衝突。合併還要等待最新 CI、owner CLI 與 MCP postflight；DP-049 待本項合併後另開分支，真實帳號／OAuth／真機／staging 驗收仍未做。
+本機 8 檔 302 pgTAP、兩連線 CAS／家庭名額、1,304 單元＋7 Node、lint／typecheck／build／check:build 與八個新共享 e2e 已通過。84 項相關 e2e 首輪 74 通過／6 略過，4 個舊配色選取器案例修正為逐張檢查兩張家庭卡片後單獨重跑 6 通過／2 略過；axe 本機執行時限提高以分辨負載，CI 設定與斷言不變，詳見 ADR §9。反向移除 CAS 比較會讓兩筆舊版本均提交，還原後恢復一筆成功／一筆衝突。PR #167 的合併仍要等待最新 CI、owner CLI 與 MCP postflight；DP-049 待本項合併後另開分支，真實帳號／OAuth／真機／staging 驗收仍未做。

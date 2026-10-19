@@ -196,7 +196,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-048 — 日曆分享與單項私人覆寫（2026-10-19，本機候選）：** DP-047 PR #166 已合併（`40ac192`，最新 CI `39122797987` 三項全過），另開獨立分支。第 18 檔新增 share RLS、nullable server 作者、完整版本／系列／階層與清理邊界；session metadata＋personal projection 保持 v4，不把收到的資料放進快取或任何備份。分享／私人／只讀／刪除與搬移確認 UI 已接線；本機 8 檔 302 pgTAP、家庭／共享雙連線競態、1,304 單元＋7 Node、八個新共享 e2e 與 build／check:build 通過。移除 CAS 比較會重現兩筆都提交，還原後一筆成功／一筆衝突；相關 e2e／最後檢查仍進行中。**尚待擁有者 CLI dry-run／push 第 18 檔，再做 MCP schema／advisor／types／同份 pgTAP rollback postflight；沒有部署授權，尚未移 Done。** 見 ADR §9、deployment §5.26、handoff §0.13。DP-049 等本項完成合併後才開始。
+- [ ] **DP-048 — 日曆分享與單項私人覆寫（2026-10-19，本機候選）：** DP-047 PR #166 已合併（`40ac192`，最新 CI `39122797987` 三項全過），另開獨立分支。第 18 檔新增 share RLS、nullable server 作者、完整版本／系列／階層與清理邊界；session metadata＋personal projection 保持 v4，不把收到的資料放進快取或任何備份。分享／私人／只讀／刪除與搬移確認 UI 已接線；本機 8 檔 302 pgTAP、家庭／共享雙連線競態、1,304 單元＋7 Node、八個新共享 e2e 與 build／check:build 通過。移除 CAS 比較會重現兩筆都提交，還原後一筆成功／一筆衝突；PR #167（base main）已開；84 項相關 e2e 首輪 74 通過／6 略過，4 個舊卡片選取器失敗修正後單獨重跑全過（6 passed／2 skipped），最新 CI 仍需通過。**尚待擁有者 CLI dry-run／push 第 18 檔，再做 MCP schema／advisor／types／同份 pgTAP rollback postflight；沒有部署授權，尚未移 Done。** 見 ADR §9、deployment §5.26、handoff §0.13。DP-049 等本項完成合併後才開始。
 
 
 
