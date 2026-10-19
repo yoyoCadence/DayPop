@@ -33,6 +33,48 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_group_shares: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          group_id: string
+          owner_id: string
+          permission: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          group_id: string
+          owner_id: string
+          permission: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          group_id?: string
+          owner_id?: string
+          permission?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_group_shares_calendar_id_owner_id_fkey"
+            columns: ["calendar_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "calendars"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "calendar_group_shares_group_id_owner_id_fkey"
+            columns: ["group_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "family_memberships"
+            referencedColumns: ["group_id", "user_id"]
+          },
+        ]
+      }
       calendars: {
         Row: {
           color: string
@@ -209,6 +251,7 @@ export type Database = {
         Row: {
           calendar_id: string
           created_at: string
+          created_by: string | null
           end_date: string | null
           ends_at: string | null
           id: string
@@ -228,6 +271,7 @@ export type Database = {
         Insert: {
           calendar_id: string
           created_at?: string
+          created_by?: string | null
           end_date?: string | null
           ends_at?: string | null
           id?: string
@@ -247,6 +291,7 @@ export type Database = {
         Update: {
           calendar_id?: string
           created_at?: string
+          created_by?: string | null
           end_date?: string | null
           ends_at?: string | null
           id?: string
@@ -458,6 +503,7 @@ export type Database = {
           calendar_id: string
           completed_at: string | null
           created_at: string
+          created_by: string | null
           due_date: string | null
           id: string
           owner_id: string
@@ -472,6 +518,7 @@ export type Database = {
           calendar_id: string
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           due_date?: string | null
           id?: string
           owner_id: string
@@ -486,6 +533,7 @@ export type Database = {
           calendar_id?: string
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           due_date?: string | null
           id?: string
           owner_id?: string
@@ -561,6 +609,7 @@ export type Database = {
     }
     Functions: {
       append_daypop_ics: { Args: { p_payload: Json }; Returns: undefined }
+      calendar_sharing_manifest: { Args: never; Returns: Json }
       cancel_event_occurrence: {
         Args: {
           p_event_id: string
@@ -628,6 +677,18 @@ export type Database = {
           p_occurrence_starts_at: string
           p_replacement: Json
         }
+        Returns: Json
+      }
+      set_calendar_group_share: {
+        Args: {
+          p_calendar_id: string
+          p_expected_updated_at?: string
+          p_permission: string
+        }
+        Returns: Json
+      }
+      write_shared_calendar_item: {
+        Args: { p_action: string; p_payload: Json; p_versions?: Json }
         Returns: Json
       }
     }

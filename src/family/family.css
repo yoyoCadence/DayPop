@@ -23,3 +23,6 @@
 .family-card strong { color: var(--fg); font-family: var(--font-body); font-size: 14px; font-weight: 800; }
 .family-card p { max-width: 100%; margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .family-card > button { flex-shrink: 0; }
+.sharing-choice { display: flex; align-items: center; gap: 10px; padding: 10px 0; font-size: 16px; color: var(--fg); }
+.sharing-confirm-backdrop { z-index: 100; }
+.family-dialog .sharing-calendar-select { width: 100%; max-width: 100%; min-width: 0; font-size: 16px; }

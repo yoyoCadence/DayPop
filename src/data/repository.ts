@@ -1,4 +1,5 @@
 import { findEvent, type OccurrenceMutationContext } from '../domain/mutations';
+import type { SharingWriteOptions } from './calendarSharing';
 import type {
   CalendarPatch,
   EventPatch,
@@ -9,7 +10,7 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import { createDomainId, type DayPopUserData, type EventOccurrence, type TodoPriority } from '../domain/types';
+import { createDomainId, type DayPopUserData, type EventOccurrence, type TodoPriority, type SharingScope } from '../domain/types';
 
 /**
  * The only data contract the UI is allowed to depend on.
@@ -32,8 +33,8 @@ import { createDomainId, type DayPopUserData, type EventOccurrence, type TodoPri
 export interface DayPopRepository {
   load(): Promise<DayPopUserData>;
   addEvent(input: NewEventInput): Promise<DayPopUserData>;
-  updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData>;
-  deleteEvent(id: string): Promise<DayPopUserData>;
+  updateEvent(id: string, patch: EventPatch, options?: SharingWriteOptions): Promise<DayPopUserData>;
+  deleteEvent(id: string, options?: SharingWriteOptions): Promise<DayPopUserData>;
   /**
    * Remove one generated occurrence of a recurring event — DP-082.
    *
@@ -52,6 +53,7 @@ export interface DayPopRepository {
   cancelEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData>;
   /**
    * Detach one generated occurrence into a standalone, non-recurring event and
@@ -65,6 +67,7 @@ export interface DayPopRepository {
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData>;
   addTodo(input: NewTodoInput): Promise<DayPopUserData>;
   renameTodo(id: string, title: string): Promise<DayPopUserData>;
@@ -72,6 +75,7 @@ export interface DayPopRepository {
   rescheduleTodo(id: string, date: string): Promise<DayPopUserData>;
   toggleTodo(id: string): Promise<DayPopUserData>;
   deleteTodo(id: string): Promise<DayPopUserData>;
+  setTodoSharingScope?(id: string,scope: SharingScope): Promise<DayPopUserData>;
   addSticker(input: NewStickerInput): Promise<DayPopUserData>;
   deleteSticker(id: string): Promise<DayPopUserData>;
   addCalendar(input: NewCalendarInput): Promise<DayPopUserData>;
@@ -81,7 +85,7 @@ export interface DayPopRepository {
    * move to the surviving default rather than disappearing — see
    * `calendarDeletionPlan`.
    */
-  deleteCalendar(id: string): Promise<DayPopUserData>;
+  deleteCalendar(id: string, options?: SharingWriteOptions): Promise<DayPopUserData>;
   updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData>;
   /**
    * Applies a confirmed import — DP-056.

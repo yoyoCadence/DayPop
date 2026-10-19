@@ -21,6 +21,7 @@ import { useModalFocus } from '../../shell/useModalFocus';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import type { NewStickerInput, NewTodoInput } from '../../domain/mutations';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
+import type { SharingWriteOptions } from '../../data/calendarSharing';
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
 
@@ -52,7 +53,7 @@ export interface DayDetailSheetProps {
   onDeleteTodo(id: string): void;
   onRenameTodo(id: string, title: string): Promise<void>;
   onSetTodoPriority(id: string, priority: TodoPriority): Promise<void>;
-  onRescheduleTodo(id: string, date: string): Promise<void>;
+  onRescheduleTodo(id: string, date: string,options?:SharingWriteOptions): Promise<void>;
   onAddSticker(input: NewStickerInput): void;
   onDeleteSticker(id: string): void;
 }
@@ -98,14 +99,14 @@ function DayDetailSheetBody({
   const pendingDate = useRef(false);
   const [datePending, setDatePending] = useState(false);
 
-  async function rescheduleTodo(id: string, nextDate: string) {
+  async function rescheduleTodo(id: string, nextDate: string,options?:SharingWriteOptions) {
     // Moving a parent re-groups its children. Keep a pending child editor from
     // being re-mounted by another date write; other mutations keep their queue.
     if (pendingDate.current) throw new Error('請等待目前的日期保存完成。');
     pendingDate.current = true;
     setDatePending(true);
     try {
-      await onRescheduleTodo(id, nextDate);
+      if(options)await onRescheduleTodo(id,nextDate,options);else await onRescheduleTodo(id, nextDate);
     } finally {
       pendingDate.current = false;
       setDatePending(false);

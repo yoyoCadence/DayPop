@@ -27,6 +27,7 @@ import { ViewportLayer } from '../../shell/ViewportLayer';
 import { eventTimezoneOptions } from '../timezoneOptions';
 import { ScopeDialog, type ScopeMode } from './ScopeDialog';
 import type { EventPatch, NewEventInput, NewTodoInput } from '../../domain/mutations';
+import { receivedCalendar,calendarPermission,type SharingSession,type SharingVersions,type SharingWriteOptions } from '../../data/calendarSharing';
 
 /**
  * What the原檔 names an event with no title, in `commitEvent()` and
@@ -71,6 +72,10 @@ export interface EventDraft {
 }
 
 export interface EventSheetProps {
+  sharing?: SharingSession;
+  sharingVersions?: SharingVersions;
+  editingAllowed?: boolean;
+  privacyMixed?: boolean;
   open: boolean;
   /** Day the calendar currently has selected; the default for a new entry. */
   defaultDate: string;
@@ -86,8 +91,8 @@ export interface EventSheetProps {
   onClose(): void;
   /** A synchronous callback has already confirmed; production actions await the queue. */
   onAddEvent(input: NewEventInput): Promise<void> | void;
-  onUpdateEvent(id: string, patch: EventPatch): Promise<void> | void;
-  onDeleteEvent(id: string): Promise<void> | void;
+  onUpdateEvent(id: string, patch: EventPatch,options?:SharingWriteOptions): Promise<void> | void;
+  onDeleteEvent(id: string,options?:SharingWriteOptions): Promise<void> | void;
   /**
    * Which occurrence was tapped, when one was — DP-082.
    *
@@ -105,11 +110,12 @@ export interface EventSheetProps {
    * with the tapped occurrence's date. See `seriesPatch()`.
    */
   seriesDate?: string | null;
-  onCancelOccurrence(eventId: string, occurrence: EventOccurrence): Promise<void> | void;
+  onCancelOccurrence(eventId: string, occurrence: EventOccurrence,options?:SharingWriteOptions): Promise<void> | void;
   onReplaceOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
+    options?: SharingWriteOptions,
   ): Promise<void> | void;
   onAddTodo(input: NewTodoInput): Promise<void> | void;
   onUploadAttachment(eventId: string, file: File): Promise<void>;
@@ -154,7 +160,11 @@ export function EventSheet({ open, ...rest }: EventSheetProps) {
 function EventSheetForm({
   defaultDate,
   defaultTimezone,
-  editing,
+  editing:liveEditing,
+  sharing,
+  sharingVersions,
+  editingAllowed=true,
+  privacyMixed=false,
   draft,
   calendars,
   attachments,
@@ -173,6 +183,13 @@ function EventSheetForm({
   onDeleteAttachment,
   onOpenAttachment,
 }: Omit<EventSheetProps, 'open'>) {
+  const [editing]=useState(liveEditing);
+  const [baseVersions]=useState(sharingVersions);
+  const writeOptions=baseVersions?{versions:baseVersions}:undefined;
+  function update(id:string,patch:EventPatch){return writeOptions?onUpdateEvent(id,patch,writeOptions):onUpdateEvent(id,patch);}
+  function remove(id:string){return writeOptions?onDeleteEvent(id,writeOptions):onDeleteEvent(id);}
+  function cancelOccurrence(id:string,key:EventOccurrence){return writeOptions?onCancelOccurrence(id,key,writeOptions):onCancelOccurrence(id,key);}
+  function replaceOccurrence(id:string,key:EventOccurrence,patch:EventPatch){return writeOptions?onReplaceOccurrence(id,key,patch,writeOptions):onReplaceOccurrence(id,key,patch);}
   const editingWallTime = editing ? eventWallTime(editing) : null;
   // Editing always wins over a quick-add draft; they never apply together.
   const seed = editing ? null : draft;
@@ -226,6 +243,9 @@ function EventSheetForm({
       options[0]?.id ??
       '',
   );
+  const [privateItem,setPrivateItem]=useState(editing?.sharingScope==='private');
+  const received=receivedCalendar(sharing,calendarId);
+  const readonly=Boolean(editing && !editingAllowed) || calendarPermission(sharing,calendarId)==='view';
   /** The date the form was seeded with, i.e. the tapped occurrence's own day. */
   const occurrenceDate = editingWallTime?.date ?? null;
   const [attachmentBusy, setAttachmentBusy] = useState(false);
@@ -354,8 +374,8 @@ function EventSheetForm({
     if (!editing || !occurrence || !seriesEventId) return;
     if (mode === 'delete') {
       void confirmWrite('delete', () => kind === 'all'
-        ? onDeleteEvent(seriesEventId)
-        : onCancelOccurrence(seriesEventId, occurrence));
+        ? remove(seriesEventId)
+        : cancelOccurrence(seriesEventId, occurrence));
     } else {
       if (!pendingPatch) return;
       const patch = kind === 'all' ? seriesPatch(pendingPatch) : pendingPatch;
@@ -365,8 +385,8 @@ function EventSheetForm({
         return;
       }
       void confirmWrite('save', () => kind === 'all'
-        ? onUpdateEvent(seriesEventId, patch)
-        : onReplaceOccurrence(seriesEventId, occurrence, pendingPatch));
+        ? update(seriesEventId, patch)
+        : replaceOccurrence(seriesEventId, occurrence, pendingPatch));
       setPendingPatch(null);
       return;
     }
@@ -425,7 +445,7 @@ function EventSheetForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pendingSave.current) return;
+    if (pendingSave.current || readonly) return;
     // Events and todos diverge here, and both halves are the原檔's behaviour —
     // DP-076.
     //
@@ -457,6 +477,7 @@ function EventSheetForm({
       repeat === null ? {} : { recurrenceRule: recurrenceRuleForPreset(repeat) };
     if (editing) {
       const patch: EventPatch = {
+        ...(privateItem!==(editing.sharingScope==='private')?{sharingScope:privateItem?'private':'inherit'}:{}),
         title: named,
         date,
         allDay,
@@ -475,9 +496,10 @@ function EventSheetForm({
         setScopeMode('save');
         return;
       }
-      void confirmWrite('save', () => onUpdateEvent(editing.id, patch));
+      void confirmWrite('save', () => update(editing.id, patch));
     } else if (mode === 'event') {
       void confirmWrite('save', () => onAddEvent({
+        ...(privateItem?{sharingScope:'private' as const}:{}),
         id: draftIds.event,
         title: named,
         date,
@@ -491,7 +513,7 @@ function EventSheetForm({
         ...(!allDay ? { timezone } : {}),
       }));
     } else {
-      void confirmWrite('save', () => onAddTodo({ id: draftIds.todo, title: trimmed, date, calendarId: chosen }));
+      void confirmWrite('save', () => onAddTodo({ id: draftIds.todo, title: trimmed, date, calendarId: chosen,...(privateItem?{sharingScope:'private' as const}:{}) }));
     }
   }
 
@@ -513,10 +535,12 @@ function EventSheetForm({
               取消
             </button>
             <strong>{heading}</strong>
-            <button ref={saveButton} type="submit" disabled={saving || isTitleTooLong(title) || dateIssue !== null}>{pendingKind === 'save' ? '保存中…' : '儲存'}</button>
+            <button ref={saveButton} type="submit" disabled={readonly || saving || isTitleTooLong(title) || dateIssue !== null}>{pendingKind === 'save' ? '保存中…' : '儲存'}</button>
           </div>
 
-          <fieldset className="cal-sheet-body" disabled={saving} style={{ border: 0, margin: 0, minWidth: 0 }}>
+          <fieldset className="cal-sheet-body" disabled={saving || readonly} style={{ border: 0, margin: 0, minWidth: 0 }}>
+            {received?<p className="cal-sheet-pending">{received.ownerName}的日曆 · {readonly?'目前只能查看':'可共同編輯，事項保存在日曆擁有者的帳號'}</p>:null}
+            {editing && !editingAllowed && !received?<p className="cal-sheet-pending">目前無法修改這項內容，草稿已保留；請關閉並重新載入，確認目前的權限。</p>:null}
             {saveError?.kind === 'save' && <div ref={writeAlert} className="cal-day-title-error" role="alert">{saveError.message}</div>}
             {!editing && (
               <div className="cal-segmented" style={{ marginBottom: 12 }} role="group" aria-label="新增類型">
@@ -555,7 +579,9 @@ function EventSheetForm({
                         className="cal-cal-chip"
                         type="button"
                         aria-pressed={active}
-                        onClick={() => setCalendarId(calendar.id)}
+                        disabled={calendarPermission(sharing,calendar.id)==='view' || Boolean(editing &&
+                          (receivedCalendar(sharing,editing.calendarId)?calendar.id!==editing.calendarId:receivedCalendar(sharing,calendar.id)))}
+                        onClick={() => {setCalendarId(calendar.id);if(receivedCalendar(sharing,calendar.id))setPrivateItem(false);}}
                         style={
                           active
                             ? {
@@ -577,6 +603,10 @@ function EventSheetForm({
                 </div>
               </>
             )}
+
+            {!received ? <label className="sharing-choice"><input type="checkbox" checked={privateItem} onChange={event=>setPrivateItem(event.target.checked)}/>不分享（只有日曆擁有者可見）</label>:null}
+            {!received && (editing?.recurrence || seriesEventId) ? <p className="family-help">「不分享」會套用到整個重複系列，包含單次修改。</p>:null}
+            {!received && privacyMixed?<p className="family-feedback">此系列有不同的私人設定，目前整個系列不會分享。請先保存整個系列為「不分享」，再決定是否重新分享。</p>:null}
 
             {/* The原檔 puts 全天 above 日期; 待辦 mode has no 全天 at all.
                 原稿 :586 用的是 44×25 開關，不是 checkbox。 */}
@@ -720,7 +750,7 @@ function EventSheetForm({
                   {!editing ? (
                     <p>先儲存行程，再回來加入附件。</p>
                   ) : !attachmentsAvailable ? (
-                    <p>登入帳號後，附件才會保存到私人雲端空間。</p>
+                    <p>{received?'附件僅供日曆擁有者使用，不會隨日曆分享。':'登入帳號後，附件才會保存到私人雲端空間。'}</p>
                   ) : (
                     <>
                       <label className="cal-attachment-picker" aria-disabled={attachmentBusy}>
@@ -778,7 +808,7 @@ function EventSheetForm({
                         setScopeMode('delete');
                         return;
                       }
-                      void confirmWrite('delete', () => onDeleteEvent(editing.id));
+                      void confirmWrite('delete', () => remove(editing.id));
                     }}
                   >
                     {pendingKind === 'delete' ? '刪除中…' : '刪除事件'}

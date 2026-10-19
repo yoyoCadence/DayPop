@@ -1,13 +1,16 @@
-import { useRef, useState } from 'react';
+import { useContext,useRef, useState } from 'react';
+import { DataContext } from '../../data/dataContext';
+import { calendarPermission,type SharingWriteOptions } from '../../data/calendarSharing';
 import type { TodoItem, TodoPriority } from '../../domain/types';
 
 interface TodoPrioritySelectProps {
   todo: TodoItem;
-  onSetPriority(id: string, priority: TodoPriority): Promise<void>;
+  onSetPriority(id: string, priority: TodoPriority,options?:SharingWriteOptions): Promise<void>;
 }
 
 /** Display confirmed data; a failed write leaves the saved selection in place. */
 export function TodoPrioritySelect({ todo, onSetPriority }: TodoPrioritySelectProps) {
+  const context=useContext(DataContext);const readonly=calendarPermission(context?.sharing,todo.calendarId)==='view';
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
   const pending = useRef(false);
@@ -18,7 +21,9 @@ export function TodoPrioritySelect({ todo, onSetPriority }: TodoPrioritySelectPr
     setSaving(true);
     setError(false);
     try {
-      await onSetPriority(todo.id, priority);
+      if(readonly) throw new Error('目前只能查看。');
+      if(context?.sharing) await onSetPriority(todo.id,priority,{versions:{todos:{[todo.id]:todo.updatedAt}}});
+      else await onSetPriority(todo.id, priority);
     } catch {
       setError(true);
     } finally {
@@ -29,7 +34,7 @@ export function TodoPrioritySelect({ todo, onSetPriority }: TodoPrioritySelectPr
 
   return (
     <div className="cal-day-priority" aria-busy={saving}>
-      <select aria-label={`${todo.title} 的優先度`} title="優先度" value={todo.priority} disabled={saving}
+      <select aria-label={`${todo.title} 的優先度`} title="優先度" value={todo.priority} disabled={readonly || saving}
         onChange={(event) => { void change(event.target.value as TodoPriority); }}>
         <option value="none">無優先</option>
         <option value="low">低優先</option>

@@ -37,6 +37,7 @@ import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/rec
 import type { Calendar, TimedCalendarEvent } from '../../domain/types';
 import type { EventPatch } from '../../domain/mutations';
 import { draggedInterval, type TimedInterval } from '../../domain/weekDrag';
+import type { SharingVersions,SharingWriteOptions } from '../../data/calendarSharing';
 import { occurrenceTarget, type OccurrenceTarget } from './occurrenceTarget';
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -45,6 +46,8 @@ const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 const CONTINUATION_LABEL = '續';
 
 export interface WeekViewProps {
+  canEditEvent?(id:string):boolean;
+  sharingVersions?:SharingVersions;
   weekStartsOn: 0 | 1;
   /**
    * Seven columns from the start of the cursor's week, or three from the
@@ -67,12 +70,14 @@ export interface WeekViewProps {
   resolveOccurrences(window: OccurrenceWindow): ResolvedEventOccurrence[];
   calendars: Calendar[];
   /** The screen asks for scope before persisting a recurring drag — DP-083. */
-  onDragEvent(target: OccurrenceTarget, patch: EventPatch): void;
+  onDragEvent(target: OccurrenceTarget, patch: EventPatch,options?:SharingWriteOptions): void;
   /** A press that did not turn into a drag opens the event, as in the原檔. */
   onOpenEvent(target: OccurrenceTarget): void;
 }
 
 interface DragState {
+  target:OccurrenceTarget;
+  writeOptions?:SharingWriteOptions;
   /** Occurrence key — what the preview lights up. */
   key: string;
   dateKey: string;
@@ -115,6 +120,8 @@ export function WeekView({
   calendars,
   onDragEvent,
   onOpenEvent,
+  canEditEvent,
+  sharingVersions,
 }: WeekViewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -288,11 +295,16 @@ export function WeekView({
     segment: DisplaySegment,
     mode: 'move' | 'resize',
   ) {
+    if(canEditEvent && !canEditEvent(segment.event.id)) return;
     if (domEvent.button !== 0 || dragRef.current) return;
+    const target=targetsByOccurrence.get(segment.key);
+    if(!target)return;
     domEvent.preventDefault();
     if (mode === 'resize') domEvent.stopPropagation();
     domEvent.currentTarget.closest<HTMLElement>('.cal-week-event')?.focus();
     dragRef.current = {
+      target,
+      ...(sharingVersions?{writeOptions:{versions:sharingVersions}}:{}),
       key: segment.key,
       dateKey: segment.dateKey,
       mode,
@@ -366,9 +378,10 @@ export function WeekView({
         const to = shiftTo((domEvent.clientX - drag.startX) / factor, from);
         const interval = draggedInterval(drag.intervalEvent, displayTimezone,
           snapMinutes((domEvent.clientY - drag.startY) / factor), to - from, drag.mode);
-        const target = targetsByOccurrence.get(drag.key);
+        const target = drag.target;
         if (target && interval && (interval.startsAt !== drag.intervalEvent.startsAt || interval.endsAt !== drag.intervalEvent.endsAt)) {
-          onDragEvent(target, { timedInterval: interval });
+          if(drag.writeOptions)onDragEvent(target,{timedInterval:interval},drag.writeOptions);
+          else onDragEvent(target, { timedInterval: interval });
         }
         return;
       }
@@ -389,8 +402,8 @@ export function WeekView({
       // occurrence, not the series anchor, even for a vertical-only drag.
       patch.date = toDateKey(addDays(weekStart, toIndex));
 
-      const target = targetsByOccurrence.get(drag.key);
-      if (target) onDragEvent(target, patch);
+      const target = drag.target;
+      if(drag.writeOptions)onDragEvent(target,patch,drag.writeOptions);else onDragEvent(target, patch);
     }
 
     function onCancel(domEvent: PointerEvent) {
@@ -504,6 +517,7 @@ export function WeekView({
                       tabIndex={0}
                       aria-label={`${block.segment.isContinuation ? `${CONTINUATION_LABEL} ` : ''}${block.rangeLabel} ${block.segment.event.title}`}
                       onPointerDown={(domEvent) => beginDrag(domEvent, block.segment, 'move')}
+                      onClick={()=>{if(canEditEvent && !canEditEvent(block.segment.event.id))openOccurrence(block.segment.key);}}
                       onKeyDown={(domEvent) => {
                         if (domEvent.key === 'Enter' || domEvent.key === ' ') {
                           domEvent.preventDefault();
@@ -519,7 +533,7 @@ export function WeekView({
                     >
                       <div className="cal-week-event-time">{block.timeLabel}</div>
                       <div className="cal-week-event-title">{block.segment.event.title}</div>
-                      {block.resizable && (
+                      {block.resizable && (!canEditEvent || canEditEvent(block.segment.event.id)) && (
                         <div
                           className="cal-week-event-resize"
                           onPointerDown={(domEvent) => beginDrag(domEvent, block.segment, 'resize')}

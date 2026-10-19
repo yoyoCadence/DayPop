@@ -40,6 +40,7 @@ import type {
 
 /** What the quick-add row and the event sheet collect for a new event. */
 export interface NewEventInput {
+  sharingScope?: 'inherit' | 'private';
   /**
    * Chosen by the form and kept for the life of one draft, so an explicit
    * retry reaches the same row — see `creationTarget()`. Adapters generate an
@@ -63,6 +64,7 @@ export interface NewEventInput {
 }
 
 export interface NewTodoInput {
+  sharingScope?: 'inherit' | 'private';
   /** The draft's own id, for safe retries — see `creationTarget()`. */
   id?: string;
   title: string;
@@ -81,6 +83,7 @@ export interface NewStickerInput {
 
 /** Fields the week grid and the event sheet are allowed to change. */
 export interface EventPatch {
+  sharingScope?: 'inherit' | 'private';
   title?: string;
   date?: string;
   allDay?: boolean;
@@ -322,7 +325,7 @@ export function createEventFromInput(
     notes: optionalText(input.notes),
     reminderMinutes: [],
     recurrence: input.recurrenceRule ? { rule: input.recurrenceRule } : null,
-    sharingScope: 'inherit' as const,
+    sharingScope: input.sharingScope ?? 'inherit' as const,
     createdAt: context.now,
     updatedAt: context.now,
   };
@@ -358,7 +361,7 @@ export function applyEventPatch(
         : patch.recurrenceRule === null
           ? null
           : { rule: patch.recurrenceRule },
-    sharingScope: event.sharingScope,
+    sharingScope: patch.sharingScope ?? event.sharingScope,
     createdAt: event.createdAt,
     updatedAt,
   };
@@ -543,7 +546,8 @@ export function replaceEventOccurrence(
     createdAt: existing?.createdAt ?? context.now,
     updatedAt: context.now,
   };
-  return withEventException(withEvent(data, replacement), exception);
+  const privacyBase=patch.sharingScope===undefined ? data : withEvent(data,{...source,sharingScope:patch.sharingScope,updatedAt:context.now});
+  return withEventException(withEvent(privacyBase, replacement), exception);
 }
 
 export function createTodoFromInput(
@@ -570,7 +574,7 @@ export function createTodoFromInput(
     priority: 'none',
     completedAt: null,
     sortOrder: nextSortOrder(parent ? data.todos.filter((todo) => todo.parentId === parent.id) : data.todos),
-    sharingScope: parent?.sharingScope ?? 'inherit',
+    sharingScope: input.sharingScope ?? parent?.sharingScope ?? 'inherit',
     createdAt: context.now,
     updatedAt: context.now,
   };
@@ -648,10 +652,22 @@ export function findSticker(data: DayPopUserData, id: string): Sticker | undefin
 export function withEvent(data: DayPopUserData, event: CalendarEvent): DayPopUserData {
   if (data.events.find((item) => item.id === event.id)?.title !== event.title) assertTitleLength(event.title);
   const exists = data.events.some((candidate) => candidate.id === event.id);
+  const privacyChanged=data.events.some(candidate=>candidate.id===event.id && candidate.sharingScope!==event.sharingScope);
+  const related=new Set([event.id]);
+  if(privacyChanged) {
+    let previous=0;
+    while(previous!==related.size) {
+      previous=related.size;
+      for(const x of data.eventExceptions) if(x.replacementEventId && (related.has(x.eventId)||related.has(x.replacementEventId))) {
+        related.add(x.eventId);related.add(x.replacementEventId);
+      }
+    }
+  }
   return {
     ...data,
     events: exists
-      ? data.events.map((candidate) => (candidate.id === event.id ? event : candidate))
+      ? data.events.map((candidate) => candidate.id === event.id ? event : privacyChanged && related.has(candidate.id)
+        ? {...candidate,sharingScope:event.sharingScope,updatedAt:event.updatedAt} : candidate)
       : [...data.events, event],
   };
 }

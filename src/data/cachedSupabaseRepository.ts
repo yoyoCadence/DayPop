@@ -9,7 +9,8 @@ import type {
   PreferencesPatch,
 } from '../domain/mutations';
 import type { ImportCommand } from '../domain/dataTransfer';
-import type { DayPopUserData, EventOccurrence, TodoPriority } from '../domain/types';
+import type { DayPopUserData, EventOccurrence, TodoPriority, SharingScope } from '../domain/types';
+import type { SharingVersions, SharingWriteOptions } from './calendarSharing';
 import type { Database } from '../lib/database.types';
 import {
   getAppStorage,
@@ -27,8 +28,9 @@ import { RemoteDataError, SupabaseDayPopRepository } from './supabaseRepository'
 export class CachedRemoteLoadError extends Error {
   readonly cachedData: DayPopUserData;
 
-  constructor(cachedData: DayPopUserData, cause: RemoteDataError) {
-    super('目前無法連上雲端，正在顯示這台裝置最後一次同步的帳號資料。');
+  constructor(cachedData: DayPopUserData, cause: RemoteDataError,
+    message='目前無法連上雲端，正在顯示這台裝置最後一次同步的帳號資料。') {
+    super(message);
     this.name = 'CachedRemoteLoadError';
     this.cachedData = structuredClone(cachedData);
     this.cause = cause;
@@ -63,6 +65,10 @@ export class CachedSupabaseDayPopRepository
     try {
       return this.#persist(await this.#remote.load());
     } catch (cause) {
+      if(cause instanceof RemoteDataError && cause.currentData) {
+        const personal=this.#persist(cause.currentData);
+        throw new CachedRemoteLoadError(personal,cause,'自己的資料已同步；目前無法確認分享權限，暫時不顯示收到的內容。');
+      }
       // Missing bootstrap rows and invalid domain data are not connectivity
       // failures and must never be hidden behind an old cache.
       if (cause instanceof RemoteDataError && this.#cachedData) {
@@ -76,12 +82,12 @@ export class CachedSupabaseDayPopRepository
     return this.#persist(await this.#remote.addEvent(input));
   }
 
-  async updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData> {
-    return this.#persist(await this.#remote.updateEvent(id, patch));
+  async updateEvent(id: string, patch: EventPatch, options?: SharingWriteOptions): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.updateEvent(id, patch, options));
   }
 
-  async deleteEvent(id: string): Promise<DayPopUserData> {
-    return this.#persist(await this.#remote.deleteEvent(id));
+  async deleteEvent(id: string, options?: SharingWriteOptions): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.deleteEvent(id,options));
   }
 
   // DP-082. Delegated like every other write, so the cache is only ever
@@ -90,17 +96,19 @@ export class CachedSupabaseDayPopRepository
   async cancelEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
-    return this.#persist(await this.#remote.cancelEventOccurrence(eventId, occurrence));
+    return this.#persist(await this.#remote.cancelEventOccurrence(eventId, occurrence,options));
   }
 
   async replaceEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
     return this.#persist(
-      await this.#remote.replaceEventOccurrence(eventId, occurrence, patch),
+      await this.#remote.replaceEventOccurrence(eventId, occurrence, patch, options),
     );
   }
 
@@ -156,8 +164,8 @@ export class CachedSupabaseDayPopRepository
     return this.#persist(await this.#remote.updateCalendar(id, patch));
   }
 
-  async deleteCalendar(id: string): Promise<DayPopUserData> {
-    return this.#persist(await this.#remote.deleteCalendar(id));
+  async deleteCalendar(id: string, options?: SharingWriteOptions): Promise<DayPopUserData> {
+    return this.#persist(await this.#remote.deleteCalendar(id, options));
   }
 
   async updatePreferences(patch: PreferencesPatch): Promise<DayPopUserData> {
@@ -174,8 +182,24 @@ export class CachedSupabaseDayPopRepository
   }
 
   #persist(data: DayPopUserData): DayPopUserData {
-    const envelope = writeAccountCache(this.userId, data, this.storage);
+    const personal = this.#remote.personalData();
+    if (JSON.stringify(personal) === JSON.stringify(this.#cachedData)) return structuredClone(data);
+    const envelope = writeAccountCache(this.userId, personal, this.storage);
     this.#cachedData = structuredClone(envelope.data);
-    return structuredClone(envelope.data);
+    return structuredClone(data);
+  }
+
+  personalData(): DayPopUserData { return this.#remote.personalData(); }
+  sharingSession() { return this.#remote.sharingSession(); }
+  clearReceived() { return this.#remote.clearReceived(); }
+  captureSharingVersions() { return this.#remote.captureSharingVersions(); }
+  withSharingVersions(versions: SharingVersions, operation: () => Promise<DayPopUserData>) {
+    return this.#remote.withSharingVersions(versions,operation);
+  }
+  async setCalendarShare(id: string, permission: 'view'|'edit'|null) {
+    return this.#persist(await this.#remote.setCalendarShare(id,permission));
+  }
+  async setTodoSharingScope(id: string,scope: SharingScope) {
+    return this.#persist(await this.#remote.setTodoSharingScope(id,scope));
   }
 }

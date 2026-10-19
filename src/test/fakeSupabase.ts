@@ -31,6 +31,8 @@ export class FakeSupabase {
   readonly writes: { table: string; row: FakeRow }[] = [];
   /** Every RPC call, including its serialized argument payload. */
   readonly rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
+  /** Synthetic read response only; actual RLS remains covered by pgTAP. */
+  sharingManifest: unknown = [];
   readonly objects = new Map<string, Blob>();
   #clock = Date.parse('2026-08-04T00:00:00.000Z');
   #pinned = true;
@@ -148,7 +150,57 @@ export class FakeSupabase {
     this.rpcCalls.push({ name, args: structuredClone(args) });
     const failure = this.failures.get(`rpc:${name}`);
     if (failure) return { data: null, error: { message: failure } };
+    if (name === 'calendar_sharing_manifest') return { data: structuredClone(this.sharingManifest), error: null };
     this.beginWrite();
+    if (name === 'set_calendar_group_share') {
+      const rows=Array.isArray(this.sharingManifest) ? this.sharingManifest as FakeRow[] : [];
+      const calendar=this.rows('calendars').find(c=>c.id===args.p_calendar_id);
+      this.sharingManifest=rows.filter(s=>s.calendarId!==args.p_calendar_id);
+      if(args.p_permission!==null) (this.sharingManifest as FakeRow[]).push({calendarId:args.p_calendar_id,ownerId:calendar?.owner_id,
+        ownerName:'家庭成員',permission:args.p_permission,groupId:'00000000-0000-4000-8000-000000000047',updatedAt:this.serverTime});
+      return {data:{applied:true},error:null};
+    }
+    if (name === 'write_shared_calendar_item') {
+      const payload=args.p_payload as FakeRow; const action=String(args.p_action);
+      if(['create_event','create_todo','update_event','update_todo'].includes(action)) {
+        const table=action.endsWith('event')?'events':'todos';const existing=this.rows(table).find(row=>row.id===payload.id);
+        if(existing) {
+          const same=Object.entries(payload.values as FakeRow).every(([key,value])=>JSON.stringify(existing[key] ?? null)===JSON.stringify(value ?? null));
+          if(same)return {data:{applied:true,id:payload.id},error:null};
+          if(action.startsWith('create_'))return {data:null,error:{message:'sharing_conflict'}};
+        }
+      }
+      const versions=args.p_versions as Record<string,Record<string,string>>;
+      for(const [table,expected] of Object.entries(versions)) for(const [id,time] of Object.entries(expected)) {
+        if(this.rows(table).find(r=>r.id===id)?.updated_at!==time) return {data:null,error:{message:'sharing_conflict'}};
+      }
+      if(action==='delete_calendar') {
+        const result=this.#deleteCalendar(String(payload.id));
+        return result.error ? result : {data:{applied:true,id:payload.id},error:null};
+      }
+      if(action==='cancel_occurrence' || action==='replace_occurrence') {
+        const result=this.#occurrenceChange(action==='cancel_occurrence'?'cancel_event_occurrence':'replace_event_occurrence',{
+          p_event_id:payload.id,p_exception_id:payload.exceptionId,p_occurrence_date:payload.occurrenceDate ?? null,
+          p_occurrence_starts_at:payload.occurrenceStartsAt ?? null,p_replacement:payload.values,
+        });
+        return result.error ? result : {data:{applied:true,id:payload.id},error:null};
+      }
+      const table=action.endsWith('event')?'events':'todos';
+      const rows=this.rows(table);const existing=rows.find(r=>r.id===payload.id);
+      if(action.startsWith('delete_')) {
+        this.tables.set(table,rows.filter(r=>r.id!==payload.id));
+        if(table==='events') this.cascadeDeletedEvents(new Set([String(payload.id)]));
+        else if(existing) this.cascadeDeletedTodos([existing]);
+      } else {
+        const values=payload.values as FakeRow;
+        const calendar=this.rows('calendars').find(c=>c.id===values.calendar_id);
+        const row={...existing,...values,id:payload.id,owner_id:calendar?.owner_id,
+          created_at:existing?.created_at ?? this.serverTime,updated_at:this.serverTime};
+        this.tables.set(table,[...rows.filter(r=>r.id!==payload.id),row]);
+        this.writes.push({table,row});
+      }
+      return {data:{applied:true,id:payload.id},error:null};
+    }
     if (name === 'replace_daypop_data' || name === 'append_daypop_ics') {
       return this.#importData(name, args.p_payload);
     }

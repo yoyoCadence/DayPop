@@ -150,6 +150,31 @@ preflight 只讀 schema／migration history／advisor／types：DayPop `aquhcadu
 
 程式提交 `8c804ff` 的 CI `39121407670` 三項全部通過：1,290 單元＋7 Node、247 pgTAP／雙連線競態／types 比對、完整 e2e 232 passed／12 skipped，無 flaky。結案文件更新後最新 CI 仍須通過才合併。**此段不代表前端已部署或真實帳號／OAuth／真機已驗收。** 下一項 DP-048 仍須本項合併後另開分支。
 
+## 0.13 DP-048 日曆分享：第 18 檔候選（2026-10-19）
+
+**2026-10-20 現況：第 18 檔已由擁有者 CLI 套用，MCP postflight 與 rollback 通過；前端未部署。** 下方候選與「尚未套用」段落保留 2026-10-19 交接歷史，以本節最後的完成紀錄為準。
+
+PR #166 最新 CI `39122797987` 三項全過，已於 `40ac192` 合併，本項另從該 main 開分支。當日 MCP preflight 核對遠端 17 檔至 `20261018045829`、13 張 public tables 全 RLS／42 policies，與 repo 基準一致；security 仍只有既有 Auth leaked-password WARN，performance 為 11 個 unused-index INFO（第 17 檔 rollback 驗證曾使用兩個新索引，統計已與剛套用的 13 個不同）。只查 metadata／advisor，沒有查改正式使用者列。
+
+本機新增 `20261019104837_calendar_group_sharing.sql`：一張全 RLS grant 表、兩個 nullable 作者欄、三支 public INVOKER 分享 RPC，及必要的 private RLS／版本／鎖 helper；舊 RPC 均取最後定義，來源見 migration 註解與 ADR §9。附件、attendee、貼圖、Storage、profile／preferences 仍 owner-only。預期套用後 18 檔／14 張 public tables 全 RLS。`database.types.ts` 只使用本機 `supabase:types`，沒有提交 remote Internals；personal v4／App 0.4.3／公告不變。
+
+本機已實跑 start → reset → 8 檔 302 pgTAP；家庭最後席位與共享兩連線 CAS 都通過並清除假資料。暫時移除 CAS 比較時，同一版本兩筆均提交而測試失敗，完整還原再 reset 後恢復一筆成功、一筆衝突。**兩個 concurrency script 有本機 committed synthetic fixtures，不得拿到遠端跑。**
+
+**遠端第 18 檔尚未套用，postflight 未完成。** 請依 [deployment §5.26](deployment.md#526-dp-048-日曆分享第-18-檔套用順序2026-10-19) 由擁有者逐條 CLI list／dry-run／push／list。完成後 Codex 才用 MCP 核對 schema／RLS／grants／advisor、只比對 remote public types，並在一個 BEGIN／ROLLBACK 跑 repo 同份 `calendar_sharing.test.sql`（固定 `...0481`–`...0483`）與相關家庭 pgTAP；前後只查固定假 IDs、暫時 context／extension 是否殘留。不得執行 migration DDL、remote reset 或查改正式使用者內容。
+
+postflight／CI 完成才更新 tasks Done、依授權合併本項，再從 main 開 DP-049；合併不等於部署授權。本段保留待辦狀態，沒有把尚未執行的遠端檢查當成完成。
+
+### 2026-10-20 CLI 與 MCP postflight 完成紀錄
+
+**同日 PR 審查後續：** 僅修正前端 repository／cache 的兩項缺口：重查撤權後版本化儲存必須拒絕並留草稿；分享查詢故障保留完整新載入的本人文件與快取，received 仍 fail closed。八個新增單元回歸先失敗並完成反向驗證，完整 1,312 單元＋7 Node 與 build 檢查通過，另加手機／桌面 UI 回歸。下面的第 18 檔、schema、types 與 55＋73 rollback 證據未變；沒有重推或回改 migration，最新前端修正仍須 CI 通過才合併。
+
+1. 擁有者先核對 linked project `aquhcaduovkxyfhzywgc`、前 17 檔一致，dry-run 精確只列 `20261019104837_calendar_group_sharing.sql`；push 成功後 list 兩側同為 18 檔，MCP history 亦一致。沒有 agent 代推、migration DDL 或 remote reset。
+2. metadata 確認 14 張 public tables 全 RLS／46 policies，share 表六欄、三個索引、兩個複合 FK 與 permission check 均相符；24 個既有 constraints 及非本項修改的 26 條 policies 與 preflight 一致，附件、attendee、貼圖、profile／preferences 不開給 receiver。九支受檢 public RPC（含三支新分享 RPC）皆 INVOKER、空 path、anon 無 execute、authenticated 可 execute；private internal graph／內部 exception predicate／trigger helper 不授權 client。remote types 的完整 public schema 與本機 generated types 逐字一致，遠端檔只留忽略的 output，未覆寫本機 types 或提交 Internals。
+3. repo 同份 `calendar_sharing.test.sql` 55 項、`family_groups.test.sql` 73 項分別在單一 transaction 執行並完整 rollback，`finish()` 分別 `1..55`／`1..73`、無 failure diagnostics。測試前固定假 users／groups／shares 為 0；測試後只查固定 `...0471`–`...0476`／`...0481`–`...0483`，users、日曆、事項、exceptions、附件、attendee、貼圖、cleanup jobs、groups、memberships、invitations、shares 全 0；三個暫時 context 不存在、pgTAP extension 前後皆不存在。沒有查改正式使用者內容，也沒有在遠端執行會 commit fixtures 的 concurrency scripts。
+4. security 仍只有既有 [Auth leaked-password WARN](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)。performance 有一個新增 [unindexed foreign key INFO](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)：`(calendar_id, owner_id)` 未有完整 covering index，但單欄 `calendar_id` 已 UNIQUE，查找最多一列；僅 EXPLAIN（不 ANALYZE、不讀取資料）固定假 ID 的查詢確實使用 `calendar_group_shares_calendar_id_key`，再檢查 owner。因此保留此 INFO 與現有三索引，不增加重複索引。unused-index INFO 在套用後為 12、rollback 使用後降到 7；這是索引統計變化，不是刪索引或查正式資料。[unused-index 說明](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index)。
+
+候選提交 `db3a2ec` 的 [CI `39277931771`](https://github.com/yoyoCadence/DayPop/actions/runs/39277931771) 三項全過：1,304 單元＋7 Node、302 pgTAP／兩種雙連線競態／types、完整 e2e 241 passed／13 skipped（18.5 分鐘）。本次結案只增量更新文件與任務板；最新 CI 通過後才合併 PR #167，再從 main 開 DP-049。**前端尚未部署，真實帳號／OAuth／真機／staging 驗收未做；App 0.4.3 與歷史公告不變。第 18 檔已套用，不可再改該檔。**
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：
