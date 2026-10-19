@@ -942,3 +942,18 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 - 回歸先在 16 檔基準失敗（缺表／RPC），17 檔後 73 項通過；另用兩條真實本機 Postgres 連線同搶最後一席，拿掉 group `FOR UPDATE` 可提交第七個保留名額而測試失敗，還原鎖後只一條成功、另一條回 `family_full`，測試假資料／trigger 隨後清除。CI database job 也跑此競態；前端 fake 只驗證流程，不冒充 RLS 證據。
 
 本日擁有者已完成 CLI dry-run／push，MCP postflight 確認 17 檔／13 表 RLS、舊 39 policies 不變、types 一致，並以同份 73 項 pgTAP 完整 rollback／零假資料與暫時 extension 殘留，詳見 handoff §0.12。**尚未部署前端或做真實帳號／OAuth／手機驗收**，不能把本機／DB 測試說成使用者端功能已上線；下一項仍是 DP-048，須在本項完成合併後才開始。
+
+### DP-048 實作邊界（2026-10-19，本機候選）
+
+離線事件會立即收起 received；在途讀取／寫入成功也不能將收到的資料重新放回離線畫面，online 後才重查。共享新增在回應遺失後重新載入，仍交由 server 比對完整內容與作者，不因 snapshot 已有 id 就誤報改稿成功；一般修改只有當前完整內容已相同才可不寫入而確認，其他舊版本一律拒絕。單次替代的新 ID 若已被其他行程占用，即使同 owner 也拒絕，只有已保存的 replacement 才可沿用重試；回歸已先重現覆寫再驗證阻擋。inline 待辦標題／日期／子項輸入若因撤權卸載，dirty input 暫留 `DataProvider` 記憶體，從「未保存的輸入」選取複製；不保留原列在可見資料、不寫 storage，成功／明確取消或登出清除。EventSheet 本身維持掛載與原草稿。
+
+- 第 18 檔 `20261019104837_calendar_group_sharing.sql` 新增 RLS grant 表，以 `(calendar_id, owner_id)` 綁日曆、`(group_id, owner_id)` 綁有效 membership。退出／移除／解散 cascade 撤掉 grant，不刪內容，重新加入不恢復。既有複合外鍵維持；新 `created_by` 從 `auth.uid()` 產生，UPDATE 不可改作者或 ownership。歷史作者保留 NULL，不造假；作者 UUID 不設 Auth cascade FK，避免作者刪帳號改動別人保留的事項。
+- public `calendar_sharing_manifest`／`set_calendar_group_share`／`write_shared_calendar_item` 都是 INVOKER、空 path、僅 authenticated。非 exposed `daypop_family` helper 僅作必要 RLS predicate、可見 graph、鎖與受控 transaction context；不冒用 owner、JWT 或 service role。internal graph 不開 execute 給 client，不能從 helper 撈私人 replacement IDs。實際事項寫入仍由 caller 的 RLS 判斷。
+- `updated_at` 是完整精度 CAS 版本；最後一個 timestamp trigger 保證同一 transaction 的連續寫入也至少增加 1µs。先依 UUID 排序鎖 calendar，再鎖版本列、核對 expected time，最後由 INVOKER 寫入。context 是由函式 owner 建立且沒有 client DML grant 的 `pg_temp` table，確認其 owner／actor／collection／id，提交即丟棄；不使用可被 client 偽造的 GUC 當授權。可見父項的 DELETE policy 也要求 cascade 子樹各列版本，不只依賴新 RPC 的前置檢查。直接新增共享子項與 grant 修改也鎖 calendar，避免讀過子樹後又插入一個被 cascade 刪掉的 child。
+- 待辦 RLS 追溯全部祖先；行程 RLS 將 exception／replacement 的無向連通圖視為整組，任一私人或未分享節點即對 receiver 隱藏整組，避免漏讀 exception 使 occurrence 復活。寫入還要求整組具有 edit；整系列切私人僅日曆擁有者可做。成員刪除會碰到私人子項、附件或聯絡 metadata 時拒絕，交由擁有者處理；不放寬附件／Storage／cleanup queue。owner 仍沿既有 cleanup RPC。
+- 沿用的 occurrence RPC 從最後的 `20260830000000`、event cleanup 從 `20260809085514`、calendar deletion 從 `20261007000000` 複製到新 migration，保留原有交易／partial unique／清理順序，再補完整 context 與當前 calendar owner。舊 public RPC 在共享日曆也必須通過版本邊界，不能以回傳 false 冒充已刪除，或先留下 cleanup job。未分享的私人舊流程保留。
+- `DayPopUserData` 的 v4 格式與已有 `sharingScope` 不新增欄位；owner／share／permission 存 `calendarSharing.ts` 的 session metadata。repository 仍分頁讀本人六集合，再經 manifest 分開讀 received calendars／events／todos／exceptions，RLS 決定可見列；received calendar 只在合併 view 改成非預設、採檢視者本次隱藏設定。`personalData()` 再投影本人文件，cache、設定 JSON／ICS、匯入預覽及 App 錯誤畫面的備份都使用它。received 的 metadata、內容與隱藏選擇不持久化。
+- 前景／online／visibility 重新載入排在既有 mutation queue 後，保留 ready tree 與草稿；拒絕後重查 RLS，撤掉失效分享，沒有自動重送。queue 在 UI 呼叫當下固定版本，EventSheet 與 inline todo editor 另固定打開時的版本，避免重查後拿新版本覆寫舊草稿。登入未確認仍只使用 DP-176 的唯讀本人快取 adapter，不能建立 Supabase 請求。
+- 分享入口位於原有「帳號與資料」，只管理本人日曆，edit 預設／view／關閉都有確認；包含歷史內容及附件不分享會明示。received list 顯示 owner／權限，可本次隱藏；不准改預設、名稱或刪整本。EventSheet／待辦沿既有 scope 顯示「不分享」，view 停用各入口寫入及週格拖曳。共享刪除與搬入任一已分享日曆統一經 awaited confirmation；確認帶目的 grant 版本，取消不寫入。JSON replace 在 UI／repository／DB 刪 calendar guard 都要求先關分享，ICS 只追加本人內容。
+
+本機回歸先失敗再實作；反向移除 CAS 比較，兩個真實連線都提交而使測試失敗，還原後只有一筆成功、另一筆 `sharing_conflict`，假資料清除。現有 8 檔 302 pgTAP、1,304 單元＋7 Node 與八個新共享 e2e 通過，其他相關 e2e 與最後檢查仍在進行；CI 亦加共享兩連線競態。小型共享確認對話框只有四個可量文字節點（標題、說明、兩個按鈕），axe 僅該次要求至少 4；其餘畫面仍至少 5，皆先隱藏紋理，不放寬違規規則。**第 18 檔尚待擁有者 CLI 套用與 MCP postflight，未部署，無真實帳號／OAuth／真機驗收；不能把本機能力稱為已上線。**

@@ -153,6 +153,7 @@ describe('domain ↔ DB mapping', () => {
 
   it('maps todo and sticker storage fields explicitly', () => {
     const todoRow: Tables<'todos'> = {
+      created_by: null,
       id: '00000000-0000-4000-8000-0000000000d1',
       owner_id: OWNER_ID,
       calendar_id: CALENDAR_ID,
@@ -219,6 +220,7 @@ describe('domain ↔ DB mapping', () => {
 
 function eventRow(overrides: Partial<Tables<'events'>>): Tables<'events'> {
   return {
+    created_by: null,
     id: EVENT_ID,
     owner_id: OWNER_ID,
     calendar_id: CALENDAR_ID,

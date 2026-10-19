@@ -150,6 +150,18 @@ preflight 只讀 schema／migration history／advisor／types：DayPop `aquhcadu
 
 程式提交 `8c804ff` 的 CI `39121407670` 三項全部通過：1,290 單元＋7 Node、247 pgTAP／雙連線競態／types 比對、完整 e2e 232 passed／12 skipped，無 flaky。結案文件更新後最新 CI 仍須通過才合併。**此段不代表前端已部署或真實帳號／OAuth／真機已驗收。** 下一項 DP-048 仍須本項合併後另開分支。
 
+## 0.13 DP-048 日曆分享：第 18 檔候選（2026-10-19）
+
+PR #166 最新 CI `39122797987` 三項全過，已於 `40ac192` 合併，本項另從該 main 開分支。當日 MCP preflight 核對遠端 17 檔至 `20261018045829`、13 張 public tables 全 RLS／42 policies，與 repo 基準一致；security 仍只有既有 Auth leaked-password WARN，performance 為 11 個 unused-index INFO（第 17 檔 rollback 驗證曾使用兩個新索引，統計已與剛套用的 13 個不同）。只查 metadata／advisor，沒有查改正式使用者列。
+
+本機新增 `20261019104837_calendar_group_sharing.sql`：一張全 RLS grant 表、兩個 nullable 作者欄、三支 public INVOKER 分享 RPC，及必要的 private RLS／版本／鎖 helper；舊 RPC 均取最後定義，來源見 migration 註解與 ADR §9。附件、attendee、貼圖、Storage、profile／preferences 仍 owner-only。預期套用後 18 檔／14 張 public tables 全 RLS。`database.types.ts` 只使用本機 `supabase:types`，沒有提交 remote Internals；personal v4／App 0.4.3／公告不變。
+
+本機已實跑 start → reset → 8 檔 302 pgTAP；家庭最後席位與共享兩連線 CAS 都通過並清除假資料。暫時移除 CAS 比較時，同一版本兩筆均提交而測試失敗，完整還原再 reset 後恢復一筆成功、一筆衝突。**兩個 concurrency script 有本機 committed synthetic fixtures，不得拿到遠端跑。**
+
+**遠端第 18 檔尚未套用，postflight 未完成。** 請依 [deployment §5.26](deployment.md#526-dp-048-日曆分享第-18-檔套用順序2026-10-19) 由擁有者逐條 CLI list／dry-run／push／list。完成後 Codex 才用 MCP 核對 schema／RLS／grants／advisor、只比對 remote public types，並在一個 BEGIN／ROLLBACK 跑 repo 同份 `calendar_sharing.test.sql`（固定 `...0481`–`...0483`）與相關家庭 pgTAP；前後只查固定假 IDs、暫時 context／extension 是否殘留。不得執行 migration DDL、remote reset 或查改正式使用者內容。
+
+postflight／CI 完成才更新 tasks Done、依授權合併本項，再從 main 開 DP-049；合併不等於部署授權。本段保留待辦狀態，沒有把尚未執行的遠端檢查當成完成。
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：

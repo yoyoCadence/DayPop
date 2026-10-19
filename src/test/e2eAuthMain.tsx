@@ -35,6 +35,7 @@ export const familyServices = new Map<string, FakeFamilyService>();
 // Expose this dev-only test seam without importing the React entry a second
 // time (which would create another root and reset the synthetic Auth session).
 Object.defineProperty(window, '__daypopFamilyServices', { value: familyServices, configurable: true });
+Object.defineProperty(window, '__daypopSharingHarness', { value: fakeSupabase, configurable: true });
 function familyServiceForUser(userId: string) {
   let service = familyServices.get(userId);
   if (!service) { service = new FakeFamilyService(userId); familyServices.set(userId, service); }

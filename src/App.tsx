@@ -14,6 +14,8 @@ import { OverviewScreen } from './screens/OverviewScreen';
 import { ScreenErrorFallback } from './screens/ScreenErrorFallback';
 import { SearchScreen } from './screens/SearchScreen';
 import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
+import { SharingConfirmationDialog } from './screens/SharingConfirmationDialog';
+import { RetainedSharingDraftDialog } from './screens/RetainedSharingDraftDialog';
 import { AppShell } from './shell/AppShell';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
@@ -31,6 +33,7 @@ import { SHELL_TAB_LABELS, type ShellTab } from './shell/tabs';
 export default function App() {
   const [tab, setTab] = useState<ShellTab>('cal');
   const [authOpen, setAuthOpen] = useState(false);
+  const [draftsOpen,setDraftsOpen]=useState(false);
   // Tapping a result in 搜尋 or 綜覽 opens it on the 日曆 tab, as in the原檔.
   // Screens unmount when the tab changes, so `CalendarScreen` reads this once as
   // its initial state — no effect needed.
@@ -43,7 +46,7 @@ export default function App() {
   const modalLayerOpen = useModalLayerOpen();
   const { user } = useAuth();
 
-  const { state, refresh } = useDayPopDataState();
+  const { state, refresh,personalData,confirmation,retainedSharingDrafts,discardSharingDraft } = useDayPopDataState();
 
   // Shown on every tab while the browser refuses to persist data — DP-017.
   const storageMode = useStorageMode();
@@ -56,10 +59,12 @@ export default function App() {
       <RemoteDataWarningBanner warning={state.warning} onRefresh={refresh} />
     ) : null;
   const banner =
-    storageWarning || remoteWarning ? (
+    storageWarning || remoteWarning || retainedSharingDrafts?.length ? (
       <>
         {storageWarning}
         {remoteWarning}
+        {retainedSharingDrafts?.length?<div className="family-feedback" role="status">有未保存的輸入已保留。{' '}
+          <button className="button secondary" type="button" onClick={()=>setDraftsOpen(true)}>查看未保存輸入</button></div>:null}
       </>
     ) : null;
 
@@ -111,6 +116,8 @@ export default function App() {
         <>
           <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
           <FamilyInvitationGate timezone={state.data.preferences.timezone} onOpenAuth={() => setAuthOpen(true)} />
+          {confirmation ? <SharingConfirmationDialog request={confirmation}/> : null}
+          {draftsOpen?<RetainedSharingDraftDialog drafts={retainedSharingDrafts ?? []} onDiscard={key=>discardSharingDraft?.(key)} onClose={()=>setDraftsOpen(false)}/>:null}
           {/* At most one release dialog at a time, most actionable first: an
               update to take, then the answer to a 檢查更新 the user just
               pressed, then this version's notes if this device has not shown
@@ -153,7 +160,7 @@ export default function App() {
             {...caught}
             screen={SHELL_TAB_LABELS[tab]}
             onDownloadBackup={() =>
-              downloadJsonBackup(state.data, updater.currentVersion, user?.id ?? null).omittedAttachments
+              downloadJsonBackup(personalData ?? state.data, updater.currentVersion, user?.id ?? null).omittedAttachments
             }
             onReload={() => window.location.reload()}
           />

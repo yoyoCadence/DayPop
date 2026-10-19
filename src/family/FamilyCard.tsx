@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useContext,useState } from 'react';
+import { DataContext } from '../data/dataContext';
 import { useAuth } from '../auth/authContext';
 import { FamilyDialog } from './FamilyDialog';
 import { useFamilyServiceFactory } from './familyContext';
@@ -6,6 +7,7 @@ import { useFamilyServiceFactory } from './familyContext';
 export function FamilyCard({ timezone, onOpenAuth }: { timezone: string; onOpenAuth(): void }) {
   const auth = useAuth();
   const factory = useFamilyServiceFactory();
+  const dataContext=useContext(DataContext);
   const [open, setOpen] = useState(false);
   return <>
     <div className="dp-section-label">家庭群組</div>
@@ -18,6 +20,6 @@ export function FamilyCard({ timezone, onOpenAuth }: { timezone: string; onOpenA
           onClick={() => auth.user ? setOpen(true) : onOpenAuth()}>{auth.user ? '管理家庭' : '登入使用家庭'}</button>
       </section>
     </div>
-    {open && auth.user && !auth.sessionUnconfirmed ? <FamilyDialog key={auth.user.id} factory={factory} userId={auth.user.id} timezone={timezone} onClose={() => setOpen(false)} /> : null}
+    {open && auth.user && !auth.sessionUnconfirmed ? <FamilyDialog key={auth.user.id} factory={factory} userId={auth.user.id} timezone={timezone} onClose={() => setOpen(false)} onChanged={dataContext?.revalidateShares}/> : null}
   </>;
 }

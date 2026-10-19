@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { parseSharingManifest, personalProjection, receivedCalendar, type CalendarShare, type SharingSession, type SharingVersions, type SharingWriteOptions } from './calendarSharing';
 import {
   calendarFromRow,
   calendarToInsert,
@@ -65,6 +66,7 @@ import {
   type EventOccurrence,
   type TodoItem,
   type TodoPriority,
+  type SharingScope,
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
@@ -84,6 +86,8 @@ import {
  * does not match the domain contract".
  */
 export class RemoteDataError extends Error {
+  /** Validated view after a rejected sharing write; never includes stale grants. */
+  currentData?: DayPopUserData;
   constructor(
     readonly operation: string,
     cause: unknown,
@@ -122,17 +126,57 @@ export class AccountNotBootstrappedError extends Error {
  */
 export class SupabaseDayPopRepository implements DayPopRepository, EventAttachmentRepository {
   #snapshot: DayPopUserData | null = null;
+  #personal: DayPopUserData | null = null;
+  #shares: CalendarShare[] = [];
+  #receivedIds = new Set<string>();
+  #hiddenReceived = new Set<string>();
+  #sharingAvailable = false;
+  #writeVersions: SharingVersions | undefined;
 
   constructor(
     private readonly client: SupabaseClient<Database>,
     private readonly userId: string,
     initialSnapshot?: DayPopUserData,
   ) {
-    if (initialSnapshot) this.#snapshot = parseDayPopUserData(initialSnapshot);
+    if (initialSnapshot) this.#personal = this.#snapshot = parseDayPopUserData(initialSnapshot);
+  }
+
+  personalData(): DayPopUserData {
+    if (!this.#personal) throw new Error('帳號資料尚未載入。');
+    return structuredClone(this.#personal);
+  }
+
+  sharingSession(): SharingSession {
+    return { userId: this.userId, available: this.#sharingAvailable, shares: structuredClone(this.#shares) };
+  }
+
+  clearReceived(): DayPopUserData {
+    this.#receivedIds.clear();
+    this.#shares=this.#shares.filter(share=>share.ownerId===this.userId);
+    this.#sharingAvailable=false;
+    this.#snapshot=this.#personal;
+    return this.personalData();
+  }
+
+  captureSharingVersions(): SharingVersions {
+    const data=this.#requireSnapshot();
+    return {events:Object.fromEntries(data.events.map(e=>[e.id,e.updatedAt])),
+      todos:Object.fromEntries(data.todos.map(t=>[t.id,t.updatedAt])),
+      event_exceptions:Object.fromEntries(data.eventExceptions.map(x=>[x.id,x.updatedAt]))};
+  }
+
+  async withSharingVersions(versions: SharingVersions, operation: () => Promise<DayPopUserData>): Promise<DayPopUserData> {
+    this.#writeVersions=versions;
+    try { return await operation(); } finally { this.#writeVersions=undefined; }
   }
 
   async load(): Promise<DayPopUserData> {
     const owner = this.userId;
+    // Discard received rows before revalidation, including on any failed read.
+    this.#shares = [];
+    this.#receivedIds.clear();
+    this.#sharingAvailable = false;
+    this.#snapshot = this.#personal;
     await this.#flushAttachmentCleanup();
     // Table names stay literal so the generated row types survive; a generic
     // helper over table names collapses them into an unusable union. Every
@@ -170,7 +214,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       throw new AccountNotBootstrappedError();
     }
 
-    return this.#commit({
+    this.#commit({
       calendars: inStoredOrder(calendars).map(calendarFromRow),
       events: inStoredOrder(events).map(eventFromRow),
       eventAttachments: inStoredOrder(attachments).map(eventAttachmentFromRow),
@@ -179,6 +223,51 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       stickers: inStoredOrder(stickers).map(stickerFromRow),
       preferences: preferencesFromRow(preferences.data),
     });
+    return this.#loadSharing();
+  }
+
+  async #loadSharing(): Promise<DayPopUserData> {
+    const { data: manifest, error } = await requestRemote('確認日曆分享',this.client.rpc('calendar_sharing_manifest'));
+    if (error) throw new RemoteDataError('確認日曆分享',error);
+    let shares: CalendarShare[];
+    try { shares = parseSharingManifest(manifest); }
+    catch (cause) { throw new RemoteDataError('確認日曆分享',cause); }
+    const received = shares.filter(s=>s.ownerId!==this.userId);
+    const calendars: Tables<'calendars'>[]=[];
+    const events: Tables<'events'>[]=[];
+    const todos: Tables<'todos'>[]=[];
+    const exceptions: Tables<'event_exceptions'>[]=[];
+    // Bounded URL lists, each independently paged by the existing exact-count
+    // reader. Personal queries above retain their explicit owner filters.
+    for(let offset=0;offset<received.length;offset+=50) {
+      const ids=received.slice(offset,offset+50).map(s=>s.calendarId);
+      const [c,e,t]=await Promise.all([
+        loadAllRows('讀取收到的日曆',after=>pageAfter(this.client.from('calendars').select('*',{count:'exact'}).in('id',ids),after)),
+        loadAllRows('讀取收到的行程',after=>pageAfter(this.client.from('events').select('*',{count:'exact'}).in('calendar_id',ids),after)),
+        loadAllRows('讀取收到的待辦',after=>pageAfter(this.client.from('todos').select('*',{count:'exact'}).in('calendar_id',ids),after)),
+      ]);
+      for(const row of c) {
+        if(!received.some(s=>s.calendarId===row.id && s.ownerId===row.owner_id)) throw new RemoteDataError('讀取收到的日曆','日曆歸屬不一致');
+      }
+      calendars.push(...c);events.push(...e);todos.push(...t);
+    }
+    for(let offset=0;offset<events.length;offset+=50) {
+      const ids=events.slice(offset,offset+50).map(e=>e.id);
+      exceptions.push(...await loadAllRows('讀取收到的例外',after=>pageAfter(
+        this.client.from('event_exceptions').select('*',{count:'exact'}).in('event_id',ids),after)));
+    }
+    const base=this.personalData();
+    const combined=parseDayPopUserData({...base,
+      calendars:[...base.calendars,...inStoredOrder(calendars).map(c=>({...calendarFromRow(c),isDefault:false,isVisible:!this.#hiddenReceived.has(c.id)}))],
+      events:[...base.events,...inStoredOrder(events).map(eventFromRow)],
+      todos:[...base.todos,...inStoredOrder(todos).map(todoFromRow)],
+      eventExceptions:[...base.eventExceptions,...inStoredOrder(exceptions).map(eventExceptionFromRow)],
+    });
+    // Commit metadata only after every page and the full visible graph validate.
+    this.#shares=shares;
+    this.#receivedIds=new Set(calendars.map(c=>c.id));
+    this.#sharingAvailable=true;
+    return this.#commit(combined);
   }
 
   /**
@@ -191,15 +280,19 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async addEvent(input: NewEventInput): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const target = creationTarget(data.events, input.id, createDomainId());
-    if (target.alreadyStored) return data;
     const draft = createEventFromInput(data, input, {
       id: target.id,
       now: new Date().toISOString(),
     });
+    if (this.#shared(draft.calendarId)) {
+      this.#assertWritable(draft.calendarId,draft.sharingScope);
+      return this.#writeShared('create_event',{id:draft.id,values:eventValues(draft,this.userId)},{});
+    }
+    if (target.alreadyStored) return data;
     return this.#commit(withEvent(data, await this.#upsertEvent(draft)));
   }
 
-  async updateEvent(id: string, patch: EventPatch): Promise<DayPopUserData> {
+  async updateEvent(id: string, patch: EventPatch, options?: SharingWriteOptions): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const event = findEvent(data, id);
     if (!event) return data;
@@ -209,6 +302,12 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       data.preferences.timezone,
       new Date().toISOString(),
     );
+    if (this.#shared(event.calendarId) || this.#shared(draft.calendarId) || patch.sharingScope!==undefined) {
+      this.#assertWritable(event.calendarId,draft.sharingScope);
+      this.#assertWritable(draft.calendarId,draft.sharingScope);
+      return this.#writeShared('update_event',{id,values:eventValues(draft,this.userId),confirmExposure:options?.confirmExposure ?? {}},
+        this.#eventVersions(id,options?.versions));
+    }
     return this.#commit(withEvent(data, await this.#upsertEvent(draft)));
   }
 
@@ -230,11 +329,17 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async cancelEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     if (!canEditOccurrencesOf(data, eventId)) return data;
 
     const next = cancelEventOccurrence(data, eventId, occurrence, occurrenceWriteContext());
+    if (this.#shared(findEvent(data,eventId)!.calendarId)) {
+      this.#assertWritable(findEvent(data,eventId)!.calendarId);
+      return this.#writeShared('cancel_occurrence',{id:eventId,exceptionId:requireException(next,eventId,occurrence).id,
+        ...sharedOccurrenceKey(occurrence)},this.#eventVersions(eventId,options?.versions));
+    }
     const result = await this.#callOccurrenceRpc('cancel_event_occurrence', {
       p_event_id: eventId,
       p_exception_id: requireException(next, eventId, occurrence).id,
@@ -263,6 +368,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
+    options?: SharingWriteOptions,
   ): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     if (!canEditOccurrencesOf(data, eventId)) return data;
@@ -277,6 +383,14 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const exception = requireException(next, eventId, occurrence);
     const replacement = next.events.find((item) => item.id === exception.replacementEventId);
     if (!replacement) throw new Error('替換事件在領域結果中不存在。');
+
+    if (this.#shared(findEvent(data,eventId)!.calendarId) || this.#shared(replacement.calendarId) || patch.sharingScope!==undefined) {
+      this.#assertWritable(findEvent(data,eventId)!.calendarId,replacement.sharingScope);
+      this.#assertWritable(replacement.calendarId,replacement.sharingScope);
+      return this.#writeShared('replace_occurrence',{id:eventId,exceptionId:exception.id,...sharedOccurrenceKey(occurrence),
+        values:{id:replacement.id,...eventValues(replacement,this.userId)},confirmExposure:options?.confirmExposure ?? {}},
+        this.#eventVersions(eventId,options?.versions));
+    }
 
     const result = await this.#callOccurrenceRpc('replace_event_occurrence', {
       p_event_id: eventId,
@@ -302,8 +416,13 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     );
   }
 
-  async deleteEvent(id: string): Promise<DayPopUserData> {
+  async deleteEvent(id: string,options?: SharingWriteOptions): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    const event=findEvent(data,id);
+    if (event && this.#shared(event.calendarId)) {
+      this.#assertWritable(event.calendarId);
+      return this.#writeShared('delete_event',{id},this.#eventVersions(id,options?.versions));
+    }
     const { data: deleted, error } = await requestRemote(
       '刪除行程與登記附件清理',
       this.client.rpc('delete_event_with_attachment_cleanup', { p_event_id: id }),
@@ -323,6 +442,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
 
   async uploadEventAttachment(eventId: string, file: File): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    if (receivedCalendar(this.sharingSession(),findEvent(data,eventId)?.calendarId ?? '')) throw new RemoteDataError('新增附件','附件僅供日曆擁有者使用。');
     if (!findEvent(data, eventId)) return data;
     const issue = eventAttachmentFileIssue(file);
     if (issue || !isEventAttachmentMimeType(file.type)) {
@@ -428,11 +548,15 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async addTodo(input: NewTodoInput): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const target = creationTarget(data.todos, input.id, createDomainId());
-    if (target.alreadyStored) return data;
     const draft = createTodoFromInput(data, input, {
       id: target.id,
       now: new Date().toISOString(),
     });
+    if (this.#shared(draft.calendarId)) {
+      this.#assertWritable(draft.calendarId,draft.sharingScope);
+      return this.#writeShared('create_todo',{id:draft.id,values:todoValues(draft,this.userId)},{});
+    }
+    if (target.alreadyStored) return data;
     return this.#commit(withTodo(data, await this.#upsertTodo(draft)));
   }
 
@@ -441,12 +565,14 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const todo = findTodo(data, id);
     if (!todo) return data;
     const draft = toggleTodoCompletion(todo, new Date().toISOString());
+    if (this.#shared(todo.calendarId)) return this.#writeTodo(draft);
     return this.#commit(withTodo(data, await this.#upsertTodo(draft)));
   }
 
   async renameTodo(id: string, title: string): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const draft = renamedTodo(data, id, title, new Date().toISOString());
+    if (this.#shared(draft.calendarId)) return this.#writeTodo(draft);
     const { data: row, error } = await requestRemote(
       '修改待辦標題',
       this.client.from('todos').update({ title: draft.title })
@@ -458,6 +584,14 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
 
   async deleteTodo(id: string): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    const todo=findTodo(data,id);
+    if (todo && this.#shared(todo.calendarId)) {
+      this.#assertWritable(todo.calendarId);
+      const ids=new Set([id]);
+      let previous=0;
+      while(previous!==ids.size) { previous=ids.size; for(const t of data.todos) if(t.parentId && ids.has(t.parentId)) ids.add(t.id); }
+      return this.#writeShared('delete_todo',{id},{todos:this.#selectVersions('todos',ids)});
+    }
     await this.#delete('todos', id);
     return this.#commit(withoutTodo(data, id));
   }
@@ -465,6 +599,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async setTodoPriority(id: string, priority: TodoPriority): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const draft = todoWithPriority(data, id, priority, new Date().toISOString());
+    if (this.#shared(draft.calendarId)) return this.#writeTodo(draft);
     const { data: row, error } = await requestRemote(
       '修改待辦優先度',
       this.client.from('todos').update({ priority: draft.priority })
@@ -477,6 +612,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   async rescheduleTodo(id: string, date: string): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     const draft = rescheduledTodo(data, id, date, new Date().toISOString());
+    if (this.#shared(draft.calendarId)) return this.#writeTodo(draft);
     const { data: row, error } = await requestRemote(
       '修改待辦日期',
       this.client.from('todos').update({ due_date: draft.dueDate })
@@ -492,6 +628,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
       id: createDomainId(),
       now: new Date().toISOString(),
     });
+    if (receivedCalendar(this.sharingSession(),draft.calendarId)) throw new RemoteDataError('新增貼圖','貼圖僅供日曆擁有者使用。');
     const { data: row, error } = await requestRemote(
       '寫入貼圖',
       this.client
@@ -523,6 +660,12 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
 
   async updateCalendar(id: string, patch: CalendarPatch): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
+    if (receivedCalendar(this.sharingSession(),id)) {
+      if (Object.keys(patch).some(key=>key!=='isVisible')) throw new RemoteDataError('管理收到的日曆','只有日曆擁有者可以修改設定。');
+      if (patch.isVisible===false) this.#hiddenReceived.add(id);
+      else if (patch.isVisible===true) this.#hiddenReceived.delete(id);
+      return this.#commit({...data,calendars:data.calendars.map(c=>c.id===id?{...c,isVisible:!this.#hiddenReceived.has(id)}:c)});
+    }
     const calendar = findCalendarById(data, id);
     if (!calendar) return data;
     const draft = applyCalendarPatch(calendar, patch, new Date().toISOString());
@@ -545,10 +688,18 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
    * no longer owns a calendar with this id — typically a retry after a lost
    * response — and is reconciled by the same reload.
    */
-  async deleteCalendar(id: string): Promise<DayPopUserData> {
+  async deleteCalendar(id: string, options?: SharingWriteOptions): Promise<DayPopUserData> {
     const data = this.#requireSnapshot();
     // Refused (last calendar, or unknown id) — nothing reaches the server.
-    if (!calendarDeletionPlan(data, id)) return data;
+    const plan=calendarDeletionPlan(this.personalData(),id);
+    if (receivedCalendar(this.sharingSession(),id)) throw new RemoteDataError('刪除日曆','只有日曆擁有者可以刪除日曆。');
+    if (!plan) return data;
+    if (this.#shares.some(s=>s.ownerId===this.userId)) {
+      const events=new Set(data.events.filter(e=>e.calendarId===id).map(e=>e.id));
+      const todos=new Set(data.todos.filter(t=>t.calendarId===id).map(t=>t.id));
+      return this.#writeShared('delete_calendar',{id,confirmExposure:options?.confirmExposure ?? {}},
+        {events:this.#selectVersions('events',events,options?.versions),todos:this.#selectVersions('todos',todos,options?.versions)});
+    }
 
     const { data: deleted, error } = await requestRemote(
       '刪除日曆並搬移內容',
@@ -586,7 +737,8 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
    * payload. A failed RPC or reload therefore never advances this snapshot.
    */
   async importData(command: ImportCommand): Promise<DayPopUserData> {
-    const current = this.#requireSnapshot();
+    const current = this.personalData();
+    if (command.kind==='replace' && this.#shares.some(s=>s.ownerId===this.userId)) throw new RemoteDataError('還原備份','請先關閉自己的日曆分享，再取代資料。');
     const applied = applyImportCommand(current, command);
     const operation = command.kind === 'replace' ? '還原備份' : '匯入 iCalendar';
     const request =
@@ -600,6 +752,72 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
     const { error } = await requestRemote(operation, request);
     if (error) throw new RemoteDataError(operation, error);
     return this.load();
+  }
+
+  async setCalendarShare(id: string, permission: 'view'|'edit'|null): Promise<DayPopUserData> {
+    if (!this.personalData().calendars.some(c=>c.id===id)) throw new RemoteDataError('設定分享','只有日曆擁有者可以設定分享。');
+    const previous=this.#shares.find(s=>s.calendarId===id);
+    const {error}=await requestRemote('設定日曆分享',this.client.rpc('set_calendar_group_share',{
+      p_calendar_id:id,p_permission:permission as string,p_expected_updated_at:(previous?.updatedAt ?? null) as unknown as string,
+    }));
+    if(error) throw new RemoteDataError('設定日曆分享',error);
+    return this.load();
+  }
+
+  async setTodoSharingScope(id: string, scope: SharingScope): Promise<DayPopUserData> {
+    const data=this.#requireSnapshot(); const item=findTodo(data,id);
+    if(!item) return data;
+    if(receivedCalendar(this.sharingSession(),item.calendarId)) throw new RemoteDataError('設定不分享','只有日曆擁有者可以設定不分享。');
+    const draft={...item,sharingScope:scope};
+    return this.#shared(item.calendarId) ? this.#writeTodo(draft) : this.#commit(withTodo(data,await this.#upsertTodo(draft)));
+  }
+
+  #shared(calendarId: string): boolean { return this.#shares.some(s=>s.calendarId===calendarId); }
+  #assertWritable(calendarId: string,scope?: SharingScope) {
+    const received=receivedCalendar(this.sharingSession(),calendarId);
+    if (received?.permission==='view') throw new RemoteDataError('修改共享事項','這本日曆目前只能查看。');
+    if (received && scope==='private') throw new RemoteDataError('設定不分享','需要保密的事項請存到自己的日曆。');
+  }
+  #selectVersions(collection: 'events'|'todos'|'event_exceptions',ids: Set<string>,override?: SharingVersions): Record<string,string> {
+    const source=(override ?? this.#writeVersions ?? this.captureSharingVersions())[collection] ?? {};
+    return Object.fromEntries(Object.entries(source).filter(([id])=>ids.has(id)));
+  }
+  #eventVersions(id: string,override?: SharingVersions): SharingVersions {
+    const data=this.#requireSnapshot(); const ids=new Set([id]); let previous=0;
+    while(previous!==ids.size) {
+      previous=ids.size;
+      for(const x of data.eventExceptions) if(x.replacementEventId && (ids.has(x.eventId)||ids.has(x.replacementEventId))) {
+        ids.add(x.eventId);ids.add(x.replacementEventId);
+      }
+    }
+    const exceptions=new Set(data.eventExceptions.filter(x=>ids.has(x.eventId)).map(x=>x.id));
+    return {events:this.#selectVersions('events',ids,override),...(exceptions.size?{event_exceptions:this.#selectVersions('event_exceptions',exceptions,override)}:{})};
+  }
+  #writeTodo(todo: TodoItem): Promise<DayPopUserData> {
+    this.#assertWritable(todo.calendarId,todo.sharingScope);
+    return this.#writeShared('update_todo',{id:todo.id,values:todoValues(todo,this.userId)},
+      {todos:this.#selectVersions('todos',new Set([todo.id]))});
+  }
+  async #writeShared(action: string,payload: Record<string,unknown>,versions: SharingVersions): Promise<DayPopUserData> {
+    try {
+      const {data,error}=await requestRemote('保存共享事項',this.client.rpc('write_shared_calendar_item',{
+        p_action:action,p_payload:payload as Json,p_versions:versions as Json,
+      }));
+      if(error || !data || typeof data!=='object' || Array.isArray(data) || data.applied!==true) throw error ?? new Error('未確認保存結果');
+      return await this.load();
+    } catch(cause) {
+      // Recheck RLS after every rejection; a revoked book must leave the view.
+      // The editor retains its independent draft and never retries on its own.
+      try { await this.load(); } catch { /* load already discarded received rows */ }
+      const detail=describe(cause);
+      const message=detail.includes('sharing_conflict') ? '內容已被修改，草稿已保留；請重新載入後再確認。'
+        : detail.includes('sharing_owner_action_required') ? '這項操作會影響私人內容，請交由日曆擁有者處理。'
+        : detail.includes('sharing_confirm_exposure') ? '請先確認搬移後的分享範圍。'
+        : '尚未確認保存，草稿已保留；請重新載入以確認目前的權限與內容。';
+      const error=new RemoteDataError('保存共享事項',message);
+      if(this.#snapshot) error.currentData=structuredClone(this.#snapshot);
+      throw error;
+    }
   }
 
   async #upsertCalendar(calendar: Parameters<typeof calendarToInsert>[0]) {
@@ -709,6 +927,7 @@ export class SupabaseDayPopRepository implements DayPopRepository, EventAttachme
   /** Validates the whole document before it becomes the snapshot the UI sees. */
   #commit(data: DayPopUserData): DayPopUserData {
     const valid = parseDayPopUserData(data);
+    this.#personal = parseDayPopUserData(personalProjection(valid,this.#receivedIds));
     this.#snapshot = valid;
     return structuredClone(valid);
   }
@@ -725,6 +944,22 @@ interface OccurrenceRpcResult {
   event: Tables<'events'> | null;
   /** Storage objects the RPC queued for deletion, so cleanup only runs when needed. */
   enqueued_cleanup: number;
+}
+
+function eventValues(event: CalendarEvent,owner: string) {
+  const row=eventToInsert(event,owner);
+  const {id: _id,owner_id: _owner,...values}=row;
+  void _id;void _owner;
+  return values;
+}
+function todoValues(todo: TodoItem,owner: string) {
+  const row=todoToInsert(todo,owner);
+  const {id: _id,owner_id: _owner,...values}=row;
+  void _id;void _owner;
+  return values;
+}
+function sharedOccurrenceKey(occurrence: EventOccurrence) {
+  return occurrence.kind==='all-day' ? {occurrenceDate:occurrence.date} : {occurrenceStartsAt:occurrence.startsAt};
 }
 
 type OccurrenceRpcName = 'cancel_event_occurrence' | 'replace_event_occurrence';

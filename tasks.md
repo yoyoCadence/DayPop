@@ -99,7 +99,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 >
 > **實作時要一起處理的既有邊界**：帳號端 `load()` 要改成也讀別人分享給我的日曆；domain 文件若因此多出欄位（例如列的擁有者、分享權限），guest 與帳號快取的 schema version 要提升（目前 v4），先做 write barrier 與遷移回歸（AGENTS.md）；本機可用 Docker 實跑 `supabase:reset`／`supabase:test`，CI 的 `database` job 也會跑；`database.types.ts` 以 `npm run supabase:types` 的本機輸出為準（DP-085）。
 
-- [ ] **DP-048 — 建立日曆分享與單項私人覆寫（Codex，第 3 項，依賴 DP-047）：** 加入 `calendar_group_shares` 與事項 visibility 規則；每位擁有者明確開啟自己的日曆分享，新增行程／待辦可選「不分享」，關閉分享不得刪除資料。「不分享」寫的是既有的 `sharing_scope`。需要 MCP 驗證。
 - [ ] **DP-049 — 驗證家庭 RLS 與共同維護（Codex，第 4 項，依賴 DP-048）：** 以多帳號測試非成員拒絕、成員 view／edit、私人事項不可見、退出或撤銷後立即失權、owner 權限不可被 member 提升，並驗證前端篩選不是安全邊界。pgTAP 進 repo 並在 CI 的 `database` job 跑；遠端以 MCP 跑同一份 rollback 測試。
 
 > **2026-10-14 專案擁有者定案（DP-152–157 完成後）**：保留 PR #149「通知等對話框關掉才出現」的做法；後續依序做 **DP-158 → DP-163 → DP-174 → DP-173**，各自開 PR、CI 通過後自主合併。DP-174 採建議 (b)，依每筆待辦自己的 `calendarId` 篩選；DP-173 採建議，先在綜覽做「未排日期」的管理出口，正式收件匣之後再擴充。`fix/review-data-update-dialog` 確認沒有獨有 commit，暫時保留。
@@ -196,6 +195,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+- [ ] **DP-048 — 日曆分享與單項私人覆寫（2026-10-19，本機候選）：** DP-047 PR #166 已合併（`40ac192`，最新 CI `39122797987` 三項全過），另開獨立分支。第 18 檔新增 share RLS、nullable server 作者、完整版本／系列／階層與清理邊界；session metadata＋personal projection 保持 v4，不把收到的資料放進快取或任何備份。分享／私人／只讀／刪除與搬移確認 UI 已接線；本機 8 檔 302 pgTAP、家庭／共享雙連線競態、1,304 單元＋7 Node、八個新共享 e2e 與 build／check:build 通過。移除 CAS 比較會重現兩筆都提交，還原後一筆成功／一筆衝突；相關 e2e／最後檢查仍進行中。**尚待擁有者 CLI dry-run／push 第 18 檔，再做 MCP schema／advisor／types／同份 pgTAP rollback postflight；沒有部署授權，尚未移 Done。** 見 ADR §9、deployment §5.26、handoff §0.13。DP-049 等本項完成合併後才開始。
 
 
 

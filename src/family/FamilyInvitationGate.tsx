@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext,useEffect, useRef, useState } from 'react';
+import { DataContext } from '../data/dataContext';
 import { useAuth } from '../auth/authContext';
 import { FamilyFrame } from './FamilyDialog';
 import { familyFailure, familyTime } from './familyFormatting';
@@ -10,6 +11,7 @@ export function FamilyInvitationGate({ timezone, onOpenAuth }: { timezone: strin
   const intent = useInvitationIntent();
   const auth = useAuth();
   const factory = useFamilyServiceFactory();
+  const dataContext=useContext(DataContext);
   const [waitingToken, setWaitingToken] = useState<string | null>(null);
   const [completed, setCompleted] = useState<{ userId: string; message: string } | null>(null);
   function close() { setCompleted(null); dismissInvitationIntent(); }
@@ -31,6 +33,7 @@ export function FamilyInvitationGate({ timezone, onOpenAuth }: { timezone: strin
   </FamilyFrame>;
   return <InvitationConfirmation key={`${auth.user.id}:${intent.token}`} factory={factory} userId={auth.user.id} token={intent.token}
     email={auth.user.email ?? '目前帳號'} timezone={timezone} onClose={close} onComplete={message => {
+      dataContext?.revalidateShares?.();
       setCompleted({ userId: auth.user!.id, message }); dismissInvitationIntent();
     }} />;
 }

@@ -751,3 +751,37 @@ npx supabase migration list --linked
 **本日後續：擁有者已完成上述 CLI dry-run／push，第 17 檔已套用；尚未部署前端。** MCP 確認 17 檔／13 表全 RLS、舊 39 條 policies 不變、RPC／private helper grants／path 正確、remote public types 與本機一致；同份 73 項固定假資料 pgTAP 完整 rollback，測試帳號／家庭資料／context／暫時 extension 皆零殘留。security 仍僅既有 Auth WARN，performance 新增三個剛建立的 invitation indexes 的 unused-index INFO，保留必要索引，詳見 handoff §0.12。postflight 已完成，CI 通過後依授權合併本項；下一項 DP-048 另開分支與 PR。未來擁有者決定部署時，仍須先確認該次 main 所需全部 migrations 已推送，不能只因第 17 檔完成而跳過後續 migration。
 
 程式提交 `8c804ff` 的 CI [39121407670](https://github.com/yoyoCadence/DayPop/actions/runs/39121407670) 三項全過：程式檢查 1m45s、DB 1m48s（247 pgTAP／雙連線競態／types 比對）、完整 e2e 17m52s（232 passed／12 skipped，無失敗或 flaky）。後續只提交 postflight／任務結案文件，最新 PR CI 仍須重跑通過才合併。
+
+### 5.26 DP-048 日曆分享：第 18 檔套用順序（2026-10-19）
+
+最終本機 build 的 JS 為 733,853 raw／215,524 gzip bytes，CSS 111,244 raw／27,088 gzip bytes，均在既有 budget；保留原有 >500kB chunk 提示，不提高上限。新增輸入副本僅留目前帳號的記憶體，沒有新增 user-data v4 欄位或持久 storage。
+
+**目前是本機候選；遠端第 18 檔尚未套用，尚未部署。** DP-047 PR #166 已合併至 `40ac192`（最新 CI `39122797987` 三項全過），本項獨立分支新增 `20261019104837_calendar_group_sharing.sql`。它增加 calendar share、server 作者及 RLS／版本檢查，前端依賴新 manifest／寫入 RPC；順序仍是 **先推 migration，再部署前端**。本輪不改 App 0.4.3／公告，也沒有自動部署授權。
+
+由專案擁有者在 repo 根目錄的 PowerShell **逐條執行**，確認 linked project 是 DayPop `aquhcaduovkxyfhzywgc`：
+
+```powershell
+Get-Content -LiteralPath supabase/.temp/project-ref
+```
+
+```powershell
+npx supabase migration list --linked
+```
+
+```powershell
+npx supabase db push --linked --dry-run
+```
+
+前 17 檔必須 local／remote 一致，dry-run **只能列 `20261019104837_calendar_group_sharing.sql`**。若出現其他 migration 或 drift，先停下核對，不 repair、reset 或直接下 DDL。核對後再逐條執行：
+
+```powershell
+npx supabase db push --linked
+```
+
+```powershell
+npx supabase migration list --linked
+```
+
+回覆兩份輸出後，Codex 依 [MCP handoff §0.13](supabase-mcp-handoff.md#013-dp-048-日曆分享第-18-檔候選2026-10-19) 核對 18 檔／14 表 RLS、public RPC 的 INVOKER／path／grant、private helper 與舊 owner-only 附件／Storage 邊界、advisor、public types，並以 repo 同份固定假資料 pgTAP 完整 rollback、核對零殘留；不查改正式使用者內容。兩個本機 concurrency scripts 會 commit 假 fixtures，**不得跑遠端**。
+
+本機 8 檔 302 pgTAP、兩連線 CAS／家庭名額、1,304 單元＋7 Node、lint／typecheck／build／check:build 與八個新共享 e2e 已通過；相關回歸與最後檢查仍進行中。反向移除 CAS 比較會讓兩筆舊版本均提交，還原後恢復一筆成功／一筆衝突。合併還要等待最新 CI、owner CLI 與 MCP postflight；DP-049 待本項合併後另開分支，真實帳號／OAuth／真機／staging 驗收仍未做。

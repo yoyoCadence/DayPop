@@ -11,6 +11,8 @@ import type {
 } from '../domain/mutations';
 import type { DayPopUserData, EventOccurrence, TodoPriority } from '../domain/types';
 import type { StorageReadResult } from '../storage/versionedStorage';
+import type { SharingSession, SharingWriteOptions } from './calendarSharing';
+import type { RetainedSharingDraft } from './retainedSharingDraft';
 
 /** The non-`ready` half of a local read — what the recovery screen works on. */
 export type BlockedRead = Exclude<StorageReadResult, { status: 'ready' }>;
@@ -51,8 +53,8 @@ export type DataState =
  */
 export interface DataActions {
   addEvent(input: NewEventInput): Promise<void>;
-  updateEvent(id: string, patch: EventPatch): Promise<void>;
-  deleteEvent(id: string): Promise<void>;
+  updateEvent(id: string, patch: EventPatch, options?: SharingWriteOptions): Promise<void>;
+  deleteEvent(id: string, options?: SharingWriteOptions): Promise<void>;
   /**
    * The 只有這一次 half of the原檔's scope dialog — DP-082.
    *
@@ -60,19 +62,22 @@ export interface DataActions {
    * serialized mutation queue, so choosing 單次 cannot interleave with an edit
    * the user issued a moment earlier.
    */
-  cancelEventOccurrence(eventId: string, occurrence: EventOccurrence): Promise<void>;
+  cancelEventOccurrence(eventId: string, occurrence: EventOccurrence, options?: SharingWriteOptions): Promise<void>;
   replaceEventOccurrence(
     eventId: string,
     occurrence: EventOccurrence,
     patch: EventPatch,
+    options?: SharingWriteOptions,
   ): Promise<void>;
   addTodo(input: NewTodoInput): Promise<void>;
   /** Awaited so an inline editor keeps its draft if the write is refused. */
-  renameTodo(id: string, title: string): Promise<void>;
-  setTodoPriority(id: string, priority: TodoPriority): Promise<void>;
-  rescheduleTodo(id: string, date: string): Promise<void>;
+  renameTodo(id: string, title: string, options?: SharingWriteOptions): Promise<void>;
+  setTodoPriority(id: string, priority: TodoPriority, options?: SharingWriteOptions): Promise<void>;
+  rescheduleTodo(id: string, date: string, options?: SharingWriteOptions): Promise<void>;
   toggleTodo(id: string): void;
   deleteTodo(id: string): void;
+  setTodoSharingScope?(id: string,scope: 'inherit'|'private'): Promise<void>;
+  setCalendarShare?(id: string,permission: 'view'|'edit'|null): Promise<void>;
   addSticker(input: NewStickerInput): void;
   deleteSticker(id: string): void;
   addCalendar(input: NewCalendarInput): Promise<void>;
@@ -97,8 +102,23 @@ export interface DataContextValue {
   state: DataState;
   actions: DataActions;
   capabilities: { eventAttachments: boolean };
+  sharing?: SharingSession;
+  personalData?: DayPopUserData;
+  revalidateShares?(): void;
+  confirmation?: SharingConfirmation | null;
+  retainedSharingDrafts?: readonly RetainedSharingDraft[];
+  keepSharingDraft?(draft:RetainedSharingDraft):void;
+  discardSharingDraft?(key:string):void;
   /** Re-runs the load — used after the recovery screen resets the data. */
   refresh(): void;
+}
+
+export interface SharingConfirmation {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm(): void;
+  onCancel(): void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -119,10 +139,13 @@ export function useDayPopDataState(): DataContextValue {
 export function useDayPopData(): DataActions & {
   data: DayPopUserData;
   capabilities: DataContextValue['capabilities'];
+  sharing?: SharingSession;
+  personalData: DayPopUserData;
 } {
   const value = useDayPopDataState();
   if (value.state.status !== 'ready') {
     throw new Error('DayPop 資料尚未就緒，畫面不應該在此時掛載。');
   }
-  return { data: value.state.data, capabilities: value.capabilities, ...value.actions };
+  return { data: value.state.data, personalData:value.personalData ?? value.state.data, sharing:value.sharing,
+    capabilities: value.capabilities, ...value.actions };
 }

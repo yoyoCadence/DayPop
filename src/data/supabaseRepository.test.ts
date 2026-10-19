@@ -516,7 +516,7 @@ describe('SupabaseDayPopRepository writes', () => {
     await expect(repository.updateEvent(EVENT, { endDate: '2026-08-05' })).rejects.toThrow('不能早於');
     await expect(repository.addEvent({ title: '拒絕', date: '2026-08-06', endDate: '', allDay: true, start: '', end: '' })).rejects.toThrow();
     expect(db.writes).toEqual([]);
-    expect(db.rpcCalls).toEqual([]);
+    expect(db.rpcCalls).toEqual([{name:'calendar_sharing_manifest',args:undefined}]);
     db.failures.set('events', '拒絕保存');
     await expect(repository.updateEvent(EVENT, { endDate: '2026-08-12' })).rejects.toBeInstanceOf(RemoteDataError);
     db.failures.delete('events');
@@ -1038,8 +1038,9 @@ describe('SupabaseDayPopRepository writes', () => {
       },
     });
 
-    expect(db.rpcCalls.at(-1)?.name).toBe('replace_daypop_data');
-    const payload = db.rpcCalls.at(-1)?.args.p_payload as Record<string, unknown>;
+    const importCall=db.rpcCalls.find(call=>call.name==='replace_daypop_data');
+    expect(importCall?.name).toBe('replace_daypop_data');
+    const payload = importCall?.args.p_payload as Record<string, unknown>;
     expect(payload).not.toHaveProperty('owner_id');
     expect((payload.calendars as FakeRow[])[0]).toEqual(
       expect.objectContaining({ id: IMPORT_CALENDAR, name: '還原的日曆' }),
@@ -1069,7 +1070,7 @@ describe('SupabaseDayPopRepository writes', () => {
       eventExceptions: [],
     });
 
-    const call = db.rpcCalls.at(-1);
+    const call = db.rpcCalls.find(call=>call.name==='append_daypop_ics');
     expect(call?.name).toBe('append_daypop_ics');
     const payload = call?.args.p_payload as { events: FakeRow[]; event_exceptions: FakeRow[] };
     expect(payload.events).toHaveLength(1);

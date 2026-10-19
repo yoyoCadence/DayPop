@@ -13,6 +13,7 @@ import {
 } from '../domain/overview';
 import { topLevelTodos } from '../domain/todos';
 import { useDayPopData } from '../data/dataContext';
+import { calendarPermission } from '../data/calendarSharing';
 import { UndatedTodos } from './UndatedTodos';
 import './screens.css';
 import './overview.css';
@@ -46,7 +47,8 @@ const PERIOD_OPTIONS: { period: OverviewPeriod; label: string }[] = [
  * `mapItem()` behaviour.
  */
 export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) {
-  const { data, toggleTodo } = useDayPopData();
+  const { data, toggleTodo,sharing } = useDayPopData();
+  const readonlyTodos=new Set(data.todos.filter(todo=>calendarPermission(sharing,todo.calendarId)==='view').map(todo=>todo.id));
   const [type, setType] = useState<OverviewType>('events');
   const [period, setPeriod] = useState<OverviewPeriod>('month');
   const weekStartsOn = data.preferences.weekStartsOn;
@@ -221,6 +223,7 @@ export function OverviewScreen({ onOpenEvent, onOpenDay }: OverviewScreenProps) 
                           className="overview-item"
                           key={`${item.kind}-${item.key}`}
                           type="button"
+                          disabled={item.kind==='todo' && readonlyTodos.has(item.id)}
                           onClick={() => {
                             if (item.kind === 'event') onOpenEvent(item.id);
                             else if (item.kind === 'todo') toggleTodo(item.id);

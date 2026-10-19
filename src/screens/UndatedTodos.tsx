@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react';
 import { useDayPopData } from '../data/dataContext';
+import type { SharingWriteOptions } from '../data/calendarSharing';
 import { todoGroupsOn } from '../domain/todos';
 import { DayTodoCard } from './calendar/DayTodoCard';
 
@@ -32,12 +33,12 @@ export function UndatedTodos({ todayKey }: UndatedTodosProps) {
 
   // One date write at a time across the cards, as in the day sheet (DP-132):
   // giving a parent a date regroups its subtasks.
-  async function reschedule(id: string, date: string) {
+  async function reschedule(id: string, date: string,options?:SharingWriteOptions) {
     if (pendingDate.current) throw new Error('請等待目前的日期保存完成。');
     pendingDate.current = true;
     setDatePending(true);
     try {
-      await rescheduleTodo(id, date);
+      if(options)await rescheduleTodo(id,date,options);else await rescheduleTodo(id, date);
     } finally {
       pendingDate.current = false;
       setDatePending(false);

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
 import { FamilyCard } from '../family/FamilyCard';
+import { CalendarSharingCard } from './CalendarSharingCard';
 import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
@@ -69,6 +70,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   const { state: dataState } = useDayPopDataState();
   const {
     data,
+    personalData,
+    sharing,
     addCalendar,
     updateCalendar,
     deleteCalendar,
@@ -107,7 +110,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
   const [editing, setEditing] = useState<string | 'new' | null>(null);
 
-  const calendars = sortedCalendars(data.calendars);
+  const calendars = sortedCalendars(personalData.calendars);
   const editingCalendar =
     editing && editing !== 'new'
       ? (calendars.find((calendar) => calendar.id === editing) ?? null)
@@ -187,7 +190,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
     setTransferError(null);
     try {
       // Shared with the screen error fallback, so both export the same file — DP-143.
-      const record = downloadJsonBackup(data, updater.currentVersion, accountId);
+      const record = downloadJsonBackup(personalData, updater.currentVersion, accountId);
       setLastBackup(record);
       setTransferMessage(
         record.omittedAttachments > 0
@@ -204,10 +207,10 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
     try {
       downloadTextFile(
         backupFileName('ics'),
-        buildIcsExport(data),
+        buildIcsExport(personalData),
         'text/calendar;charset=utf-8',
       );
-      setTransferMessage(`已開始下載 ${data.events.length} 筆行程的 iCalendar 檔案。`);
+      setTransferMessage(`已開始下載 ${personalData.events.length} 筆行程的 iCalendar 檔案。`);
     } catch (error) {
       setTransferError(describeError(error, '建立 iCalendar 檔案失敗。'));
     }
@@ -221,10 +224,11 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
     setTransferError(null);
     try {
       const text = await readTextFile(file);
+      if(kind==='json' && sharing?.shares.some(s=>s.ownerId===sharing.userId)) throw new Error('請先關閉自己的日曆分享，再還原備份。');
       const plan =
         kind === 'json'
-          ? planJsonImport(text, data)
-          : planIcsImport(text, data, {
+          ? planJsonImport(text, personalData)
+          : planIcsImport(text, personalData, {
               calendarId: data.calendars.find((calendar) => calendar.isDefault)?.id,
               defaultTimezone: data.preferences.timezone,
             });
@@ -519,6 +523,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             <LegacyImportCard />
           </div>
           <FamilyCard timezone={preferences.timezone} onOpenAuth={onOpenAuth} />
+          <CalendarSharingCard onOpenAuth={onOpenAuth}/>
 
           <div className="dp-section-label">資料備份</div>
           <div className="data-transfer-actions">
@@ -610,7 +615,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             <DataImportDialog
               fileName={pendingImport.fileName}
               plan={pendingImport.plan}
-              currentCalendars={data.calendars}
+              currentCalendars={personalData.calendars}
               busy={importing}
               error={transferError}
               onConfirm={() => void confirmImport()}

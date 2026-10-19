@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, type FormEvent } from 'react';
+import { useContext,useEffect, useId, useRef, type FormEvent } from 'react';
+import { DataContext } from '../../data/dataContext';
+import { calendarPermission } from '../../data/calendarSharing';
 import type { NewTodoInput } from '../../domain/mutations';
 import { petGreeting, type PetBubbleTodos } from '../../domain/petBubble';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
@@ -166,6 +168,7 @@ function PetTodoSection({
   onToggleTodo,
   onDeleteTodo,
 }: PetTodoSectionProps) {
+  const context=useContext(DataContext);
   const add = useConfirmedTodoAdd();
   const { draft, setDraft } = add;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -210,6 +213,7 @@ function PetTodoSection({
                   type="button"
                   aria-pressed={done}
                   aria-label={`完成 ${todo.title}`}
+                  disabled={calendarPermission(context?.sharing,todo.calendarId)==='view'}
                   onClick={() => toggle(todo)}
                 >
                   {done ? '✓' : ''}
@@ -224,6 +228,7 @@ function PetTodoSection({
                   className="cal-pet-delete"
                   type="button"
                   aria-label={`刪除 ${todo.title}`}
+                  disabled={calendarPermission(context?.sharing,todo.calendarId)==='view'}
                   onClick={() => remove(todo)}
                 >
                   ×

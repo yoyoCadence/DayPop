@@ -37,6 +37,7 @@ import {
   type DayPopUserData,
   type EventOccurrence,
   type TodoPriority,
+  type SharingScope,
 } from '../domain/types';
 import { applyImportCommand, type ImportCommand } from '../domain/dataTransfer';
 import { parseDayPopUserData } from '../domain/validation';
@@ -169,6 +170,13 @@ export class LocalDayPopRepository implements DayPopRepository, SyncLoadCapable 
 
   deleteTodo(id: string): Promise<DayPopUserData> {
     return this.#mutate((data) => withoutTodo(data, id));
+  }
+
+  setTodoSharingScope(id: string,scope: SharingScope): Promise<DayPopUserData> {
+    return this.#mutate(data=>{
+      const todo=findTodo(data,id);
+      return todo ? withTodo(data,{...todo,sharingScope:scope,updatedAt:new Date().toISOString()}) : data;
+    });
   }
 
   renameTodo(id: string, title: string): Promise<DayPopUserData> {

@@ -6,6 +6,7 @@ import type { OccurrenceWindow } from '../../domain/recurrence';
 import { parseQuickAdd, unsupportedQuickAddParts } from '../../domain/quickAdd';
 import { isDateKey } from '../../domain/validation';
 import { useDayPopData } from '../../data/dataContext';
+import { canEditSharedEvent,hasMixedEventPrivacy,sharingVersionsOf,receivedCalendar,type SharingWriteOptions } from '../../data/calendarSharing';
 import { useTodayKey } from '../useTodayKey';
 import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
@@ -64,6 +65,7 @@ export function CalendarScreen({
 }: CalendarScreenProps) {
   const {
     data,
+    sharing,
     addEvent,
     updateEvent,
     deleteEvent,
@@ -143,7 +145,7 @@ export function CalendarScreen({
    * result *is* the series and editing the whole series is the right thing.
    */
   const [editingTarget, setEditingTarget] = useState<OccurrenceTarget | null>(null);
-  const [weekDrag, setWeekDrag] = useState<{ target: OccurrenceTarget; patch: EventPatch } | null>(null);
+  const [weekDrag, setWeekDrag] = useState<{ target: OccurrenceTarget; patch: EventPatch;options?:SharingWriteOptions } | null>(null);
   /**
    * The target only counts while `editingId` still names it — DP-082 review fix.
    *
@@ -209,23 +211,25 @@ export function CalendarScreen({
   // read this; the event sheet keeps editing in the event's own zone.
   const displayTimezone = data.preferences.timezone;
 
-  function dragEvent(target: OccurrenceTarget, patch: EventPatch) {
-    if (target.event.recurrence) setWeekDrag({ target, patch });
-    else updateEvent(target.event.id, patch);
+  function dragEvent(target: OccurrenceTarget, patch: EventPatch,options?:SharingWriteOptions) {
+    if (target.event.recurrence) setWeekDrag({ target, patch,options });
+    else if(options)updateEvent(target.event.id,patch,options);else updateEvent(target.event.id, patch);
   }
 
   function applyWeekDrag(scope: 'this' | 'all') {
     if (!weekDrag) return;
-    const { target, patch } = weekDrag;
+    const { target, patch,options } = weekDrag;
     setWeekDrag(null);
     if (scope === 'this') {
-      replaceEventOccurrence(target.sourceEventId, target.occurrence, patch);
+      if(options)replaceEventOccurrence(target.sourceEventId,target.occurrence,patch,options);
+      else replaceEventOccurrence(target.sourceEventId, target.occurrence, patch);
       return;
     }
     const series = data.events.find((event) => event.id === target.sourceEventId);
     if (!series || series.allDay || target.event.allDay) return;
     if (patch.timedInterval) {
-      updateEvent(series.id, { timedInterval: seriesIntervalForDrag(series, target.event, patch.timedInterval) });
+      const moved={timedInterval:seriesIntervalForDrag(series,target.event,patch.timedInterval)};
+      if(options)updateEvent(series.id,moved,options);else updateEvent(series.id,moved);
       return;
     }
     if (!patch.date) return;
@@ -239,13 +243,14 @@ export function CalendarScreen({
     const after = eventWallTime(moved);
     const anchorDate = eventWallTime(series).date;
     const shift = daysBetween(fromDateKey(before.date), fromDateKey(after.date));
-    updateEvent(series.id, {
+    const movedPatch={
       ...patch,
       date: toDateKey(addDays(fromDateKey(anchorDate), shift)),
       start: after.start,
       end: after.end,
       wallTimeZone: series.timezone,
-    });
+    };
+    if(options)updateEvent(series.id,movedPatch,options);else updateEvent(series.id,movedPatch);
   }
 
   const todayFull = useMemo(
@@ -414,6 +419,8 @@ export function CalendarScreen({
 
         {view === 'week' && (
           <WeekView
+            canEditEvent={id=>canEditSharedEvent(data,sharing,id)}
+            sharingVersions={sharing?sharingVersionsOf(data):undefined}
             weekStartsOn={weekStartsOn}
             dayCount={weekDays}
             onDayCountChange={setWeekDays}
@@ -504,6 +511,10 @@ export function CalendarScreen({
       />
 
       <EventSheet
+        sharing={sharing}
+        sharingVersions={sharing?sharingVersionsOf(data):undefined}
+        editingAllowed={!editingEvent || canEditSharedEvent(data,sharing,editingEvent.id)}
+        privacyMixed={Boolean(editingEvent && hasMixedEventPrivacy(data,editingEvent.id))}
         open={sheetOpen}
         defaultDate={selected}
         defaultTimezone={displayTimezone}
@@ -511,7 +522,7 @@ export function CalendarScreen({
         draft={quickDraft}
         calendars={data.calendars}
         attachments={editingAttachments}
-        attachmentsAvailable={capabilities.eventAttachments}
+        attachmentsAvailable={capabilities.eventAttachments && !receivedCalendar(sharing,editingEvent?.calendarId ?? '')}
         onClose={closeSheet}
         onAddEvent={addEvent}
         onUpdateEvent={updateEvent}

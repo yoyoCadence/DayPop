@@ -7,8 +7,8 @@ import { invitationUrl } from './invitationIntent';
 import { familyFailure, familyTime } from './familyFormatting';
 import './family.css';
 
-export function FamilyFrame({ title, busy = false, onClose, children }: {
-  title: string; busy?: boolean; onClose(): void; children: ReactNode;
+export function FamilyFrame({ title, busy = false, onClose, children,closeLabel='關閉家庭視窗' }: {
+  title: string; busy?: boolean; onClose(): void; children: ReactNode;closeLabel?:string;
 }) {
   const layer = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -17,7 +17,7 @@ export function FamilyFrame({ title, busy = false, onClose, children }: {
     <div ref={layer} className="dialog-backdrop family-backdrop" role="presentation"
       onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <section className="auth-dialog family-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy}>
-        <button className="auth-close" type="button" aria-label="關閉家庭視窗" disabled={busy} onClick={onClose}>×</button>
+        <button className="auth-close" type="button" aria-label={closeLabel} disabled={busy} onClick={onClose}>×</button>
         <h2 id={titleId}>{title}</h2>
         {children}
       </section>
@@ -26,8 +26,8 @@ export function FamilyFrame({ title, busy = false, onClose, children }: {
 }
 type Confirmation = { command: FamilyCommand; title: string; description: string; label: string };
 
-export function FamilyDialog({ factory, userId, timezone, onClose }: {
-  factory: FamilyServiceFactory; userId: string; timezone: string; onClose(): void;
+export function FamilyDialog({ factory, userId, timezone, onClose,onChanged }: {
+  factory: FamilyServiceFactory; userId: string; timezone: string; onClose(): void;onChanged?():void;
 }) {
   const [snapshot, setSnapshot] = useState<FamilySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +76,7 @@ export function FamilyDialog({ factory, userId, timezone, onClose }: {
     if (['invite', 'resend', 'revoke', 'leave', 'dissolve'].includes(command.kind)) setGenerated(null);
     try {
       const result = await service().command(command);
+      onChanged?.();
       if (!mounted.current) return;
       setSnapshot(result.snapshot); setConfirmation(null);
       if (['create', 'rename', 'leave', 'dissolve'].includes(command.kind)) setName(result.snapshot.group?.name ?? '家庭');
@@ -148,7 +149,7 @@ export function FamilyDialog({ factory, userId, timezone, onClose }: {
                 </li>)}
               </ul> : <p className="family-help">目前沒有等待接受或過期的邀請。</p>}
             </> : null}
-            <p className="family-help">目前可管理家庭與邀請；日曆分享尚未開放。</p>
+            <p className="family-help">日曆分享由每位擁有者在設定中明確開啟；加入家庭不會自動分享。</p>
             <button type="button" className="button secondary" onClick={() => setConfirmation({
               command: { kind: isOwner ? 'dissolve' : 'leave', groupId: group.id },
               title: isOwner ? '解散家庭' : '退出家庭', label: isOwner ? '確認解散' : '確認退出',
