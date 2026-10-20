@@ -58,7 +58,9 @@ export default defineConfig({
       testMatch: '**/webkit-smoke.spec.ts',
       use: {
         ...devices['iPhone 13'],
-        // Keep font sizes and coordinates comparable to mobile-chrome.
+        // The preset's screen is 390x844 but its viewport is only 390x664.
+        // Match mobile-chrome's viewport as well as its font scale.
+        viewport: { width: 390, height: 844 },
         deviceScaleFactor: 1,
       },
     },

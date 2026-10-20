@@ -20,7 +20,10 @@ async function openWebKit(page: Page) {
   const timezone = await page.evaluate(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
-  console.log('WebKit smoke timezone:', timezone);
+  console.log('WebKit smoke environment:', JSON.stringify({
+    timezone,
+    viewport: page.viewportSize(),
+  }));
   expect(timezone).toBe('Asia/Taipei');
 }
 
