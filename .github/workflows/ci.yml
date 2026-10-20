@@ -7,7 +7,7 @@ name: CI
 # DP-086：runner 固定為 ubuntu-26.04，不用 ubuntu-latest。ubuntu-latest 會在
 # 沒有任何 PR 的情況下換作業系統（2026-10-19 起分批改成 26.04），而
 # `playwright install --with-deps` 與 Supabase 的 Docker 流程都依賴 OS。
-# 升級時把這裡三處與 deploy-staging.yml 兩處一起改，並讓 CI 完整跑一輪。
+# 升級時把這裡四處與 deploy-staging.yml 兩處一起改，並讓 CI 完整跑一輪。
 on:
   pull_request:
   push:
@@ -105,13 +105,48 @@ jobs:
 
       # Auth／Storage 使用 repo 內 deterministic fake，不需要任何 secret。
       - name: End-to-end tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --project=mobile-chrome --project=desktop-chrome
 
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
+          path: output/playwright/
+          retention-days: 14
+
+  # DP-159：四條 WebKit smoke 獨立跑，不占用 Chromium 的 20 分鐘額度。
+  # reusable workflow 的四個 jobs 都成功才會放行 deployment。
+  webkit:
+    name: Playwright / WebKit smoke
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: WebKit smoke tests
+        run: npm run test:e2e -- --project=webkit-smoke
+
+      - name: Upload WebKit diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-webkit-report
           path: output/playwright/
           retention-days: 14
 

@@ -36,6 +36,7 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chrome',
+      testIgnore: '**/webkit-smoke.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },
@@ -46,9 +47,19 @@ export default defineConfig({
     },
     {
       name: 'desktop-chrome',
+      testIgnore: '**/webkit-smoke.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 900 },
+      },
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: '**/webkit-smoke.spec.ts',
+      use: {
+        ...devices['iPhone 13'],
+        // Keep font sizes and coordinates comparable to mobile-chrome.
+        deviceScaleFactor: 1,
       },
     },
   ],
