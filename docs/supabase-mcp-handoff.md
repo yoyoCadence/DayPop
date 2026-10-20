@@ -175,6 +175,16 @@ postflight／CI 完成才更新 tasks Done、依授權合併本項，再從 main
 
 候選提交 `db3a2ec` 的 [CI `39277931771`](https://github.com/yoyoCadence/DayPop/actions/runs/39277931771) 三項全過：1,304 單元＋7 Node、302 pgTAP／兩種雙連線競態／types、完整 e2e 241 passed／13 skipped（18.5 分鐘）。本次結案只增量更新文件與任務板；最新 CI 通過後才合併 PR #167，再從 main 開 DP-049。**前端尚未部署，真實帳號／OAuth／真機／staging 驗收未做；App 0.4.3 與歷史公告不變。第 18 檔已套用，不可再改該檔。**
 
+## 0.14 DP-049 五帳號權限驗證（2026-10-20）
+
+PR #167 已於 `7c795b9` 合併，最後 CI `39342697282` 三項全過、完整 e2e 245 passed／13 skipped。本項另從最新 main 開分支，新增 `family_sharing_permissions.test.sql` 的 74 項直接 SQL／RPC 矩陣；角色、覆蓋與完整證據見 [家庭權限驗證](family-sharing-permissions-verification.md)。只加測試、CI、文件，沒有 schema／產品程式／types／v4／0.4.3／公告變更。
+
+本機實跑 start → reset → 9 檔 376 pgTAP；兩個既有競態與本機 types 零 diff 通過。`supabase:test:permissions` 會在**本機 Docker transaction** 放寬 SELECT 作負控制，兩輪各 8 個 assertion 如預期失敗，rollback 後同份 baseline 各 74／74 通過，固定 users／policy 零殘留。此腳本不接受 URL 或 linked flags，**不得拿到遠端執行**。
+
+遠端只以 MCP 跑 repo 同一份 baseline SQL，`finish()` 為 `1..74`、無 failure diagnostics，整份 BEGIN／ROLLBACK。只查固定 `...0491`–`...0495`：users、groups、calendars、events、todos、shares、Storage metadata 前後全 0；context、write context、三個 `pg_temp` helper 不存在，pgTAP extension 前後皆不存在。測試前後 schema metadata 完全一致（18 檔／14 表全 RLS／46 policies），remote public types 與新產生的本機檔逐字一致。沒有執行 migration DDL、remote reset、agent CLI push 或查改正式使用者內容。
+
+security 仍只有既有 Auth leaked-password WARN；performance 仍有 §0.13 已說明的複合 FK covering-index INFO，unused-index INFO 在本次 rollback 後為 6，沒有新增項目或刪改索引。1,312 單元＋7 Node、lint／typecheck／build／check:build 與相關 e2e 17 passed／1 skipped 通過；最新 CI 通過後才依授權合併本項。**不需要擁有者再推 migration，前端尚未部署，真實帳號／OAuth／真機／staging 未驗；四項家庭範圍合併完成後，發布仍由擁有者另行決定。**
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：
