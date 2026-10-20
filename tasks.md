@@ -76,6 +76,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-20 接續 DP-160：** DP-159 PR #169 已合併為 `9229a80`（四項 CI 全過；WebKit 4 passed、Chromium 245 passed／13 skipped）。依持續開發授權接 Backlog 的量測項目，只建立可重跑的固定假資料量測與結果文件；不直接改 buffer、virtualization、domain／repository 或版號／部署。
+
+
 > **2026-10-20 持續開發委託：** 家庭四項已由 PR #165–#168 完成並合併。依既有自主選題與逐項 PR／CI 通過後合併的授權，下一項接 DP-159：只加四條 WebKit smoke 與獨立 CI job，不擴大整套跨瀏覽器矩陣；Linux WebKit 不代替 DP-032／DP-077 的真機驗收。發布、公告與部署仍待擁有者另行決定。
 
 
@@ -325,8 +328,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-13 審查登記（DP-158–DP-162）**：以下五項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。它們都不是已確認的故障，是測試與量測上的缺口。
 
 - [x] **DP-158 — 已完成（2026-10-14），見 Done。** 測出的啟動問題另立為 DP-176。
-- [ ] **DP-160 — 量測月曆長時間捲動：** `MonthView` 初始 53 週、每到邊界加 12 週（[`MonthView.tsx:46-48`](src/screens/calendar/MonthView.tsx#L46-L48)），只增不減。在大量重複事件加上長時間捲動下量 DOM 節點數、occurrence 展開耗時與記憶體，再決定要不要做有界 buffer 或 virtualization。這是靜態風險，沒有證明目前會卡。任何改動都要保住 DP-069 的 roving tabindex 與捲動補償。
 - [ ] **DP-161 — 評估重模組的載入時機：** 審查記錄主要 chunk 約 669 kB raw（複核沒有重新量），Vite 的 500 kB 警告仍在，總量在 DP-119 的 budget 內。評估備份、ICS、重複事件展開等只在特定操作才用到的模組改成動態載入。先量測再決定；不得為了拆分破壞 domain／repository 邊界，service worker 的 app shell 快取與已快取離線啟動（DP-099）要一起驗。
+- [ ] **DP-178 — 月曆重負載的 profile 與有界視窗規劃（DP-160 量測後續，先 Mode A）：** 固定 20 個每日系列由 53 增至 197 週時，獨立 Node 展開中位數 2.81 → 14.98 秒，browser 增長取樣達秒級，見 [數據與限制](docs/month-scroll-measurement.md)。先 profile 釐清展開／日期轉換／繪製，規劃計算重用與有界的展開／DOM 視窗；初始成本仍需處理，不能只加 DOM virtualization 就宣稱修好。實作前定案 buffer 上限與移出視窗時的焦點政策，保住 DP-069 roving tabindex／跨邊界鍵盤／捲動補償、今天／搜尋定位及 DP-064 跨午夜／長事件／例外。這是新工作，不併入 DP-160 的量測 PR，也不代表已在真機確認效能。
 - [x] **DP-162 — axe smoke 已完成（2026-10-16），見 Done；截圖基線仍延後。** 原條目：評估自動化可及性與視覺基線： 目前沒有 coverage gate、axe gate 或截圖比對。**建議**：先加 axe smoke（四個分頁與主要 sheet），截圖基線延後。六套主題 × 淺／深 × 各檢視的成本高，字型繪製也容易造成不穩定的差異。axe 抓不到焦點逃逸，不能取代 DP-154 的 e2e。
 - [x] **DP-176 — 已完成（2026-10-15），見 Done。**
 
@@ -391,6 +394,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-160 — 月曆長捲量測（2026-10-20）：** Backlog → Next → In Progress → Done，基線 `9229a80`（DP-159 PR #169 已合併、四項 CI 全過）。新增可重跑的 `npm run measure:month-scroll`、typed 固定假資料、完整 raw JSON 與方法／限制文件；production guest build、兩種 viewport × 空／20 個每日系列 × 兩個全新 context，原生 performance／RAF、固定 Date、實際 browser Asia/Taipei 與 Node Etc/GMT-8 均印出。兩次 no-op 負控制皆由未增長 guard 拒絕，還原後正式 8 組／24 點通過；定稿工具另完成四組縮小 smoke。53 → 125 → 197 週時，20 系列的完整 occurrences 7,420 → 17,500 → 27,580；手機 GC 後 JS heap 約 7.62 → 32.56 MiB，197 週的增長取樣 8.69–13.84 秒，桌面亦重現秒級。獨立 Node 展開中位數 2.81 → 7.15 → 14.98 秒；不可與 browser 時間相減或外推真機／percentile。lint／typecheck、84 檔 1,312 單元＋7 Node、build／check:build、相關 e2e 9 passed／3 skipped 通過，App bytes 與基線相同。**只量測，沒有產品、migration、v4／0.4.3／公告或部署變更。** 後續 DP-178 已提出於 Backlog，先 Mode A 定 profile／重用計算／有界視窗與焦點／補償政策，不混入本 PR。方法與原始數據見 [月曆量測紀錄](docs/month-scroll-measurement.md)；最新 PR CI 通過後才依授權合併，未做真機、帳號或 MCP 操作。
 
 - [x] **DP-159 — 四條 WebKit smoke（2026-10-20）：** Backlog → Next → In Progress → Done。家庭四項已合併後依持續開發授權採原建議，只加 `webkit-smoke` project 與獨立 10 分鐘 CI job；原 Chromium 矩陣仍各 129 條、20 分鐘，部署 reusable quality gate 現在等四個 jobs。四條用全新 guest context：啟動與四分頁、行程新增／刪除各自重載、sheet 焦點／Escape／再開取消、寵物名字與每週起始日保存。接線前指定 project 明確失敗；本機選取數核對只有四條，且會斷言實際 WebKit 與 `Asia/Taipei`。負控制初版阻斷所有 guest 寫入時兩項失敗；縮小到只略過行程／設定的新內容後，同樣在重載筆數與 durable 設定斷言失敗，移除探針後四條全部恢復通過。焦點案例第一輪用 click 卻未先取得焦點，改成明確 focus／Enter 開啟後通過，沒有改產品焦點行為。lint／typecheck、1,312 單元＋7 Node、build／check:build、相關 Chromium 10／10 通過；AGENTS §0.1、ADR §7、操作文件同步。沒有產品程式、migration、schema／release version、公告或部署變更；Windows／Linux WebKit 不是 iPhone／standalone、實際帳號或 DP-032／077 的驗收。最新 PR CI 通過後才依授權合併，CI 實際耗時補在 PR。見 [WebKit 驗證紀錄](docs/webkit-smoke.md)。
 
