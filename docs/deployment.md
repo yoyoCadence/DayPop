@@ -789,3 +789,13 @@ npx supabase migration list --linked
 回覆兩份輸出後，Codex 依 [MCP handoff §0.13](supabase-mcp-handoff.md#013-dp-048-日曆分享第-18-檔候選2026-10-19) 核對 18 檔／14 表 RLS、public RPC 的 INVOKER／path／grant、private helper 與舊 owner-only 附件／Storage 邊界、advisor、public types，並以 repo 同份固定假資料 pgTAP 完整 rollback、核對零殘留；不查改正式使用者內容。兩個本機 concurrency scripts 會 commit 假 fixtures，**不得跑遠端**。
 
 本機 8 檔 302 pgTAP、兩連線 CAS／家庭名額、1,304 單元＋7 Node、lint／typecheck／build／check:build 與八個新共享 e2e 已通過。84 項相關 e2e 首輪 74 通過／6 略過，4 個舊配色選取器案例修正為逐張檢查兩張家庭卡片後單獨重跑 6 通過／2 略過；axe 本機執行時限提高以分辨負載，CI 設定與斷言不變，詳見 ADR §9。反向移除 CAS 比較會讓兩筆舊版本均提交，還原後恢復一筆成功／一筆衝突。PR #167 的合併仍要等待最新 CI、owner CLI 與 MCP postflight；DP-049 待本項合併後另開分支，真實帳號／OAuth／真機／staging 驗收仍未做。
+
+### 5.27 DP-049 家庭權限驗證完成（2026-10-20）
+
+本項只補測試、CI 與文件，不需要新 migration 或部署。基線為 DP-048 PR #167 合併的 `7c795b9`，其最後 CI `39342697282` 三項全過（245 e2e passed／13 skipped）；第 18 檔已由擁有者 CLI 套用。
+
+五個固定假帳號的 74 項直接 SQL 矩陣已納入 CI；本機 9 檔 376 pgTAP 通過，負控制兩輪各 8 項如預期失敗、rollback 後各 74／74 通過。MCP 執行同份 baseline 74 項完整 rollback／零殘留，schema metadata 前後完全一致、remote public types 等於本機，仍 18 檔／14 表全 RLS／46 policies。沒有在遠端執行負控制或查改正式使用者內容，無須擁有者再 push。
+
+lint／typecheck／1,312 單元＋7 Node／build／check:build、相關家庭分享 e2e 17 passed／1 skipped 通過；App 輸出大小與 DP-048 相同，v4、0.4.3、歷史公告、CSP／PWA 不變。詳見 [權限驗證紀錄](family-sharing-permissions-verification.md) 與 [MCP handoff §0.14](supabase-mcp-handoff.md#014-dp-049-五帳號權限驗證2026-10-20)。
+
+本項最新 CI 通過才依授權合併，完成指定四項家庭範圍。**家庭前端尚未部署；真實帳號／OAuth／真機／staging 未驗收。發布版本、公告與部署仍由擁有者另行決定，先 migration 再前端的順序不變。**
