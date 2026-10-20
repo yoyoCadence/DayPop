@@ -21,6 +21,8 @@
 
 先以 no-op 捲動做負控制，工具以 `buffer did not grow` 拒絕；改用原生 performance／RAF 後再次得到同一失敗。還原真實捲動後才執行正式兩輪。負控制不提交，既有產品沒有可回復的修正，也不宣稱修了一項使用者回報的故障。
 
+自我核對與 PR 審查另發現工具的輸出路徑邊界：fresh clone 沒有 `output/playwright/`，原先會在量測結束才 `ENOENT`。現在開始前先遞迴建立父目錄。用兩個確實不存在的父目錄實跑 `--steps=1 --runs=1`：原版失敗 → 修正成功 → 移除修正再次失敗 → 還原成功；每次都跑完整四組並檢查 JSON 產出。這些是 IO 回歸，未混入正式效能數據。
+
 ## 正式結果（2026-10-20）
 
 [完整 raw JSON](month-scroll-measurement-2026-10-20.json) 保留全部 24 個 browser 取樣點與 18 筆 Node 計時。Windows 10.0.26300、i7-13620H（16 logical CPUs）、15.71 GiB RAM、Node 24.19.0（實際 `Etc/GMT-8`）、Chromium 151.0.7922.34；browser 每組實際 `Asia/Taipei`，原生 performance／RAF 檢查全過。這是 **12 次程式捲至尾端**，不是連續手勢或數小時真人使用的模擬。

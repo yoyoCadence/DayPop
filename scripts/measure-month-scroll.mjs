@@ -1,7 +1,7 @@
 /* global document, requestAnimationFrame, innerWidth, innerHeight, localStorage */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { cpus, platform, release, tmpdir, totalmem } from 'node:os';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -21,6 +21,7 @@ const runs = Number(options.runs ?? 2);
 assert(Number.isInteger(steps) && steps >= 1 && steps <= 24, 'steps must be 1–24');
 assert(Number.isInteger(runs) && runs >= 1 && runs <= 3, 'runs must be 1–3');
 const output = resolve(options.output ?? join(tmpdir(), 'daypop-month-scroll.json'));
+await mkdir(dirname(output), { recursive: true });
 const directory = await mkdtemp(join(tmpdir(), 'daypop-month-scroll-'));
 let browser;
 let browserVersion;
