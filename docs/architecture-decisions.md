@@ -796,6 +796,16 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 ## 7. 工程治理
 
+### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行
+
+家庭四項完成後，依持續開發授權採納 Backlog 的小範圍建議：`webkit-smoke` project 只選 `e2e/webkit-smoke.spec.ts`，原有兩個 Chromium projects 排除該檔。預設 `npm run test:e2e` 仍跑全部 projects；CI 分別明確指定 Chromium 與 WebKit，沿用 [Playwright projects 的分組方式](https://playwright.dev/docs/test-projects#splitting-tests-into-projects)。
+
+- 四條使用全新遊客 context 與真實本機 adapter 的流程：四分頁啟動、行程新增／刪除各自重載確認、sheet 鍵盤焦點／關閉、寵物名字與每週起始日保存。每條都監看 console warning／error 與 pageerror，印出並核對 `Asia/Taipei`。沒有連正式帳號或 Supabase。
+- 用 iPhone 13 的 390×844 viewport／touch 設定，DPR 1 與現有手機測試一致。**這只是模擬尺寸，Windows／Linux WebKit 都不是 iPhone Safari／standalone PWA 的驗收**；DP-032／077 保持未驗。WebKit 點擊按鈕不先取得焦點，所以鍵盤流程先 focus，再按 Enter，才能檢查 Escape 回到原觸發元素；沒有改產品焦點行為。
+- 新增獨立 10 分鐘 CI job，只下載 lockfile 對應的 WebKit；原 Chromium job 保留 20 分鐘、原本完整矩陣及逾時。上一輪 Chromium 已花 18 分多，拆開可避免安裝第二個 browser 擠占額度。增加一個 runner 的安裝成本，實際耗時以該 PR CI 為準。
+- 仍不使用 secret。失敗時 WebKit diagnostics 使用獨立 artifact 名稱；`deploy-staging` 的 reusable quality gate 會等待四個 jobs 全過，未改人工部署權限。
+- 本項是補測試覆蓋，不宣稱發現並修正產品缺陷；負控制只在本機測試 context 暫時阻斷 `daypop.user-data` 的保存，正式提交移除探針。操作與限制見 [WebKit smoke 驗證](webkit-smoke.md)。
+
 ### 決策（DP-162，2026-10-16）— axe 可及性 smoke，截圖基線延後
 
 依審查建議先加 axe，不做截圖比對：十二組主題 × 各檢視的截圖成本高，字型繪製也容易造成不穩定的差異。這是 agent 依條目建議執行，PR 審查即是否決點。

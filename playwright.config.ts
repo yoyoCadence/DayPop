@@ -36,6 +36,7 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chrome',
+      testIgnore: '**/webkit-smoke.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },
@@ -46,9 +47,21 @@ export default defineConfig({
     },
     {
       name: 'desktop-chrome',
+      testIgnore: '**/webkit-smoke.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 900 },
+      },
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: '**/webkit-smoke.spec.ts',
+      use: {
+        ...devices['iPhone 13'],
+        // The preset's screen is 390x844 but its viewport is only 390x664.
+        // Match mobile-chrome's viewport as well as its font scale.
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 1,
       },
     },
   ],
