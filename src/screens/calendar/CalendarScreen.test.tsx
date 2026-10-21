@@ -52,6 +52,28 @@ const weekButton = () => container.querySelectorAll('.cal-segmented button')[1];
 const periodLabel = () => container.querySelector('.cal-period')?.textContent;
 const daySheet = () => container.querySelector('.cal-day-sheet');
 
+describe('search navigation followed by today (DP-180 review)', () => {
+  it('does not replay the search date when month view remounts after going to today', async () => {
+    await render({ kind: 'day', dateKey: '2000-02-29' });
+    await act(async () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    const today = instantDateInZone(new Date().toISOString(), 'Asia/Taipei');
+    await click([...container.querySelectorAll('.cal-chip-button')].find(b => b.textContent === '今天'));
+    await click(weekButton());
+    await click(container.querySelectorAll('.cal-segmented button')[0]);
+    expect(container.querySelector(`[data-date-key="${today}"]`)).not.toBeNull();
+    expect(container.querySelector(`[data-date-key="${today}"]`)?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('also resets the week cursor when today was pressed from month view', async () => {
+    await render({ kind: 'day', dateKey: '2000-02-29' });
+    await act(async () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    const today = instantDateInZone(new Date().toISOString(), 'Asia/Taipei');
+    await click([...container.querySelectorAll('.cal-chip-button')].find(b => b.textContent === '今天'));
+    await click(weekButton());
+    expect(periodLabel()).toBe(weekLabelFor(today));
+  });
+});
+
 describe('confirmed todo date moves (DP-130)', () => {
   it.each(['parent', 'child'])('moves only the %s, keeps the source day open and returns focus after that row disappears', async (target) => {
     const repository = new LocalDayPopRepository(new MemoryStorage());

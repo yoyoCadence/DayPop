@@ -18,6 +18,10 @@
 
 新瀏覽器回歸手機／桌面 6 passed：各向前／後 12 次每次核對固定 53 列、起日移 84 天、可見日期與 y、唯一 tabindex；資料文件 bytes 不變；另驗證焦點／選取／工具列、鍵盤跨界、今天、2000／0100／9999 年搜尋、日詳情焦點及旋轉。只固定 Date，保留實際 scroll／RAF／ResizeObserver。Supabase env 由 Node child env 明確設為空字串，browser 實際時區 Asia/Taipei。
 
+PR #174 審查再重現「搜尋 → 今天 → 月／週／月」會重播原始搜尋日期，且週游標仍在舊日期。新增兩項整合回歸先失敗，修正後通過、反向還原也同樣兩項失敗，再還原修正。「今天」現在一併更新既有 cursor，MonthView 重掛從目前 cursor 初始化；不再持續傳入原始 focus prop。瀏覽器搜尋案例補上同一輪檢視切換。
+
+導航修正後重跑新視窗、responsive 與 WebKit smoke：13 passed／1 desktop 不適用 skipped，包含手機／桌面搜尋 → 今天 → 月／週／月；臨時 server 再次清理。原先較廣的 50／4 與這次針對性重跑分別記錄，不相加成新案例數。
+
 Browser plugin 不可用，沿既有 Playwright 做實際渲染。原始 `.dc.html` 與 React 各在 390×844／1280×900 比對漫畫淺色空資料、深色相同單筆行程，皆為新 context、六列、寵物關閉。控制順序、格線／日期／色塊與連續捲動保留；原稿手機仍有展示框、時間前綴與白細線，React 保留既有 DP-050／165／166／145 的明確差異，沒有改樣式。React 沒有水平溢出、overlay、console warning／error；原稿有四條未解析 native input template 的既有 warning，未改原稿或 support.js。截圖與 summary 留本機暫存目錄 `daypop-dp180-visual-1j9rkt`，不提交圖片或完整 trace。
 
 ## 可重跑的負載量測
@@ -26,7 +30,7 @@ Browser plugin 不可用，沿既有 Playwright 做實際渲染。原始 `.dc.ht
 
 原始 JSON 會記錄基線 commit、候選工作樹 source SHA-256、browser／Node／OS 與實際時區。SHA 是 Windows 工作樹原始 bytes，跨平台換行可不同。不與不同輪的 DP-160／178／179 數字相減或計算改善百分比；不把抖動的毫秒值設成 CI gate，不當成 iPhone／standalone、真機 FPS 或 leak 證明。
 
-正式兩輪共 8 組／24 點均通過；no-op 負控制由 `buffer did not advance` 拒絕，工具 finally 還原後才跑正式樣本。三個取樣點起日為 2026-04-19、2027-09-05、2029-01-21，結束日各相距 370 天；20 系列各為 7,420 occurrences，沒有漏掉移動後的資料。
+正式兩輪共 8 組／24 點均通過；no-op 負控制由 `buffer did not advance` 拒絕，工具 finally 還原後才跑正式樣本。三個取樣點起日為 2026-04-19、2027-09-05、2029-01-21，結束日各相距 370 天；20 系列各為 7,420 occurrences，沒有漏掉移動後的資料。**這輪來源是審查前的 `1dfec97`，raw source SHA-256 原樣保留**；後續導航修正只改 CalendarScreen 的 cursor／初始化目標，這個無搜尋樣本的初值相同，但沒有另跑兩輪，不把歷史數字當成新 head 的精確耗時。
 
 | 20 系列、viewport | 初始／第 6／第 12 次 DOM elements | GC 後 JS heap MiB（初始 → 第 6 → 第 12） | 第 6／第 12 次 scroll ms（兩輪範圍） |
 | --- | --- | --- | --- |
@@ -35,6 +39,6 @@ Browser plugin 不可用，沿既有 Playwright 做實際渲染。原始 `.dc.ht
 
 空資料兩種尺寸各為 1,258 elements；第 6／12 次取樣 19–44 ms。Node 的三個 53 週視窗均完整產生 7,420 筆，三次量測分別 1,108／1,119／1,129、1,219／1,185／1,180、1,240／1,179／1,340 ms。**資料與 DOM 有界，不代表每次移動已順暢**；20 系列仍有秒級計算，GC 後 heap 也不能視為固定上限或沒有 leak 的證明。候選 source bytes、全部原始值與環境見 [量測 JSON](month-window-measurement-2026-10-21.json)。
 
-完整本機 lint／typecheck、1,338 單元＋12 Node、build／check:build 全過；New York 的 170 項日期／月曆回歸由 PowerShell 設定並列印實際 `America/New_York` 後通過。總 JS 735,724 raw／216,142 gzip bytes，CSS 111,265／27,099，在原 budget 內。相關手機／桌面及 WebKit e2e 50 passed／4 desktop 不適用 skipped（包含前述新 6 項），涵蓋共享／撤權、跨午夜／重複週格拖曳、事件時區、月格標籤／線條及 responsive。另以全新 WebKit context 驗證三次裁列、離屏焦點轉可見日期、今天回定位與工具列焦點，console／pageerror 為零、實際 Asia/Taipei。曾有一次本機 Vitest worker 啟動逾時、未跑到測試，單獨重跑與完整測試均通過；CI 仍是最終閘門。
+完整本機 lint／typecheck、1,340 單元＋12 Node、build／check:build 全過；New York 的 202 項日期／月曆回歸由 PowerShell 設定並列印實際 `America/New_York` 後通過。總 JS 735,722 raw／216,147 gzip bytes，CSS 111,265／27,099，在原 budget 內。相關手機／桌面及 WebKit e2e 50 passed／4 desktop 不適用 skipped（包含前述新 6 項），涵蓋共享／撤權、跨午夜／重複週格拖曳、事件時區、月格標籤／線條及 responsive。另以全新 WebKit context 驗證三次裁列、離屏焦點轉可見日期、今天回定位與工具列焦點，console／pageerror 為零、實際 Asia/Taipei。曾有一次本機 Vitest worker 啟動逾時、未跑到測試，單獨重跑與完整測試均通過；CI 仍是最終閘門。
 
 App 0.4.3、user-data v4、18 migrations、Auth／RLS、repository contract、公告與部署不變；未用 Supabase MCP 或查正式資料。真機、實際家庭帳號與部署驗收仍待擁有者。剩餘秒級成本先列 DP-181 profile 建議，不在這項擴大演算法或快取。

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { createEmptyUserData } from '../src/domain/types';
-import { monitorBrowser, openApp, tabButton } from './support';
+import { calendarViewButton, monitorBrowser, openApp, tabButton } from './support';
 
 const TODAY = '2026-10-20';
 const measurementInstant = '2026-10-20T04:00:00.000Z';
@@ -120,6 +120,9 @@ test('搜尋跨年與日期兩端重置視窗、對話框不失焦，旋轉保�
     }
   }
   await page.getByRole('button', { name: '今天', exact: true }).click();
+  await expect(day(page, TODAY)).toBeInViewport();
+  await calendarViewButton(page, '週').click();
+  await calendarViewButton(page, '月').click();
   await expect(day(page, TODAY)).toBeInViewport();
   const anchor = await page.locator('.cal-month-scroll').evaluate(el => {
     const height = el.querySelector('.cal-week-row')!.getBoundingClientRect().height;
