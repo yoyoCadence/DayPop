@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **完整 Chromium CI 額度改為 25 分鐘（DP-180，2026-10-21）：** 新增月曆視窗後共 264 案例，`42fc9e1` 的 run `39615837756` 在第 263 項通過後、最後案例尚未完成時，被既有 20 分鐘 job 上限取消（runner annotation 明確回報 exceeded maximum execution time）。因此只將該 job 改為 25 分鐘；個別測試 deadline／retries／worker 數、四項 quality gate 與部署權限不變。**這輪取消不能算整套通過，必須等新 head 四項 CI 全過才合併**；其餘三項已成功。記錄見 `docs/month-window.md`。
+
 - **月曆搜尋導航審查補正（DP-180／PR #174，2026-10-21）：** 搜尋遠日期 → 今天 → 月／週／月原本會重播舊搜尋日，且週 cursor 沒更新；今天現在同步更新 cursor，MonthView 重掛採目前 cursor，不再重播原始 focus prop。兩項整合回歸先失敗、修正通過、反向兩項失敗並還原；完整 1,340 單元＋12 Node、NY 實際時區 202 項、lint／typecheck／build／check:build 通過。下方兩輪負載數字是審查前 `1dfec97`，來源 SHA 原樣保留；不冒充新 head 耗時，詳見視窗紀錄。
 
 - **月曆 53 週滑動視窗（DP-180，2026-10-21）：** DP-179 PR #173 已合併為 `7824713`（四項 CI 全過、Chromium 245 passed／13 skipped）。`MonthView` 的 occurrence／segment 與 DOM 固定最多 53 週、每次補／裁 12 週；列以日期 key 保留，補償使用頂端週日期＋列內比例，等實際列高提交才寫 scrollTop，停用原生 anchoring。**只有被裁掉的實際月格焦點才以 preventScroll 移到可見週，不改選取；其他控制項／modal 不搶焦點。** 今天超界重置視窗，搜尋新畫面以目標日期初始化；私有 Date 起日容納邊界週，0099／10000 停用格不進 domain。必要的 query padding／候選 look-behind／四位年份修正保住 0100–9999 的既有資料。反向恢復三份產品基線 12 項失敗，再還原；完整 1,340 單元＋12 Node、lint／typecheck、新 e2e 6 項通過。固定假資料兩輪 8 組／24 點維持 53 週、20 系列每窗 7,420 筆，DOM 不累積，但部分移動仍秒級，**不宣稱所有效能或真機問題已解決**。方法與其餘驗證見 `docs/month-window.md`；仍 0.4.3／v4／18 migrations，無公告／部署、Supabase 或正式資料操作。

@@ -820,6 +820,8 @@ DP-179 PR #173 合併為 `7824713` 後，以獨立分支實作已確認的 53 �
 
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行
 
+> **DP-180／2026-10-21 補充：** Chromium 增為 264 案例後，run `39615837756` 在第 263 項通過後達到原 20 分鐘 job 上限，最後案例未完成而取消；將完整 Chromium job 額度改為 25 分鐘，個別案例 deadline、worker、retries 與四個 jobs 的完整成功要求不變。下文的 20 分鐘保留為 DP-159 當時設定。
+
 家庭四項完成後，依持續開發授權採納 Backlog 的小範圍建議：`webkit-smoke` project 只選 `e2e/webkit-smoke.spec.ts`，原有兩個 Chromium projects 排除該檔。預設 `npm run test:e2e` 仍跑全部 projects；CI 分別明確指定 Chromium 與 WebKit，沿用 [Playwright projects 的分組方式](https://playwright.dev/docs/test-projects#splitting-tests-into-projects)。
 
 - 四條使用全新遊客 context 與真實本機 adapter 的流程：四分頁啟動、行程新增／刪除各自重載確認、sheet 鍵盤焦點／關閉、寵物名字與每週起始日保存。每條都監看 console warning／error 與 pageerror，印出並核對 `Asia/Taipei`。沒有連正式帳號或 Supabase。

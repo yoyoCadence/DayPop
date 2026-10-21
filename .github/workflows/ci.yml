@@ -83,7 +83,9 @@ jobs:
   e2e:
     name: Playwright / mobile and desktop
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    # DP-180: 264 cases reached case 263 at the former 20-minute job limit.
+    # Allow the full matrix to finish; per-test deadlines remain in Playwright.
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -115,7 +117,7 @@ jobs:
           path: output/playwright/
           retention-days: 14
 
-  # DP-159：四條 WebKit smoke 獨立跑，不占用 Chromium 的 20 分鐘額度。
+  # DP-159：四條 WebKit smoke 獨立跑，不占用 Chromium 的額度。
   # reusable workflow 的四個 jobs 都成功才會放行 deployment。
   webkit:
     name: Playwright / WebKit smoke

@@ -22,6 +22,8 @@ PR #174 審查再重現「搜尋 → 今天 → 月／週／月」會重播原�
 
 導航修正後重跑新視窗、responsive 與 WebKit smoke：13 passed／1 desktop 不適用 skipped，包含手機／桌面搜尋 → 今天 → 月／週／月；臨時 server 再次清理。原先較廣的 50／4 與這次針對性重跑分別記錄，不相加成新案例數。
 
+`42fc9e1` 的 CI run `39615837756`：品質、WebKit 與 DB 三項成功；完整 Chromium 共 264 案例，第 263 項於 14:40:07Z 通過，最後案例尚未完成便在 14:40:10Z 取消。runner annotation 明確為「exceeded the maximum execution time of 20m0s」。因此只把這個 job 額度改為 25 分鐘，保留 Playwright 個別案例 deadline／retries／單 worker 與完整矩陣。這輪取消不算整套成功，最新 head 必須重新四項 CI 全過才合併，完整 264 案例矩陣維持。
+
 Browser plugin 不可用，沿既有 Playwright 做實際渲染。原始 `.dc.html` 與 React 各在 390×844／1280×900 比對漫畫淺色空資料、深色相同單筆行程，皆為新 context、六列、寵物關閉。控制順序、格線／日期／色塊與連續捲動保留；原稿手機仍有展示框、時間前綴與白細線，React 保留既有 DP-050／165／166／145 的明確差異，沒有改樣式。React 沒有水平溢出、overlay、console warning／error；原稿有四條未解析 native input template 的既有 warning，未改原稿或 support.js。截圖與 summary 留本機暫存目錄 `daypop-dp180-visual-1j9rkt`，不提交圖片或完整 trace。
 
 ## 可重跑的負載量測
