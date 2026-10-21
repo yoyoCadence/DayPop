@@ -119,6 +119,50 @@ describe('MonthView all-day spans (DP-126)', () => {
   });
 });
 
+describe('MonthView display conversion lifetime (DP-182)', () => {
+  it('shares segment/label fields only within a grouping and redraws a changed or revoked source', () => {
+    const event: CalendarEvent = {
+      id: 'display-reuse', calendarId: 'calendar', title: '跨夜', location: null, notes: null,
+      reminderMinutes: [], recurrence: null, sharingScope: 'inherit',
+      createdAt: '2026-08-01T00:00:00Z', updatedAt: '2026-08-01T00:00:00Z',
+      allDay: false, startsAt: '2026-08-06T15:17:00Z', endsAt: '2026-08-06T16:23:00Z', timezone: 'Asia/Taipei',
+    };
+    const instants = new Set([Date.parse(event.startsAt), Date.parse(event.endsAt)]);
+    const resolved = resolveEventOccurrences({ events: [event], eventExceptions: [] }, {
+      startDate: '2026-08-06', endDate: '2026-08-07',
+    });
+    const input = JSON.stringify(resolved);
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    const calls = () => formatter.mock.calls.filter(([date]) => date instanceof Date && instants.has(date.getTime())).length;
+    const draw = (items = resolved, zone = 'Asia/Taipei') => act(() => root.render(<MonthView
+      weekStartsOn={0} displayTimezone={zone} calendarGridMode="fixed-six"
+      resolveOccurrences={() => items} stickers={[]} calendars={[]}
+      selectedDate="2026-08-06" todayKey="2026-08-06" flashToday={false}
+      onSelectDate={vi.fn()} onPeriodLabelChange={vi.fn()}
+    />));
+    try {
+      draw();
+      expect(calls()).toBe(2);
+      expect(cell('2026-08-06')?.querySelector('.cal-cell-event')?.getAttribute('title')).toBe('23:17 跨夜');
+      expect(cell('2026-08-07')?.textContent).toContain('續 跨夜');
+      const changed = resolved.map((item) => ({ ...item, event: { ...item.event, title: '新名稱' } }));
+      draw(changed);
+      expect(calls()).toBe(4); // A new calculation must not reuse the previous reader.
+      expect(cell('2026-08-06')?.textContent).toContain('新名稱');
+      draw(changed, 'UTC');
+      expect(calls()).toBe(6);
+      expect(cell('2026-08-06')?.querySelector('.cal-cell-event')?.getAttribute('title')).toBe('15:17 新名稱');
+      expect(cell('2026-08-07')?.textContent).not.toContain('新名稱');
+      draw(changed);
+      expect(calls()).toBe(8);
+      draw([]); // Upstream access/visibility changes remove received occurrences.
+      expect(container.querySelector('.cal-cell-event')).toBeNull();
+      expect(calls()).toBe(8);
+      expect(JSON.stringify(resolved)).toBe(input);
+    } finally { formatter.mockRestore(); }
+  });
+});
+
 describe('MonthView stickers', () => {
   it('renders no sticker row for a day without stickers', () => {
     render([]);

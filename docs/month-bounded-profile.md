@@ -1,5 +1,7 @@
 # 53 週月曆的剩餘成本 profile（DP-181）
 
+> **2026-10-22 後續定案：** PR #175 四項 CI 全過（Chromium 251 passed／13 skipped），已合併為 `cd72dde`。擁有者明確採用下方 DP-182 的 segment／標籤重用提案，依該界線另開分支實作；下文「待確認」保留為 profile 當時的狀態。
+
 2026-10-21，承接 DP-180 PR #174 合併的 `12280a82c3d7299477e6d0f2b2f0d4bee666d2e8`。該 PR 最終 head `95ea150` 的 CI run `39619419252` 四項成功，Chromium 251 passed／13 skipped。擁有者指定先做剩餘效能 profile；本項只增加量測工具、分析器回歸與紀錄，產品 source、日期演算法與互動不變。
 
 ## 重跑方式與有效性

@@ -27,6 +27,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "measure:month-scroll": "node scripts/measure-month-scroll.mjs",
+    "measure:month-display": "node scripts/measure-month-display.mjs",
     "measure:module-loading": "node scripts/measure-module-loading.mjs",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",

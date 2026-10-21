@@ -1,5 +1,5 @@
 import { addDays, fromDateKey, toDateKey } from './date';
-import { instantDateInZone, instantTimeInZone } from './eventTime';
+import { instantDateInZone, instantTimeInZone, type ZonedPartsReader } from './eventTime';
 import type { AllDayCalendarEvent, CalendarEvent, TimedCalendarEvent } from './types';
 
 /**
@@ -127,6 +127,7 @@ export function eventDisplaySegments(
   key: string,
   displayTimezone: string,
   window?: DisplaySegmentWindow,
+  readParts?: ZonedPartsReader,
 ): DisplaySegment[] {
   // Instants, not date keys: a reversal *inside* one day shares its date key
   // with the start, so a date-key comparison lets it through into a segment
@@ -135,10 +136,10 @@ export function eventDisplaySegments(
   // last gate before a corrupt local document reaches a view.
   if (Date.parse(event.endsAt) <= Date.parse(event.startsAt)) return [];
 
-  const startDateKey = instantDateInZone(event.startsAt, displayTimezone);
-  const startMinutes = minutesOfDay(instantTimeInZone(event.startsAt, displayTimezone));
-  const rawEndDateKey = instantDateInZone(event.endsAt, displayTimezone);
-  const rawEndMinutes = minutesOfDay(instantTimeInZone(event.endsAt, displayTimezone));
+  const startDateKey = instantDateInZone(event.startsAt, displayTimezone, readParts);
+  const startMinutes = minutesOfDay(instantTimeInZone(event.startsAt, displayTimezone, readParts));
+  const rawEndDateKey = instantDateInZone(event.endsAt, displayTimezone, readParts);
+  const rawEndMinutes = minutesOfDay(instantTimeInZone(event.endsAt, displayTimezone, readParts));
 
   // Ending exactly at midnight belongs to the day that just finished: 24:00 on
   // the first day, not 00:00 on a day the event never really occupies.
