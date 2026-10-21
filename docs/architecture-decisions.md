@@ -802,6 +802,12 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 計算重用限有界的記憶體衍生值；來源／時區／可見性／帳號或畫面生命週期變更時失效，不把 received 分享留在另一份持久 store。保持跨午夜、長事件、時區兩天 padding、取消／替代與跨日曆例外的結果等價；先寫失敗回歸，反向撤除修正亦須失敗，再恢復通過。**本項只記錄規劃，產品尚未改為有界視窗或改善計算**，不更動 0.4.3／v4／migration／公告或部署。
 
+### 實作（DP-179，2026-10-21）— 單次展開的有界轉換重用
+
+`resolveEventOccurrences()` 每次建立自己的 `createZonedPartsReader()`，以完整 timezone／epoch milliseconds 重用欄位、最多 256 筆 FIFO；既有 formatter 快取與日期兩次校正不變。private 候選事件逐筆交給 resolver 處理例外／重疊，避免消費前先把短 memo 淘汰；public 仍同步完成整份排序陣列，不回傳部分 snapshot 或 iterator。reader 不附在事件或使用者文件上，沒有跨次／跨帳號結果快取或持久化。
+
+回歸先重現三天 12 組輸入卻轉換 31 次，以及 UTC 365 天整批消費的 1,460 次超過 734 次工作量上限；最終停用命中 5 項失敗、停用淘汰 1 項、恢復整批消費 1 項，還原通過。固定 20 系列同程序 baseline／candidate 對照，53／197 週完整輸出 hash 一致、輸入不變，`formatToParts` 75,140 → 45,040／276,740 → 166,000 次。這是減少重複工作的證據，不外推真機或改善百分比；方法與全部耗時見 [計算重用紀錄](month-calculation-reuse.md)。MonthView buffer／焦點仍待 DP-180；0.4.3／v4／migration／公告與部署不變。
+
 ## 7. 工程治理
 
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行

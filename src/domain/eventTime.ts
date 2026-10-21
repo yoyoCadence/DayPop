@@ -7,6 +7,27 @@ export interface EventWallTime {
   end: string;
 }
 
+export type ZonedPartsReader = (date: Date, timezone: string) => Readonly<ReturnType<typeof zonedParts>>;
+
+/**
+ * A bounded memo for one synchronous expansion, never a shared data cache.
+ * Exact instants and zones keep the existing DST calculation unchanged.
+ * The caller owns its lifetime; occurrence results must not retain the reader.
+ */
+export function createZonedPartsReader(): ZonedPartsReader {
+  const cache = new Map<string, Readonly<ReturnType<typeof zonedParts>>>();
+  return (date, timezone) => {
+    const key = `${timezone}\0${date.getTime()}`;
+    const cached = cache.get(key);
+    if (cached) return cached;
+    const parts = zonedParts(date, timezone);
+    // FIFO is sufficient for this pass's short-lived conversion work.
+    if (cache.size >= 256) cache.delete(cache.keys().next().value!);
+    cache.set(key, parts);
+    return parts;
+  };
+}
+
 export function eventWallTime(event: CalendarEvent): EventWallTime {
   if (event.allDay) return { date: event.startDate, start: '', end: '' };
   return {
@@ -55,7 +76,9 @@ export function eventEndTimeInZone(event: CalendarEvent, displayTimezone: string
   return event.allDay ? '' : instantTimeInZone(event.endsAt, displayTimezone);
 }
 
-export function wallTimeToInstant(date: string, time: string, timezone: string): string {
+export function wallTimeToInstant(
+  date: string, time: string, timezone: string, readParts: ZonedPartsReader = zonedParts,
+): string {
   const [year, month, day] = date.split('-').map(Number);
   const [hour, minute] = time.split(':').map(Number);
   const target = Date.UTC(year!, month! - 1, day, hour, minute);
@@ -63,7 +86,7 @@ export function wallTimeToInstant(date: string, time: string, timezone: string):
 
   // Recalculate once because the first offset can land across a DST boundary.
   for (let pass = 0; pass < 2; pass += 1) {
-    const parts = zonedParts(new Date(guess), timezone);
+    const parts = readParts(new Date(guess), timezone);
     const representedAsUtc = Date.UTC(
       parts.year,
       parts.month - 1,
@@ -98,13 +121,17 @@ export function timedEventFromWallTime(
   return { ...common, allDay: false, startsAt, endsAt, timezone };
 }
 
-export function instantDateInZone(instant: string, timezone: string): string {
-  const parts = zonedParts(new Date(instant), timezone);
+export function instantDateInZone(
+  instant: string, timezone: string, readParts: ZonedPartsReader = zonedParts,
+): string {
+  const parts = readParts(new Date(instant), timezone);
   return `${String(parts.year).padStart(4, '0')}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
-export function instantTimeInZone(instant: string, timezone: string): string {
-  const parts = zonedParts(new Date(instant), timezone);
+export function instantTimeInZone(
+  instant: string, timezone: string, readParts: ZonedPartsReader = zonedParts,
+): string {
+  const parts = readParts(new Date(instant), timezone);
   return `${pad(parts.hour)}:${pad(parts.minute)}`;
 }
 

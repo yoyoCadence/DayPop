@@ -76,7 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-179 — 月曆展開計算重用：** 已由 Backlog 排入 Next，等 DP-178 規劃 PR 合併後接續。單次計算內有界重用相同參數，先測呼叫量與輸出等價，保住 DST／COUNT／UNTIL／例外／分享可見性；不改 buffer／焦點、schema、版本或部署。
 - [ ] **DP-180 — 53 週月曆滑動視窗：** 已由 Backlog 排入 Next，等 DP-179 合併後接續。每次 12 週、計算與 DOM 同時有界；裁掉焦點時轉至可見日期，保留選取與捲動。完整契約與回歸清單見 [DP-178 計畫](docs/month-performance-plan.md)。
 
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
@@ -207,6 +206,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -402,6 +402,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-179 — 月曆展開計算重用（2026-10-21）：** Backlog → Next → In Progress → Done，基線 DP-178 PR #172 合併的 `f298eae`。單次 resolver 自建最多 256 筆 FIFO 的 exact timezone／epoch reader、逐筆處理候選；不快取整份結果、不跨次或持久化，public 仍完整排序陣列。先重現三天 12 組輸入卻轉換 31 次、長系列整批消費的 1,460 次超過 734 上限；最終停用命中 5 失敗、停用淘汰 1 失敗、恢復整批消費 1 失敗，恢復全部通過。固定 20 系列 53／197 週同程序對照完整輸出 hash 一致、輸入不變，native 轉換 75,140 → 45,040／276,740 → 166,000；不以小樣本外推真機或改善百分比。[方法與原始值](docs/month-calculation-reuse.md)。lint／typecheck、1,322 單元＋12 Node、build／check:build、相關 e2e 27 passed／1 desktop 不適用 skipped；NY 時區 104 項通過且列印實際時區，更新 AGENTS §0.1／ADR §6。最新 PR 四項 CI 通過才合併；DP-180 仍在 Next，合併後獨立分支接續。無 buffer／焦點、Auth、schema、版本、公告、部署或 Supabase 操作。
 
 - [x] **DP-178 — 月曆 profile 與滑動視窗定案（2026-10-21）：** Backlog → Next → In Progress → Done。擁有者在 Mode A 採納 53 週／每次 12 週、裁掉離屏焦點時轉至可見日期、保留選取與捲動。基線 `7850c87` 單一手機 trace 的最後增長約 5.9 秒，FunctionCall 約 5.85 秒、Layout 13 ms、Paint 累計 16 ms；category 可巢狀，不加總或外推真機，亦不以不同輪數字宣稱改善。更新 ADR §6、AGENTS §0.1、[計畫](docs/month-performance-plan.md) 與附 SHA-256 的 profile 摘要；產品尚未修改，無可反向撤除的修正，不新增鏡像文字的測試。lint／typecheck、1,312 單元＋12 Node、build／check:build、相關 e2e 9 passed／3 skipped（實際時區列印）全過；最新 PR 四項 CI 通過才合併。DP-179 計算重用 → DP-180 滑動視窗已由 Backlog 排入 Next，各自先失敗／反向驗證、開 PR／合併；仍 0.4.3／v4／18 migrations，無公告／部署／Supabase 操作。
 

@@ -1,0 +1,73 @@
+{
+  "measuredAt": "2026-10-21T09:25:05.698Z",
+  "baselineCommit": "f298eaec79c99f0530bc3a2dfaed908f29a98f5b",
+  "candidateFiles": {
+    "src/domain/eventTime.ts": "2c0a22eb18503e7ea2d19192bbe57449eccfaa74e9cfafbe76b954238b6ab6f2",
+    "src/domain/recurrence.ts": "1cc4de06ae3ee3ef3a3d056a277e9a1f694afb54c2e96bcc397cd4c48fd8b49a"
+  },
+  "node": "v24.19.0",
+  "platform": "win32",
+  "osRelease": "10.0.26300",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "timezone": "Etc/GMT-8",
+  "displayTimezone": "Asia/Taipei",
+  "series": 20,
+  "method": "Unminified canonical library builds; baseline modules from git commit, candidate from working tree, one process, warmup then 3 alternating-order paired runs; call-count pass separate from timing",
+  "limits": [
+    "Not production browser or real-device timing",
+    "Small sample, OS load and thermal state not locked; no percentile or general speedup claim",
+    "Full JSON output SHA256 and input immutability checked each run"
+  ],
+  "samples": [
+    {
+      "weeks": 53,
+      "window": {
+        "startDate": "2026-04-19",
+        "endDate": "2027-04-24"
+      },
+      "expected": 7420,
+      "outputSha256": "44aec4515e8f5e616f22408eb39c737fce8e30472ef6388e11165e14633b80a8",
+      "milliseconds": {
+        "baseline": [
+          304.12070000000006,
+          323.77319999999986,
+          303.85419999999976
+        ],
+        "candidate": [
+          248.59469999999988,
+          247.7523000000001,
+          246.63599999999997
+        ]
+      },
+      "formatToPartsCalls": {
+        "baseline": 75140,
+        "candidate": 45040
+      }
+    },
+    {
+      "weeks": 197,
+      "window": {
+        "startDate": "2026-04-19",
+        "endDate": "2030-01-26"
+      },
+      "expected": 27580,
+      "outputSha256": "c102d0fae5cd2891ae111ae7aed69bdab370314d6b257ffe97451c9c5ac8a132",
+      "milliseconds": {
+        "baseline": [
+          8397.4371,
+          10542.072100000005,
+          11592.044000000002
+        ],
+        "candidate": [
+          7950.376099999998,
+          8359.097699999998,
+          8644.574299999993
+        ]
+      },
+      "formatToPartsCalls": {
+        "baseline": 276740,
+        "candidate": 166000
+      }
+    }
+  ]
+}
