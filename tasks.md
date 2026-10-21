@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
+
 > **2026-10-20 接續 DP-160：** DP-159 PR #169 已合併為 `9229a80`（四項 CI 全過；WebKit 4 passed、Chromium 245 passed／13 skipped）。依持續開發授權接 Backlog 的量測項目，只建立可重跑的固定假資料量測與結果文件；不直接改 buffer、virtualization、domain／repository 或版號／部署。
 
 
@@ -228,6 +230,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -328,7 +331,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-13 審查登記（DP-158–DP-162）**：以下五項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。它們都不是已確認的故障，是測試與量測上的缺口。
 
 - [x] **DP-158 — 已完成（2026-10-14），見 Done。** 測出的啟動問題另立為 DP-176。
-- [ ] **DP-161 — 評估重模組的載入時機：** 審查記錄主要 chunk 約 669 kB raw（複核沒有重新量），Vite 的 500 kB 警告仍在，總量在 DP-119 的 budget 內。評估備份、ICS、重複事件展開等只在特定操作才用到的模組改成動態載入。先量測再決定；不得為了拆分破壞 domain／repository 邊界，service worker 的 app shell 快取與已快取離線啟動（DP-099）要一起驗。
 - [ ] **DP-178 — 月曆重負載的 profile 與有界視窗規劃（DP-160 量測後續，先 Mode A）：** 固定 20 個每日系列由 53 增至 197 週時，獨立 Node 展開中位數 2.81 → 14.98 秒，browser 增長取樣達秒級，見 [數據與限制](docs/month-scroll-measurement.md)。先 profile 釐清展開／日期轉換／繪製，規劃計算重用與有界的展開／DOM 視窗；初始成本仍需處理，不能只加 DOM virtualization 就宣稱修好。實作前定案 buffer 上限與移出視窗時的焦點政策，保住 DP-069 roving tabindex／跨邊界鍵盤／捲動補償、今天／搜尋定位及 DP-064 跨午夜／長事件／例外。這是新工作，不併入 DP-160 的量測 PR，也不代表已在真機確認效能。
 - [x] **DP-162 — axe smoke 已完成（2026-10-16），見 Done；截圖基線仍延後。** 原條目：評估自動化可及性與視覺基線： 目前沒有 coverage gate、axe gate 或截圖比對。**建議**：先加 axe smoke（四個分頁與主要 sheet），截圖基線延後。六套主題 × 淺／深 × 各檢視的成本高，字型繪製也容易造成不穩定的差異。axe 抓不到焦點逃逸，不能取代 DP-154 的 e2e。
 - [x] **DP-176 — 已完成（2026-10-15），見 Done。**
@@ -394,6 +396,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-161 — 重模組載入評估（2026-10-21）：** Backlog → Next → In Progress → Done，基線 `498e42a`。新增 `measure:module-loading`、原始 JSON 與 [評估文件](docs/module-loading-measurement.md)，量最終 production output／逐檔 gzip、模組歸因與靜態路徑；entry 732,451 raw／214,841 gzip bytes，含 worker 總 JS 734,304／215,605、CSS 111,244／27,088，與空 Supabase 設定的正式 build／budget check 一致。只有一個 entry；設定 lazy 不會移除 repository／備份對 ICS 的 eager 引用，recurrence／rrule 是首屏所需，暫不拆分、先接 DP-178。worker 只按請求快取 assets，將來 lazy chunk 需決定離線首次使用與錯誤／預暖策略。五項工具回歸先失敗，反向移除路徑結果四失敗，恢復五通過；lint／typecheck／1,312 單元＋12 Node／build／check:build／相關 e2e 10 passed（實際時區列印）全過。無產品／schema／migration／版本／公告／部署變更，不宣稱真機首屏已驗收；最新 PR CI 通過才合併。
 
 - [x] **DP-160 — 月曆長捲量測（2026-10-20）：** Backlog → Next → In Progress → Done，基線 `9229a80`（DP-159 PR #169 已合併、四項 CI 全過）。新增可重跑的 `npm run measure:month-scroll`、typed 固定假資料、完整 raw JSON 與方法／限制文件；production guest build、兩種 viewport × 空／20 個每日系列 × 兩個全新 context，原生 performance／RAF、固定 Date、實際 browser Asia/Taipei 與 Node Etc/GMT-8 均印出。兩次 no-op 負控制皆由未增長 guard 拒絕，還原後正式 8 組／24 點通過；定稿工具另完成四組縮小 smoke。53 → 125 → 197 週時，20 系列的完整 occurrences 7,420 → 17,500 → 27,580；手機 GC 後 JS heap 約 7.62 → 32.56 MiB，197 週的增長取樣 8.69–13.84 秒，桌面亦重現秒級。獨立 Node 展開中位數 2.81 → 7.15 → 14.98 秒；不可與 browser 時間相減或外推真機／percentile。lint／typecheck、84 檔 1,312 單元＋7 Node、build／check:build、相關 e2e 9 passed／3 skipped 通過，App bytes 與基線相同。**只量測，沒有產品、migration、v4／0.4.3／公告或部署變更。** 後續 DP-178 已提出於 Backlog，先 Mode A 定 profile／重用計算／有界視窗與焦點／補償政策，不混入本 PR。方法與原始數據見 [月曆量測紀錄](docs/month-scroll-measurement.md)；最新 PR CI 通過後才依授權合併，未做真機、帳號或 MCP 操作。
 

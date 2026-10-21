@@ -1,0 +1,1177 @@
+{
+  "measuredAt": "2026-10-21T01:59:02.769Z",
+  "sourceCommit": "498e42af31ce53349c18c4d67931478af70bdcf8",
+  "node": "v24.19.0",
+  "timezone": "Etc/GMT-8",
+  "supabaseConfiguration": "empty (guest build)",
+  "method": "Vite production write:false; final file bytes + per-file gzip; bundler renderedLength attribution is not compressed or additive final-file size",
+  "chunks": [
+    {
+      "file": "assets/index-BbDcd5Kp.js",
+      "isEntry": true,
+      "rawBytes": 732451,
+      "gzipBytes": 214841,
+      "imports": [],
+      "dynamicImports": []
+    }
+  ],
+  "css": [
+    {
+      "file": "assets/index-BA4otDhv.css",
+      "rawBytes": 111244,
+      "gzipBytes": 27088
+    }
+  ],
+  "attribution": [
+    {
+      "group": "react-dom",
+      "renderedLength": 459807
+    },
+    {
+      "group": "src/screens",
+      "renderedLength": 197473
+    },
+    {
+      "group": "@supabase/auth-js",
+      "renderedLength": 168386
+    },
+    {
+      "group": "src/domain",
+      "renderedLength": 115159
+    },
+    {
+      "group": "rrule",
+      "renderedLength": 78484
+    },
+    {
+      "group": "src/data",
+      "renderedLength": 59058
+    },
+    {
+      "group": "@supabase/realtime-js",
+      "renderedLength": 53296
+    },
+    {
+      "group": "@supabase/phoenix",
+      "renderedLength": 40732
+    },
+    {
+      "group": "@supabase/storage-js",
+      "renderedLength": 40050
+    },
+    {
+      "group": "src/family",
+      "renderedLength": 35052
+    },
+    {
+      "group": "@supabase/postgrest-js",
+      "renderedLength": 27837
+    },
+    {
+      "group": "src/legacy",
+      "renderedLength": 23930
+    },
+    {
+      "group": "@supabase/supabase-js",
+      "renderedLength": 20107
+    },
+    {
+      "group": "src/storage",
+      "renderedLength": 19819
+    },
+    {
+      "group": "src/shell",
+      "renderedLength": 16683
+    },
+    {
+      "group": "react",
+      "renderedLength": 16425
+    },
+    {
+      "group": "src/auth",
+      "renderedLength": 13883
+    },
+    {
+      "group": "src/pwa",
+      "renderedLength": 13732
+    },
+    {
+      "group": "src/theme",
+      "renderedLength": 12284
+    },
+    {
+      "group": "scheduler",
+      "renderedLength": 9225
+    },
+    {
+      "group": "iceberg-js",
+      "renderedLength": 8051
+    },
+    {
+      "group": "@supabase/functions-js",
+      "renderedLength": 5760
+    },
+    {
+      "group": "src/App.tsx",
+      "renderedLength": 5751
+    },
+    {
+      "group": "src/lib",
+      "renderedLength": 4679
+    },
+    {
+      "group": "bundler",
+      "renderedLength": 3542
+    },
+    {
+      "group": "tslib",
+      "renderedLength": 2330
+    },
+    {
+      "group": "src/browser",
+      "renderedLength": 1181
+    },
+    {
+      "group": "src/main.tsx",
+      "renderedLength": 774
+    },
+    {
+      "group": "src/hooks",
+      "renderedLength": 183
+    }
+  ],
+  "targetPaths": [
+    {
+      "target": "src/screens/SettingsScaffoldScreen.tsx",
+      "eagerPath": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/screens/SettingsScaffoldScreen.tsx"
+      ],
+      "staticImporters": [
+        "src/App.tsx"
+      ]
+    },
+    {
+      "target": "src/screens/backupDownload.ts",
+      "eagerPath": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/screens/backupDownload.ts"
+      ],
+      "staticImporters": [
+        "src/App.tsx",
+        "src/screens/SettingsScaffoldScreen.tsx"
+      ]
+    },
+    {
+      "target": "src/domain/dataTransfer.ts",
+      "eagerPath": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/screens/backupDownload.ts",
+        "src/domain/dataTransfer.ts"
+      ],
+      "staticImporters": [
+        "src/data/DataProvider.tsx",
+        "src/data/supabaseRepository.ts",
+        "src/screens/DataImportDialog.tsx",
+        "src/screens/SettingsScaffoldScreen.tsx",
+        "src/screens/backupDownload.ts",
+        "src/storage/localRepository.ts"
+      ]
+    },
+    {
+      "target": "src/domain/ics.ts",
+      "eagerPath": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/screens/backupDownload.ts",
+        "src/domain/dataTransfer.ts",
+        "src/domain/ics.ts"
+      ],
+      "staticImporters": [
+        "src/domain/dataTransfer.ts"
+      ]
+    },
+    {
+      "target": "src/domain/recurrence.ts",
+      "eagerPath": [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/screens/calendar/CalendarScreen.tsx",
+        "src/domain/calendars.ts",
+        "src/domain/recurrence.ts"
+      ],
+      "staticImporters": [
+        "src/domain/calendars.ts",
+        "src/domain/ics.ts",
+        "src/domain/mutations.ts",
+        "src/domain/validation.ts",
+        "src/screens/calendar/EventSheet.tsx"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "node_modules/react-dom/cjs/react-dom-client.production.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 453153
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/GoTrueClient.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 102981
+    },
+    {
+      "id": "node_modules/@supabase/phoenix/priv/static/phoenix.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 40732
+    },
+    {
+      "id": "node_modules/@supabase/storage-js/dist/index.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 40050
+    },
+    {
+      "id": "src/data/supabaseRepository.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 32075
+    },
+    {
+      "id": "node_modules/@supabase/postgrest-js/dist/index.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 27837
+    },
+    {
+      "id": "src/screens/calendar/EventSheet.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 27186
+    },
+    {
+      "id": "src/screens/SettingsScaffoldScreen.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 25330
+    },
+    {
+      "id": "node_modules/@supabase/supabase-js/dist/index.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 20107
+    },
+    {
+      "id": "src/domain/validation.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 19647
+    },
+    {
+      "id": "src/legacy/legacyImport.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 16892
+    },
+    {
+      "id": "src/domain/mutations.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 16594
+    },
+    {
+      "id": "src/screens/calendar/WeekView.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 16167
+    },
+    {
+      "id": "src/family/FamilyDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 15253
+    },
+    {
+      "id": "node_modules/react/cjs/react.production.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 15178
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/RealtimeChannel.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 14990
+    },
+    {
+      "id": "src/screens/calendar/CalendarScreen.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 14878
+    },
+    {
+      "id": "src/domain/recurrence.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 14627
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/webauthn.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 14281
+    },
+    {
+      "id": "src/data/DataProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 14279
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 13800
+    },
+    {
+      "id": "src/screens/calendar/MonthView.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 13790
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/GoTrueAdminApi.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 13212
+    },
+    {
+      "id": "src/domain/ics.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 12822
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/helpers.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 12726
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/nlp/totext.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 10088
+    },
+    {
+      "id": "src/auth/AuthDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 9763
+    },
+    {
+      "id": "src/screens/CalendarSharingCard.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 9120
+    },
+    {
+      "id": "node_modules/scheduler/cjs/scheduler.production.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 9037
+    },
+    {
+      "id": "src/theme/themes.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 9035
+    },
+    {
+      "id": "src/screens/calendar/DayDetailSheet.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 8980
+    },
+    {
+      "id": "src/screens/OverviewScreen.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 8915
+    },
+    {
+      "id": "src/screens/calendar/DayTodoCard.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 8601
+    },
+    {
+      "id": "node_modules/iceberg-js/dist/index.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 8051
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/nlp/parsetext.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 8032
+    },
+    {
+      "id": "src/family/familyService.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 7744
+    },
+    {
+      "id": "src/domain/dataTransfer.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 7576
+    },
+    {
+      "id": "src/pwa/useAppUpdate.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 6965
+    },
+    {
+      "id": "src/family/FamilyInvitationGate.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 6805
+    },
+    {
+      "id": "src/screens/calendar/PetBubble.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 6550
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/serializer.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 6079
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/fetch.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5954
+    },
+    {
+      "id": "src/domain/databaseMapping.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5852
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5829
+    },
+    {
+      "id": "src/App.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5751
+    },
+    {
+      "id": "node_modules/react-dom/cjs/react-dom.production.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5713
+    },
+    {
+      "id": "src/screens/CalendarEditDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5565
+    },
+    {
+      "id": "src/domain/overview.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5517
+    },
+    {
+      "id": "src/screens/calendar/AgendaView.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5289
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/datetime.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5110
+    },
+    {
+      "id": "src/screens/DataImportDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 5014
+    },
+    {
+      "id": "src/storage/localRepository.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4978
+    },
+    {
+      "id": "src/domain/quickAdd.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4929
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterinfo/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4898
+    },
+    {
+      "id": "src/storage/versionedStorage.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4849
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/parseoptions.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4823
+    },
+    {
+      "id": "src/screens/DataRecoveryScreen.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4638
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/rrulestr.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4483
+    },
+    {
+      "id": "src/data/cachedSupabaseRepository.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4421
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/base64url.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4407
+    },
+    {
+      "id": "src/screens/calendar/EditableTodoDate.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4396
+    },
+    {
+      "id": "src/storage/browserStorage.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4302
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/rrule.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4291
+    },
+    {
+      "id": "src/screens/SearchScreen.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4278
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/transformers.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4276
+    },
+    {
+      "id": "src/domain/displaySegments.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4275
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iter/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4264
+    },
+    {
+      "id": "src/legacy/LegacyImportProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4141
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/errors.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4129
+    },
+    {
+      "id": "src/shell/useModalFocus.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 4108
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/rruleset.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3934
+    },
+    {
+      "id": "node_modules/@supabase/functions-js/dist/module/FunctionsClient.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3898
+    },
+    {
+      "id": "src/auth/AuthProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3857
+    },
+    {
+      "id": "src/screens/calendar/EditableTodoTitle.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3834
+    },
+    {
+      "id": "src/storage/localDataMigration.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3658
+    },
+    {
+      "id": "src/data/calendarSharing.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3458
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/dateutil.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3241
+    },
+    {
+      "id": "src/screens/ScreenErrorFallback.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3173
+    },
+    {
+      "id": "src/domain/lunar.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3109
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/masks.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 3081
+    },
+    {
+      "id": "src/shell/TabBar.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2954
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/parsestring.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2939
+    },
+    {
+      "id": "src/domain/eventTime.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2881
+    },
+    {
+      "id": "src/shell/RootErrorFallback.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2844
+    },
+    {
+      "id": "src/data/SessionDataProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2830
+    },
+    {
+      "id": "src/screens/DataPrivacyCard.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2735
+    },
+    {
+      "id": "src/domain/calendars.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2720
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2674
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2614
+    },
+    {
+      "id": "src/legacy/LegacyImportCard.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2584
+    },
+    {
+      "id": "src/screens/timezoneOptions.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2578
+    },
+    {
+      "id": "src/screens/calendar/PetLayer.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2566
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2564
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2522
+    },
+    {
+      "id": "src/theme/ThemeProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2496
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/phoenix/presenceAdapter.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2422
+    },
+    {
+      "id": "src/shell/AppShell.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2419
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/RealtimePostgresFilterBuilder.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2332
+    },
+    {
+      "id": "node_modules/tslib/tslib.es6.mjs",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2330
+    },
+    {
+      "id": "src/pwa/ReleaseNoticeDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2312
+    },
+    {
+      "id": "src/domain/timeGrid.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2249
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/phoenix/socketAdapter.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2248
+    },
+    {
+      "id": "src/screens/lastBackup.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2223
+    },
+    {
+      "id": "[virtual]vite/preload-helper.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2176
+    },
+    {
+      "id": "src/family/invitationIntent.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2115
+    },
+    {
+      "id": "src/storage/accountCache.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2032
+    },
+    {
+      "id": "src/lib/supabaseKey.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 2019
+    },
+    {
+      "id": "src/screens/UndatedTodos.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1955
+    },
+    {
+      "id": "src/pwa/UpdateDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1944
+    },
+    {
+      "id": "src/domain/todos.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1920
+    },
+    {
+      "id": "src/domain/date.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1916
+    },
+    {
+      "id": "src/screens/calendar/TodoPrioritySelect.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1878
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/optionstostring.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1862
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/helpers.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1807
+    },
+    {
+      "id": "src/screens/calendar/ScopeDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1781
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/cache.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1772
+    },
+    {
+      "id": "src/screens/SharingConfirmationDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1683
+    },
+    {
+      "id": "src/domain/weekDrag.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1672
+    },
+    {
+      "id": "node_modules/@supabase/functions-js/dist/module/types.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1641
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterset.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1624
+    },
+    {
+      "id": "src/family/FamilyCard.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1602
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterresult.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1586
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/nlp/i18n.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1455
+    },
+    {
+      "id": "src/pwa/version.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1449
+    },
+    {
+      "id": "src/lib/supabase.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1437
+    },
+    {
+      "id": "src/domain/types.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1408
+    },
+    {
+      "id": "src/domain/search.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1371
+    },
+    {
+      "id": "src/lib/env.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1223
+    },
+    {
+      "id": "[virtual]vite/modulepreload-polyfill.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1205
+    },
+    {
+      "id": "src/shell/diagnostics.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1183
+    },
+    {
+      "id": "src/screens/RetainedSharingDraftDialog.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1182
+    },
+    {
+      "id": "src/browser/dataTransferFiles.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1181
+    },
+    {
+      "id": "src/screens/calendar/useConfirmedTodoAdd.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1165
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterinfo/monthinfo.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1137
+    },
+    {
+      "id": "src/domain/attachments.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 1133
+    },
+    {
+      "id": "src/shell/RemoteDataWarningBanner.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 962
+    },
+    {
+      "id": "src/domain/petBubble.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 956
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/datewithzone.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 929
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iter/poslist.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 904
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/weekday.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 895
+    },
+    {
+      "id": "node_modules/react/cjs/react-jsx-runtime.production.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 871
+    },
+    {
+      "id": "src/domain/allDayDates.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 865
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/nlp/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 856
+    },
+    {
+      "id": "src/family/invitationStore.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 851
+    },
+    {
+      "id": "src/shell/StorageWarningBanner.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 789
+    },
+    {
+      "id": "src/main.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 774
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/constants.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 745
+    },
+    {
+      "id": "src/screens/useTodayKey.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 728
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/iterinfo/easter.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 720
+    },
+    {
+      "id": "src/data/retainedSharingDraft.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 710
+    },
+    {
+      "id": "src/data/repository.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 674
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/normalizeChannelError.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 671
+    },
+    {
+      "id": "src/screens/calendar/monthCellLayout.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 654
+    },
+    {
+      "id": "src/domain/stickerGlyphs.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 649
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/constants.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 645
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 635
+    },
+    {
+      "id": "src/data/dataContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 611
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/types.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 550
+    },
+    {
+      "id": "node_modules/rrule/dist/esm/callbackiterresult.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 529
+    },
+    {
+      "id": "src/pwa/releaseNotesSeen.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 514
+    },
+    {
+      "id": "src/theme/calendarTextColor.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 483
+    },
+    {
+      "id": "node_modules/react-dom/client.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 473
+    },
+    {
+      "id": "src/domain/titles.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 471
+    },
+    {
+      "id": "node_modules/react-dom/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 468
+    },
+    {
+      "id": "src/shell/ErrorBoundary.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 467
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/polyfills.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 448
+    },
+    {
+      "id": "src/screens/backupDownload.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 423
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/locks.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 387
+    },
+    {
+      "id": "src/family/familyFormatting.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 353
+    },
+    {
+      "id": "src/family/familyContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 329
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/local-storage.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 317
+    },
+    {
+      "id": "src/legacy/legacyImportContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 313
+    },
+    {
+      "id": "src/shell/ViewportLayer.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 303
+    },
+    {
+      "id": "src/pwa/appUpdateContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 302
+    },
+    {
+      "id": "src/theme/themeContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 270
+    },
+    {
+      "id": "src/auth/authContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 263
+    },
+    {
+      "id": "src/shell/viewportContext.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 248
+    },
+    {
+      "id": "src/pwa/AppUpdateProvider.tsx",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 246
+    },
+    {
+      "id": "node_modules/@supabase/functions-js/dist/module/helper.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 221
+    },
+    {
+      "id": "src/screens/calendar/occurrenceTarget.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 218
+    },
+    {
+      "id": "src/shell/motion.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 211
+    },
+    {
+      "id": "node_modules/react/jsx-runtime.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 200
+    },
+    {
+      "id": "src/shell/tabs.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 195
+    },
+    {
+      "id": "node_modules/scheduler/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 188
+    },
+    {
+      "id": "src/hooks/useStorageMode.ts",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 183
+    },
+    {
+      "id": "node_modules/react/index.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 176
+    },
+    {
+      "id": "[virtual]rolldown/runtime.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 161
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/types.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 137
+    },
+    {
+      "id": "node_modules/@supabase/realtime-js/dist/module/lib/version.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 112
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/AuthClient.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 111
+    },
+    {
+      "id": "node_modules/@supabase/auth-js/dist/module/lib/version.js",
+      "chunk": "assets/index-BbDcd5Kp.js",
+      "renderedLength": 108
+    }
+  ],
+  "publicWorker": {
+    "file": "sw.js",
+    "rawBytes": 1853,
+    "gzipBytes": 764
+  }
+}
