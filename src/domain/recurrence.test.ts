@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from './eventTime';
 import {
   isExpandableEvent,
@@ -16,6 +16,60 @@ const SOURCE = '22222222-2222-4222-8222-222222222222';
 const REPLACEMENT = '33333333-3333-4333-8333-333333333333';
 const EXCEPTION = '44444444-4444-4444-8444-444444444444';
 const NOW = '2026-01-01T00:00:00.000Z';
+
+describe('per-expansion wall-time work', () => {
+  it('formats a repeated instant in one timezone only once within a small expansion', () => {
+    const data = {
+      events: [timed('2026-03-07', '09:00', '10:00', 'America/New_York')],
+      eventExceptions: [],
+    };
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    try {
+      const result = resolveEventOccurrences(data, { startDate: '2026-03-07', endDate: '2026-03-09' });
+      expect(result.map(({ event }) => !event.allDay && event.startsAt)).toEqual([
+        '2026-03-07T14:00:00.000Z', '2026-03-08T13:00:00.000Z', '2026-03-09T13:00:00.000Z',
+      ]);
+      const keys = formatter.mock.calls.map(([date], index) => {
+        const timezone = (formatter.mock.contexts[index] as Intl.DateTimeFormat).resolvedOptions().timeZone;
+        return `${timezone}/${Number(date)}`;
+      });
+      expect(keys.length).toBeGreaterThan(0);
+      expect(new Set(keys).size).toBe(keys.length);
+    } finally { formatter.mockRestore(); }
+  });
+
+  it('releases conversion work between snapshots instead of retaining a prior expansion', () => {
+    const data = {
+      events: [timed('2026-03-07', '09:00', '10:00', 'America/New_York')],
+      eventExceptions: [],
+    };
+    const window = { startDate: '2026-03-07', endDate: '2026-03-09' };
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    try {
+      resolveEventOccurrences(data, window);
+      const firstCalls = formatter.mock.calls.length;
+      expect(firstCalls).toBeGreaterThan(0);
+      const changed = { ...data, events: data.events.map((event) => ({ ...event, title: 'changed' })) };
+      expect(resolveEventOccurrences(changed, window).map(({ event }) => event.title)).toEqual([
+        'changed', 'changed', 'changed',
+      ]);
+      expect(formatter.mock.calls.length).toBe(firstCalls * 2);
+    } finally { formatter.mockRestore(); }
+  });
+
+  it('consumes a long series while its nearby conversions still fit in the bounded reader', () => {
+    const data = { events: [timed('2026-01-01', '09:00', '10:00', 'UTC', 'FREQ=DAILY')], eventExceptions: [] };
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    try {
+      const result = resolveEventOccurrences(data, { startDate: '2026-01-01', endDate: '2026-12-31' });
+      expect(result).toHaveLength(365);
+      expect(result.at(-1)?.event).toMatchObject({ startsAt: '2026-12-31T09:00:00.000Z' });
+      // Two UTC instants per occurrence, plus a small allowance for its anchor.
+      // Work must not double merely because the series exceeds memo capacity.
+      expect(formatter.mock.calls.length).toBeLessThanOrEqual(result.length * 2 + 4);
+    } finally { formatter.mockRestore(); }
+  });
+});
 
 function common(id = SOURCE) {
   return {

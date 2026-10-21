@@ -1,9 +1,11 @@
 import { RRule } from 'rrule';
 import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
 import {
+  createZonedPartsReader,
   instantDateInZone,
   instantTimeInZone,
   wallTimeToInstant,
+  type ZonedPartsReader,
 } from './eventTime';
 import type {
   CalendarEvent,
@@ -463,6 +465,7 @@ export function resolveEventOccurrences(
     throw new RangeError('occurrence window endDate must be on or after startDate');
   }
 
+  const readParts = createZonedPartsReader();
   const eventsById = new Map(data.events.map((event) => [event.id, event]));
   const replacementIds = new Set(
     data.eventExceptions
@@ -476,26 +479,26 @@ export function resolveEventOccurrences(
   for (const event of data.events) {
     if (replacementIds.has(event.id)) continue;
     if (event.recurrence === null) {
-      if (eventOverlapsWindow(event, window)) {
+      if (eventOverlapsWindow(event, window, readParts)) {
         const occurrence = eventOccurrence(event);
         resolved.push(toResolved(event.id, occurrence, event, null));
       }
       continue;
     }
 
-    for (const shifted of expandBaseEvent(event, window)) {
+    for (const shifted of expandBaseEvent(event, window, readParts)) {
       const occurrence = eventOccurrence(shifted);
       const exception = exceptionsByEvent.get(event.id)?.get(occurrenceKey(occurrence));
       if (exception?.isCancelled) continue;
       if (exception && exception.replacementEventId !== null) {
         const replacement = eventsById.get(exception.replacementEventId);
-        if (replacement && eventOverlapsWindow(replacement, window)) {
+        if (replacement && eventOverlapsWindow(replacement, window, readParts)) {
           resolved.push(
             toResolved(event.id, occurrence, replacement, exception.replacementEventId),
           );
           includedReplacements.add(exception.replacementEventId);
         }
-      } else if (eventOverlapsWindow(shifted, window)) {
+      } else if (eventOverlapsWindow(shifted, window, readParts)) {
         resolved.push(toResolved(event.id, occurrence, shifted, null));
       }
     }
@@ -506,7 +509,7 @@ export function resolveEventOccurrences(
   for (const exception of data.eventExceptions) {
     if (exception.isCancelled || includedReplacements.has(exception.replacementEventId)) continue;
     const replacement = eventsById.get(exception.replacementEventId);
-    if (replacement && eventOverlapsWindow(replacement, window)) {
+    if (replacement && eventOverlapsWindow(replacement, window, readParts)) {
       resolved.push(
         toResolved(
           exception.eventId,
@@ -532,14 +535,15 @@ export function resolveEventOccurrences(
 function recurrenceCandidates(
   event: CalendarEvent & { recurrence: { rule: string } },
   window: OccurrenceWindow,
+  readParts: ZonedPartsReader,
 ): Date[] {
   const startDate = event.allDay
     ? event.startDate
-    : instantDateInZone(event.startsAt, event.timezone);
-  const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone);
+    : instantDateInZone(event.startsAt, event.timezone, readParts);
+  const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone, readParts);
   const endDate = event.allDay
     ? event.endDate
-    : instantDateInZone(event.endsAt, event.timezone);
+    : instantDateInZone(event.endsAt, event.timezone, readParts);
   const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
   const parsed = parseRecurrenceRule(event.recurrence.rule, event.allDay);
   const options = {
@@ -568,16 +572,21 @@ function recurrenceCandidates(
   return candidates;
 }
 
-function expandBaseEvent(event: CalendarEvent, window: OccurrenceWindow): CalendarEvent[] {
-  if (event.recurrence === null) return [event];
+function* expandBaseEvent(
+  event: CalendarEvent, window: OccurrenceWindow, readParts: ZonedPartsReader,
+): Generator<CalendarEvent, void> {
+  if (event.recurrence === null) {
+    yield event;
+    return;
+  }
   const startDate = event.allDay
     ? event.startDate
-    : instantDateInZone(event.startsAt, event.timezone);
-  const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone);
+    : instantDateInZone(event.startsAt, event.timezone, readParts);
+  const startTime = event.allDay ? '00:00' : instantTimeInZone(event.startsAt, event.timezone, readParts);
   const endDate = event.allDay
     ? event.endDate
-    : instantDateInZone(event.endsAt, event.timezone);
-  const endTime = event.allDay ? '00:00' : instantTimeInZone(event.endsAt, event.timezone);
+    : instantDateInZone(event.endsAt, event.timezone, readParts);
+  const endTime = event.allDay ? '00:00' : instantTimeInZone(event.endsAt, event.timezone, readParts);
   const spanDays = daysBetween(fromDateKey(startDate), fromDateKey(endDate));
   const parsed = parseRecurrenceRule(event.recurrence.rule, event.allDay);
   const actualUntil =
@@ -586,17 +595,17 @@ function expandBaseEvent(event: CalendarEvent, window: OccurrenceWindow): Calend
   const candidates = recurrenceCandidates(
     event as CalendarEvent & { recurrence: { rule: string } },
     window,
+    readParts,
   );
 
-  return candidates
-    .map((candidate) => floatingDateKey(candidate))
-    .map((candidateDate) => shiftEvent(event, candidateDate, startTime, endTime, spanDays))
-    .filter((candidate): candidate is CalendarEvent => candidate !== null)
-    .filter(
-      (candidate) =>
-        actualUntil === null ||
-        (candidate.allDay ? true : Date.parse(candidate.startsAt) <= actualUntil),
-    );
+  // Consume each shifted occurrence before the bounded reader evicts its
+  // conversions. The public resolver still returns one complete sorted array.
+  for (const candidate of candidates) {
+    const shifted = shiftEvent(event, floatingDateKey(candidate), startTime, endTime, spanDays, readParts);
+    if (shifted && (actualUntil === null || shifted.allDay || Date.parse(shifted.startsAt) <= actualUntil)) {
+      yield shifted;
+    }
+  }
 }
 
 function shiftEvent(
@@ -605,6 +614,7 @@ function shiftEvent(
   startTime: string,
   endTime: string,
   spanDays: number,
+  readParts: ZonedPartsReader,
 ): CalendarEvent | null {
   if (event.allDay) {
     return {
@@ -614,25 +624,27 @@ function shiftEvent(
     };
   }
 
-  const startsAt = wallTimeToInstant(candidateDate, startTime, event.timezone);
+  const startsAt = wallTimeToInstant(candidateDate, startTime, event.timezone, readParts);
   // RFC 5545 omits generated instances whose local DTSTART does not exist,
   // such as 02:30 during a spring-forward gap.
   if (
-    instantDateInZone(startsAt, event.timezone) !== candidateDate ||
-    instantTimeInZone(startsAt, event.timezone) !== startTime
+    instantDateInZone(startsAt, event.timezone, readParts) !== candidateDate ||
+    instantTimeInZone(startsAt, event.timezone, readParts) !== startTime
   ) {
     return null;
   }
   const occurrenceEndDate = toDateKey(addDays(fromDateKey(candidateDate), spanDays));
-  const endsAt = wallTimeToInstant(occurrenceEndDate, endTime, event.timezone);
+  const endsAt = wallTimeToInstant(occurrenceEndDate, endTime, event.timezone, readParts);
   return { ...event, startsAt, endsAt };
 }
 
-function eventOverlapsWindow(event: CalendarEvent, window: OccurrenceWindow): boolean {
+function eventOverlapsWindow(
+  event: CalendarEvent, window: OccurrenceWindow, readParts: ZonedPartsReader,
+): boolean {
   const start = event.allDay
     ? event.startDate
-    : instantDateInZone(event.startsAt, event.timezone);
-  const end = event.allDay ? event.endDate : instantDateInZone(event.endsAt, event.timezone);
+    : instantDateInZone(event.startsAt, event.timezone, readParts);
+  const end = event.allDay ? event.endDate : instantDateInZone(event.endsAt, event.timezone, readParts);
   return start <= window.endDate && end >= window.startDate;
 }
 

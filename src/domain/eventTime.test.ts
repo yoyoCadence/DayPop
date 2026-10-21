@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  createZonedPartsReader,
   eventDate,
   eventEndTime,
   eventStartTime,
   eventWallTime,
   instantDateInZone,
+  instantTimeInZone,
   timedEventFromWallTime,
   wallTimeToInstant,
 } from './eventTime';
@@ -42,6 +44,65 @@ const ALL_DAY: AllDayCalendarEvent = {
   startDate: '2026-08-06',
   endDate: '2026-08-06',
 };
+
+afterEach(() => vi.restoreAllMocks());
+
+describe('one-pass zoned parts reader', () => {
+  it('reuses an exact instant even when callers create different Date objects', () => {
+    const read = createZonedPartsReader();
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    const instant = '2026-03-08T07:00:00.000Z';
+    expect(read(new Date(instant), 'America/New_York')).toMatchObject({ hour: 3, minute: 0 });
+    expect(read(new Date(instant), 'America/New_York')).toMatchObject({ hour: 3, minute: 0 });
+    expect(formatter).toHaveBeenCalledTimes(1);
+  });
+
+  it('partitions results by timezone and by reader lifetime', () => {
+    const first = createZonedPartsReader();
+    const second = createZonedPartsReader();
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    const date = new Date('2026-03-08T07:00:00.000Z');
+    expect(first(date, 'America/New_York').hour).toBe(3);
+    expect(first(date, 'UTC').hour).toBe(7);
+    expect(first(date, 'America/New_York').hour).toBe(3);
+    expect(formatter).toHaveBeenCalledTimes(2);
+    expect(second(date, 'America/New_York').hour).toBe(3);
+    expect(formatter).toHaveBeenCalledTimes(3);
+  });
+
+  it('evicts old instants instead of retaining an entire long expansion', () => {
+    const read = createZonedPartsReader();
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    const start = Date.parse('2026-01-01T00:00:00.000Z');
+    for (let minute = 0; minute <= 512; minute += 1) read(new Date(start + minute * 60_000), 'UTC');
+    const calls = formatter.mock.calls.length;
+    read(new Date(start + 512 * 60_000), 'UTC');
+    expect(formatter.mock.calls.length).toBe(calls);
+    read(new Date(start), 'UTC');
+    expect(formatter.mock.calls.length).toBe(calls + 1);
+  });
+
+  it('does not cache or replace a failed conversion with default parts', () => {
+    const read = createZonedPartsReader();
+    expect(() => read(new Date(NaN), 'UTC')).toThrow(RangeError);
+    expect(() => read(new Date(NaN), 'UTC')).toThrow(RangeError);
+    expect(() => read(new Date(0), 'Invalid/Timezone')).toThrow(RangeError);
+    expect(read(new Date(0), 'UTC')).toMatchObject({ year: 1970, month: 1, day: 1, hour: 0 });
+  });
+
+  it.each([
+    ['2026-03-08', '02:30', 'America/New_York'],
+    ['2011-12-30', '09:00', 'Pacific/Apia'],
+    ['0100-01-01', '09:00', 'UTC'],
+  ])('preserves native conversion semantics for %s %s %s', (date, time, timezone) => {
+    const read = createZonedPartsReader();
+    const expected = wallTimeToInstant(date, time, timezone);
+    const actual = wallTimeToInstant(date, time, timezone, read);
+    expect(actual).toBe(expected);
+    expect(instantDateInZone(actual, timezone, read)).toBe(instantDateInZone(expected, timezone));
+    expect(instantTimeInZone(actual, timezone, read)).toBe(instantTimeInZone(expected, timezone));
+  });
+});
 
 describe('wallTimeToInstant', () => {
   it('anchors a wall clock to the offset of its own zone', () => {
