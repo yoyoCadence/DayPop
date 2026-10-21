@@ -76,7 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-180 — 53 週月曆滑動視窗：** 已由 Backlog 排入 Next，等 DP-179 合併後接續。每次 12 週、計算與 DOM 同時有界；裁掉焦點時轉至可見日期，保留選取與捲動。完整契約與回歸清單見 [DP-178 計畫](docs/month-performance-plan.md)。
 
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
 
@@ -237,6 +236,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -250,6 +250,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
+- [ ] **DP-181 — 有界月曆的剩餘成本 profile：** DP-180 已將計算輸入與 DOM 限在 53 週，但固定 20 系列的部分移動仍秒級（原始數字見 `docs/month-window.md`）。依 DP-178「仍慢則先 profile」的方向，建議只取相同 53 週視窗與移動區間，分辨 recurrence／時區／segment／render 成本並記錄可重跑證據；不先改演算法、快取、日期語意或產品互動。DP-180 合併後才排入 Next，擁有者可調整與 DP-170 的順序。
 
 
 
@@ -402,6 +404,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-180 — 53 週月曆滑動視窗（2026-10-21）：** Next → In Progress → Done；基線 DP-179 PR #173 合併的 `7824713`。固定 53 週、每次補／裁 12 週，同時限制 occurrence／segment 與 DOM；保留週以日期 key，頂端週＋列內比例在列高提交後補償；裁掉實際焦點才移至可見週、保留選取與外部／modal 焦點。今天／搜尋超界重置，年份邊界停用格不進 domain，必要 query padding／look-behind／四位年份修正保住原支援資料。先重現 7 項視窗與 2 項年份失敗；反向恢復三份產品基線 12 項失敗，再還原。lint／typecheck、1,338 單元＋12 Node、build／check:build 通過；NY 實際時區 170 項通過，相關手機／桌面及 WebKit e2e 50 passed／4 desktop 不適用 skipped，WebKit 另驗裁列焦點／今天。新量測 guard 拒絕 no-op，正式兩輪 8 組／24 點維持 53 週、20 系列各窗 7,420 筆，但部分移動仍秒級。[方法與原始值](docs/month-window.md)。更新 AGENTS §0.1、ADR §6 與 canonical 對照，最新四項 CI／審查通過才依授權合併。仍 0.4.3／v4／18 migrations，無 Auth／RLS、資料欄位、公告、部署或 Supabase 操作；後續 profile 建議列 DP-181，真機／實際家庭帳號仍未驗。
 
 - [x] **DP-179 — 月曆展開計算重用（2026-10-21）：** Backlog → Next → In Progress → Done，基線 DP-178 PR #172 合併的 `f298eae`。單次 resolver 自建最多 256 筆 FIFO 的 exact timezone／epoch reader、逐筆處理候選；不快取整份結果、不跨次或持久化，public 仍完整排序陣列。先重現三天 12 組輸入卻轉換 31 次、長系列整批消費的 1,460 次超過 734 上限；最終停用命中 5 失敗、停用淘汰 1 失敗、恢復整批消費 1 失敗，恢復全部通過。固定 20 系列 53／197 週同程序對照完整輸出 hash 一致、輸入不變，native 轉換 75,140 → 45,040／276,740 → 166,000；不以小樣本外推真機或改善百分比。[方法與原始值](docs/month-calculation-reuse.md)。lint／typecheck、1,322 單元＋12 Node、build／check:build、相關 e2e 27 passed／1 desktop 不適用 skipped；NY 時區 104 項通過且列印實際時區，更新 AGENTS §0.1／ADR §6。最新 PR 四項 CI 通過才合併；DP-180 仍在 Next，合併後獨立分支接續。無 buffer／焦點、Auth、schema、版本、公告、部署或 Supabase 操作。
 

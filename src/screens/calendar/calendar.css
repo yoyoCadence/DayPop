@@ -209,6 +209,8 @@
   overflow-y: auto;
   background: var(--bg);
   overscroll-behavior: contain;
+  /* DP-180 compensates by logical week; native anchoring would do it twice. */
+  overflow-anchor: none;
   -webkit-overflow-scrolling: touch;
 }
 

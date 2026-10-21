@@ -1,5 +1,7 @@
 # 月曆長時間捲動量測（DP-160）
 
+> **DP-180 補充（2026-10-21）：** 下文是舊增長策略的歷史量測。工具現在預設 `--strategy=bounded`，要求固定 53 列且起日每次確實前進 84 天；舊 `--strategy=growth` 仍保留「新增恰好 12 列」guard，只適用舊 MonthView。不可拿新版跑舊 guard 或保留假列。新方法、原始數字與限制見 [53 週視窗紀錄](month-window.md)。
+
 本項只量測，不修改 `MonthView`、domain、repository、CSS、migration、schema／release version、公告或部署。產品基線為 DP-159 合併後的 `9229a80`；方法與原始結果一併保留，不能把桌面 Chromium 的模擬尺寸數據當成 iPhone 驗收。
 
 ## 方法

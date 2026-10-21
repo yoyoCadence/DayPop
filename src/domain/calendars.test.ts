@@ -21,6 +21,22 @@ import {
 const NOW = '2026-08-08T00:00:00.000Z';
 const SECOND_CALENDAR = '66666666-6666-4666-8666-666666666666';
 
+describe('visibleOccurrences supported-year padding (DP-180)', () => {
+  it.each(['0100-01-01', '9999-12-31'])('keeps an event on %s drawable when timezone padding crosses the supported years', (date) => {
+    const data = createEmptyUserData({ now: NOW });
+    data.events = [{
+      id: 'edge', calendarId: data.calendars[0]!.id, title: 'boundary',
+      allDay: true, startDate: date, endDate: date === '0100-01-01' ? '0100-01-03' : date, location: null, notes: null,
+      reminderMinutes: [], recurrence: { rule: 'FREQ=DAILY;COUNT=2' },
+      sharingScope: 'inherit', createdAt: NOW, updatedAt: NOW,
+    }];
+    const before = JSON.stringify(data);
+    const resolved = visibleOccurrences(data, { startDate: date, endDate: date }, 'Asia/Taipei');
+    expect(resolved.map(occurrence => occurrence.event.id)).toEqual(['edge']);
+    expect(JSON.stringify(data)).toBe(before);
+  });
+});
+
 function withSecondCalendar(data: DayPopUserData, overrides: Partial<Calendar> = {}) {
   const first = data.calendars[0]!;
   return {

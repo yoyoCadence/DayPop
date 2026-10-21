@@ -1,0 +1,561 @@
+{
+  "baseline": "7824713b38ba199d6d42e4d780e0fcddec45dd2d",
+  "strategy": "bounded",
+  "sourceSha256": {
+    "src/screens/calendar/MonthView.tsx": "67e7d2cae4ddd52073f8f97310daf86b807e823ceb298b23a759ae6b740a8a34",
+    "src/screens/calendar/monthWindow.ts": "5907e6dd0cccd81f6eb180b177dc213c9839939eaacd7206e810b43c1bb280e7",
+    "src/screens/calendar/CalendarScreen.tsx": "eee21b6c0793e2d2c55ef5ee1401ad734525314a5adfe9f79fc03382f5916f28",
+    "src/screens/calendar/calendar.css": "679e68bdd65314f07eac9aef0a39c5fcb0bd8e5cf5e0e1ed140f06e6cace1de9",
+    "src/domain/calendars.ts": "4bf02856d781f94fd4e37c99c7da1f3ac9b339f42aba102b8168e561fe56ea76",
+    "src/domain/recurrence.ts": "f79537052ec94bc160f5bbcbbfdb88e42cd4bc04a3baa01f6cd0e4f482282219",
+    "src/domain/eventTime.ts": "2c0a22eb18503e7ea2d19192bbe57449eccfaa74e9cfafbe76b954238b6ab6f2"
+  },
+  "measuredAt": "2026-10-21T13:58:38.003Z",
+  "measurementInstant": "2026-10-20T04:00:00.000Z",
+  "node": "v24.19.0",
+  "nodeTimezone": "Etc/GMT-8",
+  "platform": "win32",
+  "release": "10.0.26300",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "logicalCpus": 16,
+  "memoryBytes": 16868962304,
+  "browser": "Chromium 151.0.7922.34",
+  "steps": 12,
+  "runs": 2,
+  "environments": [
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    }
+  ],
+  "samples": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 0,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3793856,
+          "cdpNodes": 2056
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 43.69999998807907,
+          "jsHeapBytesAfterGc": 4148808,
+          "cdpNodes": 2061
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 44,
+          "jsHeapBytesAfterGc": 4229892,
+          "cdpNodes": 2061
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 0,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3793960,
+          "cdpNodes": 2056
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 40.30000001192093,
+          "jsHeapBytesAfterGc": 4149472,
+          "cdpNodes": 2061
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 41.39999997615814,
+          "jsHeapBytesAfterGc": 4231444,
+          "cdpNodes": 2061
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 20,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 8216904,
+          "cdpNodes": 5395
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 360.30000001192093,
+          "jsHeapBytesAfterGc": 11222860,
+          "cdpNodes": 5400
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 1794.1000000238419,
+          "jsHeapBytesAfterGc": 11317360,
+          "cdpNodes": 5400
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 20,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 8217108,
+          "cdpNodes": 5395
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 1697.800000011921,
+          "jsHeapBytesAfterGc": 11246236,
+          "cdpNodes": 5400
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 2826.599999964237,
+          "jsHeapBytesAfterGc": 11298768,
+          "cdpNodes": 5400
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 0,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3764176,
+          "cdpNodes": 2057
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 37.5,
+          "jsHeapBytesAfterGc": 4118272,
+          "cdpNodes": 2062
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 43.19999998807907,
+          "jsHeapBytesAfterGc": 4204020,
+          "cdpNodes": 2062
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 0,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3764084,
+          "cdpNodes": 2057
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 19,
+          "jsHeapBytesAfterGc": 4118180,
+          "cdpNodes": 2062
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 30.900000035762787,
+          "jsHeapBytesAfterGc": 4201504,
+          "cdpNodes": 2062
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 20,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 7915144,
+          "cdpNodes": 4654
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 2660.400000035763,
+          "jsHeapBytesAfterGc": 10958368,
+          "cdpNodes": 4659
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 1732.800000011921,
+          "jsHeapBytesAfterGc": 11014724,
+          "cdpNodes": 4659
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 20,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 7914728,
+          "cdpNodes": 4654
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 1531.800000011921,
+          "jsHeapBytesAfterGc": 10923660,
+          "cdpNodes": 4659
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 1708.300000011921,
+          "jsHeapBytesAfterGc": 10988260,
+          "cdpNodes": 4659
+        }
+      ]
+    }
+  ],
+  "expansion": [
+    {
+      "seriesCount": 0,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 0,
+      "milliseconds": [
+        0.04679999999643769,
+        0.027000000001862645,
+        0.019100000004982576
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2027-09-05",
+      "endDate": "2028-09-09",
+      "count": 0,
+      "milliseconds": [
+        0.02419999999983702,
+        0.015299999999115244,
+        0.013799999986076728
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2029-01-21",
+      "endDate": "2030-01-26",
+      "count": 0,
+      "milliseconds": [
+        0.07130000001052395,
+        0.029000000009546056,
+        0.018899999995483086
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 7420,
+      "milliseconds": [
+        1108.421000000002,
+        1118.5849000000017,
+        1129.4331999999995
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2027-09-05",
+      "endDate": "2028-09-09",
+      "count": 7420,
+      "milliseconds": [
+        1219.0458999999973,
+        1185.3323999999993,
+        1180.3966999999975
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2029-01-21",
+      "endDate": "2030-01-26",
+      "count": 7420,
+      "milliseconds": [
+        1239.862500000003,
+        1178.731799999994,
+        1339.7983999999997
+      ]
+    }
+  ]
+}

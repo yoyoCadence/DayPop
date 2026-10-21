@@ -1,14 +1,14 @@
-import { act } from 'react';
+import { act, createRef, type ComponentProps } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fromDateKey, toDateKey } from '../../domain/date';
+import { addDays, daysBetween, fromDateKey, toDateKey } from '../../domain/date';
 import { lunarCell } from '../../domain/lunar';
 import {
   resolveEventOccurrences,
   type OccurrenceWindow,
 } from '../../domain/recurrence';
 import type { CalendarEvent, Sticker } from '../../domain/types';
-import { MonthView } from './MonthView';
+import { MonthView, type MonthViewHandle } from './MonthView';
 /**
  * Stands in for the screen's `resolveOccurrences` — DP-081. Visibility
  * filtering happens upstream in production, so this expands the given events
@@ -483,7 +483,7 @@ describe('MonthView keyboard navigation', () => {
     expect(document.activeElement).toBe(cell('2026-08-16')); // Sunday
   });
 
-  it('grows the buffer when the keyboard walks past its edge', () => {
+  it('slides a bounded buffer when the keyboard walks past its edge', () => {
     render([]);
 
     const keys = [...container.querySelectorAll<HTMLButtonElement>('[data-date-key]')].map(
@@ -497,6 +497,7 @@ describe('MonthView keyboard navigation', () => {
     const dayAfter = toDateKey(new Date(fromDateKey(lastKey).getTime() + 86_400_000));
     expect(cell(dayAfter)).not.toBeNull();
     expect(document.activeElement).toBe(cell(dayAfter));
+    expect(container.querySelectorAll('.cal-week-row')).toHaveLength(53);
   });
 
   it('ignores keys it does not own', () => {
@@ -506,6 +507,162 @@ describe('MonthView keyboard navigation', () => {
     pressOn(TODAY, 'a');
     expect(document.activeElement).toBe(cell(TODAY));
     expect(before).not.toBeUndefined();
+  });
+});
+
+describe('MonthView bounded window (DP-180)', () => {
+  const today = '2026-10-20';
+  const onSelectDate = vi.fn();
+  const handle = createRef<MonthViewHandle>();
+  let resolve: ReturnType<typeof vi.fn<(window: OccurrenceWindow) => []>>;
+
+  function mount(extra: Partial<ComponentProps<typeof MonthView>> = {}) {
+    resolve = vi.fn(() => []);
+    act(() => root.render(<MonthView
+      ref={handle} weekStartsOn={0} displayTimezone="Asia/Taipei" calendarGridMode="fixed-six"
+      resolveOccurrences={resolve} stickers={[]} calendars={[]} selectedDate={today} todayKey={today}
+      flashToday={false} onSelectDate={onSelectDate} onPeriodLabelChange={vi.fn()} {...extra}
+    />));
+    return container.querySelector<HTMLDivElement>('.cal-month-scroll')!;
+  }
+
+  function keys() {
+    return [...container.querySelectorAll<HTMLElement>('[data-date-key]')].map((el) => el.dataset.dateKey!);
+  }
+
+  function scroll(element: HTMLDivElement, week: number, fraction = 0.25) {
+    const row = container.querySelector<HTMLElement>('.cal-week-row')!;
+    const height = parseFloat(row.style.height);
+    act(() => { element.scrollTop = (week + fraction) * height; element.dispatchEvent(new Event('scroll')); });
+    return height;
+  }
+
+  it.each([1, -1] as const)('keeps DOM and occurrence bounds at 53 weeks during repeated direction %s shifts', (direction) => {
+    const element = mount();
+    for (let step = 0; step < 6; step += 1) {
+      const before = keys();
+      const week = direction === 1 ? 46 : 3;
+      const visible = before[week * 7];
+      const height = scroll(element, week);
+      const after = keys();
+      expect(after).toHaveLength(53 * 7);
+      expect(daysBetween(fromDateKey(before[0]!), fromDateKey(after[0]!))).toBe(direction * 12 * 7);
+      expect(after[Math.floor(element.scrollTop / height) * 7]).toBe(visible);
+      expect(element.scrollTop / height % 1).toBeCloseTo(0.25);
+      expect(resolve).toHaveBeenLastCalledWith({ startDate: after[0], endDate: after.at(-1) });
+      expect(tabbableKeys()).toHaveLength(1);
+    }
+  });
+
+  it('retains the actual focused node until its week is trimmed, then focuses a visible date without selecting', () => {
+    const element = mount();
+    onSelectDate.mockClear();
+    const original = cell(today)!;
+    act(() => original.focus());
+    scroll(element, 46); // today is still inside the retained 41 weeks.
+    expect(cell(today)).toBe(original);
+    expect(document.activeElement).toBe(original);
+    scroll(element, 46);
+    scroll(element, 46); // today is now outside the window.
+    expect(cell(today)).toBeNull();
+    const focused = document.activeElement as HTMLButtonElement;
+    expect(focused.matches('.cal-cell')).toBe(true);
+    const index = keys().indexOf(focused.dataset.dateKey!);
+    expect(Math.floor(index / 7)).toBeGreaterThanOrEqual(Math.ceil(element.scrollTop / 96));
+    expect(Math.floor(index / 7)).toBeLessThan(Math.ceil(element.scrollTop / 96) + 6);
+    expect(tabbableKeys()).toEqual([focused.dataset.dateKey]);
+    expect(element.scrollTop).toBe(34.25 * 96);
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it('does not take focus from an external control when a roving date is trimmed', () => {
+    const element = mount();
+    const external = document.createElement('button');
+    document.body.append(external);
+    try {
+      act(() => { cell(today)!.focus(); external.focus(); });
+      for (let step = 0; step < 3; step += 1) scroll(element, 46);
+      expect(document.activeElement).toBe(external);
+      expect(cell(today)).toBeNull();
+      expect(tabbableKeys()).toHaveLength(1);
+    } finally { external.remove(); }
+  });
+
+  it('re-centres today after browsing years without growing a gap or stealing toolbar focus', () => {
+    const element = mount();
+    for (let step = 0; step < 10; step += 1) scroll(element, 46);
+    expect(cell(today)).toBeNull();
+    act(() => handle.current!.scrollToToday(false));
+    expect(keys()).toHaveLength(53 * 7);
+    expect(cell(today)).not.toBeNull();
+    const row = Math.floor(keys().indexOf(today) / 7);
+    expect(element.scrollTop).toBe(row * 96);
+  });
+
+  it('keeps keyboard navigation bounded at both edges and preserves selection', () => {
+    mount();
+    onSelectDate.mockClear();
+    for (const direction of [-1, 1] as const) {
+      const before = keys();
+      const from = direction === -1 ? before[0]! : before.at(-1)!;
+      const target = toDateKey(addDays(fromDateKey(from), direction));
+      pressOn(from, direction === -1 ? 'ArrowLeft' : 'ArrowRight');
+      expect(document.activeElement).toBe(cell(target));
+      expect(keys()).toHaveLength(53 * 7);
+      expect(tabbableKeys()).toEqual([target]);
+    }
+    expect(onSelectDate).not.toHaveBeenCalled();
+    expect(cell(today)?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('positions once even when the measured row is exactly the initial 96px, then preserves the logical top on resize', () => {
+    let height = 576;
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => height);
+    let resize: (() => void) | undefined;
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { resize = callback; }
+      observe() {} disconnect() {}
+    });
+    try {
+      const element = mount();
+      expect(element.scrollTop).toBe(26 * 96);
+      scroll(element, 27, 0.4);
+      height = 420;
+      act(() => resize!());
+      expect(element.scrollTop).toBeCloseTo(27.4 * 70);
+      expect(keys()).toHaveLength(371);
+    } finally { size.mockRestore(); vi.unstubAllGlobals(); }
+  });
+
+  it.each(['0100-01-01', '9999-12-31'])('opens a fresh search window at %s and prevents navigation outside supported years', (target) => {
+    const element = mount({ initialDateKey: target, selectedDate: target });
+    expect(cell(target)).not.toBeNull();
+    expect(cell(target)?.disabled).toBe(false);
+    expect(keys()).toHaveLength(371);
+    const window = resolve.mock.calls.at(-1)![0];
+    expect(window.startDate >= '0100-01-01' && window.endDate <= '9999-12-31').toBe(true);
+    pressOn(target, target === '0100-01-01' ? 'ArrowLeft' : 'ArrowRight');
+    expect(document.activeElement).toBe(cell(target));
+    expect(tabbableKeys()).toEqual([target]);
+    const before = keys();
+    scroll(element, target === '0100-01-01' ? 0 : 47, 0);
+    expect(keys()).toEqual(before);
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('compensates a trim and an adaptive four-to-five-row height change in the same commit', () => {
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
+    try {
+      const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15' });
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
+      const visible = keys()[46 * 7];
+      scroll(element, 46);
+      const height = parseFloat(container.querySelector<HTMLElement>('.cal-week-row')!.style.height);
+      expect(height).toBe(108);
+      expect(keys()[Math.floor(element.scrollTop / height) * 7]).toBe(visible);
+      expect(element.scrollTop / height).toBeCloseTo(34.25);
+      expect(keys()).toHaveLength(371);
+    } finally { size.mockRestore(); }
   });
 });
 

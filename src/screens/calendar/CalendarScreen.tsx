@@ -411,6 +411,7 @@ export function CalendarScreen({
             calendars={data.calendars}
             selectedDate={selected}
             todayKey={todayKey}
+            initialDateKey={focusDay ?? todayKey}
             flashToday={flashToday}
             onSelectDate={openDayDetail}
             onPeriodLabelChange={handlePeriodLabelChange}

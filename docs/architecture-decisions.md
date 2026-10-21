@@ -808,6 +808,14 @@ DP-072 前置核對重現：既有約 49 小時的 timed event，僅改標題或
 
 回歸先重現三天 12 組輸入卻轉換 31 次，以及 UTC 365 天整批消費的 1,460 次超過 734 次工作量上限；最終停用命中 5 項失敗、停用淘汰 1 項、恢復整批消費 1 項，還原通過。固定 20 系列同程序 baseline／candidate 對照，53／197 週完整輸出 hash 一致、輸入不變，`formatToParts` 75,140 → 45,040／276,740 → 166,000 次。這是減少重複工作的證據，不外推真機或改善百分比；方法與全部耗時見 [計算重用紀錄](month-calculation-reuse.md)。MonthView buffer／焦點仍待 DP-180；0.4.3／v4／migration／公告與部署不變。
 
+### 實作（DP-180，2026-10-21）— 53 週視窗與裁列焦點
+
+DP-179 PR #173 合併為 `7824713` 後，以獨立分支實作已確認的 53 週／每次 12 週契約。`monthWindow.ts` 管私有 Date 起日與支援年份，MonthView 同時限制 occurrence／segment 與 DOM；保留列用日期 key，補／裁列及 resize 以頂端週日期＋列內比例補償，等量測後的列高真正提交才寫 scrollTop，停用原生 anchoring 避免重複補償。
+
+裁掉實際持有焦點的日期時，以 preventScroll 聚焦第一個完整可見週，不改 selected day；保留中的節點與外部／modal 焦點不動。鍵盤仍沿原規則，今天超出範圍重置視窗，搜尋日詳情的新畫面以目標日期初始化、不在背景取焦點。0100／9999 年邊界週的相鄰日期僅停用佔位；必要的 domain 邊界修正將時區 padding 截在原支援年份、look-behind 不早於 DTSTART、floating candidate 保留四位年份，避免新搜尋路徑落入錯誤畫面或漏掉原有事項，不擴大日期格式或資料模型。
+
+先失敗、反向恢復三份產品基線後 12 項失敗，再還原通過；瀏覽器驗證雙向長捲、pixel／焦點、今天、搜尋、年份與旋轉。新增 bounded 量測模式要求固定 53 列並確實移動日期，保留歷史 growth guard；不拿跨輪數字計算效能百分比。完整結果、原稿渲染對照及限制見 [月曆視窗紀錄](month-window.md)。沒有新快取／持久化、Auth／RLS、repository contract、schema／migration、0.4.3／v4、公告或部署變更；RRule 的早期 DTSTART 迭代仍可能昂貴，真機驗收仍待後續。
+
 ## 7. 工程治理
 
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行
