@@ -1,0 +1,348 @@
+{
+  "sourceCommit": "7850c87f71915ed0ed2605ef9a4fec93ecc6a4e5",
+  "profiledAt": "2026-10-21T08:31:13.998Z",
+  "series": 20,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "browser": "Chromium 151.0.7922.34",
+  "browserTimezone": "Asia/Taipei",
+  "nodeTimezone": "Etc/GMT-8",
+  "method": "One trace sample, final mobile growth. Timeline categories can nest and MUST NOT be added; sampling excludes native pipeline attribution.",
+  "limits": [
+    "One mobile final-growth profile sample; not a percentile or real-device result",
+    "Date-only proxy; performance, requestAnimationFrame and timers remain native",
+    "External source map; profiler and tracing overhead not removed",
+    "Timeline events can nest; never sum categories or subtract Node times from browser times",
+    "Independent Node timings vary across runs and are not evidence of a product speedup"
+  ],
+  "browserPoints": [
+    {
+      "label": "initial",
+      "rows": 53,
+      "cells": 371,
+      "elements": 2742,
+      "chips": 1113,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "tabStops": 1,
+      "scrollMs": null,
+      "jsHeapBytesAfterGc": 8134492,
+      "cdpNodes": 5395
+    },
+    {
+      "label": "growth-6",
+      "rows": 125,
+      "cells": 875,
+      "elements": 6342,
+      "chips": 2625,
+      "startDate": "2026-04-19",
+      "endDate": "2028-09-09",
+      "tabStops": 1,
+      "scrollMs": 5046.199999988079,
+      "jsHeapBytesAfterGc": 23538844,
+      "cdpNodes": 12523
+    },
+    {
+      "label": "growth-12",
+      "rows": 197,
+      "cells": 1379,
+      "elements": 9942,
+      "chips": 4137,
+      "startDate": "2026-04-19",
+      "endDate": "2030-01-26",
+      "tabStops": 1,
+      "scrollMs": 5911.800000011921,
+      "jsHeapBytesAfterGc": 34103764,
+      "cdpNodes": 19651
+    }
+  ],
+  "cpu": {
+    "sampleMilliseconds": 6554.781,
+    "top": [
+      {
+        "frame": "src/domain/eventTime.ts:58",
+        "milliseconds": 1303.467,
+        "percent": 19.9
+      },
+      {
+        "frame": "src/domain/eventTime.ts:101",
+        "milliseconds": 1257.664,
+        "percent": 19.2
+      },
+      {
+        "frame": "(program)",
+        "milliseconds": 529.568,
+        "percent": 8.1
+      },
+      {
+        "frame": "src/screens/calendar/MonthView.tsx:613",
+        "milliseconds": 493.696,
+        "percent": 7.5
+      },
+      {
+        "frame": "construct",
+        "milliseconds": 405.851,
+        "percent": 6.2
+      },
+      {
+        "frame": "src/domain/displaySegments.ts:125",
+        "milliseconds": 391.541,
+        "percent": 6
+      },
+      {
+        "frame": "src/screens/calendar/MonthView.tsx:533",
+        "milliseconds": 331.556,
+        "percent": 5.1
+      },
+      {
+        "frame": "src/domain/recurrence.ts:602",
+        "milliseconds": 325.465,
+        "percent": 5
+      },
+      {
+        "frame": "src/domain/calendars.ts:115",
+        "milliseconds": 311.257,
+        "percent": 4.7
+      },
+      {
+        "frame": "src/domain/recurrence.ts:631",
+        "milliseconds": 297.643,
+        "percent": 4.5
+      },
+      {
+        "frame": "src/domain/eventTime.ts:106",
+        "milliseconds": 236.81,
+        "percent": 3.6
+      },
+      {
+        "frame": "(garbage collector)",
+        "milliseconds": 163.288,
+        "percent": 2.5
+      },
+      {
+        "frame": "node_modules/rrule/dist/esm/iter/index.js:10",
+        "milliseconds": 107.317,
+        "percent": 1.6
+      },
+      {
+        "frame": "(idle)",
+        "milliseconds": 70.945,
+        "percent": 1.1
+      },
+      {
+        "frame": "node_modules/rrule/dist/esm/iterinfo/index.js:138",
+        "milliseconds": 64.61,
+        "percent": 1
+      },
+      {
+        "frame": "src/domain/recurrence.ts:676",
+        "milliseconds": 51.921,
+        "percent": 0.8
+      },
+      {
+        "frame": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5",
+        "milliseconds": 31.447,
+        "percent": 0.5
+      },
+      {
+        "frame": "src/domain/recurrence.ts:458",
+        "milliseconds": 29.891,
+        "percent": 0.5
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "events": 785,
+      "top": [
+        {
+          "name": "v8.callFunction",
+          "count": 10,
+          "milliseconds": 5851.389
+        },
+        {
+          "name": "FunctionCall",
+          "count": 10,
+          "milliseconds": 5850.8
+        },
+        {
+          "name": "MajorGC",
+          "count": 1,
+          "milliseconds": 115.125
+        },
+        {
+          "name": "V8.GCFinalizeMC",
+          "count": 1,
+          "milliseconds": 115.086
+        },
+        {
+          "name": "V8.GC_MARK_COMPACTOR",
+          "count": 1,
+          "milliseconds": 115.067
+        },
+        {
+          "name": "V8.GC_MC_MARK",
+          "count": 1,
+          "milliseconds": 104.471
+        },
+        {
+          "name": "V8.GC_MC_MARK_FULL_CLOSURE_PARALLEL",
+          "count": 1,
+          "milliseconds": 104.142
+        },
+        {
+          "name": "V8.GC_MC_MARK_WEAK_CLOSURE_EPHEMERON_MARKING",
+          "count": 5,
+          "milliseconds": 102.398
+        },
+        {
+          "name": "V8.GC_MC_MARK_EMBEDDER_TRACING",
+          "count": 6,
+          "milliseconds": 52.474
+        },
+        {
+          "name": "MinorGC",
+          "count": 21,
+          "milliseconds": 40.08
+        },
+        {
+          "name": "V8.GCScavenger",
+          "count": 21,
+          "milliseconds": 38.316
+        },
+        {
+          "name": "V8.GC_SCAVENGER",
+          "count": 21,
+          "milliseconds": 37.996
+        },
+        {
+          "name": "V8.GC_SCAVENGER_SCAVENGE",
+          "count": 21,
+          "milliseconds": 37.534
+        },
+        {
+          "name": "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+          "count": 21,
+          "milliseconds": 30.521
+        },
+        {
+          "name": "V8.GC_SCAVENGER_SCAVENGE_PARALLEL",
+          "count": 25,
+          "milliseconds": 25.813
+        },
+        {
+          "name": "Paint",
+          "count": 94,
+          "milliseconds": 15.75
+        },
+        {
+          "name": "Layout",
+          "count": 1,
+          "milliseconds": 12.973
+        },
+        {
+          "name": "Layerize",
+          "count": 3,
+          "milliseconds": 7.496
+        }
+      ]
+    }
+  ],
+  "nodeExpansion": [
+    {
+      "seriesCount": 0,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 0,
+      "milliseconds": [
+        0.1032000000050175,
+        0.16239999999379506,
+        0.28110000000015134
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2026-04-19",
+      "endDate": "2028-09-09",
+      "count": 0,
+      "milliseconds": [
+        0.06379999999626307,
+        0.01609999999345746,
+        0.014299999995273538
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2026-04-19",
+      "endDate": "2030-01-26",
+      "count": 0,
+      "milliseconds": [
+        0.03570000000036089,
+        0.014299999995273538,
+        0.00960000000486616
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 7420,
+      "milliseconds": [
+        1613.1168999999936,
+        1536.3937000000005,
+        1562.449999999997
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2026-04-19",
+      "endDate": "2028-09-09",
+      "count": 17500,
+      "milliseconds": [
+        4267.732099999994,
+        3767.7121999999945,
+        4133.050799999997
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2026-04-19",
+      "endDate": "2030-01-26",
+      "count": 27580,
+      "milliseconds": [
+        4831.920100000003,
+        5360.108400000012,
+        5680.633799999996
+      ]
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "file": "profile.mjs",
+      "bytes": 13105,
+      "sha256": "e8574a357022624210f400e30f7846ce38d7d552eb13bdbb41a493431f2e0fbd"
+    },
+    {
+      "file": "growth.cpuprofile",
+      "bytes": 69768,
+      "sha256": "2be7e1b265344047531681bdf100d0e238364b0ef4edd0034fc5c86e8cea2c80"
+    },
+    {
+      "file": "growth.trace.json",
+      "bytes": 284542,
+      "sha256": "12f2fa1a6e4e788cebd927084f21e709debdd08abba79512dbf2b1cefe41de47"
+    },
+    {
+      "file": "measurement.json",
+      "bytes": 3305,
+      "sha256": "b4e09e158dbdcc856cdd4cb63bac1abf2cfc8894a5e70a240196b13e44c8de33"
+    },
+    {
+      "file": "summary.json",
+      "bytes": 6838,
+      "sha256": "36cc55b10a8c3bdd72a6e8228301becdb0d53c5ed02db6f286ba0c3d51501d54"
+    }
+  ]
+}
