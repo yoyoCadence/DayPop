@@ -284,12 +284,12 @@ export function CalendarScreen({
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashToday(false), 1300);
     setSelected(key);
+    setCursor(key);
     if (view === 'month') {
       setMonthLabel(`${todayDate.getFullYear()}年 ${todayDate.getMonth() + 1}月`);
       monthRef.current?.scrollToToday(true);
       return;
     }
-    setCursor(key);
   }
 
   function submitQuick(event: FormEvent<HTMLFormElement>) {
@@ -411,6 +411,7 @@ export function CalendarScreen({
             calendars={data.calendars}
             selectedDate={selected}
             todayKey={todayKey}
+            initialDateKey={cursor}
             flashToday={flashToday}
             onSelectDate={openDayDetail}
             onPeriodLabelChange={handlePeriodLabelChange}

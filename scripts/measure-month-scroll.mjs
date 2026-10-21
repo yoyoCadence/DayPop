@@ -1,6 +1,7 @@
 /* global document, requestAnimationFrame, innerWidth, innerHeight, localStorage */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { cpus, platform, release, tmpdir, totalmem } from 'node:os';
 import { basename, dirname, extname, join, resolve } from 'node:path';
@@ -12,12 +13,14 @@ import { build } from 'vite';
 // Manual measurement, deliberately outside CI timing gates. Never reads a real
 // account, starts a network server, or changes the product's buffer strategy.
 const options = Object.fromEntries(process.argv.slice(2).map((arg) => {
-  const match = /^--(steps|runs|output)=(.+)$/.exec(arg);
+  const match = /^--(steps|runs|output|strategy)=(.+)$/.exec(arg);
   if (!match) throw Error(`Unknown argument: ${arg}`);
   return [match[1], match[2]];
 }));
 const steps = Number(options.steps ?? 12);
 const runs = Number(options.runs ?? 2);
+const strategy = options.strategy ?? 'bounded';
+assert(['growth', 'bounded'].includes(strategy), 'strategy must be growth or bounded');
 assert(Number.isInteger(steps) && steps >= 1 && steps <= 24, 'steps must be 1–24');
 assert(Number.isInteger(runs) && runs >= 1 && runs <= 3, 'runs must be 1–3');
 const output = resolve(options.output ?? join(tmpdir(), 'daypop-month-scroll.json'));
@@ -84,7 +87,7 @@ try {
   browser = await chromium.launch();
   browserVersion = browser.version();
   const nodeTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  console.log(JSON.stringify({ nodeTimezone, browserVersion, steps, runs }));
+  console.log(JSON.stringify({ nodeTimezone, browserVersion, steps, runs, strategy }));
   const environments = [];
   for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     for (const seriesCount of [0, 20]) {
@@ -143,28 +146,39 @@ try {
           assert.equal(points[0].rows, 53, 'initial buffer differs from baseline');
           if (seriesCount) assert(points[0].chips > 0, 'synthetic events did not render');
           for (let step = 1; step <= steps; step += 1) {
-            const before = await page.locator('.cal-week-row').count();
-            const elapsed = await page.evaluate(async (before) => {
+            const before = { rows: await page.locator('.cal-week-row').count(),
+              startDate: await page.locator('.cal-cell').first().getAttribute('data-date-key') };
+            const elapsed = await page.evaluate(async ({ before, strategy }) => {
               const element = document.querySelector('.cal-month-scroll');
               const start = performance.now();
               element.scrollTop = element.scrollHeight - element.clientHeight;
               await new Promise((accept, reject) => {
                 // This is a validity guard, not a performance budget. Allow
                 // slow stress samples to finish instead of censoring them.
-                const deadline = setTimeout(() => reject(Error('buffer did not grow')), 120_000);
+                const deadline = setTimeout(() => reject(Error('buffer did not advance')), 120_000);
                 function frame() {
-                  if (document.querySelectorAll('.cal-week-row').length > before) {
+                  const advanced = strategy === 'growth'
+                    ? document.querySelectorAll('.cal-week-row').length > before.rows
+                    : document.querySelector('.cal-cell')?.getAttribute('data-date-key') !== before.startDate;
+                  if (advanced) {
                     requestAnimationFrame(() => { clearTimeout(deadline); accept(); });
                   } else requestAnimationFrame(frame);
                 }
                 requestAnimationFrame(frame);
               });
               return performance.now() - start;
-            }, before);
+            }, { before, strategy });
             const count = await page.locator('.cal-week-row').count();
-            assert.equal(count, before + 12, 'sample must represent one growth step');
+            if (strategy === 'growth') {
+              assert.equal(count, before.rows + 12, 'sample must represent one growth step');
+            } else {
+              assert.equal(count, 53, 'bounded window must retain exactly 53 rows');
+              const start = await page.locator('.cal-cell').first().getAttribute('data-date-key');
+              assert.equal((Date.parse(`${start}T00:00:00Z`) - Date.parse(`${before.startDate}T00:00:00Z`)) / 86_400_000,
+                84, 'bounded sample must advance exactly 12 weeks');
+            }
             if (step === Math.ceil(steps / 2) || step === steps) {
-              points.push(await snapshot(page, cdp, `growth-${step}`, elapsed));
+              points.push(await snapshot(page, cdp, `${strategy === 'bounded' ? 'shift' : 'growth'}-${step}`, elapsed));
             }
           }
           assert.deepEqual(problems, [], 'browser must stay clean');
@@ -193,7 +207,13 @@ try {
     }
     expansion.push({ seriesCount, ...window, count, milliseconds });
   }
+  const sourceSha256 = Object.fromEntries(await Promise.all([
+    'src/screens/calendar/MonthView.tsx', 'src/screens/calendar/monthWindow.ts',
+    'src/screens/calendar/CalendarScreen.tsx', 'src/screens/calendar/calendar.css',
+    'src/domain/calendars.ts', 'src/domain/recurrence.ts', 'src/domain/eventTime.ts',
+  ].map(async (path) => [path, createHash('sha256').update(await readFile(path)).digest('hex')])));
   await writeFile(output, JSON.stringify({ baseline: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    strategy, sourceSha256,
     measuredAt: new Date().toISOString(), measurementInstant,
     node: process.version, nodeTimezone, platform: platform(), release: release(), cpu: cpus()[0]?.model,
     logicalCpus: cpus().length, memoryBytes: totalmem(), browser: `Chromium ${browserVersion}`,

@@ -554,8 +554,11 @@ function recurrenceCandidates(
     until: event.allDay ? parsed.options.until : null,
   };
   const rule = new RRule(options);
+  // No candidate predates DTSTART. This also keeps an internal look-behind
+  // for a long event at year 0100 from being parsed as year 0099 -> 1999.
+  const lookBehind = toDateKey(addDays(fromDateKey(window.startDate), -Math.max(0, spanDays)));
   const after = floatingDate(
-    toDateKey(addDays(fromDateKey(window.startDate), -Math.max(0, spanDays))),
+    lookBehind < startDate ? startDate : lookBehind,
     '00:00',
   );
   const before = floatingDate(toDateKey(addDays(fromDateKey(window.endDate), 1)), '00:00');
@@ -698,7 +701,7 @@ function floatingDate(date: string, time: string): Date {
 }
 
 function floatingDateKey(date: Date): string {
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+  return `${String(date.getUTCFullYear()).padStart(4, '0')}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
 function parseBasicUtcDateTime(value: string): Date {

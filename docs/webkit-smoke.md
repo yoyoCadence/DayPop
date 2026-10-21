@@ -1,5 +1,7 @@
 # WebKit smoke（DP-159）
 
+> **2026-10-21／DP-180 補充：** 完整 Chromium 增為 264 案例後在第 263 項通過後碰到 20 分鐘 job 上限；該 job 改為 25 分鐘，WebKit 仍為獨立 10 分鐘與四條 smoke。個別案例 deadline、完整矩陣及四項成功的部署閘門不變。證據見 [月曆視窗紀錄](month-window.md)；下文保留 DP-159 當時的設定。
+
 本項從 `52a9692` 的 main 接續，僅增加測試與 CI，不改產品、migration、user-data v4、App 0.4.3、公告或部署。Browser plugin not available，因此使用 repo 的 Playwright 1.62.1。範圍與取捨見 [ADR §7](architecture-decisions.md#7-工程治理)。
 
 ## 覆蓋與界線

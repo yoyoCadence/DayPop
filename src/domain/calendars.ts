@@ -119,14 +119,22 @@ export function visibleOccurrences(
 ): ResolvedEventOccurrence[] {
   const visible = visibleCalendarIds(data.calendars);
   const padded = {
-    startDate: toDateKey(addDays(fromDateKey(window.startDate), -ZONE_SPREAD_DAYS)),
-    endDate: toDateKey(addDays(fromDateKey(window.endDate), ZONE_SPREAD_DAYS)),
+    startDate: paddedDateKey(window.startDate, -ZONE_SPREAD_DAYS),
+    endDate: paddedDateKey(window.endDate, ZONE_SPREAD_DAYS),
   };
   return expandSafely(data, padded).filter(
     (resolved) =>
       visible.has(resolved.event.calendarId) &&
       overlapsDisplayWindow(resolved.event, window, displayTimezone),
   );
+}
+
+/** The timezone pad must stay in the domain's existing 0100–9999 years. */
+function paddedDateKey(key: string, days: number): string {
+  const date = addDays(fromDateKey(key), days);
+  if (date.getFullYear() < 100) return '0100-01-01';
+  if (date.getFullYear() > 9999) return '9999-12-31';
+  return toDateKey(date);
 }
 
 /** The occupied day range read in the zone the grid is actually drawn in. */
