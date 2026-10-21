@@ -816,6 +816,14 @@ DP-179 PR #173 合併為 `7824713` 後，以獨立分支實作已確認的 53 �
 
 先失敗、反向恢復三份產品基線後 12 項失敗，再還原通過；瀏覽器驗證雙向長捲、pixel／焦點、今天、搜尋、年份與旋轉。新增 bounded 量測模式要求固定 53 列並確實移動日期，保留歷史 growth guard；不拿跨輪數字計算效能百分比。完整結果、原稿渲染對照及限制見 [月曆視窗紀錄](month-window.md)。沒有新快取／持久化、Auth／RLS、repository contract、schema／migration、0.4.3／v4、公告或部署變更；RRule 的早期 DTSTART 迭代仍可能昂貴，真機驗收仍待後續。
 
+### 量測／提案（DP-181，2026-10-21）— 有界視窗的剩餘計算
+
+DP-180 PR #174 已合併為 `12280a8`，擁有者指定先做 profile，未授權本段更動產品演算法。固定 53 週、20 每日系列的兩份手機第 12 次移動 trace，scroll 約 3,561／2,982 ms，FunctionCall 約 3,368／2,882 ms；時區換算路徑最突出，RRule 與月格成對衝突檢查也可見。CPU nearest-source 是原生 leaf 的 JS ancestor 推論；inclusive 與 timeline 可包含彼此，不可相加，不能從跨輪或 Node 耗時相減推估 render。
+
+沿原工具加選用 profile 模式與 hidden temp maps；所有樣本要求固定 53 週、日期每次移 84 天、每窗完整 7,420 筆。CDP 累積時間與 samples 一起排序、只計相鄰區間，未取樣頭尾明列；分析器五項回歸及五種負控制、no-op guard 均驗證。方法／raw SHA／限制見 [剩餘 profile](month-bounded-profile.md)。本項無產品、資料欄位、v4／0.4.3、migration、公告或部署變更。
+
+**建議而未定案：** DP-182 先只在一次月格 grouping 共用既有 256 筆 reader，減少 segment 與開始標籤對同一 timezone／epoch milliseconds 的重複讀取；不跨次保留、不附在資料文件，來源／時區／撤權仍依既有重算。先寫呼叫量與輸出等價的失敗回歸，再 paired measurement；不改 RRule／clipping／衝突演算法／視窗或焦點。等待擁有者確認才開始，不能把本段的 profile 優先權視為演算法實作核准。
+
 ## 7. 工程治理
 
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行

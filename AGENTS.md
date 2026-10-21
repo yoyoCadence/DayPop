@@ -26,7 +26,9 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
-- **完整 Chromium CI 額度改為 25 分鐘（DP-180，2026-10-21）：** 新增月曆視窗後共 264 案例，`42fc9e1` 的 run `39615837756` 在第 263 項通過後、最後案例尚未完成時，被既有 20 分鐘 job 上限取消（runner annotation 明確回報 exceeded maximum execution time）。因此只將該 job 改為 25 分鐘；個別測試 deadline／retries／worker 數、四項 quality gate 與部署權限不變。**這輪取消不能算整套通過，必須等新 head 四項 CI 全過才合併**；其餘三項已成功。記錄見 `docs/month-window.md`。
+- **有界月曆剩餘成本 profile（DP-181，2026-10-21）：** 從 DP-180 PR #174 合併的 `12280a8`（最新四項 CI 全過）接續，只改量測／分析器與文件，沒有產品改動。`measure:month-scroll -- --profile=mobile-last` 沿固定 53 週／20 每日系列，兩個手機 context 的第 12 次移動收 CPU／timeline；全部 8 組／24 點維持 53 週、每窗 7,420 筆。兩份 trace 的 scroll 3,561／2,982 ms，主要跟著長 JS 呼叫；nearest-source 時區路徑約 1,764／1,696 ms，rrule 與成對衝突檢查亦可見。**nearest-source 是原生 leaf 的 JS ancestor 推論，inclusive／timeline 類別不得相加，也不與跨輪／Node 耗時相減。** CDP 亂序先回歸再修正、五種負控制均失敗後還原，新模式 no-op 亦拒絕；lint／typecheck、1,340 單元＋17 Node、build／check:build、相關 e2e 16 passed／2 desktop skipped。raw／來源 SHA、方法與限制見 `docs/month-bounded-profile.md`。建議 DP-182 只重用一次月格 grouping 中 segment／標籤的相同時區欄位，**仍待擁有者確認，尚未實作**。仍 0.4.3／v4／18 migrations，無公告／部署／遠端操作。
+
+- **完整 Chromium CI 額度改為 25 分鐘（DP-180，2026-10-21）：** 新增月曆視窗後共 264 案例，`42fc9e1` 的 run `39615837756` 在第 263 項通過後、最後案例尚未完成時，被既有 20 分鐘 job 上限取消（runner annotation 明確回報 exceeded maximum execution time）。因此只將該 job 改為 25 分鐘；個別測試 deadline／retries／worker 數、四項 quality gate 與部署權限不變。取消那輪不算通過；最終 `95ea150` 的 run `39619419252` 四項全過（Chromium 251 passed／13 skipped），PR #174 才依授權合併為 `12280a8`。記錄見 `docs/month-window.md`。
 
 - **月曆搜尋導航審查補正（DP-180／PR #174，2026-10-21）：** 搜尋遠日期 → 今天 → 月／週／月原本會重播舊搜尋日，且週 cursor 沒更新；今天現在同步更新 cursor，MonthView 重掛採目前 cursor，不再重播原始 focus prop。兩項整合回歸先失敗、修正通過、反向兩項失敗並還原；完整 1,340 單元＋12 Node、NY 實際時區 202 項、lint／typecheck／build／check:build 通過。下方兩輪負載數字是審查前 `1dfec97`，來源 SHA 原樣保留；不冒充新 head 耗時，詳見視窗紀錄。
 
