@@ -76,6 +76,11 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-179 — 月曆展開計算重用：** 已由 Backlog 排入 Next，等 DP-178 規劃 PR 合併後接續。單次計算內有界重用相同參數，先測呼叫量與輸出等價，保住 DST／COUNT／UNTIL／例外／分享可見性；不改 buffer／焦點、schema、版本或部署。
+- [ ] **DP-180 — 53 週月曆滑動視窗：** 已由 Backlog 排入 Next，等 DP-179 合併後接續。每次 12 週、計算與 DOM 同時有界；裁掉焦點時轉至可見日期，保留選取與捲動。完整契約與回歸清單見 [DP-178 計畫](docs/month-performance-plan.md)。
+
+> **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
+
 > **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
 
 > **2026-10-20 接續 DP-160：** DP-159 PR #169 已合併為 `9229a80`（四項 CI 全過；WebKit 4 passed、Chromium 245 passed／13 skipped）。依持續開發授權接 Backlog 的量測項目，只建立可重跑的固定假資料量測與結果文件；不直接改 buffer、virtualization、domain／repository 或版號／部署。
@@ -231,6 +236,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -244,6 +250,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
 
 
 
@@ -331,7 +338,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-13 審查登記（DP-158–DP-162）**：以下五項來自 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。它們都不是已確認的故障，是測試與量測上的缺口。
 
 - [x] **DP-158 — 已完成（2026-10-14），見 Done。** 測出的啟動問題另立為 DP-176。
-- [ ] **DP-178 — 月曆重負載的 profile 與有界視窗規劃（DP-160 量測後續，先 Mode A）：** 固定 20 個每日系列由 53 增至 197 週時，獨立 Node 展開中位數 2.81 → 14.98 秒，browser 增長取樣達秒級，見 [數據與限制](docs/month-scroll-measurement.md)。先 profile 釐清展開／日期轉換／繪製，規劃計算重用與有界的展開／DOM 視窗；初始成本仍需處理，不能只加 DOM virtualization 就宣稱修好。實作前定案 buffer 上限與移出視窗時的焦點政策，保住 DP-069 roving tabindex／跨邊界鍵盤／捲動補償、今天／搜尋定位及 DP-064 跨午夜／長事件／例外。這是新工作，不併入 DP-160 的量測 PR，也不代表已在真機確認效能。
 - [x] **DP-162 — axe smoke 已完成（2026-10-16），見 Done；截圖基線仍延後。** 原條目：評估自動化可及性與視覺基線： 目前沒有 coverage gate、axe gate 或截圖比對。**建議**：先加 axe smoke（四個分頁與主要 sheet），截圖基線延後。六套主題 × 淺／深 × 各檢視的成本高，字型繪製也容易造成不穩定的差異。axe 抓不到焦點逃逸，不能取代 DP-154 的 e2e。
 - [x] **DP-176 — 已完成（2026-10-15），見 Done。**
 
@@ -396,6 +402,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-178 — 月曆 profile 與滑動視窗定案（2026-10-21）：** Backlog → Next → In Progress → Done。擁有者在 Mode A 採納 53 週／每次 12 週、裁掉離屏焦點時轉至可見日期、保留選取與捲動。基線 `7850c87` 單一手機 trace 的最後增長約 5.9 秒，FunctionCall 約 5.85 秒、Layout 13 ms、Paint 累計 16 ms；category 可巢狀，不加總或外推真機，亦不以不同輪數字宣稱改善。更新 ADR §6、AGENTS §0.1、[計畫](docs/month-performance-plan.md) 與附 SHA-256 的 profile 摘要；產品尚未修改，無可反向撤除的修正，不新增鏡像文字的測試。lint／typecheck、1,312 單元＋12 Node、build／check:build、相關 e2e 9 passed／3 skipped（實際時區列印）全過；最新 PR 四項 CI 通過才合併。DP-179 計算重用 → DP-180 滑動視窗已由 Backlog 排入 Next，各自先失敗／反向驗證、開 PR／合併；仍 0.4.3／v4／18 migrations，無公告／部署／Supabase 操作。
 
 - [x] **DP-161 — 重模組載入評估（2026-10-21）：** Backlog → Next → In Progress → Done，基線 `498e42a`。新增 `measure:module-loading`、原始 JSON 與 [評估文件](docs/module-loading-measurement.md)，量最終 production output／逐檔 gzip、模組歸因與靜態路徑；entry 732,451 raw／214,841 gzip bytes，含 worker 總 JS 734,304／215,605、CSS 111,244／27,088，與空 Supabase 設定的正式 build／budget check 一致。只有一個 entry；設定 lazy 不會移除 repository／備份對 ICS 的 eager 引用，recurrence／rrule 是首屏所需，暫不拆分、先接 DP-178。worker 只按請求快取 assets，將來 lazy chunk 需決定離線首次使用與錯誤／預暖策略。五項工具回歸先失敗，反向移除路徑結果四失敗，恢復五通過；lint／typecheck／1,312 單元＋12 Node／build／check:build／相關 e2e 10 passed（實際時區列印）全過。無產品／schema／migration／版本／公告／部署變更，不宣稱真機首屏已驗收；最新 PR CI 通過才合併。
 
