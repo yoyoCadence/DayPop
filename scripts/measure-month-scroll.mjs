@@ -7,29 +7,39 @@ import { cpus, platform, release, tmpdir, totalmem } from 'node:os';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
+import { SourceMap } from 'node:module';
 import { chromium } from 'playwright';
 import { build } from 'vite';
+import { summarizeCpu, summarizeTimeline } from './month-profile.mjs';
 
 // Manual measurement, deliberately outside CI timing gates. Never reads a real
 // account, starts a network server, or changes the product's buffer strategy.
 const options = Object.fromEntries(process.argv.slice(2).map((arg) => {
-  const match = /^--(steps|runs|output|strategy)=(.+)$/.exec(arg);
+  const match = /^--(steps|runs|output|strategy|profile)=(.+)$/.exec(arg);
   if (!match) throw Error(`Unknown argument: ${arg}`);
   return [match[1], match[2]];
 }));
 const steps = Number(options.steps ?? 12);
 const runs = Number(options.runs ?? 2);
 const strategy = options.strategy ?? 'bounded';
+const profiling = options.profile === 'mobile-last';
+assert(!options.profile || profiling, 'profile must be mobile-last');
 assert(['growth', 'bounded'].includes(strategy), 'strategy must be growth or bounded');
 assert(Number.isInteger(steps) && steps >= 1 && steps <= 24, 'steps must be 1–24');
 assert(Number.isInteger(runs) && runs >= 1 && runs <= 3, 'runs must be 1–3');
+assert(!profiling || (strategy === 'bounded' && steps === 12), 'profile requires bounded / 12 steps');
 const output = resolve(options.output ?? join(tmpdir(), 'daypop-month-scroll.json'));
 await mkdir(dirname(output), { recursive: true });
 const directory = await mkdtemp(join(tmpdir(), 'daypop-month-scroll-'));
+// Keep raw profiles/maps outside the repo and outside the disposable build.
+const profileDirectory = profiling ? await mkdtemp(join(tmpdir(), 'daypop-month-profile-')) : null;
 let browser;
 let browserVersion;
 const files = new Map();
 const samples = [];
+const profiles = [];
+const sourceMaps = new Map();
+const profileAssets = [];
 const origin = 'http://daypop-benchmark.test';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json',
@@ -65,6 +75,30 @@ async function snapshot(page, cdp, label, scrollMs = null) {
   return { label, ...dom, scrollMs, jsHeapBytesAfterGc: heap.usedSize, cdpNodes: counters.nodes };
 }
 
+async function finishProfile(cdp, run) {
+  const { profile } = await cdp.send('Profiler.stop');
+  const complete = new Promise((accept) => cdp.once('Tracing.tracingComplete', accept));
+  await cdp.send('Tracing.end');
+  const { stream } = await complete;
+  const chunks = [];
+  try {
+    while (true) {
+      const part = await cdp.send('IO.read', { handle: stream });
+      chunks.push(Buffer.from(part.data, part.base64Encoded ? 'base64' : 'utf8'));
+      if (part.eof) break;
+    }
+  } finally { await cdp.send('IO.close', { handle: stream }); }
+  const traceBytes = Buffer.concat(chunks);
+  const cpuBytes = Buffer.from(JSON.stringify(profile));
+  const artifacts = [];
+  for (const [name, bytes] of [[`run-${run}.cpuprofile`, cpuBytes], [`run-${run}.trace.json`, traceBytes]]) {
+    await writeFile(join(profileDirectory, name), bytes);
+    artifacts.push({ name, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
+  }
+  return { artifacts, cpu: summarizeCpu(profile, sourceMaps),
+    timeline: summarizeTimeline(JSON.parse(traceBytes.toString('utf8'))) };
+}
+
 try {
   process.env.VITE_SUPABASE_URL = '';
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY = '';
@@ -82,12 +116,24 @@ try {
   await build({ logLevel: 'error', base: '/', define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(''),
     'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(''),
-  }, build: { outDir: appDirectory, emptyOutDir: false } });
+  }, build: { outDir: appDirectory, emptyOutDir: false, sourcemap: profiling ? 'hidden' : false } });
   await readTree(appDirectory);
+  if (profiling) {
+    for (const [path, bytes] of files) if (path.endsWith('.js.map')) {
+      sourceMaps.set(`${origin}${path.slice(0, -4)}`, new SourceMap(JSON.parse(bytes.toString('utf8'))));
+      const target = join(profileDirectory, path.slice(1));
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, bytes);
+      profileAssets.push({ name: path.slice(1), bytes: bytes.length,
+        sha256: createHash('sha256').update(bytes).digest('hex') });
+    }
+    assert(sourceMaps.size > 0, 'missing external source maps');
+    console.log(`Raw profile directory: ${profileDirectory}`);
+  }
   browser = await chromium.launch();
   browserVersion = browser.version();
   const nodeTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  console.log(JSON.stringify({ nodeTimezone, browserVersion, steps, runs, strategy }));
+  console.log(JSON.stringify({ nodeTimezone, browserVersion, steps, runs, strategy, profiling }));
   const environments = [];
   for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     for (const seriesCount of [0, 20]) {
@@ -148,6 +194,14 @@ try {
           for (let step = 1; step <= steps; step += 1) {
             const before = { rows: await page.locator('.cal-week-row').count(),
               startDate: await page.locator('.cal-cell').first().getAttribute('data-date-key') };
+            const capture = profiling && viewport.width === 390 && seriesCount === 20 && step === steps;
+            if (capture) {
+              await cdp.send('Profiler.enable');
+              await cdp.send('Profiler.setSamplingInterval', { interval: 1000 });
+              await cdp.send('Profiler.start');
+              await cdp.send('Tracing.start', { categories: 'devtools.timeline,v8,blink.user_timing',
+                transferMode: 'ReturnAsStream' });
+            }
             const elapsed = await page.evaluate(async ({ before, strategy }) => {
               const element = document.querySelector('.cal-month-scroll');
               const start = performance.now();
@@ -168,6 +222,7 @@ try {
               });
               return performance.now() - start;
             }, { before, strategy });
+            const captured = capture ? await finishProfile(cdp, run) : null;
             const count = await page.locator('.cal-week-row').count();
             if (strategy === 'growth') {
               assert.equal(count, before.rows + 12, 'sample must represent one growth step');
@@ -180,6 +235,8 @@ try {
             if (step === Math.ceil(steps / 2) || step === steps) {
               points.push(await snapshot(page, cdp, `${strategy === 'bounded' ? 'shift' : 'growth'}-${step}`, elapsed));
             }
+            if (captured) profiles.push({ viewport, seriesCount, run, step, before,
+              after: points.at(-1), ...captured });
           }
           assert.deepEqual(problems, [], 'browser must stay clean');
           samples.push({ viewport, seriesCount, run, points });
@@ -211,13 +268,19 @@ try {
     'src/screens/calendar/MonthView.tsx', 'src/screens/calendar/monthWindow.ts',
     'src/screens/calendar/CalendarScreen.tsx', 'src/screens/calendar/calendar.css',
     'src/domain/calendars.ts', 'src/domain/recurrence.ts', 'src/domain/eventTime.ts',
+    'src/domain/displaySegments.ts', 'e2e/fixtures/monthScroll.ts',
+    'scripts/measure-month-scroll.mjs', 'scripts/month-profile.mjs',
   ].map(async (path) => [path, createHash('sha256').update(await readFile(path)).digest('hex')])));
+  if (profiling) assert.equal(profiles.length, runs, 'missing mobile profiles');
   await writeFile(output, JSON.stringify({ baseline: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     strategy, sourceSha256,
     measuredAt: new Date().toISOString(), measurementInstant,
     node: process.version, nodeTimezone, platform: platform(), release: release(), cpu: cpus()[0]?.model,
     logicalCpus: cpus().length, memoryBytes: totalmem(), browser: `Chromium ${browserVersion}`,
-    steps, runs, environments, samples, expansion }, null, 2));
+    steps, runs, environments, samples, expansion,
+    ...(profiling ? { profiling: { mode: options.profile, samplingIntervalUs: 1000,
+      rawDirectoryName: basename(profileDirectory), assets: profileAssets, profiles } } : {}),
+  }, null, 2));
   console.log(`Measurement written to ${output}`);
 } finally {
   if (browser) await browser.close();

@@ -1,0 +1,1147 @@
+{
+  "baseline": "12280a82c3d7299477e6d0f2b2f0d4bee666d2e8",
+  "strategy": "bounded",
+  "sourceSha256": {
+    "src/screens/calendar/MonthView.tsx": "67e7d2cae4ddd52073f8f97310daf86b807e823ceb298b23a759ae6b740a8a34",
+    "src/screens/calendar/monthWindow.ts": "2ca1e1a1fdcba2f789642d0e0a051af4964e52fa60d26151174a27f7d9a7196b",
+    "src/screens/calendar/CalendarScreen.tsx": "9244b54180829576e3503c2c3086442aec062f420827c03fcc9cf41a13f16f24",
+    "src/screens/calendar/calendar.css": "679e68bdd65314f07eac9aef0a39c5fcb0bd8e5cf5e0e1ed140f06e6cace1de9",
+    "src/domain/calendars.ts": "4bf02856d781f94fd4e37c99c7da1f3ac9b339f42aba102b8168e561fe56ea76",
+    "src/domain/recurrence.ts": "f79537052ec94bc160f5bbcbbfdb88e42cd4bc04a3baa01f6cd0e4f482282219",
+    "src/domain/eventTime.ts": "2c0a22eb18503e7ea2d19192bbe57449eccfaa74e9cfafbe76b954238b6ab6f2",
+    "src/domain/displaySegments.ts": "a5699b3b0629a552713ef09fba111c3a02562d8099bce722cf0326e992d4c9a9",
+    "e2e/fixtures/monthScroll.ts": "e80a7210285c06368af5515856dbc4a3d1f575f8830c8afba8c5abf8284fde6a",
+    "scripts/measure-month-scroll.mjs": "7ecbd78c0a57f46927fc2050e22c677ac28a98f3c4160247f3f50602414978d2",
+    "scripts/month-profile.mjs": "fc531eda513c4405bbf6160268a24ac19d6fb0cd07d7b250d7f19df27d6d99ba"
+  },
+  "measuredAt": "2026-10-21T15:20:03.006Z",
+  "measurementInstant": "2026-10-20T04:00:00.000Z",
+  "node": "v24.19.0",
+  "nodeTimezone": "Etc/GMT-8",
+  "platform": "win32",
+  "release": "10.0.26300",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "logicalCpus": 16,
+  "memoryBytes": 16868962304,
+  "browser": "Chromium 151.0.7922.34",
+  "steps": 12,
+  "runs": 2,
+  "environments": [
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    },
+    {
+      "timezone": "Asia/Taipei",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "nativePerformance": true,
+      "nativeRaf": true
+    }
+  ],
+  "samples": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 0,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3769244,
+          "cdpNodes": 2056
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 32.09999996423721,
+          "jsHeapBytesAfterGc": 4136056,
+          "cdpNodes": 2061
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 26,
+          "jsHeapBytesAfterGc": 4220268,
+          "cdpNodes": 2061
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 0,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3793912,
+          "cdpNodes": 2056
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 33.39999997615814,
+          "jsHeapBytesAfterGc": 4152640,
+          "cdpNodes": 2061
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 34.10000002384186,
+          "jsHeapBytesAfterGc": 4231344,
+          "cdpNodes": 2061
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 20,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 8217180,
+          "cdpNodes": 5395
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 3401,
+          "jsHeapBytesAfterGc": 11257744,
+          "cdpNodes": 5400
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 3561,
+          "jsHeapBytesAfterGc": 11397144,
+          "cdpNodes": 5400
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "seriesCount": 20,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 8219580,
+          "cdpNodes": 5395
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 3594.800000011921,
+          "jsHeapBytesAfterGc": 11255352,
+          "cdpNodes": 5400
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 2981.5,
+          "jsHeapBytesAfterGc": 11377940,
+          "cdpNodes": 5400
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 0,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3764172,
+          "cdpNodes": 2057
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 37.299999952316284,
+          "jsHeapBytesAfterGc": 4119620,
+          "cdpNodes": 2062
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 35,
+          "jsHeapBytesAfterGc": 4203084,
+          "cdpNodes": 2062
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 0,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 3764192,
+          "cdpNodes": 2057
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 21.30000001192093,
+          "jsHeapBytesAfterGc": 4116392,
+          "cdpNodes": 2062
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 1258,
+          "chips": 0,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 25.900000035762787,
+          "jsHeapBytesAfterGc": 4198960,
+          "cdpNodes": 2062
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 20,
+      "run": 1,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 7917184,
+          "cdpNodes": 4654
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 1003,
+          "jsHeapBytesAfterGc": 10939328,
+          "cdpNodes": 4659
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 2989.099999964237,
+          "jsHeapBytesAfterGc": 11013940,
+          "cdpNodes": 4659
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "seriesCount": 20,
+      "run": 2,
+      "points": [
+        {
+          "label": "initial",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2026-04-19",
+          "endDate": "2027-04-24",
+          "tabStops": 1,
+          "scrollMs": null,
+          "jsHeapBytesAfterGc": 7917576,
+          "cdpNodes": 4654
+        },
+        {
+          "label": "shift-6",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2027-09-05",
+          "endDate": "2028-09-09",
+          "tabStops": 1,
+          "scrollMs": 1954.1000000238419,
+          "jsHeapBytesAfterGc": 10958872,
+          "cdpNodes": 4659
+        },
+        {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2371,
+          "chips": 742,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 2842.400000035763,
+          "jsHeapBytesAfterGc": 11025732,
+          "cdpNodes": 4659
+        }
+      ]
+    }
+  ],
+  "expansion": [
+    {
+      "seriesCount": 0,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 0,
+      "milliseconds": [
+        0.2076999999990221,
+        0.09269999999378342,
+        0.06650000000081491
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2027-09-05",
+      "endDate": "2028-09-09",
+      "count": 0,
+      "milliseconds": [
+        0.08620000000519212,
+        0.05709999999089632,
+        0.050900000002002344
+      ]
+    },
+    {
+      "seriesCount": 0,
+      "startDate": "2029-01-21",
+      "endDate": "2030-01-26",
+      "count": 0,
+      "milliseconds": [
+        0.10669999998935964,
+        0.04379999999946449,
+        0.02950000000419095
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "count": 7420,
+      "milliseconds": [
+        2605.7885000000097,
+        2902.989699999991,
+        3153.541799999992
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2027-09-05",
+      "endDate": "2028-09-09",
+      "count": 7420,
+      "milliseconds": [
+        3211.227199999994,
+        2260.152699999977,
+        3088.9755000000005
+      ]
+    },
+    {
+      "seriesCount": 20,
+      "startDate": "2029-01-21",
+      "endDate": "2030-01-26",
+      "count": 7420,
+      "milliseconds": [
+        3065.8389000000025,
+        2278.356999999989,
+        2092.491100000014
+      ]
+    }
+  ],
+  "profiling": {
+    "mode": "mobile-last",
+    "samplingIntervalUs": 1000,
+    "rawDirectoryName": "daypop-month-profile-5TF3aJ",
+    "assets": [
+      {
+        "name": "assets/index-C4t45cim.js.map",
+        "bytes": 3326329,
+        "sha256": "18ef14fee307fdbdc937847a25b529d295639307faa52e15eb0e043c70c4e7f5"
+      }
+    ],
+    "profiles": [
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "seriesCount": 20,
+        "run": 1,
+        "step": 12,
+        "before": {
+          "rows": 53,
+          "startDate": "2028-10-29"
+        },
+        "after": {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 3561,
+          "jsHeapBytesAfterGc": 11397144,
+          "cdpNodes": 5400
+        },
+        "artifacts": [
+          {
+            "name": "run-1.cpuprofile",
+            "bytes": 55401,
+            "sha256": "64252b685b1d688fbba068d27b3452d5a8fba643e771a841a6e7db4cf8b3aae9"
+          },
+          {
+            "name": "run-1.trace.json",
+            "bytes": 389941,
+            "sha256": "9b208bde7cb6e76f6076ed64d3e4636175d4db7b5bd77c74cde00496f678ceb8"
+          }
+        ],
+        "cpu": {
+          "durationMs": 4277.965,
+          "samples": 1560,
+          "sampledMs": 3827.684,
+          "unsampledBeforeMs": 448.615,
+          "unsampledAfterMs": 1.666,
+          "negativeDeltas": 0,
+          "self": [
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 917.454 },
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 770.07 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 411.791 },
+            { "location": "(idle)", "milliseconds": 244.832 },
+            { "location": "construct", "milliseconds": 217.603 },
+            { "location": "(program)", "milliseconds": 217.526 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 191.164 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 146.963 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 90.938 },
+            { "location": "get clientHeight", "milliseconds": 77.678 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 68.229 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 60.969 },
+            { "location": "(garbage collector)", "milliseconds": 49.859 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 48.216 },
+            { "location": "get", "milliseconds": 42.196 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 40.814 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 30.264 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 17.73 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 16.386 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 13.851 },
+            { "location": "appendChild", "milliseconds": 11.885 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 11.567 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 9.799 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13346", "milliseconds": 9.243 },
+            { "location": "src/domain/lunar.ts:99", "milliseconds": 8.643 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 8.163 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 8.074 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 6.901 },
+            { "location": "removeChild", "milliseconds": 6.8 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 6.649 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7955", "milliseconds": 5.919 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 4.831 },
+            { "location": "node_modules/rrule/dist/esm/parseoptions.js:25", "milliseconds": 4.705 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 4.226 },
+            { "location": "src/screens/calendar/MonthView.tsx:471", "milliseconds": 4.185 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 3.929 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9427", "milliseconds": 3.895 },
+            { "location": "src/screens/calendar/MonthView.tsx:423", "milliseconds": 3.412 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 3.254 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2452", "milliseconds": 3.072 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3793", "milliseconds": 2.809 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:96", "milliseconds": 2.769 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 2.096 },
+            { "location": "createElement", "milliseconds": 2.06 },
+            { "location": "src/domain/lunar.ts:91", "milliseconds": 1.988 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 1.959 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 1.954 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2521", "milliseconds": 1.877 },
+            { "location": "node_modules/react/cjs/react-jsx-runtime.production.js:14", "milliseconds": 1.764 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 1.691 },
+            { "location": "node_modules/scheduler/cjs/scheduler.production.js:114", "milliseconds": 1.622 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1615", "milliseconds": 0.786 },
+            { "location": "queueMicrotask", "milliseconds": 0.624 }
+          ],
+          "nearestSource": [
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 947.874 },
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 770.07 },
+            { "location": "(unmapped)", "milliseconds": 512.217 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 435.16 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 212.776 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 164.931 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 132.008 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 106.735 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 90.144 },
+            { "location": "src/screens/calendar/MonthView.tsx:217", "milliseconds": 77.678 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 61.462 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 40.814 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 34.569 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 30.264 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 27.737 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 17.73 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7955", "milliseconds": 17.729 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 16.386 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 13.851 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 11.567 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13346", "milliseconds": 9.243 },
+            { "location": "src/domain/lunar.ts:99", "milliseconds": 8.643 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 8.163 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 6.901 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9159", "milliseconds": 6.8 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 6.649 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 4.831 },
+            { "location": "node_modules/rrule/dist/esm/parseoptions.js:25", "milliseconds": 4.705 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 4.226 },
+            { "location": "src/screens/calendar/MonthView.tsx:471", "milliseconds": 4.185 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 3.929 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9427", "milliseconds": 3.895 },
+            { "location": "src/screens/calendar/MonthView.tsx:423", "milliseconds": 3.412 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 3.254 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2452", "milliseconds": 3.072 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3793", "milliseconds": 2.809 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:96", "milliseconds": 2.769 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:8802", "milliseconds": 2.135 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 2.096 },
+            { "location": "src/domain/lunar.ts:91", "milliseconds": 1.988 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 1.959 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 1.954 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2521", "milliseconds": 1.877 },
+            { "location": "node_modules/react/cjs/react-jsx-runtime.production.js:14", "milliseconds": 1.764 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 1.691 },
+            { "location": "node_modules/scheduler/cjs/scheduler.production.js:114", "milliseconds": 1.622 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1615", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12088", "milliseconds": 0.624 }
+          ],
+          "inclusive": [
+            { "location": "node_modules/scheduler/cjs/scheduler.production.js:121", "milliseconds": 3314.681 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10681", "milliseconds": 3313.059 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12065", "milliseconds": 3313.059 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11120", "milliseconds": 3212.476 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11181", "milliseconds": 3212.476 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11304", "milliseconds": 3212.476 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 3173.392 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:4333", "milliseconds": 3160.803 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:6489", "milliseconds": 3160.803 },
+            { "location": "src/screens/calendar/MonthView.tsx:88", "milliseconds": 3160.803 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:5162", "milliseconds": 3149.483 },
+            { "location": "node_modules/react/cjs/react.production.js:513", "milliseconds": 3149.483 },
+            { "location": "src/domain/calendars.ts:115", "milliseconds": 1897.682 },
+            { "location": "src/screens/calendar/CalendarScreen.tsx:102", "milliseconds": 1897.682 },
+            { "location": "src/screens/calendar/MonthView.tsx:129", "milliseconds": 1897.682 },
+            { "location": "src/domain/calendars.ts:175", "milliseconds": 1683.937 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 1680.683 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 1580.266 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 1042.281 },
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 947.874 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 785.695 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 777.532 },
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 770.07 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 560.383 },
+            { "location": "src/domain/recurrence.ts:535", "milliseconds": 524.134 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 519.429 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:110", "milliseconds": 519.429 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:72", "milliseconds": 519.429 },
+            { "location": "src/screens/calendar/MonthView.tsx:381", "milliseconds": 466.106 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 466.106 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 462.177 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 435.16 },
+            { "location": "src/domain/calendars.ts:126", "milliseconds": 213.745 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 213.745 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 164.931 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 106.735 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10848", "milliseconds": 100.583 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11457", "milliseconds": 100.583 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11646", "milliseconds": 77.678 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:8571", "milliseconds": 77.678 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9008", "milliseconds": 77.678 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9901", "milliseconds": 77.678 },
+            { "location": "src/screens/calendar/MonthView.tsx:213", "milliseconds": 77.678 },
+            { "location": "src/screens/calendar/MonthView.tsx:217", "milliseconds": 77.678 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 41.873 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 40.814 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 39.084 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7955", "milliseconds": 37.393 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 30.264 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11524", "milliseconds": 22.281 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9384", "milliseconds": 22.281 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9427", "milliseconds": 22.281 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13346", "milliseconds": 19.664 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12957", "milliseconds": 15.646 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 13.55 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 11.567 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 11.32 },
+            { "location": "src/domain/lunar.ts:146", "milliseconds": 10.631 },
+            { "location": "src/domain/lunar.ts:99", "milliseconds": 10.631 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 9.451 },
+            { "location": "src/screens/calendar/MonthView.tsx:423", "milliseconds": 9.361 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3793", "milliseconds": 7.758 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9159", "milliseconds": 6.8 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 6.649 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3622", "milliseconds": 4.949 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:6115", "milliseconds": 4.949 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 4.723 },
+            { "location": "node_modules/rrule/dist/esm/parseoptions.js:25", "milliseconds": 4.705 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:53", "milliseconds": 4.705 },
+            { "location": "src/screens/calendar/MonthView.tsx:471", "milliseconds": 4.185 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 3.254 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2452", "milliseconds": 3.072 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:6476", "milliseconds": 2.809 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:96", "milliseconds": 2.769 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:8802", "milliseconds": 2.135 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 2.096 },
+            { "location": "src/domain/lunar.ts:91", "milliseconds": 1.988 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:2521", "milliseconds": 1.877 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3433", "milliseconds": 1.877 },
+            { "location": "node_modules/react/cjs/react-jsx-runtime.production.js:14", "milliseconds": 1.764 },
+            { "location": "node_modules/scheduler/cjs/scheduler.production.js:114", "milliseconds": 1.622 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12408", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12455", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1494", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15280", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15297", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1615", "milliseconds": 0.786 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11670", "milliseconds": 0.624 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11908", "milliseconds": 0.624 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12088", "milliseconds": 0.624 }
+          ],
+          "eventTimeCallers": [
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 952.137 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 428.375 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 186.008 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 155.687 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 41.873 }
+          ]
+        },
+        "timeline": {
+          "events": [
+            {
+              "name": "FunctionCall",
+              "count": 14,
+              "milliseconds": 3368.085,
+              "longestMs": 3362.646
+            },
+            {
+              "name": "Paint",
+              "count": 374,
+              "milliseconds": 211.229,
+              "longestMs": 108.307
+            },
+            {
+              "name": "Layout",
+              "count": 1,
+              "milliseconds": 62.116,
+              "longestMs": 62.116
+            },
+            {
+              "name": "MinorGC",
+              "count": 12,
+              "milliseconds": 36.153,
+              "longestMs": 8.455
+            },
+            {
+              "name": "UpdateLayoutTree",
+              "count": 1,
+              "milliseconds": 15.782,
+              "longestMs": 15.782
+            }
+          ]
+        }
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "seriesCount": 20,
+        "run": 2,
+        "step": 12,
+        "before": {
+          "rows": 53,
+          "startDate": "2028-10-29"
+        },
+        "after": {
+          "label": "shift-12",
+          "rows": 53,
+          "cells": 371,
+          "elements": 2742,
+          "chips": 1113,
+          "startDate": "2029-01-21",
+          "endDate": "2030-01-26",
+          "tabStops": 1,
+          "scrollMs": 2981.5,
+          "jsHeapBytesAfterGc": 11377940,
+          "cdpNodes": 5400
+        },
+        "artifacts": [
+          {
+            "name": "run-2.cpuprofile",
+            "bytes": 63374,
+            "sha256": "93f596475580d9881ed7edf4e80d0a5e3c60b2c93f9fe191ccec03d44af1cec9"
+          },
+          {
+            "name": "run-2.trace.json",
+            "bytes": 256723,
+            "sha256": "a05cd6e9fbc2aba6681c4fbd9531ec5bdabc6a5cc3224086550e6228a6c20284"
+          }
+        ],
+        "cpu": {
+          "durationMs": 3125.792,
+          "samples": 1291,
+          "sampledMs": 3017.047,
+          "unsampledBeforeMs": 106.969,
+          "unsampledAfterMs": 1.776,
+          "negativeDeltas": 0,
+          "self": [
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 800.74 },
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 764.634 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 317.664 },
+            { "location": "construct", "milliseconds": 195.992 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 157.92 },
+            { "location": "(program)", "milliseconds": 128.236 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 103.837 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 74.795 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 60.163 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 59.333 },
+            { "location": "(garbage collector)", "milliseconds": 57.051 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 44.397 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 37.148 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 22.938 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 20.647 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 17.293 },
+            { "location": "get", "milliseconds": 15.516 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 14.734 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 14.19 },
+            { "location": "get clientHeight", "milliseconds": 12.005 },
+            { "location": "(idle)", "milliseconds": 7.547 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 7.507 },
+            { "location": "src/domain/lunar.ts:146", "milliseconds": 6.949 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 5.895 },
+            { "location": "src/domain/recurrence.ts:290", "milliseconds": 5.021 },
+            { "location": "src/screens/calendar/MonthView.tsx:592", "milliseconds": 4.88 },
+            { "location": "src/domain/calendars.ts:115", "milliseconds": 4.456 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 4.121 },
+            { "location": "setAttribute", "milliseconds": 3.973 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 3.58 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:47", "milliseconds": 3.568 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 3.106 },
+            { "location": "src/domain/calendars.ts:126", "milliseconds": 2.806 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3551", "milliseconds": 2.504 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 2.4 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:120", "milliseconds": 2.244 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 2.198 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 2.178 },
+            { "location": "src/domain/recurrence.ts:535", "milliseconds": 2.133 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 1.994 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 1.96 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13997", "milliseconds": 1.883 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:72", "milliseconds": 1.871 },
+            { "location": "removeAttribute", "milliseconds": 1.87 },
+            { "location": "removeChild", "milliseconds": 1.846 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9129", "milliseconds": 1.771 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 1.736 },
+            { "location": "src/theme/calendarTextColor.ts:8", "milliseconds": 1.561 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 1.437 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 1.378 },
+            { "location": "src/domain/calendars.ts:175", "milliseconds": 1.299 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15387", "milliseconds": 0.142 }
+          ],
+          "nearestSource": [
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 801.498 },
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 800.74 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 324.939 },
+            { "location": "(unmapped)", "milliseconds": 192.834 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 173.927 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 105.911 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 105.844 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 90.381 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 90.085 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 56.721 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 44.397 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 37.148 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 34.533 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 20.647 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 17.293 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 14.734 },
+            { "location": "src/screens/calendar/MonthView.tsx:217", "milliseconds": 12.005 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 7.507 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 7.249 },
+            { "location": "src/domain/lunar.ts:146", "milliseconds": 6.949 },
+            { "location": "src/domain/recurrence.ts:290", "milliseconds": 5.021 },
+            { "location": "src/screens/calendar/MonthView.tsx:592", "milliseconds": 4.88 },
+            { "location": "src/domain/calendars.ts:115", "milliseconds": 4.456 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 4.121 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:950", "milliseconds": 3.973 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 3.58 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:47", "milliseconds": 3.568 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 3.106 },
+            { "location": "src/domain/calendars.ts:126", "milliseconds": 2.806 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3551", "milliseconds": 2.504 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 2.4 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:120", "milliseconds": 2.244 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 2.198 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 2.178 },
+            { "location": "src/domain/recurrence.ts:535", "milliseconds": 2.133 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 1.994 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 1.96 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13997", "milliseconds": 1.883 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:72", "milliseconds": 1.871 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12957", "milliseconds": 1.87 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9159", "milliseconds": 1.846 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:96", "milliseconds": 1.789 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9129", "milliseconds": 1.771 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 1.736 },
+            { "location": "src/theme/calendarTextColor.ts:8", "milliseconds": 1.561 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 1.437 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 1.378 },
+            { "location": "src/domain/calendars.ts:175", "milliseconds": 1.299 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15387", "milliseconds": 0.142 }
+          ],
+          "inclusive": [
+            { "location": "node_modules/scheduler/cjs/scheduler.production.js:121", "milliseconds": 2824.071 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10681", "milliseconds": 2822.3 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12065", "milliseconds": 2822.3 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11120", "milliseconds": 2804.073 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11181", "milliseconds": 2804.073 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11304", "milliseconds": 2804.073 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7392", "milliseconds": 2784.608 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:4333", "milliseconds": 2778.843 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:6489", "milliseconds": 2778.843 },
+            { "location": "src/screens/calendar/MonthView.tsx:88", "milliseconds": 2778.843 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:5162", "milliseconds": 2774.176 },
+            { "location": "node_modules/react/cjs/react.production.js:513", "milliseconds": 2774.176 },
+            { "location": "src/domain/calendars.ts:115", "milliseconds": 1735.735 },
+            { "location": "src/screens/calendar/CalendarScreen.tsx:102", "milliseconds": 1735.735 },
+            { "location": "src/screens/calendar/MonthView.tsx:129", "milliseconds": 1735.735 },
+            { "location": "src/domain/calendars.ts:175", "milliseconds": 1433.925 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 1430.687 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 1328.278 },
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 909.092 },
+            { "location": "src/domain/eventTime.ts:79", "milliseconds": 801.498 },
+            { "location": "src/domain/eventTime.ts:165", "milliseconds": 800.74 },
+            { "location": "src/screens/calendar/MonthView.tsx:134", "milliseconds": 688.239 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 686.503 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 507.861 },
+            { "location": "src/domain/recurrence.ts:535", "milliseconds": 390.443 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:110", "milliseconds": 388.31 },
+            { "location": "node_modules/rrule/dist/esm/rrule.js:72", "milliseconds": 384.742 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:10", "milliseconds": 382.871 },
+            { "location": "src/screens/calendar/MonthView.tsx:381", "milliseconds": 350.202 },
+            { "location": "src/screens/calendar/MonthView.tsx:383", "milliseconds": 350.202 },
+            { "location": "src/screens/calendar/MonthView.tsx:384", "milliseconds": 346.622 },
+            { "location": "src/domain/eventTime.ts:124", "milliseconds": 334.169 },
+            { "location": "src/screens/calendar/MonthView.tsx:628", "milliseconds": 324.939 },
+            { "location": "src/domain/calendars.ts:126", "milliseconds": 297.354 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 294.548 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/index.js:138", "milliseconds": 105.844 },
+            { "location": "node_modules/rrule/dist/esm/iterinfo/yearinfo.js:5", "milliseconds": 90.381 },
+            { "location": "src/domain/recurrence.ts:691", "milliseconds": 44.397 },
+            { "location": "src/domain/eventTime.ts:19", "milliseconds": 38.471 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11405", "milliseconds": 19.465 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10848", "milliseconds": 18.227 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11457", "milliseconds": 18.227 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:12957", "milliseconds": 15.344 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13346", "milliseconds": 15.344 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:7955", "milliseconds": 15.344 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11646", "milliseconds": 12.005 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:8571", "milliseconds": 12.005 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9008", "milliseconds": 12.005 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9901", "milliseconds": 12.005 },
+            { "location": "src/screens/calendar/MonthView.tsx:213", "milliseconds": 12.005 },
+            { "location": "src/screens/calendar/MonthView.tsx:217", "milliseconds": 12.005 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1291", "milliseconds": 9.685 },
+            { "location": "node_modules/rrule/dist/esm/datetime.js:164", "milliseconds": 9.038 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1273", "milliseconds": 7.507 },
+            { "location": "src/domain/lunar.ts:146", "milliseconds": 6.949 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11524", "milliseconds": 6.222 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9384", "milliseconds": 6.222 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9427", "milliseconds": 6.222 },
+            { "location": "src/domain/recurrence.ts:290", "milliseconds": 5.021 },
+            { "location": "src/screens/calendar/MonthView.tsx:592", "milliseconds": 4.88 },
+            { "location": "src/screens/calendar/MonthView.tsx:421", "milliseconds": 4.667 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13577", "milliseconds": 4.376 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:950", "milliseconds": 3.973 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:47", "milliseconds": 3.568 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3551", "milliseconds": 2.504 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3622", "milliseconds": 2.504 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:3793", "milliseconds": 2.504 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:6476", "milliseconds": 2.504 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:120", "milliseconds": 2.244 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:1254", "milliseconds": 1.994 },
+            { "location": "src/domain/recurrence.ts:676", "milliseconds": 1.96 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:13997", "milliseconds": 1.883 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9159", "milliseconds": 1.846 },
+            { "location": "node_modules/rrule/dist/esm/dateutil.js:96", "milliseconds": 1.789 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10458", "milliseconds": 1.771 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10477", "milliseconds": 1.771 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:10540", "milliseconds": 1.771 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11497", "milliseconds": 1.771 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:11741", "milliseconds": 1.771 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:9129", "milliseconds": 1.771 },
+            { "location": "src/screens/calendar/MonthView.tsx:423", "milliseconds": 1.561 },
+            { "location": "src/screens/calendar/MonthView.tsx:471", "milliseconds": 1.561 },
+            { "location": "src/theme/calendarTextColor.ts:7", "milliseconds": 1.561 },
+            { "location": "src/theme/calendarTextColor.ts:8", "milliseconds": 1.561 },
+            { "location": "node_modules/rrule/dist/esm/iter/index.js:110", "milliseconds": 1.437 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15297", "milliseconds": 0.142 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15382", "milliseconds": 0.142 },
+            { "location": "node_modules/react-dom/cjs/react-dom-client.production.js:15387", "milliseconds": 0.142 }
+          ],
+          "eventTimeCallers": [
+            { "location": "src/domain/recurrence.ts:614", "milliseconds": 819.007 },
+            { "location": "src/domain/displaySegments.ts:125", "milliseconds": 401.95 },
+            { "location": "src/domain/calendars.ts:141", "milliseconds": 292.148 },
+            { "location": "src/screens/calendar/MonthView.tsx:548", "milliseconds": 139.229 },
+            { "location": "src/domain/recurrence.ts:460", "milliseconds": 38.759 },
+            { "location": "src/domain/recurrence.ts:578", "milliseconds": 3.075 },
+            { "location": "src/domain/calendars.ts:175", "milliseconds": 1.939 }
+          ]
+        },
+        "timeline": {
+          "events": [
+            {
+              "name": "FunctionCall",
+              "count": 14,
+              "milliseconds": 2881.613,
+              "longestMs": 2875.491
+            },
+            {
+              "name": "Paint",
+              "count": 374,
+              "milliseconds": 84.04,
+              "longestMs": 42.946
+            },
+            {
+              "name": "MinorGC",
+              "count": 12,
+              "milliseconds": 37.633,
+              "longestMs": 19.019
+            },
+            {
+              "name": "Layout",
+              "count": 1,
+              "milliseconds": 9.543,
+              "longestMs": 9.543
+            },
+            {
+              "name": "UpdateLayoutTree",
+              "count": 1,
+              "milliseconds": 3.228,
+              "longestMs": 3.228
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
