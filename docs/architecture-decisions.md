@@ -824,6 +824,12 @@ DP-180 PR #174 已合併為 `12280a8`，擁有者指定先做 profile，未授�
 
 **建議而未定案：** DP-182 先只在一次月格 grouping 共用既有 256 筆 reader，減少 segment 與開始標籤對同一 timezone／epoch milliseconds 的重複讀取；不跨次保留、不附在資料文件，來源／時區／撤權仍依既有重算。先寫呼叫量與輸出等價的失敗回歸，再 paired measurement；不改 RRule／clipping／衝突演算法／視窗或焦點。等待擁有者確認才開始，不能把本段的 profile 優先權視為演算法實作核准。
 
+### 實作（DP-182，2026-10-22）— 月格顯示計算內的時區欄位重用
+
+擁有者明確採用 DP-181 提案，PR #175 合併為 `cd72dde` 後才開獨立分支。`groupEventsByDate()` 每次建立既有 256 筆、完整 timezone／epoch milliseconds key 的 reader，僅傳給 segment 與標籤 helper 的新增可選參數；舊 caller 未傳入時語意不變。reader 不放進 event／Map entry、state／ref 或 storage，來源／時區／視窗／撤權沿既有 memo 重算，沒有跨次分享快取。
+
+七項工作量回歸先失敗，修正後通過；反向恢復三個產品檔同樣七項失敗後還原。固定三個 53 週視窗，各 7,420 occurrences／entries 的完整 grouping 輸出 hash 相同、輸入不變，原生轉換 37,100 → 7,791；只量 grouping，不外推捲動／真機或與先前 profile 相減。方法、全部耗時與限制見 [顯示重用紀錄](month-display-reuse.md)。不改 RRule、clipping／衝突語意、排序、53 週／焦點、React 排程、文件欄位、0.4.3／v4、migration、公告或部署。
+
 ## 7. 工程治理
 
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行

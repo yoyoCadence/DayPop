@@ -78,6 +78,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
 
 > **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
@@ -239,6 +240,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-03 補正：** DP-111 已完成事件 sheet 的時區控制項並移入 Done；下方歷史段落的「時區控制項仍待 token 決策」由本次自主開發委託解除。DP-014 其餘段落仍未完成，不以這個子項結案。
 
 > **2026-10-04 補正：** DP-113 已完成帳號／版本／登入與更新畫面的 canonical token 搬移；下方「scaffold 橋接仍待 token 決策」為歷史，依本次委託採用原稿卡片與 dialog token 後移除 bridge。DP-014 剩餘通知、AI、天氣及寵物等段落未結案。
@@ -253,7 +255,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Backlog
 
-- [ ] **DP-182 — 月格 segment／標籤的時區欄位重用（提案，待確認）：** DP-181 兩份有界視窗 profile 都看到 segment 與標籤的重複時區路徑。建議沿用既有最多 256 筆 reader，只在一次月格 grouping 共用、完整 timezone／epoch milliseconds key，不附在使用者文件、不跨次／帳號或持久化。先寫轉換呼叫量、完整 segments／排序／tooltip／衝突等價的失敗回歸與反向驗證，再做固定視窗 paired measurement；保留 DST／跨午夜／長事件／例外與撤權。範圍不含 RRule、clipping 規則、成對衝突演算法、React 排程、53 週／焦點。**擁有者本輪只選 profile／規劃；尚未確認這份實作提案，不得自行排入 Next。** 理由與風險見 `docs/month-bounded-profile.md`。
 
 
 
@@ -407,6 +408,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-182 — 月格 segment／標籤的時區欄位重用（2026-10-22）：** 擁有者明確採用提案，Backlog → Next → In Progress → Done；基線 PR #175 合併的 `cd72dde`、四項 CI 全過。一次 grouping 自建既有 256 筆 reader，segment／開始標籤以新增可選參數共用；不附在 event／entry、不跨次或持久化，來源／時區／撤權重算。七項先失敗、修正通過；反向三個產品檔回基線仍七項失敗，再還原。三個固定 53 週、各 7,420 entries 的 paired grouping 輸出 hash 完全相同、輸入不變，原生轉換 37,100 → 7,791；四次交替計時與限制見 [方法／raw](docs/month-display-reuse.md)，不外推整體捲動或真機。lint／typecheck、1,347 單元＋17 Node、NY 實際時區 175 項、build／check:build 通過，相關 e2e 47 passed／3 desktop skipped。原稿／React 手機／桌面、淺空／深單筆實際對照，保留既有差異、React 無錯誤／水平溢出；server 已清理。更新 AGENTS §0.1、ADR §6；最新四項 CI／審查完成才依授權合併。RRule／clipping／衝突、53 週／焦點、欄位、0.4.3／v4／18 migrations、公告／部署不變；無 MCP／正式資料操作，真機及實際家庭帳號未驗。
 
 - [x] **DP-181 — 有界月曆的剩餘成本 profile（2026-10-21）：** 擁有者指定優先量測，Backlog → Next → In Progress → Done；基線 PR #174 合併的 `12280a8`（四項 CI 全過）。沿既有量測工具選用 profile，兩份手機第 12 次移動 trace；全部 8 組／24 點固定 53 週、每窗 7,420 筆。scroll 3,561／2,982 ms，主要是長 JS 呼叫，時區路徑突出，RRule／成對衝突亦可見；nearest-source 與 inclusive 的歸因／重疊限制見 [方法與 raw](docs/month-bounded-profile.md)。CDP 亂序先失敗再修正，五種負控制各 3／1／2／1／1 項失敗後還原 5／5；新模式 no-op 拒絕。lint／typecheck、1,340 單元＋17 Node、build／check:build、相關手機／桌面／WebKit e2e 16 passed／2 desktop skipped；raw／來源 SHA 核對、兩份摘要重算一致，server 已清理。更新 AGENTS §0.1、ADR §6；最新四項 CI／審查通過才依授權合併。只改量測／測試／文件，仍 0.4.3／v4／18 migrations，無產品、Auth／RLS、公告、部署或遠端操作；DP-182 是待確認提案，真機／實際家庭帳號未驗。
 

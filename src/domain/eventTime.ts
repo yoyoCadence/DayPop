@@ -68,8 +68,10 @@ export function eventDateInZone(event: CalendarEvent, displayTimezone: string): 
 }
 
 /** The clock label a grid in `displayTimezone` shows for this event. */
-export function eventStartTimeInZone(event: CalendarEvent, displayTimezone: string): string {
-  return event.allDay ? '' : instantTimeInZone(event.startsAt, displayTimezone);
+export function eventStartTimeInZone(
+  event: CalendarEvent, displayTimezone: string, readParts?: ZonedPartsReader,
+): string {
+  return event.allDay ? '' : instantTimeInZone(event.startsAt, displayTimezone, readParts);
 }
 
 export function eventEndTimeInZone(event: CalendarEvent, displayTimezone: string): string {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   allDayDisplaySegments,
   BASELINE_HOUR_RANGE,
@@ -10,7 +10,7 @@ import {
   occurrencesConflict,
   type DisplaySegment,
 } from './displaySegments';
-import { timedEventFromWallTime, wallTimeToInstant } from './eventTime';
+import { createZonedPartsReader, eventStartTimeInZone, instantDateInZone, timedEventFromWallTime, wallTimeToInstant } from './eventTime';
 import type { AllDayCalendarEvent, TimedCalendarEvent } from './types';
 
 /**
@@ -92,6 +92,31 @@ describe('allDayDisplaySegments (DP-126)', () => {
 });
 
 describe('eventDisplaySegments', () => {
+  it.each([
+    ['spring gap', '2026-03-08T06:30:00Z', '2026-03-08T07:30:00Z', 'America/New_York'],
+    ['repeated hour', '2026-11-01T05:30:00Z', '2026-11-01T06:00:00Z', 'America/New_York'],
+    ['skipped midnight', '2026-09-06T03:30:00Z', '2026-09-06T07:00:00Z', 'America/Santiago'],
+    ['midnight end +14', '2026-08-01T10:30:00Z', '2026-08-02T10:00:00Z', 'Pacific/Kiritimati'],
+    ['minus 12', '2026-08-01T10:30:00Z', '2026-08-02T12:00:00Z', 'Etc/GMT+12'],
+    ['long clipped span', '2025-01-01T01:17:00Z', '2030-01-01T02:23:00Z', 'Asia/Taipei'],
+  ])('shares exact instant fields with the label without changing %s segments', (_case, start, end, zone) => {
+    const event = spanning(start, end, zone);
+    const window = _case === 'long clipped span'
+      ? { startDateKey: '2026-08-06', endDateKey: '2026-08-07' }
+      : { startDateKey: instantDateInZone(start, zone), endDateKey: instantDateInZone(end, zone) };
+    const expected = eventDisplaySegments(event, KEY, zone, window);
+    const expectedLabel = eventStartTimeInZone(event, zone);
+    const input = JSON.stringify(event);
+    const read = createZonedPartsReader();
+    const formatter = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts');
+    try {
+      expect(eventDisplaySegments(event, KEY, zone, window, read)).toEqual(expected);
+      expect(eventStartTimeInZone(event, zone, read)).toBe(expectedLabel);
+      expect(formatter).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(event)).toBe(input);
+    } finally { formatter.mockRestore(); }
+  });
+
   it('leaves a same-day event as one segment', () => {
     const event = timed('2026-08-13', '09:00', '10:30', 'Asia/Taipei');
 

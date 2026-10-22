@@ -22,7 +22,7 @@ import {
   occurrencesConflict,
   type DisplaySegmentWindow,
 } from '../../domain/displaySegments';
-import { eventStartTimeInZone } from '../../domain/eventTime';
+import { createZonedPartsReader, eventStartTimeInZone } from '../../domain/eventTime';
 import { calendarColor } from '../../domain/calendars';
 import { calendarTextColor } from '../../theme/calendarTextColor';
 import { lunarCell } from '../../domain/lunar';
@@ -551,6 +551,9 @@ function groupEventsByDate(
   window: DisplaySegmentWindow,
 ): Map<string, MonthCellEntry[]> {
   const map = new Map<string, MonthCellEntry[]>();
+  // DP-182: segment dates/clocks and labels share fields for this calculation
+  // only. The existing reader is bounded; no reader survives in the result.
+  const readParts = createZonedPartsReader();
   const push = (dateKey: string, entry: MonthCellEntry) => {
     const list = map.get(dateKey);
     if (list) list.push(entry);
@@ -574,14 +577,14 @@ function groupEventsByDate(
     // occurrences of one weekly series must not be read as the same row, and
     // both halves of one cross-midnight occurrence must be. That is the exact
     // property the conflict check and the counts below deduplicate on.
-    for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, window)) {
+    for (const segment of eventDisplaySegments(event, occurrenceKey, displayTimezone, window, readParts)) {
       push(segment.dateKey, {
         event,
         key: segment.key,
         isContinuation: segment.isContinuation,
         time: segment.isContinuation
           ? CONTINUATION_LABEL
-          : eventStartTimeInZone(event, displayTimezone),
+          : eventStartTimeInZone(event, displayTimezone, readParts),
       });
     }
   }

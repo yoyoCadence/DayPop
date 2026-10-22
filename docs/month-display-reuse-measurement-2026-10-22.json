@@ -1,0 +1,97 @@
+{
+  "measuredAt": "2026-10-21T23:21:25.097Z",
+  "baselineCommit": "cd72ddec4117191b3b1c1893add8a1c02313855a",
+  "candidateParent": "cd72ddec4117191b3b1c1893add8a1c02313855a",
+  "node": "v24.19.0",
+  "nodeTimezone": "Etc/GMT-8",
+  "platform": "win32",
+  "release": "10.0.26300",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "sourceSha256": {
+    "src/domain/eventTime.ts": "7d89745d481c732bb42297f44e223679f642171b041900f2c87d06480e258e6f",
+    "src/domain/displaySegments.ts": "17678bf60e8f2b3fb626d89bb1660b0b261e8f5440a9d048e0ae41431a3f8c03",
+    "src/screens/calendar/MonthView.tsx": "24b418bd157463176743d5193a2782990549b80d979ddfd1871d3ffa782ca684",
+    "e2e/fixtures/monthScroll.ts": "e80a7210285c06368af5515856dbc4a3d1f575f8830c8afba8c5abf8284fde6a",
+    "scripts/measure-month-display.mjs": "2eb87455ad7ae78a0b014ce44456f73cc6b28877dd6c25c7836a0d944edbcb7f"
+  },
+  "samples": [
+    {
+      "startDate": "2026-04-19",
+      "endDate": "2027-04-24",
+      "occurrences": 7420,
+      "days": 371,
+      "inputSha256": "44aec4515e8f5e616f22408eb39c737fce8e30472ef6388e11165e14633b80a8",
+      "outputSha256": "bddfc5aa66fd9b1ad32ee9ca90f88721fcee76ab3e5e792bd78cd0e82c067852",
+      "baseline": {
+        "conversions": 37100,
+        "milliseconds": [
+          134.0689000000002,
+          136.80960000000005,
+          131.19989999999984,
+          138.08559999999989
+        ]
+      },
+      "candidate": {
+        "conversions": 7791,
+        "milliseconds": [
+          58.55420000000004,
+          55.80169999999998,
+          55.1876000000002,
+          54.441299999999956
+        ]
+      }
+    },
+    {
+      "startDate": "2027-09-05",
+      "endDate": "2028-09-09",
+      "occurrences": 7420,
+      "days": 371,
+      "inputSha256": "156ec56616047b2d84df0b87496df17cf41c779753172e88d111f613cb0d8701",
+      "outputSha256": "1f6bb50f004351303a3afa8587c492ee5c490dc39d3ee2c1f5d1ef77db31520b",
+      "baseline": {
+        "conversions": 37100,
+        "milliseconds": [
+          131.26599999999962,
+          128.29930000000013,
+          136.26279999999997,
+          134.77759999999944
+        ]
+      },
+      "candidate": {
+        "conversions": 7791,
+        "milliseconds": [
+          54.10699999999997,
+          55.14390000000003,
+          55.5971999999997,
+          55.50880000000052
+        ]
+      }
+    },
+    {
+      "startDate": "2029-01-21",
+      "endDate": "2030-01-26",
+      "occurrences": 7420,
+      "days": 371,
+      "inputSha256": "5de2f4c65b28408a8c2066abef2dafcca7c345f68c4f16f08b8f8786bcc270a8",
+      "outputSha256": "1bc04c945c017555b7f4224e5c2f960536b33ed4e0a73b2ae4659192ff6901e4",
+      "baseline": {
+        "conversions": 37100,
+        "milliseconds": [
+          128.77580000000034,
+          129.67249999999967,
+          127.41229999999996,
+          130.51000000000022
+        ]
+      },
+      "candidate": {
+        "conversions": 7791,
+        "milliseconds": [
+          52.677999999999884,
+          56.43029999999999,
+          56.75240000000031,
+          57.15189999999984
+        ]
+      }
+    }
+  ]
+}
