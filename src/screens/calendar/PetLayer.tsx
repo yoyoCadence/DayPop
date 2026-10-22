@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { NewTodoInput } from '../../domain/mutations';
 import { petBubbleTodos } from '../../domain/petBubble';
 import type { TodoItem } from '../../domain/types';
 import { PetBubble, type PetBubbleMode } from './PetBubble';
+import { usePetPlacement } from './usePetPlacement';
+import { ViewportLayer } from '../../shell/ViewportLayer';
 
 export interface PetLayerProps {
   petName: string;
@@ -31,7 +33,8 @@ export interface PetLayerProps {
  * Space on it, opens the bubble, a greeting the first time in a session and
  * the lists after that, as the原檔's `petTap()` (`:1155`) does.
  *
- * Still to come: walking, dragging and docking (DP-170), the real assets and
+ * DP-170 adds device-local placement, dragging, docking and a collapsed tab.
+ * Still to come: walking, the real assets and
  * the seven-state machine (DP-171), choosing a partner (DP-172).
  */
 export function PetLayer({
@@ -45,6 +48,10 @@ export function PetLayer({
   onDeleteTodo,
 }: PetLayerProps) {
   const [bubble, setBubble] = useState<PetBubbleMode | null>(null);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const controlRef = useRef<HTMLButtonElement>(null);
+  const bubbleLayerRef = useRef<HTMLDivElement>(null);
+  const placement = usePetPlacement(bubble !== null, layerRef, controlRef, bubbleLayerRef);
   // One count for the badge and the greeting, so they cannot disagree.
   const lists = useMemo(() => petBubbleTodos(todos, todayKey), [todos, todayKey]);
   const label =
@@ -52,21 +59,37 @@ export function PetLayer({
       ? `${petName}，今天還有 ${lists.open} 件待辦`
       : `${petName}，今天沒有未完成的待辦`;
 
-  function openBubble() {
-    if (bubble) return;
+  function openBubble(detail: number) {
+    if (placement.consumeClick(detail) || bubble) return;
     setBubble(greeted ? 'todos' : 'greeting');
     if (!greeted) onGreeted();
   }
 
   return (
     <>
-      <div className="cal-pet-layer">
-        <button
+      <div className="cal-pet-layer" ref={layerRef}>
+        {placement.collapsed ? (
+          <button className="cal-pet-tab" type="button" ref={controlRef}
+            hidden={placement.hidden} aria-label={`展開夥伴 ${petName}`}
+            style={placement.position ? { transform: `translate(${placement.position.x}px, ${placement.position.y}px)` } : undefined}
+            onClick={() => placement.setCollapsed(false)}>🐾</button>
+        ) : <button
           className="cal-pet"
+          ref={controlRef}
           type="button"
+          hidden={placement.hidden}
+          style={placement.position ? { transform: `translate(${placement.position.x}px, ${placement.position.y}px)` } : undefined}
           aria-haspopup="dialog"
           aria-label={label}
-          onClick={openBubble}
+          aria-describedby={placement.moving ? 'pet-move-instructions' : undefined}
+          onClick={event => openBubble(event.detail)}
+          onKeyDown={placement.onKeyDown}
+          onBlur={placement.onBlur}
+          onPointerDown={placement.onPointerDown}
+          onPointerMove={placement.onPointerMove}
+          onPointerUp={placement.onPointerUp}
+          onPointerCancel={placement.onPointerCancel}
+          onLostPointerCapture={placement.onPointerCancel}
         >
           <span className="cal-pet-body" aria-hidden="true">
             <span className="cal-pet-shadow" />
@@ -87,16 +110,20 @@ export function PetLayer({
               {lists.open}
             </span>
           )}
-        </button>
+        </button>}
       </div>
+      {placement.moving && <ViewportLayer><p className="cal-pet-move-note" id="pet-move-instructions" role="status">方向鍵移動，Enter 保存，Escape 取消</p></ViewportLayer>}
       {bubble && (
         <PetBubble
+          layerRef={bubbleLayerRef}
           mode={bubble}
           petName={petName}
           todayKey={todayKey}
           lists={lists}
           onShowTodos={() => setBubble('todos')}
-          onClose={() => setBubble(null)}
+          onClose={() => { placement.restoreFocus(); setBubble(null); }}
+          onMove={() => { setBubble(null); placement.startMoving(); }}
+          onCollapse={() => { setBubble(null); placement.setCollapsed(true); }}
           onAddTodo={onAddTodo}
           onToggleTodo={onToggleTodo}
           onDeleteTodo={onDeleteTodo}

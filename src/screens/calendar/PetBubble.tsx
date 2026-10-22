@@ -1,4 +1,4 @@
-import { useContext,useEffect, useId, useRef, type FormEvent } from 'react';
+import { useContext,useEffect, useId, useRef, type FormEvent, type RefObject } from 'react';
 import { DataContext } from '../../data/dataContext';
 import { calendarPermission } from '../../data/calendarSharing';
 import type { NewTodoInput } from '../../domain/mutations';
@@ -14,6 +14,7 @@ import './petBubble.css';
 export type PetBubbleMode = 'greeting' | 'todos';
 
 export interface PetBubbleProps {
+  layerRef?: RefObject<HTMLDivElement | null>;
   mode: PetBubbleMode;
   petName: string;
   /** Today in the display timezone; new 今日 todos get it, and overdue is read against it. */
@@ -21,6 +22,8 @@ export interface PetBubbleProps {
   lists: PetBubbleTodos;
   onShowTodos(): void;
   onClose(): void;
+  onMove(): void;
+  onCollapse(): void;
   /** A synchronous callback has already confirmed; production awaits the queue (DP-137). */
   onAddTodo(input: NewTodoInput): Promise<void> | void;
   onToggleTodo(id: string): void;
@@ -48,19 +51,23 @@ export interface PetBubbleProps {
  * inert while it is open, Tab stays inside, focus goes back to the pet.
  */
 export function PetBubble({
+  layerRef,
   mode,
   petName,
   todayKey,
   lists,
   onShowTodos,
   onClose,
+  onMove,
+  onCollapse,
   onAddTodo,
   onToggleTodo,
   onDeleteTodo,
 }: PetBubbleProps) {
   // The catcher is inside the layer, so tapping outside the bubble stays
   // possible while everything behind it is inert.
-  const layer = useRef<HTMLDivElement>(null);
+  const ownLayer = useRef<HTMLDivElement>(null);
+  const layer = layerRef ?? ownLayer;
   useModalFocus(layer, { onEscape: onClose });
   const greetingId = useId();
 
@@ -123,6 +130,10 @@ export function PetBubble({
                 />
               </>
             )}
+            <div className="cal-pet-placement-actions">
+              <button type="button" onClick={onMove}>移動夥伴</button>
+              <button type="button" onClick={onCollapse}>收起夥伴</button>
+            </div>
           </div>
         </div>
       </div>

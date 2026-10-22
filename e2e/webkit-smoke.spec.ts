@@ -27,6 +27,29 @@ async function openWebKit(page: Page) {
   expect(timezone).toBe('Asia/Taipei');
 }
 
+test('夥伴鍵盤移動保存，收起與展開交接焦點，重載保留側籤', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await openWebKit(page);
+  const pet = page.locator('button.cal-pet');
+  await pet.focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: '移動夥伴', exact: true }).click();
+  await expect(pet).toBeFocused();
+  const initial = (await pet.boundingBox())!;
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+  expect((await pet.boundingBox())!.y).toBe(initial.y - 10);
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: '收起夥伴', exact: true }).click();
+  const tab = page.getByRole('button', { name: /^展開夥伴/ });
+  await expect(tab).toBeFocused();
+  await reloadApp(page);
+  await expect(tab).toBeVisible();
+  await tab.click();
+  await expect(pet).toBeFocused();
+  clean();
+});
+
 test('啟動後四分頁可用且沒有瀏覽器錯誤', async ({ page }) => {
   const assertCleanBrowser = monitorBrowser(page);
   await openWebKit(page);

@@ -59,6 +59,8 @@ function layersChanged() {
 
 /**
  * Whether a layer the person opened is open now; notices are not counted.
+ * `except` lets the floating pet keep its own trigger available while its
+ * bubble opens/closes. Other layers still hide that trigger (DP-170).
  *
  * The newest layer is the one the keyboard is held in, so it has to be the
  * one on top. Everything the person opens stacks upward — 日詳情, then the
@@ -68,10 +70,10 @@ function layersChanged() {
  * would hold the keyboard in a layer nobody can see and make the visible one
  * inert. So notices wait until this is false (DP-156).
  */
-export function useModalLayerOpen(): boolean {
+export function useModalLayerOpen(except?: RefObject<HTMLElement | null>): boolean {
   return useSyncExternalStore(
     subscribeToLayers,
-    () => openLayers.some((entry) => !entry.notice),
+    () => openLayers.some((entry) => !entry.notice && (!except || entry.layer() !== except.current)),
     () => false,
   );
 }
