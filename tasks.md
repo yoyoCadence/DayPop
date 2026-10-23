@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-187 — 月光貓＋軌道噗三態素材試作（2026-10-23 擁有者定案，交另一個 agent）：** 已採用 DP-185 造型與三態先行方案；做 idle 4.4s、look 約 1.6s 單次、grab 靜態，先交 Blender／PNG 幀序列／靜態替代／預覽與實測，固定相機／比例／錨點並逐幀驗收透明安全區。先合併 DP-186 文件 PR、從最新 main 開獨立分支再移入 In Progress；詳細依 [交接](docs/pet-motion-handoff-2026-10-23.md)。不接 App、不做後四態／自動走動／XP／新偏好／schema／版號／部署，格式與圖片預算等量測後再定。
+
 > **2026-10-23 DP-185 定案與指定：** 擁有者認為 DP-184 造型有詭異感，採納兩款一起調整：貓縮小眼睛／減少反光、鼻嘴融入臉部、短肢自然坐姿；飛碟移除長腿與鞋形腳墊、改成懸浮生物並簡化表情；兩款降低塑膠光澤、整理接縫，保留配色與 3D 漫畫方向。由 Next 移入 In Progress，僅交付 idle／來源與前後圖；造型再確認後才規劃動作。
 
 
@@ -212,6 +214,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -417,6 +420,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-186 — 已採用造型與三態計畫交接（2026-10-23）：** 擁有者採用 DP-185 造型與三態先行方案，隨後要求先停止製作、交接給另一個 agent 並上 GitHub；經 Next → In Progress → Done，另開純文件 PR。主檔 [三態交接](docs/pet-motion-handoff-2026-10-23.md) 整理已定案內容、PR #180 已合併 `2708f4c`／四項 CI 全過證據、Blender／來源／命令、驗收及產品邊界；更新 AGENTS §0.1／ADR／canonical／素材規範與概念 README，DP-187 移入 Next。重新實跑 lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 e2e 9 passed、17 個 Markdown 本機連結；空 Supabase 子環境、時區有輸出，背景 server 核對清理。純文件無產品修正可撤除，不新增假回歸；本交接 PR 最新 CI／合併交接手 agent 處理。**三態未開始，沒有改任何素材／App／schema／版本／公告／部署。**
 
 - [x] **DP-185 — 柔化月光貓與懸浮軌道噗（2026-10-23）：** 擁有者認為 DP-184 有詭異感，採納兩款一起調整；從最新 main `0cd76de` 開分支，經 Next → In Progress → Done。`friendly_selected.py` 增量重用前兩階段，縮小／貼合五官與單亮點、融合貓的坐姿／短前爪、移除飛碟腿／鞋形腳墊／玻璃反光條，降低塑膠光澤並整理環帶／舷窗；保留色值，其他兩款來源／PNG 及歷史比較圖逐 byte 不變。四組實際 Blender 原檔回歸先失敗，反向 DP-184 再失敗，finally 精確還原後通過；既有六項圖片負控制、占比反向驗收、四份重開與十二背景核對均過。兩款 120px 25,812 bytes／60px 9,719 bytes，保留 8／4px 透明邊距，預算未定案；[前後圖與可重跑來源](docs/pet-concepts/2026-10-23/README.md)。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 e2e 9 passed；空 Supabase Node 子環境、實際時區列印、伺服器核對清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查後才依授權合併。**僅修改方向獲准，新造型待再次確認，確認後才規劃動作**；未做動畫／rig／七態、正式 keys／registry／App 接入、schema／版本／公告／部署，DP-171／172／041 未結案。
 
