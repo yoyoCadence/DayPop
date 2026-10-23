@@ -4,16 +4,30 @@
 
 本目錄交付四款 **idle 概念**、可編輯來源與實際尺寸檢查，不是正式 App 素材、不代表四款都獲選，也沒有完成七種動作、動畫、rig 或狀態機。舊 `cat / bear / bunny / chick` 是先前規劃；本次新 id 只用於概念檔案，不是新偏好欄位或正式 registry key。
 
+## 選款後細修（DP-184）
+
+擁有者看圖後選擇先細修「月光貓＋軌道噗」，**造型確認後才擴充動作**。PR #178 的概念基線為 `f51dd605bafd502fbf8ec2c8a5a5d589ea70b9e7`；以下比較從該 commit 的真正 PNG 與本次 Blender 輸出組成，不是示意重畫。其他兩款的 PNG／`.blend` 逐 byte 不變。
+
+![選款後細修與 60px 前後比較](selected-refinement.png)
+
+貓以 Boolean／voxel remesh 融合頭耳，消除獨立描邊殼在耳根的鋸齒接縫；保留紫耳與月牙，柔化材質、收細圓尾並增加鬍鬚。飛碟整理互相重疊的環帶、將被遮住的四個舷窗移到外殼正面，並調整觸腳墊與材質粗糙度。兩款的主配色、角色辨識、尺寸與背景透明規則保留；沒有加燈光特效、動畫或狀態。
+
+相機改為更完整利用畫布；兩款在 60px 裡的可見長邊 **44px → 50px**，120px 為貓 99px／飛碟 100px，四周仍至少 4／8px 全透明。這是像素占比，不是字級或控制項變大，也不能代替主觀造型確認。新增驗收要求長邊至少占 80%，原始四組尺寸全部失敗；完成後反向換回真正的原始 PNG，再取得四個失敗，finally 逐 byte 恢復後通過，原先六項壞圖／移除負控制仍通過。
+
+兩款最新 120px 合計 **30,209 bytes（29.50 KiB）**、60px 合計 **11,078 bytes（10.82 KiB）**；圖片預算仍未定案。尚未做動畫、rig、完整七態、正式 keys／偏好或 App 接入。下一步請擁有者確認本次造型，再進入動作規劃。
+
+本段重新實跑 lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 Chromium／WebKit 9 passed，四份 `.blend` 再次重開、六項負控制與新增占比／反向驗收均過。build／e2e 明確使用空 Supabase 子環境，Node Etc/GMT-8／browser Asia/Taipei 均列印，JS／CSS bytes 沿下方既有量測不變；背景伺服器已核對並清理。最新 PR 四項 CI 全過與審查完成後才依既有授權合併。
+
 ![四款 Blender 概念與原尺寸比較](concept-board.png)
 
 | 概念 | 造型提案 | 768px 透明圖 | Blender 原檔 | 120px PNG | 60px PNG |
 | --- | --- | --- | --- | ---: | ---: |
-| 月光貓 `moon_cat` | 奶油白、月光紫、月牙額飾、星星項圈與捲尾；重新建模，沒有放大原本 CSS 角色。 | [大圖](renders/moon_cat-768.png) | [可編輯 .blend](source/moon_cat.blend) | 13,784 bytes | 5,033 bytes |
-| 軌道噗 `orbit_ufo` | 有生命的飛碟；藍色頭罩、薄荷環、珊瑚外殼、柔軟觸腳與星星感覺器。 | [大圖](renders/orbit_ufo-768.png) | [可編輯 .blend](source/orbit_ufo.blend) | 12,294 bytes | 4,591 bytes |
+| 月光貓 `moon_cat` | 奶油白、月光紫、月牙額飾、星星項圈與捲尾；重新建模，沒有放大原本 CSS 角色。 | [大圖](renders/moon_cat-768.png) | [可編輯 .blend](source/moon_cat.blend) | 15,897 bytes | 5,760 bytes |
+| 軌道噗 `orbit_ufo` | 有生命的飛碟；藍色頭罩、薄荷環、珊瑚外殼、柔軟觸腳與星星感覺器。 | [大圖](renders/orbit_ufo-768.png) | [可編輯 .blend](source/orbit_ufo.blend) | 14,312 bytes | 5,318 bytes |
 | 星茶壺 `cloud_teapot` | 雲朵瓷壺、蜂蜜金壺口、彎嘴、把手，蒸氣裡冒出小星星。 | [大圖](renders/cloud_teapot-768.png) | [可編輯 .blend](source/cloud_teapot.blend) | 13,468 bytes | 4,965 bytes |
 | 芽芽車 `sprout_rover` | 植物與機器人的混合；螢幕表情、輪腳、珊瑚手套、土壤與帶露珠的幼苗。 | [大圖](renders/sprout_rover-768.png) | [可編輯 .blend](source/sprout_rover.blend) | 13,968 bytes | 5,134 bytes |
 
-120px 四款合計 **53,514 bytes（52.26 KiB）**，單張 12.01–13.64 KiB；60px 合計 **19,723 bytes（19.26 KiB）**。這只是四個靜態 idle 的實測值，不能外推動畫、七態總包、下載成本或真機解碼時間。原先每張 32 KiB／七張 224 KiB 都尚未定案，沒有加入 `performance-budget.json`。
+目前 120px 四款合計 **57,645 bytes（56.29 KiB）**，60px 合計 **21,177 bytes（20.68 KiB）**。DP-183 原始四款當時是 53,514／19,723 bytes，這次只更新已選兩款。這只是靜態 idle 的實測值，不能外推動畫、七態總包、下載成本或真機解碼時間。原先每張 32 KiB／七張 224 KiB 都尚未定案，沒有加入 `performance-budget.json`。
 
 ## 可重跑來源
 
@@ -30,13 +44,18 @@
 ```powershell
 $petBlender = 'C:\path\to\blender.exe'
 & $petBlender --background --factory-startup --python-exit-code 1 --python docs/pet-concepts/2026-10-23/create_concepts.py
+& $petBlender --background --factory-startup --python-exit-code 1 --python docs/pet-concepts/2026-10-23/refine_selected.py
 & $petBlender --background --factory-startup --disable-autoexec --python-exit-code 1 --python docs/pet-concepts/2026-10-23/check_sources.py
 py docs/pet-concepts/2026-10-23/check_assets.py
 py docs/pet-concepts/2026-10-23/test_asset_checks.py
+py docs/pet-concepts/2026-10-23/test_selected_sprites.py --reverse-control
 py docs/pet-concepts/2026-10-23/make_board.py
+py docs/pet-concepts/2026-10-23/make_selected_board.py
 ```
 
-`check_assets.py` 只需 Python standard library；`test_asset_checks.py`、`make_board.py` 需要 Pillow，本機 Python 3.12.3 已有。概念板使用本機 Windows `msjh.ttc`，字體檔不隨 repo 散布，其他作業系統需自行指定支援中文的字體。這些是離線概念工具，不是 App 相依或 npm build 的一部分；本 PR 沒有新增 CI 執行它們的步驟。檔案 SHA-256、尺寸、非透明範圍與 bytes 見 `manifest.json`。Blender 可能因 GPU／版本／取樣產生少量像素差異；重建會重新量測與更新雜湊，不能承諾逐 byte 可再現。
+`create_concepts.py` 重建原始四款；要重建目前版本，之後必須執行 `refine_selected.py`（只更新貓／飛碟，重用原有建模與輸出流程）。只需細修兩款時可略過第一條。前後比較與反向驗證需本機 Git 有上述基線 commit；shallow clone 需先取得該 commit。
+
+`check_assets.py`、`test_selected_sprites.py` 只需 Python standard library；`test_asset_checks.py` 與兩支概念板工具需要 Pillow，本機 Python 3.12.3 已有。概念板使用本機 Windows `msjh.ttc`，字體檔不隨 repo 散布，其他作業系統需自行指定支援中文的字體。這些是離線概念工具，不是 App 相依或 npm build 的一部分；沒有新增 CI 執行它們的步驟。檔案 SHA-256、尺寸、非透明範圍與 bytes 見 `manifest.json`。Blender 可能因 GPU／版本／取樣產生少量像素差異；重建會重新量測與更新雜湊，不能承諾逐 byte 可再現。
 
 四份壓縮 `.blend` 均已由官方 Blender 重開：分別 44／39／41／33 個 objects，可編輯 meshes／curves／材質，沒有外部貼圖。相機為正交、背景透明，輸出路徑相對於 source 指向 `../renders/`。相機先依實際 alpha 輪廓取景，避免只看保守幾何 bounds 造成角色過小；曲線端點封閉，描邊殼不投影，避免首輪自陰影雜訊。
 
@@ -52,4 +71,4 @@ py docs/pet-concepts/2026-10-23/make_board.py
 
 ![60px 素材在十二組背景](theme-check.png)
 
-下一段建議先細修「月光貓＋軌道噗」，待擁有者實際選定後再規劃七態。正式角色清單、名稱／keys、狀態觸發、動畫格式、圖片預算及快取／預載仍待定案；DP-171、DP-172、DP-041 均未結案。App 0.4.3、資料 v4、18 migrations、公告及部署不變，沒有 Supabase MCP 或正式使用者資料操作。
+DP-183 當時建議先細修「月光貓＋軌道噗」，擁有者已採用，成果見上方 DP-184。正式造型確認、名稱／keys、狀態觸發、動畫格式、圖片預算及快取／預載仍待定案；DP-171、DP-172、DP-041 均未結案。App 0.4.3、資料 v4、18 migrations、公告及部署不變，沒有 Supabase MCP 或正式使用者資料操作。

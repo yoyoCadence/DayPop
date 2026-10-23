@@ -337,7 +337,7 @@ def fit_visible_silhouette(scene):
     path.unlink()
 
 
-def main():
+def main(builders=None, fit=None):
     (ROOT / "source").mkdir(exist_ok=True)
     (ROOT / "renders").mkdir(exist_ok=True)
     entries = []
@@ -347,9 +347,9 @@ def main():
         if selected and key not in selected:
             continue
         scene = setup_scene()
-        builder()
+        (builders or {}).get(key, builder)()
         frame_camera(scene)
-        fit_visible_silhouette(scene)
+        (fit or fit_visible_silhouette)(scene)
         scene["concept_title"] = title
         scene["status"] = "DP-183 original concept / pending owner visual selection / not production assets"
         scene["construction"] = "Editable meshes, curves and named materials; no third-party models, fonts or textures."

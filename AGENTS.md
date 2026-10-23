@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **月光貓＋軌道噗細修（DP-184，2026-10-23）：** 擁有者看 DP-183 四款後選擇先細修這兩款，造型確認後才擴充動作。`refine_selected.py` 重用原始 Blender 流程，只更新兩款來源／圖，其他兩款逐 byte 不變。貓融合頭耳與連續描邊、收細尾巴／加鬍鬚；飛碟整理環帶與舷窗，保留配色。60px 可見長邊 44 → 50px，仍四周至少 4px 透明；`test_selected_sprites.py` 四組先失敗，反向原始圖失敗後精確還原通過。前後圖與最新量測見 `docs/pet-concepts/2026-10-23/README.md`；兩款 120px 合計 30,209 bytes，預算仍待定。**只做 idle 細修，尚待造型確認，不是已接 App／完成七態**；App／v4／18 migrations、公告／部署不變，DP-171／172／041 未結案。
+
 - **Blender 夥伴概念試作（DP-183，2026-10-23）：** 擁有者指出摩卡只是粗糙範例，指定官方 Blender、精緻卡通 3D＋漫畫描邊與固定配色；只保留貓咪，其餘由 Codex 提案，包含非動物／太空船生物。四款 idle 概念（月光貓、軌道噗、星茶壺、芽芽車）、可編輯 `.blend`、768／120／60px 透明圖、背景板、量測與負控制放在 `docs/pet-concepts/2026-10-23/`，**不在 App 資產圖、尚未獲選，不代表七態已完成**。120px 合計 53,514 bytes，僅此批靜態實測；32 KiB 預算尚未採用，動畫、keys／名稱、狀態與快取仍待定。詳見該目錄 README 與 ADR §4；DP-171／172／041 未結案，不改 0.4.3／v4／18 migrations、公告或部署。
 
 - **DP-170 量測注意：** `.cal-pet-layer` 保留零高度，範圍從內容區量；全畫面透明層會妨礙 axe 對比量測。pointer 比例從角色自身的 60px 矩形計算（純水平拖曳有回歸），鍵盤提示走 ViewportLayer，e2e 要求在 viewport 內。不要改回以浮動層高度作除數，或降低 axe 的五段文字門檻。

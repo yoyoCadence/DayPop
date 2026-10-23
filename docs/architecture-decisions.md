@@ -603,6 +603,16 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 下一段先讓擁有者看圖挑選，建議細修月光貓＋軌道噗；沒有據此自動擴做四款七態。正式名稱／keys、完整動作／rig／狀態觸發、動畫及 reduced-motion 替代、跨動作腳底 registration、圖片預算及快取／預載仍待定案。DP-171、DP-172、DP-041 仍未結案；未改 App、schema、Auth、版號、公告或部署。
 
+### 已選兩款的 idle 細修（DP-184，2026-10-23）
+
+擁有者看過 DP-183 實際圖後採用「先細修月光貓＋軌道噗，確認造型後才擴充動作」。PR #178 四項 CI 全過後合併為 `f51dd60`，從最新 main 開獨立分支，DP-184 經 Next → In Progress → Done。保留兩款固定配色與角色方向；其他兩款僅保留原探索圖／原檔，逐 byte 不變。
+
+`refine_selected.py` 重用 DP-183 meshes／材質／燈光／取景與輸出流程，僅替換兩個 builder 和取景 callback。貓以 Boolean／voxel remesh 融合頭耳並重建描邊，修掉大圖中的耳根接縫，再調整尾巴、鬍鬚與材質；飛碟把環帶分層、露出被擋住的舷窗、柔化觸腳墊與材質。相機更完整使用畫布，沒有放大 60px 控制項。120px 可見長邊為 99／100px，60px 都由原先 44px 提高到 50px；四周至少 8／4px 全透明，沒有降低邊距門檻。
+
+新增占比驗收以最長邊至少占 80% 避免角色在 60px 裡過小；基線四組都失敗。完成後將真正輸出換回基線四張 PNG，再取得四個失敗，finally 精確還原後通過；既有六項負控制、alpha／bytes／hash、四份 Blender 重開與十二背景視覺核對保留。這些不能替代擁有者的主觀造型確認。[前後比較與方法](pet-concepts/2026-10-23/README.md) 記錄 120px 兩款合計 30,209 bytes、60px 合計 11,078 bytes；預算仍未定案，不外推動畫。
+
+正式造型確認後才進動作規劃。未做 rig／動畫／七態、registry、角色偏好、App 接入、schema／Auth／版號、公告或部署；DP-171／172／041 均未結案。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
