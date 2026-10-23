@@ -351,7 +351,7 @@ def main(builders=None, fit=None):
         frame_camera(scene)
         (fit or fit_visible_silhouette)(scene)
         scene["concept_title"] = title
-        scene["status"] = "DP-183 original concept / pending owner visual selection / not production assets"
+        scene["status"] = scene.get("status", "DP-183 original concept / pending owner visual selection / not production assets")
         scene["construction"] = "Editable meshes, curves and named materials; no third-party models, fonts or textures."
         source = ROOT / "source" / f"{key}.blend"
         scene.render.resolution_x = scene.render.resolution_y = 768

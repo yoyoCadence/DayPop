@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent
 FONT = Path("C:/Windows/Fonts/msjh.ttc")
 LABELS = {
     "moon_cat": ("月光貓", "奶油白 × 月光紫", "圓潤貓咪、月牙額飾與星星項圈"),
-    "orbit_ufo": ("軌道噗", "珊瑚橘 × 冰川薄荷", "會眨眼的飛碟生物、柔軟觸腳"),
+    "orbit_ufo": ("軌道噗", "珊瑚橘 × 冰川薄荷", "無腿的懸浮飛碟生物、柔和表情"),
     "cloud_teapot": ("星茶壺", "薰衣草紫 × 蜂蜜金", "雲朵瓷壺，把小星星泡成蒸氣"),
     "sprout_rover": ("芽芽車", "奶油白 × 翡翠綠", "載著幼苗旅行的迷你陪伴機器人"),
 }
