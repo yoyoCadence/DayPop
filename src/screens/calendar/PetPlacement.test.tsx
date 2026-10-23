@@ -136,3 +136,58 @@ it('commits a horizontal-only drag in the zero-height passthrough layer', () => 
   act(() => pet().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
   expect(host.querySelector('[role="dialog"]')).toBeNull();
 });
+
+const artwork = () => host.querySelector<HTMLImageElement>('.cal-pet-art img')!;
+async function decoded() {
+  await act(async () => artwork().dispatchEvent(new Event('load')));
+}
+it('plays look once after a real bubble close, then idle, with the clock starting after decode', async () => {
+  vi.useFakeTimers();
+  try {
+    expect(artwork()?.getAttribute('src')).toMatch(/moon-cat-idle.*webp/);
+    open();
+    expect(artwork().getAttribute('src')).toMatch(/idle.*png/);
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="關閉"]')!.click());
+    expect(artwork().getAttribute('src')).toMatch(/look.*webp/);
+    act(() => vi.advanceTimersByTime(3000));
+    expect(artwork().getAttribute('src')).toMatch(/look.*webp/);
+    await decoded();
+    act(() => vi.advanceTimersByTime(1599));
+    expect(artwork().getAttribute('src')).toMatch(/look.*webp/);
+    act(() => vi.advanceTimersByTime(1));
+    expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  } finally { vi.useRealTimers(); }
+});
+it('uses grab only after the pointer threshold or during keyboard movement, and cancels cleanly', () => {
+  pointer('pointerdown', 50, 550); pointer('pointermove', 52, 550);
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+  pointer('pointermove', 150, 550);
+  expect(artwork().getAttribute('src')).toMatch(/grab.*png/);
+  pointer('pointercancel', 150, 550);
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  expect(localStorage.getItem(key)).toBeNull();
+  open(); clickText('移動夥伴');
+  expect(artwork().getAttribute('src')).toMatch(/grab.*png/);
+  press('Escape');
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+});
+it('removes images while covered or in the background without saving position', async () => {
+  await act(async () => host.querySelector('input')!.focus());
+  expect(artwork()).toBeNull();
+  await act(async () => host.querySelector('input')!.blur());
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  expect(artwork()).toBeNull();
+  expect(host.querySelector('.cal-pet-art')?.getAttribute('data-paused')).toBe('true');
+  hidden.mockReturnValue(false);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  expect(localStorage.getItem(key)).toBeNull();
+});
+it('unmounts assets when collapsed and expands to idle without a look cue', () => {
+  open(); clickText('收起夥伴');
+  expect(artwork()).toBeNull();
+  act(() => tab().click());
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+});

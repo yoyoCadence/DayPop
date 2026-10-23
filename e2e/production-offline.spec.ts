@@ -18,6 +18,45 @@ const seenKey = 'daypop.release-notes-seen';
 const fixedInstant = '2026-09-30T04:00:00.000Z';
 const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
 
+test('寵物只有實際使用的素材進 runtime cache；離線首次缺 PNG 回靜態 CSS', async ({ page, context, site }) => {
+  const problems: string[] = [];
+  const failed: string[] = [];
+  const path = [...site.builds.get(site.currentVersion)!.keys()].find(path => /^\/assets\/moon-cat-idle-.*\.png$/.test(path));
+  expect(path).toBeTruthy();
+  const pngUrl = `${site.origin}/DayPop${path}`;
+  const versionUrl = `${site.origin}/DayPop/version.json`;
+  page.on('pageerror', error => problems.push(error.message));
+  page.on('console', message => {
+    if (!['error', 'warning'].includes(message.type())) return;
+    if (message.type() === 'error' && [pngUrl, versionUrl].includes(message.location().url) && message.text().startsWith('Failed to load resource:')) return;
+    problems.push(`${message.type()}: ${message.text()} (${message.location().url})`);
+  });
+  page.on('requestfailed', request => {
+    if ([pngUrl, versionUrl].includes(request.url())) failed.push(request.url());
+    else problems.push(`requestfailed: ${request.url()}`);
+  });
+  await page.goto(`${site.origin}/setup.html`);
+  await page.evaluate(({ key, version }) => localStorage.setItem(key, version), { key: seenKey, version: site.currentVersion });
+  await page.goto(`${site.origin}/DayPop/`);
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
+  await page.reload();
+  const pet = page.locator('button.cal-pet');
+  await expect(pet.locator('img')).toBeVisible();
+  const idleUrl = await pet.locator('img').evaluate(img => (img as HTMLImageElement).currentSrc);
+  await expect.poll(() => page.evaluate(async url => Boolean(await caches.match(url)), idleUrl)).toBe(true);
+  expect(await page.evaluate(async url => Boolean(await caches.match(url)), pngUrl)).toBe(false);
+  const bytes = await page.evaluate(key => localStorage.getItem(key), guestKey);
+  await context.setOffline(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(pet.locator('img')).toHaveCount(0);
+  const eye = pet.locator('.cal-pet-eye.left');
+  await expect(eye).toBeVisible();
+  expect(await eye.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+  await expect.poll(() => failed.includes(pngUrl)).toBe(true);
+  expect(await page.evaluate(key => localStorage.getItem(key), guestKey)).toBe(bytes);
+  expect(problems).toEqual([]);
+});
+
 async function assertGuestUi(page: Page, petName: string, holiday: string) {
   await expect(page.locator('.dp-viewport')).toBeVisible();
   await tabButton(page, '設定').click();

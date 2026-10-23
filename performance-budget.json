@@ -3,6 +3,12 @@
     "maxRawBytes": 819200,
     "maxGzipBytes": 225280
   },
+  "pets": {
+    "maxCharacterBytes": 196608,
+    "maxIdleBytes": 131072,
+    "maxLookBytes": 49152,
+    "maxStaticBytes": 16384
+  },
   "css": {
     "maxRawBytes": 131072,
     "maxGzipBytes": 32768

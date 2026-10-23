@@ -117,6 +117,23 @@ test('新增 sheet 限制焦點，Escape 關閉後回到新增按鈕且可再開
   assertCleanBrowser();
 });
 
+test('原生 WebP 貓可解碼，泡泡／reduce 切成 PNG 且關閉後 look 回 idle', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await openWebKit(page);
+  const pet = page.locator('button.cal-pet');
+  const image = pet.locator('img');
+  await expect(image).toHaveAttribute('src', /moon-cat-idle.*webp/);
+  await expect(image).toBeVisible();
+  expect(await image.evaluate(img => (img as HTMLImageElement).naturalWidth)).toBe(120);
+  await pet.click(); await expect(image).toHaveAttribute('src', /idle.*png/);
+  await page.getByRole('button', { name: '關閉', exact: true }).click();
+  await expect(image).toHaveAttribute('src', /look.*webp/);
+  await expect(image).toHaveAttribute('src', /idle.*webp/);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(image).toHaveAttribute('src', /idle.*png/);
+  await expect(image).toBeVisible(); clean();
+});
+
 test('設定的寵物名字與每週起始日重載後維持', async ({ page }) => {
   const assertCleanBrowser = monitorBrowser(page);
   await openWebKit(page);

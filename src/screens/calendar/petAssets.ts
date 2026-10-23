@@ -1,0 +1,25 @@
+import catIdle from '../../assets/pets/moon-cat-idle.webp';
+import catLook from '../../assets/pets/moon-cat-look.webp';
+import catStill from '../../assets/pets/moon-cat-idle.png';
+import catGrab from '../../assets/pets/moon-cat-grab.png';
+import ufoIdle from '../../assets/pets/orbit-ufo-idle.webp';
+import ufoLook from '../../assets/pets/orbit-ufo-look.webp';
+import ufoStill from '../../assets/pets/orbit-ufo-idle.png';
+import ufoGrab from '../../assets/pets/orbit-ufo-grab.png';
+
+// Internal asset keys only. Choosing a partner is DP-172, not a second preference store.
+export type PetKind = 'moon_cat' | 'orbit_ufo';
+export type PetPose = 'idle' | 'look' | 'grab' | 'walk' | 'sit' | 'sleep' | 'jump';
+interface PetAsset { still: string; animation?: string; durationMs?: number }
+export const PET_ASSETS: Record<PetKind, Partial<Record<PetPose, PetAsset>>> = {
+  moon_cat: {
+    idle: { still: catStill, animation: catIdle },
+    look: { still: catStill, animation: catLook, durationMs: 1600 },
+    grab: { still: catGrab },
+  },
+  orbit_ufo: {
+    idle: { still: ufoStill, animation: ufoIdle },
+    look: { still: ufoStill, animation: ufoLook, durationMs: 1600 },
+    grab: { still: ufoGrab },
+  },
+};
