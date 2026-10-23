@@ -81,6 +81,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
 
 > **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
@@ -209,6 +210,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -412,6 +414,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-184 — 月光貓＋軌道噗 idle 細修（2026-10-23）：** 擁有者看圖後選定先細修這兩款，造型確認後才擴充動作；由 Next → In Progress → Done，基線 PR #178 合併 `f51dd60`（四項 CI 全過，Chromium 259 passed／13 skipped、WebKit 5 passed）。重用 Blender 原始生成器，只更新兩款來源／六張圖；貓以 Boolean／voxel remesh 融合頭耳並重建描邊、整理尾／鬍鬚與材質，飛碟整理環帶、舷窗、觸腳墊與材質；配色保留，其他兩款 PNG／`.blend` 逐 byte 不變。60px 可見長邊 44 → 50px，仍四周至少 4px 透明；80% 占比驗收四組先失敗，完成後反向原始圖再失敗，finally 精確恢復通過，原六項負控制仍過。四份 Blender 重開、bytes／alpha／hash 與十二背景實際核對，前後圖與新量測見 [概念紀錄](docs/pet-concepts/2026-10-23/README.md)。兩款 120px 合計 30,209 bytes，預算仍待定。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 Chromium／WebKit 9 passed；空 Supabase 子環境、實際時區列印，伺服器核對並清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查完成才依既有授權合併。**造型仍待擁有者確認**，未做動畫／rig／七態、registry／App 接入、新 domain 欄位、migration、版號／公告／部署，DP-171／172／041 未結案。
 
 - [x] **DP-183 — Blender 創意夥伴概念試作（2026-10-23）：** 擁有者指定官方 Blender、精緻卡通 3D＋漫畫描邊、固定配色，摩卡僅粗糙範例，保留貓咪，其餘由 Codex 提案；由 Next 移入 In Progress 後完成本段。基線 DP-170 PR #177 合併的 `b84b7bb`；另交月光貓、軌道噗、星茶壺、芽芽車四款 idle 概念，**皆尚未獲選或接入 App**。官方 portable zip SHA-256 已核對，四份 `.blend` 實際重開（44／39／41／33 objects，無外部貼圖、相對渲染路徑）；腳本、768／120／60px RGBA、背景板與 bytes／alpha／hash 見 [概念紀錄](docs/pet-concepts/2026-10-23/README.md)。acceptance checker 先因缺產物失敗，首輪取景過小也被拒絕；完成後空圖、白底、裁切、剪影、尺寸負控制與真實檔移除／逐 byte 還原共六項通過。120px 合計 53,514 bytes，圖片預算仍待定，不外推動畫。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 Chromium／WebKit 9 passed；實際時區列印，空 Supabase 子環境，伺服器核對並清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查完成後才依授權合併。下一段先讓擁有者選款細修，建議貓＋飛碟；DP-171／172／041 未結案，無七態／動畫／rig、新 domain 欄位、migration、版號／公告／部署或正式資料操作。
 

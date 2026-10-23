@@ -33,12 +33,14 @@ def main():
     draw = ImageDraw.Draw(board)
     draw.text((36, 24), "DAYPOP  /  CHARACTER STUDIES 01", fill="#46536b", font=font(16))
     draw.text((36, 54), "四款創意夥伴 · Blender 概念試作", fill="#182037", font=font(32))
-    draw.text((36, 101), "精緻卡通 3D ＋ 漫畫描邊　／　固定配色　／　造型待選定", fill="#596172", font=font(17))
+    status = "月光貓＋軌道噗已選細修；其餘保留探索紀錄" if manifest.get("selectedForRefinement") else "造型待選定"
+    draw.text((36, 101), f"精緻卡通 3D ＋ 漫畫描邊　／　固定配色　／　{status}", fill="#596172", font=font(17))
     for index, item in enumerate(manifest["concepts"]):
         x, y = 30 + (index % 2) * 585, 148 + (index // 2) * 420
         draw.rounded_rectangle((x, y, x + 555, y + 397), radius=20, fill="white", outline="#dededc", width=1)
         title, palette, description = LABELS[item["id"]]
-        draw.text((x + 22, y + 16), f"0{index + 1}  {title}", fill="#182037", font=font(25))
+        selected = " · 已選細修" if item["id"] in manifest.get("selectedForRefinement", []) else ""
+        draw.text((x + 22, y + 16), f"0{index + 1}  {title}{selected}", fill="#182037", font=font(25))
         draw.text((x + 22, y + 53), description, fill="#596172", font=font(14))
         paste(board, ROOT / item["renders"]["768"], (x + 4, y + 88), 300)
         draw.text((x + 317, y + 93), palette, fill="#596172", font=font(13))
