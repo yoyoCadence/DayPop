@@ -761,6 +761,23 @@
   text-align: center;
 }
 
+.cal-pet-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cal-pet-image {
+  position: absolute;
+  inset: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.cal-pet-image[hidden] { display: none; }
+.cal-pet-art[data-paused="true"] .cal-pet-eye { animation: none; }
+
 .cal-pet-body {
   position: relative;
   display: block;

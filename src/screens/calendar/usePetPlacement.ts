@@ -7,6 +7,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
   const [saved, setSaved] = useState(loadPetPlacement);
   const [geometry, setGeometry] = useState<{ area: PetArea; covered: boolean } | null>(null);
   const [moving, setMoving] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const preview = useRef<PetPoint | null>(null);
   const drag = useRef<{ id: number; x: number; y: number; origin: PetPoint; moved: boolean; scaleX: number; scaleY: number } | null>(null);
   const suppressClick = useRef(false);
@@ -22,6 +23,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     if (point) control.current?.style.setProperty('transform', `translate(${point.x}px, ${point.y}px)`);
   }
   function cancel() {
+    setDragging(false);
     drag.current = null;
     preview.current = null;
     setMoving(false);
@@ -64,6 +66,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
         drag.current = null;
         preview.current = null;
         setMoving(false);
+        setDragging(false);
         setGeometry(next);
         const restored = placePet(saved, next.area, size);
         if (restored) control.current?.style.setProperty('transform', `translate(${restored.x}px, ${restored.y}px)`);
@@ -95,7 +98,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
       drag.current = null;
       preview.current = null;
       // Synchronize with the external modal store after its cleanup commits.
-      queueMicrotask(() => setMoving(false));
+      queueMicrotask(() => { setMoving(false); setDragging(false); });
     }
   }, [hidden]);
   useEffect(() => {
@@ -151,8 +154,13 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     if (!active || active.id !== event.pointerId || !geometry) return;
     const dx = (event.clientX - active.x) / active.scaleX;
     const dy = (event.clientY - active.y) / active.scaleY;
-    active.moved ||= Math.abs(dx) + Math.abs(dy) > 4;
+    const started = !active.moved && Math.abs(dx) + Math.abs(dy) > 4;
+    if (started) {
+      active.moved = true;
+      setDragging(true);
+    }
     if (active.moved) paint(constrainPet({ x: active.origin.x + dx, y: active.origin.y + dy }, geometry.area, 60));
+    return started;
   }
   function onPointerUp(event: PointerEvent<HTMLButtonElement>) {
     const active = drag.current;
@@ -162,6 +170,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
       if (preview.current) commit(preview.current);
     }
     drag.current = null;
+    setDragging(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
   }
   function onPointerCancel() {
@@ -169,7 +178,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     if (drag.current?.moved) suppressClick.current = true;
     cancel();
   }
-  return { collapsed, hidden, moving, position, setCollapsed, startMoving,
+  return { collapsed, hidden, moving, dragging, position, setCollapsed, startMoving,
     restoreFocus: () => { pendingFocus.current = true; },
     onKeyDown, onPointerDown, onPointerMove, onPointerUp, onPointerCancel,
     onBlur: () => { if (moving) cancel(); },

@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkPerformanceBudget, measureBuildAssets } from './build-performance-budget.mjs';
+import { checkPetAssets } from './pet-assets-budget.mjs';
 
 /**
  * Fails the build if the production output would reach the network at runtime,
@@ -131,6 +132,9 @@ for await (const file of walk(dist)) distFiles.push(relative(dist, file).replace
 // totals. This is an artifact budget, not a measurement of real device speed.
 try {
   const budget = JSON.parse(await readFile(resolve(root, 'performance-budget.json'), 'utf8'));
+  const pets = await checkPetAssets(resolve(root, 'src/assets/pets'), distFiles.map(file => resolve(dist, file)), budget.pets);
+  problems.push(...pets.problems);
+  console.log(`Pet asset budget: ${JSON.stringify(pets.totals)}; each limit ${budget.pets?.maxCharacterBytes} bytes`);
   const totals = await measureBuildAssets(distFiles.map((file) => resolve(dist, file)));
   problems.push(...checkPerformanceBudget(totals, budget));
   for (const kind of ['javascript', 'css']) {

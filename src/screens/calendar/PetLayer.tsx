@@ -5,6 +5,7 @@ import type { TodoItem } from '../../domain/types';
 import { PetBubble, type PetBubbleMode } from './PetBubble';
 import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
+import { PetArtwork } from './PetArtwork';
 
 export interface PetLayerProps {
   petName: string;
@@ -34,7 +35,7 @@ export interface PetLayerProps {
  * the lists after that, as the原檔's `petTap()` (`:1155`) does.
  *
  * DP-170 adds device-local placement, dragging, docking and a collapsed tab.
- * Still to come: walking, the real assets and
+ * DP-188 adds the approved default cat's idle/look/grab artwork. Still to come: walking and
  * the seven-state machine (DP-171), choosing a partner (DP-172).
  */
 export function PetLayer({
@@ -48,6 +49,8 @@ export function PetLayer({
   onDeleteTodo,
 }: PetLayerProps) {
   const [bubble, setBubble] = useState<PetBubbleMode | null>(null);
+  const [lookCue, setLookCue] = useState<number | null>(null);
+  const cueSequence = useRef(0);
   const layerRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLButtonElement>(null);
   const bubbleLayerRef = useRef<HTMLDivElement>(null);
@@ -61,6 +64,7 @@ export function PetLayer({
 
   function openBubble(detail: number) {
     if (placement.consumeClick(detail) || bubble) return;
+    setLookCue(null);
     setBubble(greeted ? 'todos' : 'greeting');
     if (!greeted) onGreeted();
   }
@@ -86,25 +90,14 @@ export function PetLayer({
           onKeyDown={placement.onKeyDown}
           onBlur={placement.onBlur}
           onPointerDown={placement.onPointerDown}
-          onPointerMove={placement.onPointerMove}
+          onPointerMove={event => { if (placement.onPointerMove(event)) setLookCue(null); }}
           onPointerUp={placement.onPointerUp}
           onPointerCancel={placement.onPointerCancel}
           onLostPointerCapture={placement.onPointerCancel}
         >
-          <span className="cal-pet-body" aria-hidden="true">
-            <span className="cal-pet-shadow" />
-            <span className="cal-pet-head">
-              <span className="cal-pet-ear left" />
-              <span className="cal-pet-ear right" />
-              <span className="cal-pet-eye left" />
-              <span className="cal-pet-eye right" />
-              <span className="cal-pet-cheek left" />
-              <span className="cal-pet-cheek right" />
-              <span className="cal-pet-mouth" />
-            </span>
-            <span className="cal-pet-foot left" />
-            <span className="cal-pet-foot right" />
-          </span>
+          <PetArtwork pose={placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : 'idle'}
+            paused={bubble !== null} hidden={placement.hidden} cue={lookCue}
+            onLookDone={cue => setLookCue(current => current === cue ? null : current)} />
           {lists.open > 0 && (
             <span className="cal-pet-badge" aria-hidden="true">
               {lists.open}
@@ -121,9 +114,9 @@ export function PetLayer({
           todayKey={todayKey}
           lists={lists}
           onShowTodos={() => setBubble('todos')}
-          onClose={() => { placement.restoreFocus(); setBubble(null); }}
-          onMove={() => { setBubble(null); placement.startMoving(); }}
-          onCollapse={() => { setBubble(null); placement.setCollapsed(true); }}
+          onClose={() => { placement.restoreFocus(); setBubble(null); setLookCue(++cueSequence.current); }}
+          onMove={() => { setLookCue(null); setBubble(null); placement.startMoving(); }}
+          onCollapse={() => { setLookCue(null); setBubble(null); placement.setCollapsed(true); }}
           onAddTodo={onAddTodo}
           onToggleTodo={onToggleTodo}
           onDeleteTodo={onDeleteTodo}

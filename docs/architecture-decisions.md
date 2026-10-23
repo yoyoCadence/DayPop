@@ -639,6 +639,14 @@ PNG／候選 decoded frame 時序／alpha／品質差／hash 與 native 相機�
 
 下一段先確認動作品質、格式／預算與播放政策，再另 PR 接 registry／fallback／reduced-motion；不在這段做 App 接入、look 觸發政策、角色偏好、walk／sit／sleep／jump、XP 或完成回饋。DP-171／172／041 仍未結案；0.4.3／v4／18 migrations、Auth、公告及部署不變。
 
+### 預設月光貓三態接入（DP-188，2026-10-23）
+
+DP-187 PR #182 四項 CI 全過並合併 `65bfab5` 後，依已核准方案接入 Q85 WebP＋PNG，預設顯示月光貓、名稱仍讀既有 petName；軌道噗只進 typed registry，不增加選角或偏好。兩款各四個檔案與 DP-187 previews 逐 byte 相同，固定配色／透明 120px 來源顯示於既有 60px 區域；原稿的主題換色是已核准差異，徽章、泡泡、焦點與拖移幾何沿 DP-169／170。
+
+idle 原生循環；關閉泡泡才給一次 look cue，解碼完成後計 1.6 秒，真正超過拖移門檻或鍵盤移動才切 grab。泡泡／reduce 用真正 PNG，暫藏／背景不留圖片，收起卸載；CSS fallback 也在停止狀態關掉眨眼。look 載入失敗或尚未解碼就暫藏／背景時丟棄 cue，恢復時不補播；過期解碼與 timer 不影響新 cue。失敗沿原 CSS，不新增訊息。
+
+每款 ≤192 KiB（idle ≤128、look ≤48、每張 PNG ≤16），目前貓 177,790／飛碟 151,453 bytes。`check:build` 核對實際輸出的 hash 檔與來源 bytes，缺漏／重複／無效預算或超限均失敗；未選用飛碟也計入。沒有整包預載或擴充安裝 cache，沿現有 runtime cache，離線首次未快取 PNG 可回靜態 CSS。完整責任、命令與驗證限制見 [接入紀錄](pet-assets-integration.md)。後四態、選夥伴與 XP 留 DP-171／172／041；0.4.3／v4／18 migrations、公告／部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
