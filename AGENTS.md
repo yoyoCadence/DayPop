@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **Blender 夥伴概念試作（DP-183，2026-10-23）：** 擁有者指出摩卡只是粗糙範例，指定官方 Blender、精緻卡通 3D＋漫畫描邊與固定配色；只保留貓咪，其餘由 Codex 提案，包含非動物／太空船生物。四款 idle 概念（月光貓、軌道噗、星茶壺、芽芽車）、可編輯 `.blend`、768／120／60px 透明圖、背景板、量測與負控制放在 `docs/pet-concepts/2026-10-23/`，**不在 App 資產圖、尚未獲選，不代表七態已完成**。120px 合計 53,514 bytes，僅此批靜態實測；32 KiB 預算尚未採用，動畫、keys／名稱、狀態與快取仍待定。詳見該目錄 README 與 ADR §4；DP-171／172／041 未結案，不改 0.4.3／v4／18 migrations、公告或部署。
+
 - **DP-170 量測注意：** `.cal-pet-layer` 保留零高度，範圍從內容區量；全畫面透明層會妨礙 axe 對比量測。pointer 比例從角色自身的 60px 矩形計算（純水平拖曳有回歸），鍵盤提示走 ViewportLayer，e2e 要求在 viewport 內。不要改回以浮動層高度作除數，或降低 axe 的五段文字門檻。
 
 - **夥伴拖移與收起（DP-170，2026-10-22）：** 擁有者四點定案已實作：60×60 角色拖移，離左右可用邊界 24px 內才靠邊；泡泡提供「移動夥伴」（方向鍵每次 10px、Enter 保存、Escape／Tab／失焦取消）與「收起夥伴」，收起留下可聚焦的 44px 側籤，展開／收起交接焦點。`petPlacement.ts` 管幾何與 `daypop.pet-placement` UI version 1；`usePetPlacement.ts` 管訂閱、預覽與提交。**相對位置／收起狀態經 AppStorage、遊客與帳號共用，不進資料 v4／快取／備份**，讀取／縮放／暫藏不寫入。量測內容、標頭與 FAB（8px 間距），不越過分頁或 safe-area；外部 modal、欄位聚焦、visualViewport 遮住或空間不足暫藏後恢復，不改保存比例。`useModalLayerOpen(exceptRef)` 可排除自己的泡泡，避免關閉時隱藏焦點目的地；其他 callers 不變。petEnabled 關閉角色／側籤／泡泡全不畫。沒有位移動畫、走動、新素材、XP、schema、版號、公告或部署；泡泡位置固定，移動後尾巴不跟隨角色。原稿／React 與瀏覽器證據見 ADR §4／本次 PR；**iOS 真機拖曳、鍵盤及安全區仍需擁有者驗收**。

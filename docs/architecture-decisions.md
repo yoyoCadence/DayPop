@@ -593,6 +593,16 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 **量測邊界**：浮動層保留零高度，移動範圍從內容區測量；全畫面的透明層會干擾 axe（新側籤稽核曾只量到 4 段，低於既有 5 段門檻），不可用降低門檻來迴避。pointer 的縮放比例從角色本身的 60px 矩形換算，不能除以零高度層；純水平拖曳有獨立回歸。鍵盤提示經 ViewportLayer 顯示，e2e 要求它確實在畫面內。新側籤／移動稽核各自獨立於既有主要畫面案例，原 timeout、WCAG 與量測門檻不變。
 
+### Blender 創意夥伴概念（DP-183，2026-10-23）
+
+擁有者在 DP-171 的 Mode A 明確修正提案：目前摩卡只是粗糙範例，要求用官方 Blender 做精緻角色；採「精緻卡通 3D＋漫畫描邊」與固定配色，保留貓咪，其他由 Codex 提出非動物的創意方向（例如太空船生物）。這取代直接沿用黃色 CSS 貓、預設四種動物與立即製作貓七張靜態姿勢的提議；**圖片預算先保留，等試作量測後定案**。固定配色是已核准偏離原稿六主題換色的方向，但 App 此時仍畫舊 CSS 角色，不能說產品已改色。
+
+依此進入 Mode B，另立 DP-183（Next → In Progress → Done）先交四款 idle 概念與可編輯來源：月光貓、軌道噗（飛碟生物）、星茶壺、芽芽車（幼苗機器人）。這些是 Codex 的具體提案，不是擁有者已選定的正式角色清單或名稱。原始建模腳本、官方 zip SHA-256、壓縮 `.blend`、實際渲染、十二背景板與量測集中於 [概念紀錄](pet-concepts/2026-10-23/README.md)；不放 public 或引用進 App。新 id 只識別概念檔，不加入 domain 或 registry。
+
+120px 四張合計 53,514 bytes、60px 四張合計 19,723 bytes；每張四周至少 8／4px 透明。此數字只適用這批靜態圖，不能推算動畫包或真機速度，沒有把 32 KiB／224 KiB 寫成限制。四份來源都用 Blender 實際重開並核對編輯物件與相對輸出路徑；acceptance checker 先因無產物失敗、首輪取景過小也失敗，完成後五種壞圖負控制與真實檔案移除／逐 byte 還原均驗證。概念重建受 GPU／Blender 取樣影響，不保證 byte-identical。詳細方法、命令與限制見概念紀錄。
+
+下一段先讓擁有者看圖挑選，建議細修月光貓＋軌道噗；沒有據此自動擴做四款七態。正式名稱／keys、完整動作／rig／狀態觸發、動畫及 reduced-motion 替代、跨動作腳底 registration、圖片預算及快取／預載仍待定案。DP-171、DP-172、DP-041 仍未結案；未改 App、schema、Auth、版號、公告或部署。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
