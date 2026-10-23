@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **造型已採用、三態交接（DP-186，2026-10-23）：** 擁有者已採用 DP-185 月光貓／無腿軌道噗，定案先做 `idle`（4.4s）／`look`（約 1.6s 單次）／`grab`（靜態），先交 Blender／PNG 幀序列／靜態替代與預覽，量測後再定格式／預算；App 接入另 PR，不自動走動、不綁待辦獎勵。PR #180 四項 CI 全過後合併 `2708f4c`（Chromium 259 passed／13 skipped、WebKit 5 passed）。隨後擁有者要求停止製作、先交接給另一個 agent；**三態尚未開始，下一項 DP-187**。完整決策、原檔／Blender 路徑、驗證證據、接手順序與限制見 `docs/pet-motion-handoff-2026-10-23.md`；下方 DP-185 的「待確認」已被本次採用補正。仍 CSS App／0.4.3／v4／18 migrations，DP-171／172／041 未結案。
+
 - **柔化貓咪與懸浮飛碟（DP-185，2026-10-23）：** 擁有者認為 DP-184 有詭異感，採納兩款一起改：小眼／少反光、貼合鼻嘴、短肢自然坐姿；飛碟移除腿與鞋形腳墊，改成懸浮生物；保留配色與 3D 漫畫方向。`friendly_selected.py` 增量重用前兩階段，實際曲面淺面五官、融合坐姿／前爪、霧面材質與整理環帶；只更新兩款，其他兩款來源／PNG、DP-184 比較圖逐 byte 不變。新增真實 Blender 原檔幾何／材質回歸，四組先失敗，反向換回 DP-184 再失敗、finally 精確還原後通過；圖片負控制／占比驗收仍過。最新兩款 120px 合計 25,812 bytes、60px 9,719 bytes；前後圖／命令與限制見 `docs/pet-concepts/2026-10-23/README.md`。**只是修改方向獲准，新造型仍待確認，確認後才規劃動作**；仍 idle／未接 App，預算／動畫／rig／七態／正式 keys 待定。DP-171／172／041 未結案，0.4.3／v4／18 migrations、公告與部署不變。
 
 - **月光貓＋軌道噗細修（DP-184，2026-10-23）：** 擁有者看 DP-183 四款後選擇先細修這兩款，造型確認後才擴充動作。`refine_selected.py` 重用原始 Blender 流程，只更新兩款來源／圖，其他兩款逐 byte 不變。貓融合頭耳與連續描邊、收細尾巴／加鬍鬚；飛碟整理環帶與舷窗，保留配色。60px 可見長邊 44 → 50px，仍四周至少 4px 透明；`test_selected_sprites.py` 四組先失敗，反向原始圖失敗後精確還原通過。前後圖與最新量測見 `docs/pet-concepts/2026-10-23/README.md`；兩款 120px 合計 30,209 bytes，預算仍待定。**只做 idle 細修，尚待造型確認，不是已接 App／完成七態**；App／v4／18 migrations、公告／部署不變，DP-171／172／041 未結案。
