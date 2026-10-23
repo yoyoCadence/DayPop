@@ -1,5 +1,7 @@
 # Blender 夥伴三態素材交接（2026-10-23，DP-186）
 
+> **後續更新（DP-187）：** 擁有者之後明確表示「不用特別寫交接了，你就是那個要接手的 agent」。PR #181 四項 CI 全過後已合併 `1177dcd`（Chromium 259 passed／13 skipped、WebKit 5 passed）；本 agent 從最新 main 接回三態試作。完成來源／幀序列／候選量測見 [最新紀錄](pet-concepts/2026-10-23/motion/README.md)。下方「尚未開始／交另一個 agent」保留為當時歷史，不是現在的待辦；App 接入仍未做。
+
 ## 接手先看
 
 擁有者因 token 額度要求「先寫交接檔案，給另一個 agent 做」，並要求上 GitHub。**本交接只記錄定案與現況，三態製作尚未開始。** 下一項是 **DP-187：月光貓＋軌道噗 idle／look／grab 素材試作**，不是 App 接入、完整七態或選擇夥伴偏好。
