@@ -1,0 +1,160 @@
+{
+  "task": "DP-183",
+  "productionReady": false,
+  "blender": "5.2.3 LTS",
+  "blenderZipSha256": "723f08a4401502561eb763cdeacf8745b31e5f3f154d287d3830d97cf75dc2fb",
+  "concepts": [
+    {
+      "id": "moon_cat",
+      "title": "Moon Cat",
+      "source": "source/moon_cat.blend",
+      "renders": {
+        "768": "renders/moon_cat-768.png",
+        "120": "renders/moon_cat-120.png",
+        "60": "renders/moon_cat-60.png"
+      },
+      "measurements": {
+        "120": {
+          "bytes": 13784,
+          "visiblePixels": 3952,
+          "bounds": [
+            25,
+            16,
+            94,
+            103
+          ]
+        },
+        "60": {
+          "bytes": 5033,
+          "visiblePixels": 1024,
+          "bounds": [
+            12,
+            8,
+            47,
+            51
+          ]
+        }
+      },
+      "sha256": {
+        "renders/moon_cat-768.png": "520a2ec0f2aa1d1fc9b06a8e0cd63aaf2fd3cff6cdb8003597ff9e35072d8ba8",
+        "renders/moon_cat-120.png": "75cb2abe95662e66be1c951f0a21e73eccd37e6c294c9c5b6e9e3b19003f4e8f",
+        "renders/moon_cat-60.png": "1fc74c86b7da55f3466845c2f6eb160049870c26d8f05fe3960538ba344770bd",
+        "source/moon_cat.blend": "bb248f1c5c60e241d5c446faebccf3662e720f2b8fb6255090dbfd81de7deebc"
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "title": "Orbit UFO",
+      "source": "source/orbit_ufo.blend",
+      "renders": {
+        "768": "renders/orbit_ufo-768.png",
+        "120": "renders/orbit_ufo-120.png",
+        "60": "renders/orbit_ufo-60.png"
+      },
+      "measurements": {
+        "120": {
+          "bytes": 12294,
+          "visiblePixels": 3169,
+          "bounds": [
+            16,
+            19,
+            103,
+            100
+          ]
+        },
+        "60": {
+          "bytes": 4591,
+          "visiblePixels": 830,
+          "bounds": [
+            8,
+            10,
+            51,
+            50
+          ]
+        }
+      },
+      "sha256": {
+        "renders/orbit_ufo-768.png": "ad412dfabbf51200d569287900505ed069b782af85a5c73c204e06ef692e6749",
+        "renders/orbit_ufo-120.png": "a5a7ae1cac766141cc543053aa7d2adc88f7b2c46a2930981a02696a4b68b22b",
+        "renders/orbit_ufo-60.png": "bd0a527a09a71ebc737c389b6384524dc74948de67245ee8750b47dacbae1789",
+        "source/orbit_ufo.blend": "8699c51143f3c47fe206c9a003c1f5cb1704cb1e6b3dbbd2587715cfab6af731"
+      }
+    },
+    {
+      "id": "cloud_teapot",
+      "title": "Cloud Teapot",
+      "source": "source/cloud_teapot.blend",
+      "renders": {
+        "768": "renders/cloud_teapot-768.png",
+        "120": "renders/cloud_teapot-120.png",
+        "60": "renders/cloud_teapot-60.png"
+      },
+      "measurements": {
+        "120": {
+          "bytes": 13468,
+          "visiblePixels": 3573,
+          "bounds": [
+            19,
+            16,
+            100,
+            103
+          ]
+        },
+        "60": {
+          "bytes": 4965,
+          "visiblePixels": 946,
+          "bounds": [
+            10,
+            8,
+            50,
+            51
+          ]
+        }
+      },
+      "sha256": {
+        "renders/cloud_teapot-768.png": "20673c937f7879b79616a8e259950efe7b79ad2dd6b528d571a08874663cce34",
+        "renders/cloud_teapot-120.png": "14739841133df53173053598ee700b36c3536511df5cbbec0e0f007203847a5a",
+        "renders/cloud_teapot-60.png": "a172db88c294d7943352fd09031594b097649c479bbea791296b1a3a0fbf3549",
+        "source/cloud_teapot.blend": "a2582b226661956ef2ca46ecc894e5bc01961596d6a09b3c8b4606bccdf35d15"
+      }
+    },
+    {
+      "id": "sprout_rover",
+      "title": "Sprout Rover",
+      "source": "source/sprout_rover.blend",
+      "renders": {
+        "768": "renders/sprout_rover-768.png",
+        "120": "renders/sprout_rover-120.png",
+        "60": "renders/sprout_rover-60.png"
+      },
+      "measurements": {
+        "120": {
+          "bytes": 13968,
+          "visiblePixels": 3941,
+          "bounds": [
+            19,
+            16,
+            100,
+            103
+          ]
+        },
+        "60": {
+          "bytes": 5134,
+          "visiblePixels": 1027,
+          "bounds": [
+            9,
+            8,
+            50,
+            51
+          ]
+        }
+      },
+      "sha256": {
+        "renders/sprout_rover-768.png": "3c8469c1948e8904c539e31635be39a4cf726917219305800133e1c0a7788ed2",
+        "renders/sprout_rover-120.png": "376de55250717686a75892cd08655e80802aa20b98b1d5f6357aa4665e26f8a2",
+        "renders/sprout_rover-60.png": "d43c5047f4772e86ed3385552b5f06d38d2e8eee1268f0ecf4303bd4d10895cf",
+        "source/sprout_rover.blend": "9444d0f03332fbcb7a2f0bc7c2a0e9fc6f30de6fa2fbdbe12780fbb9617b32e1"
+      }
+    }
+  ]
+}

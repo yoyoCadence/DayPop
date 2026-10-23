@@ -1,0 +1,86 @@
+[
+  {
+    "id": "manga",
+    "mode": "light",
+    "label": "manga / light",
+    "bg": "#ffffff",
+    "fg": "#111111"
+  },
+  {
+    "id": "manga",
+    "mode": "dark",
+    "label": "manga / dark",
+    "bg": "#121212",
+    "fg": "#ffffff"
+  },
+  {
+    "id": "minimal",
+    "mode": "light",
+    "label": "minimal / light",
+    "bg": "#fafafa",
+    "fg": "#18181b"
+  },
+  {
+    "id": "minimal",
+    "mode": "dark",
+    "label": "minimal / dark",
+    "bg": "#0a0a0a",
+    "fg": "#fafafa"
+  },
+  {
+    "id": "warm",
+    "mode": "light",
+    "label": "warm / light",
+    "bg": "#f4ede1",
+    "fg": "#3d2f24"
+  },
+  {
+    "id": "warm",
+    "mode": "dark",
+    "label": "warm / dark",
+    "bg": "#241d17",
+    "fg": "#f0e6d8"
+  },
+  {
+    "id": "business",
+    "mode": "light",
+    "label": "business / light",
+    "bg": "#eef1f6",
+    "fg": "#0f2440"
+  },
+  {
+    "id": "business",
+    "mode": "dark",
+    "label": "business / dark",
+    "bg": "#0c1626",
+    "fg": "#e8eef7"
+  },
+  {
+    "id": "vivid",
+    "mode": "light",
+    "label": "vivid / light",
+    "bg": "#f5f4ef",
+    "fg": "#141414"
+  },
+  {
+    "id": "vivid",
+    "mode": "dark",
+    "label": "vivid / dark",
+    "bg": "#141019",
+    "fg": "#f6f1fb"
+  },
+  {
+    "id": "pixel",
+    "mode": "light",
+    "label": "pixel / light",
+    "bg": "#e8e6d0",
+    "fg": "#2b2b22"
+  },
+  {
+    "id": "pixel",
+    "mode": "dark",
+    "label": "pixel / dark",
+    "bg": "#0f120e",
+    "fg": "#cfeccb"
+  }
+]

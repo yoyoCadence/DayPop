@@ -80,6 +80,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
 
 > **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
@@ -208,6 +209,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -383,6 +385,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-17**：第一段 DP-169（對話泡泡）完成，寵物已是可點的按鈕、不再整層 `aria-hidden`；DP-170–172 與本條的素材、狀態機、拖曳仍未做。
 - [x] **DP-169 — 已完成（2026-10-17），見 Done；照原稿的問候與今日／明日待辦搬，不是下面原條目的內容。** 原條目：寵物對話泡泡（DP-040 第一段）：點擊或以鍵盤啟動寵物，開啟漫畫對話泡泡，顯示今日剩餘待辦數、下一個行程，以及「查看」與「新增」入口。內容用可預期的本機規則，不用 AI。`PetLayer` 要改成有可及性名稱的可聚焦控制項，裝飾的部分維持隱藏。可以一併接回原稿的三個接點：搜尋點待辦開泡泡（`:1295` 的 `showTodosBubble()`）、關閉桌寵時同時關泡泡（`:995`）、設定頁的說明文字（DP-163）。資料只讀，不需要 schema。泡泡不是可靠提醒，不得這樣宣稱（DP-042）。若泡泡是 modal，沿用 DP-154 的焦點管理。
 - [ ] **DP-171 — 寵物素材 registry 與七種狀態（DP-040 第三段）：** 依 `寵物素材規範 Pet Asset Spec.md`：四個品種（`cat`／`bear`／`bunny`／`chick`）、七種狀態（含 `grab`）、120×120 素材顯示為 60×60。建立 typed asset registry（`PET_ASSETS[kind][state]`），缺圖時退回現有的 CSS 角色。素材要通過 `check:build`（無遠端依賴）。`performance-budget.json` 目前只管 JS／CSS，圖片體積的上限與是否進 app shell 快取要另外定。**前置**：素材檔本身要先存在；沒有素材時這一項只能做 registry 與 fallback。
+  > **2026-10-23 擁有者改選先做正式素材：** 指定 Blender、精緻卡通 3D＋漫畫描邊、固定配色；摩卡只是粗糙範例，只要求保留貓咪，其他由 Codex 探索非動物（例如太空船生物）。因此先另立 DP-183 做四款 idle 概念與可編輯來源，不能把本條歷史四動物直接當作已定案清單。新 keys／名稱、七態／動畫、rig、預算及快取待選定後再定；本條未結案，不先做 registry 或 DP-172 migration。
 - [ ] **DP-172 — 選擇夥伴偏好（DP-040 第四段，依賴 DP-171）：** 原稿設定頁的「選擇夥伴」需要一個新的偏好欄位。這代表 migration、重新產生 `database.types.ts`、guest 與帳號快取的 schema version 提升（v4 → v5）、write barrier 與遷移回歸測試。高風險，獨立 PR；migration 要由專案擁有者 push 之後才能部署前端（比照 DP-138）。不得把這個值另存在臨時 storage，那會變成第二套資料模型。
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
   > **2026-10-13 審查補充（動工前要先有答案）**：(1) 回饋與獎勵只能在「待辦已確認保存為完成」之後發生。`toggleTodo` 目前對 UI 回傳 `void`（`dataContext.ts:74`），第一步是比照 DP-133／134／141 讓它回傳既有 queue 的確認結果。(2) 先定規則：重複勾選與取消完成、父子待辦、匯入的資料、重試（DP-142）與帳號切換，同一來源不得重複給獎勵。(3) 成長資料走既有 repository；如果需要 ledger 或新表，獨立 migration 加 RLS 測試，不與動畫 PR 混在一起。(4) 優先解鎖表情、配件與日常互動，不用斷連續天數或扣生命值來懲罰。上方 Proposed data architecture 寫的是「寵物 XP 優先由已完成待辦推導」，若改成 ledger 要同步那一句。
@@ -409,6 +412,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-183 — Blender 創意夥伴概念試作（2026-10-23）：** 擁有者指定官方 Blender、精緻卡通 3D＋漫畫描邊、固定配色，摩卡僅粗糙範例，保留貓咪，其餘由 Codex 提案；由 Next 移入 In Progress 後完成本段。基線 DP-170 PR #177 合併的 `b84b7bb`；另交月光貓、軌道噗、星茶壺、芽芽車四款 idle 概念，**皆尚未獲選或接入 App**。官方 portable zip SHA-256 已核對，四份 `.blend` 實際重開（44／39／41／33 objects，無外部貼圖、相對渲染路徑）；腳本、768／120／60px RGBA、背景板與 bytes／alpha／hash 見 [概念紀錄](docs/pet-concepts/2026-10-23/README.md)。acceptance checker 先因缺產物失敗，首輪取景過小也被拒絕；完成後空圖、白底、裁切、剪影、尺寸負控制與真實檔移除／逐 byte 還原共六項通過。120px 合計 53,514 bytes，圖片預算仍待定，不外推動畫。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 Chromium／WebKit 9 passed；實際時區列印，空 Supabase 子環境，伺服器核對並清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查完成後才依授權合併。下一段先讓擁有者選款細修，建議貓＋飛碟；DP-171／172／041 未結案，無七態／動畫／rig、新 domain 欄位、migration、版號／公告／部署或正式資料操作。
 
 - [x] **DP-170 — 寵物拖移、靠邊停駐與收起（2026-10-22）：** 擁有者明確採用四點方案，Backlog → Next → In Progress → Done；基線 PR #176 合併的 `4100893`。保留 60×60 CSS 角色，24px 內靠邊、其他自由停留；泡泡增加鍵盤移動（方向鍵 10px、Enter 保存、Escape／Tab／失焦取消）與收起，44px 側籤展開並交接焦點。位置比例／收起狀態經裝置共用 AppStorage，不進資料 v4／帳號快取／備份；縮放、避讓、表單／鍵盤或空間不足的暫藏不改保存位置。保留零高度浮動層，從內容區量測；pointer 比例從角色矩形換算、提示經 ViewportLayer，避免透明層妨礙 axe。四項先失敗；另捕捉中斷預覽、首次收起誤吸附、純水平拖曳等邊界，完成後反向產品檔回基線失敗再恢復。lint／typecheck、1,365 單元＋17 Node、build／check:build 通過；相關 Chromium／WebKit／axe 共 26 passed、2 desktop 尺寸 skipped。六套主題本機先前 180 秒逾時，最終以 360 秒診斷上限完整通過（約 3.4 分鐘）；CI timeout／矩陣／WCAG／五段對比門檻皆不改，以最新四項 CI 全過與審查完成才依授權合併。原稿／React 手機／桌面淺深色及泡泡／側籤實際核對，React 0 錯誤／警告／水平溢出；證據與實作邊界見 ADR §4／PR。更新 AGENTS §0.1、canonical／行為／素材文件；App 0.4.3、v4、18 migrations、公告／部署不變，無 MCP／正式資料操作。**iOS 真機拖曳、鍵盤開合與安全區仍待擁有者驗收**；走動、素材／七態、選夥伴、XP 未做。
 
