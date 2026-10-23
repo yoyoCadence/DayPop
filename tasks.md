@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-23 DP-185 定案與指定：** 擁有者認為 DP-184 造型有詭異感，採納兩款一起調整：貓縮小眼睛／減少反光、鼻嘴融入臉部、短肢自然坐姿；飛碟移除長腿與鞋形腳墊、改成懸浮生物並簡化表情；兩款降低塑膠光澤、整理接縫，保留配色與 3D 漫畫方向。由 Next 移入 In Progress，僅交付 idle／來源與前後圖；造型再確認後才規劃動作。
+
 
 
 
@@ -210,6 +212,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -414,6 +417,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-185 — 柔化月光貓與懸浮軌道噗（2026-10-23）：** 擁有者認為 DP-184 有詭異感，採納兩款一起調整；從最新 main `0cd76de` 開分支，經 Next → In Progress → Done。`friendly_selected.py` 增量重用前兩階段，縮小／貼合五官與單亮點、融合貓的坐姿／短前爪、移除飛碟腿／鞋形腳墊／玻璃反光條，降低塑膠光澤並整理環帶／舷窗；保留色值，其他兩款來源／PNG 及歷史比較圖逐 byte 不變。四組實際 Blender 原檔回歸先失敗，反向 DP-184 再失敗，finally 精確還原後通過；既有六項圖片負控制、占比反向驗收、四份重開與十二背景核對均過。兩款 120px 25,812 bytes／60px 9,719 bytes，保留 8／4px 透明邊距，預算未定案；[前後圖與可重跑來源](docs/pet-concepts/2026-10-23/README.md)。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 e2e 9 passed；空 Supabase Node 子環境、實際時區列印、伺服器核對清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查後才依授權合併。**僅修改方向獲准，新造型待再次確認，確認後才規劃動作**；未做動畫／rig／七態、正式 keys／registry／App 接入、schema／版本／公告／部署，DP-171／172／041 未結案。
 
 - [x] **DP-184 — 月光貓＋軌道噗 idle 細修（2026-10-23）：** 擁有者看圖後選定先細修這兩款，造型確認後才擴充動作；由 Next → In Progress → Done，基線 PR #178 合併 `f51dd60`（四項 CI 全過，Chromium 259 passed／13 skipped、WebKit 5 passed）。重用 Blender 原始生成器，只更新兩款來源／六張圖；貓以 Boolean／voxel remesh 融合頭耳並重建描邊、整理尾／鬍鬚與材質，飛碟整理環帶、舷窗、觸腳墊與材質；配色保留，其他兩款 PNG／`.blend` 逐 byte 不變。60px 可見長邊 44 → 50px，仍四周至少 4px 透明；80% 占比驗收四組先失敗，完成後反向原始圖再失敗，finally 精確恢復通過，原六項負控制仍過。四份 Blender 重開、bytes／alpha／hash 與十二背景實際核對，前後圖與新量測見 [概念紀錄](docs/pet-concepts/2026-10-23/README.md)。兩款 120px 合計 30,209 bytes，預算仍待定。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 Chromium／WebKit 9 passed；空 Supabase 子環境、實際時區列印，伺服器核對並清理。更新 AGENTS §0.1／ADR／canonical／素材規範；四項最新 CI 通過與審查完成才依既有授權合併。**造型仍待擁有者確認**，未做動畫／rig／七態、registry／App 接入、新 domain 欄位、migration、版號／公告／部署，DP-171／172／041 未結案。
 

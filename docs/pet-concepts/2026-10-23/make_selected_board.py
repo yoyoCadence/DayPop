@@ -10,6 +10,8 @@ def main():
     manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf8"))
     repo = ROOT.parents[2]
     baseline = manifest["conceptBaseline"]
+    # Keep this DP-184 comparison historical when newer renders are present.
+    refined = manifest.get("appearanceBaseline")
     board = Image.new("RGB", (1200, 1050), "#f5f3ee")
     draw = ImageDraw.Draw(board)
     draw.text((30, 24), "DAYPOP / SELECTED CHARACTER REFINEMENT", fill="#46536b", font=font(16))
@@ -28,11 +30,21 @@ def main():
             if size == 768:
                 image = image.resize((320, 320), Image.Resampling.LANCZOS)
             board.paste(image, (x, top), image)
-        paste(board, ROOT / f"renders/{kind}-768.png", (391, y + 78), 320)
+        if refined:
+            raw = subprocess.run(["git", "show", f"{refined}:docs/pet-concepts/2026-10-23/renders/{kind}-768.png"], cwd=repo, capture_output=True, check=True).stdout
+            current = Image.open(io.BytesIO(raw)).convert("RGBA").resize((320, 320), Image.Resampling.LANCZOS)
+            board.paste(current, (391, y + 78), current)
+        else:
+            paste(board, ROOT / f"renders/{kind}-768.png", (391, y + 78), 320)
         draw.text((816, y + 80), "60px 原尺寸", fill="#182037", font=font(17))
         draw.text((816, y + 205), "之前", fill="#596172", font=font(14))
         draw.text((956, y + 205), "之後", fill="#596172", font=font(14))
-        paste(board, ROOT / f"renders/{kind}-60.png", (975, y + 125))
+        if refined:
+            raw = subprocess.run(["git", "show", f"{refined}:docs/pet-concepts/2026-10-23/renders/{kind}-60.png"], cwd=repo, capture_output=True, check=True).stdout
+            current = Image.open(io.BytesIO(raw)).convert("RGBA")
+            board.paste(current, (975, y + 125), current)
+        else:
+            paste(board, ROOT / f"renders/{kind}-60.png", (975, y + 125))
         draw.text((816, y + 260), "可見長邊：44px → 50px", fill="#182037", font=font(17))
         draw.text((816, y + 296), "四周至少 4px 全透明", fill="#596172", font=font(15))
         draw.text((816, y + 328), "僅 idle，尚未接入 App", fill="#596172", font=font(15))

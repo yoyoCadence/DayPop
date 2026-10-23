@@ -15,33 +15,33 @@
       },
       "measurements": {
         "120": {
-          "bytes": 15897,
-          "visiblePixels": 5024,
+          "bytes": 14669,
+          "visiblePixels": 4931,
           "bounds": [
-            19,
+            20,
             11,
-            100,
+            99,
             109
           ]
         },
         "60": {
-          "bytes": 5760,
-          "visiblePixels": 1307,
+          "bytes": 5525,
+          "visiblePixels": 1282,
           "bounds": [
             10,
             5,
-            50,
+            49,
             54
           ]
         }
       },
       "sha256": {
-        "renders/moon_cat-768.png": "1d5b069439902ea2e24646dcd5d471fceb1e9919c093ea92675c4665d9eb3c2c",
-        "renders/moon_cat-120.png": "77545a7236902fe49cdc9a2341ae79292c9dabc522eb2c87b959afefe594013b",
-        "renders/moon_cat-60.png": "fcd375a7fc71443dd07e2e05bc92bf4600d0acc842b809b4ee84302999277e5c",
-        "source/moon_cat.blend": "cee6cba7c4cb6cabc2b6759f26ffdbbd4bea3dd01e3843aaa03379c9f94ce754"
+        "renders/moon_cat-768.png": "2637251352fbc1b5d02060383235b7e29c00aaa9cc8473699422724966d55c68",
+        "renders/moon_cat-120.png": "1571818bda404ec0ada1ece36c6edf575046e4bece2a4e868629283061f17492",
+        "renders/moon_cat-60.png": "fd10ee7704134cdf02bcf740c0bb432ee9f2eff95bbebd47b8cd24543af42155",
+        "source/moon_cat.blend": "f8bbad971479f1fac03e197d37ab45d4195ddddeae0c8de508393228ea68c1a1"
       },
-      "revision": "DP-184"
+      "revision": "DP-185"
     },
     {
       "id": "orbit_ufo",
@@ -54,33 +54,33 @@
       },
       "measurements": {
         "120": {
-          "bytes": 14312,
-          "visiblePixels": 4082,
+          "bytes": 11143,
+          "visiblePixels": 3468,
           "bounds": [
             10,
-            13,
+            26,
             109,
-            106
+            94
           ]
         },
         "60": {
-          "bytes": 5318,
-          "visiblePixels": 1066,
+          "bytes": 4194,
+          "visiblePixels": 900,
           "bounds": [
             5,
-            7,
+            13,
             54,
-            53
+            47
           ]
         }
       },
       "sha256": {
-        "renders/orbit_ufo-768.png": "4b7c66916bcaaef5421055be2ae103ba5b39969acfa6559164332365127aa350",
-        "renders/orbit_ufo-120.png": "f5914a856f976b714b0a71465115d087780efc7e4241b2169ff04da793d1794a",
-        "renders/orbit_ufo-60.png": "30fa33c8a512a84fe8ca48ae93e95480607b0d7ffd6a3a1b316895c760d8472a",
-        "source/orbit_ufo.blend": "4631afe5a2281c6f1361a301a3f358015d7d110bbbeb4e4105a6fa9a7eda6dc5"
+        "renders/orbit_ufo-768.png": "50b510ad1c725fea99f49909dcc6c556d7f246585f053a2dac0d841d1c144685",
+        "renders/orbit_ufo-120.png": "73b4c953066e9ba313009fd9d99cf026ac2fb1b4246239cef9b0bb101ff5d465",
+        "renders/orbit_ufo-60.png": "937337a311f0bf5d54de3c088c1e1921f0bcde946d0b6099899680b9bb104fe1",
+        "source/orbit_ufo.blend": "c342193efd592e89e46b90aabdd7178aa086bd6042ba22aa8ce92fa450ff70c3"
       },
-      "revision": "DP-184"
+      "revision": "DP-185"
     },
     {
       "id": "cloud_teapot",
@@ -161,10 +161,12 @@
       "revision": "DP-183"
     }
   ],
-  "latestTask": "DP-184",
+  "latestTask": "DP-185",
+  "conceptBaseline": "f51dd605bafd502fbf8ec2c8a5a5d589ea70b9e7",
+  "appearanceBaseline": "0cd76deeb96a28fac3e0206364bcd03ec78fec4c",
   "selectedForRefinement": [
     "moon_cat",
     "orbit_ufo"
   ],
-  "conceptBaseline": "f51dd605bafd502fbf8ec2c8a5a5d589ea70b9e7"
+  "appearanceApprovalPending": true
 }
