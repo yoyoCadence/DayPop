@@ -138,6 +138,24 @@
   gap: 7px;
 }
 
+.cal-pet-placement-actions {
+  display: flex;
+  margin-top: 12px;
+  gap: 7px;
+}
+
+.cal-pet-placement-actions button {
+  min-height: 44px;
+  flex: 1;
+  border: 2px solid #141414;
+  border-radius: 9px;
+  background: #fff;
+  padding: 6px;
+  color: #141414;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .cal-pet-show-todos {
   flex: 1;
   border: 2.5px solid #141414;

@@ -157,6 +157,21 @@ for (const mode of MODES) {
   });
 }
 
+for (const mode of MODES) {
+  test(`夥伴側籤與鍵盤移動 ${mode} 沒有 axe 違規`, async ({ page }) => {
+    await selectLook(page, '漫畫', mode);
+    await tabButton(page, '日曆').click();
+    await page.locator('button.cal-pet').click();
+    await page.getByRole('button', { name: '收起夥伴', exact: true }).click();
+    await audit(page, '夥伴側籤');
+    await page.getByRole('button', { name: /^展開夥伴/ }).click();
+    await page.locator('button.cal-pet').click();
+    await page.getByRole('button', { name: '移動夥伴', exact: true }).click();
+    await audit(page, '夥伴鍵盤移動');
+    await page.keyboard.press('Escape');
+  });
+}
+
 test('六套主題的淺色與深色：月曆、日詳情、新增行程與設定沒有 axe 違規', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-chrome', '主題色只看手機版面；桌面版面由上面兩個案例涵蓋');
   test.slow();

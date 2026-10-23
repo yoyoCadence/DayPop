@@ -578,6 +578,21 @@ Guest local adapter 與 authenticated Supabase adapter 必須共用同一套 can
 
 **驗證**：`petBubble.test.ts` 9 個（今日含逾期、明日、計數、順序、子項、跨月與兩次夏令時間）、`PetLayer.test.tsx` 15 個（名稱與徽章、問候與「問候過」、清單、勾選與刪除的焦點、兩種新增與失敗重試、標題上限、三種關閉與焦點歸還、inert）、`CalendarScreen.test.tsx` 2 個（關閉桌寵時不畫、經真正的 repository 依顯示時區 `Pacific/Kiritimati` 寫入今天與明天）、`App.test.tsx` 2 處（切換分頁後不再問候；工程用語掃描加入問候與清單）、`e2e/pet-bubble.spec.ts`（位置與尾巴、新增後日詳情與重新載入、點分頁列與月格只關泡泡、鍵盤、375×667 與 932×430 在畫面內並可捲動）與 `accessibility.spec.ts` 的漫畫淺／深色兩個模式。
 
+### 拖移、停駐與收起（DP-170，2026-10-22 擁有者定案）
+
+擁有者明確採納四點方案，依 Mode B 實作；原稿 `petDown／petMove／petUp`（:867–869）提供 60×60、超過 4px 才算拖曳與預覽座標的依據，沒有靠邊、收起、鍵盤或保存政策，以下為已核准的擴充。
+
+- **移動**：保留既有 CSS 角色、點擊／Enter／Space 開泡泡。主 pointer 拖曳時只更新 transform，放開才保存；取消／失去 capture 回復。距可用左右邊界 24px（含）才吸附，其餘自由停留。泡泡兩種模式都提供「移動夥伴」；焦點交還角色，方向鍵每次移動 10px，Enter 保存、Escape 取消，Tab／失焦取消，不攔截輸入法組字。
+- **收起**：泡泡提供「收起夥伴」，留下 44×44、可聚焦且有名稱的側籤，依原位置選最近的左右邊。收起與展開後焦點移至新控制項；展開回到原本的相對位置。`petEnabled` 關閉時，角色、側籤與泡泡都不畫。
+- **裝置狀態**：`daypop.pet-placement` 經共用 AppStorage 保存 `{version:1,x,y,collapsed}`，x／y 是可用移動區間的 0–1 比例。遊客與所有帳號共用、不包含身分或待辦，不進 user data、帳號快取、備份或家庭分享。缺漏／格式或 UI version 不符只採預設顯示，讀取不覆寫原值；明確操作才寫。UI version 1 與資料 schema v4／App 0.4.3 各自獨立，沒有 domain 欄位變更。
+- **避讓與暫藏**：測量日曆內容層、標頭與 FAB，將 60px 角色（含徽章／陰影間距）或 44px 側籤限制在內容區，永遠在標頭下方、分頁列與 safe-area 內，與 FAB 至少隔 8px。遇到 FAB 投影到最近可用側；縮放、旋轉及避讓只改顯示，不改保存比例。外部表單 modal、輸入欄位聚焦、visualViewport 被鍵盤／縮放遮住、或放不下時暫藏，恢復後重新投影。自己的泡泡仍可用，輸入框聚焦只藏角色；關閉後恢復角色與焦點。
+
+`petPlacement.ts` 管純幾何與 UI storage；`usePetPlacement.ts` 管尺寸／viewport／焦點訂閱、暫態預覽與提交；`PetLayer` 沿用角色 markup，`PetBubble` 僅增加兩個入口。`useModalLayerOpen(exceptRef)` 只讓呼叫方排除自己的層，既有 callers 行為不變，避免關閉自己的泡泡時把焦點目的地暫藏。卸載移除訂閱。沒有位移動畫，reduced-motion 下也立即顯示最終位置；原有眨眼／泡泡規則保留。泡泡仍固定在原先位置，只有預設休息位置時尾巴對準角色，沒有跟隨動畫或自動走動。
+
+驗證記錄見本次 PR 與 tasks.md：幾何／保存／配額降級、取消／提交、焦點、表單與 visualViewport 回歸；Chromium 手機／桌面實際 pointer 與鍵盤、WebKit 小範圍操作及 axe。模擬器不代表 iOS 真機觸控拖曳已通過（DP-077）；實際鍵盤開合、安全區與旋轉仍需擁有者真機驗收。下一步先完成這項驗收；素材／七態、選夥伴、XP 各自留在 DP-171／172／041，未部署或改版號。
+
+**量測邊界**：浮動層保留零高度，移動範圍從內容區測量；全畫面的透明層會干擾 axe（新側籤稽核曾只量到 4 段，低於既有 5 段門檻），不可用降低門檻來迴避。pointer 的縮放比例從角色本身的 60px 矩形換算，不能除以零高度層；純水平拖曳有獨立回歸。鍵盤提示經 ViewportLayer 顯示，e2e 要求它確實在畫面內。新側籤／移動稽核各自獨立於既有主要畫面案例，原 timeout、WCAG 與量測門檻不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

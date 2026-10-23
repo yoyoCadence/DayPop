@@ -166,9 +166,11 @@ test('鍵盤：Enter 打開、Tab 留在泡泡裡、Escape 關閉並回到寵物
   // Shift+Tab past the first control wraps to the last one, not to the page.
   await bubble(page).getByRole('button', { name: '關閉', exact: true }).focus();
   await page.keyboard.press('Shift+Tab');
-  await expect(bubble(page).getByRole('button', { name: '加入明日待辦', exact: true })).toBeFocused();
+  await expect(bubble(page).getByRole('button', { name: '收起夥伴', exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(bubble(page).getByRole('button', { name: '關閉', exact: true })).toBeFocused();
+  await bubble(page).getByLabel('新增今日待辦').focus();
+  await expect(pet(page)).toBeHidden();
   await page.keyboard.press('Escape');
   await expect(bubble(page)).toHaveCount(0);
   await expect(pet(page)).toBeFocused();
@@ -194,18 +196,17 @@ for (const size of [
     const layout = await page.evaluate(() => {
       const box = document.querySelector('.cal-pet-bubble')!.getBoundingClientRect();
       const close = document.querySelector('.cal-pet-bubble-close')!.getBoundingClientRect();
-      const character = document.querySelector('button.cal-pet')!.getBoundingClientRect();
       const body = document.querySelector<HTMLElement>('.cal-pet-bubble-body')!;
       return {
         inside: box.top >= 0 && close.top >= 0 && box.right <= innerWidth && close.right <= innerWidth,
-        // The short-viewport tab bar is 50px, not 64; the bubble has to come
-        // down with the pet or the tail points at nothing.
-        tailAbovePet: box.bottom < character.top && character.top - box.bottom < 20,
+        // DP-170: an active form hides the character, without closing its
+        // bubble or moving the saved position.
+        petHidden: document.querySelector<HTMLButtonElement>('button.cal-pet')!.hidden,
         scrolls: body.scrollHeight > body.clientHeight,
         pageScrolls: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    expect(layout).toEqual({ inside: true, tailAbovePet: true, scrolls: size.height < 500, pageScrolls: false });
+    expect(layout).toEqual({ inside: true, petHidden: true, scrolls: size.height < 500, pageScrolls: false });
 
     // Scroll the list the way a finger would, then tap the last field where it
     // is on screen: a locator click would scroll it into view for us.

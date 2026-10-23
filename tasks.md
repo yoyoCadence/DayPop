@@ -79,6 +79,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **2026-10-21 DP-178 定案：** 擁有者採納「53 週、每次 12 週、裁掉離屏焦點時轉到可見日期」建議；從 Backlog 經 Next 移入 In Progress。先記錄 profile 與定案的文件 PR，合併後再依序做計算重用、滑動視窗，各自驗證／開 PR／合併，不混成一項。
 
 > **2026-10-21 接續 DP-161：** 依持續開發委託從 Backlog 經 Next 移入 In Progress；先量 production chunk、bundle 模組歸因與靜態依賴路徑，評估 JSON／ICS／重複展開是否真能延後。這項只交付量測與建議，不改產品載入流程；拆分若涉及錯誤／離線 UX，另立實作項。
@@ -207,6 +208,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -380,7 +382,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-13 校正與拆分**：上面「目前正常文件流的 `<aside class="pet-helper">`」已經過期。DP-051 起日曆頁的寵物是 `PetLayer`（`.cal-pet-layer`，`position: absolute` 的浮動層），固定在左下角並顯示未完成待辦數；`pet-helper` 只剩 `src/styles.css` 的舊樣式，沒有元件使用。`PetLayer` 目前整層 `aria-hidden` 且 `pointer-events: none`，不能互動。本條範圍太大，依審查建議拆成 DP-169–DP-172，本條留作父項。來源見 [`docs/review-2026-10-13-project-audit.md`](docs/review-2026-10-13-project-audit.md)。
   > **2026-10-17**：第一段 DP-169（對話泡泡）完成，寵物已是可點的按鈕、不再整層 `aria-hidden`；DP-170–172 與本條的素材、狀態機、拖曳仍未做。
 - [x] **DP-169 — 已完成（2026-10-17），見 Done；照原稿的問候與今日／明日待辦搬，不是下面原條目的內容。** 原條目：寵物對話泡泡（DP-040 第一段）：點擊或以鍵盤啟動寵物，開啟漫畫對話泡泡，顯示今日剩餘待辦數、下一個行程，以及「查看」與「新增」入口。內容用可預期的本機規則，不用 AI。`PetLayer` 要改成有可及性名稱的可聚焦控制項，裝飾的部分維持隱藏。可以一併接回原稿的三個接點：搜尋點待辦開泡泡（`:1295` 的 `showTodosBubble()`）、關閉桌寵時同時關泡泡（`:995`）、設定頁的說明文字（DP-163）。資料只讀，不需要 schema。泡泡不是可靠提醒，不得這樣宣稱（DP-042）。若泡泡是 modal，沿用 DP-154 的焦點管理。
-- [ ] **DP-170 — 寵物拖移、靠邊停駐與收起（DP-040 第二段，依賴 DP-169）：** 位置與收起狀態是裝置端的介面狀態（比照 `daypop.release-notes-seen`，走 `AppStorage`，不進 user data）。不得蓋住 FAB、底部分頁列、表單按鈕與手機鍵盤，並遵守 safe-area；reduced-motion 下不做位移動畫；`petEnabled` 關閉時整層不出現。**風險**：DP-077 已經說明 iOS 觸控拖曳的即時回饋在本機三條路徑都測不出，這一項同樣需要真機確認。
 - [ ] **DP-171 — 寵物素材 registry 與七種狀態（DP-040 第三段）：** 依 `寵物素材規範 Pet Asset Spec.md`：四個品種（`cat`／`bear`／`bunny`／`chick`）、七種狀態（含 `grab`）、120×120 素材顯示為 60×60。建立 typed asset registry（`PET_ASSETS[kind][state]`），缺圖時退回現有的 CSS 角色。素材要通過 `check:build`（無遠端依賴）。`performance-budget.json` 目前只管 JS／CSS，圖片體積的上限與是否進 app shell 快取要另外定。**前置**：素材檔本身要先存在；沒有素材時這一項只能做 registry 與 fallback。
 - [ ] **DP-172 — 選擇夥伴偏好（DP-040 第四段，依賴 DP-171）：** 原稿設定頁的「選擇夥伴」需要一個新的偏好欄位。這代表 migration、重新產生 `database.types.ts`、guest 與帳號快取的 schema version 提升（v4 → v5）、write barrier 與遷移回歸測試。高風險，獨立 PR；migration 要由專案擁有者 push 之後才能部署前端（比照 DP-138）。不得把這個值另存在臨時 storage，那會變成第二套資料模型。
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
@@ -408,6 +409,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-170 — 寵物拖移、靠邊停駐與收起（2026-10-22）：** 擁有者明確採用四點方案，Backlog → Next → In Progress → Done；基線 PR #176 合併的 `4100893`。保留 60×60 CSS 角色，24px 內靠邊、其他自由停留；泡泡增加鍵盤移動（方向鍵 10px、Enter 保存、Escape／Tab／失焦取消）與收起，44px 側籤展開並交接焦點。位置比例／收起狀態經裝置共用 AppStorage，不進資料 v4／帳號快取／備份；縮放、避讓、表單／鍵盤或空間不足的暫藏不改保存位置。保留零高度浮動層，從內容區量測；pointer 比例從角色矩形換算、提示經 ViewportLayer，避免透明層妨礙 axe。四項先失敗；另捕捉中斷預覽、首次收起誤吸附、純水平拖曳等邊界，完成後反向產品檔回基線失敗再恢復。lint／typecheck、1,365 單元＋17 Node、build／check:build 通過；相關 Chromium／WebKit／axe 共 26 passed、2 desktop 尺寸 skipped。六套主題本機先前 180 秒逾時，最終以 360 秒診斷上限完整通過（約 3.4 分鐘）；CI timeout／矩陣／WCAG／五段對比門檻皆不改，以最新四項 CI 全過與審查完成才依授權合併。原稿／React 手機／桌面淺深色及泡泡／側籤實際核對，React 0 錯誤／警告／水平溢出；證據與實作邊界見 ADR §4／PR。更新 AGENTS §0.1、canonical／行為／素材文件；App 0.4.3、v4、18 migrations、公告／部署不變，無 MCP／正式資料操作。**iOS 真機拖曳、鍵盤開合與安全區仍待擁有者驗收**；走動、素材／七態、選夥伴、XP 未做。
 
 - [x] **DP-182 — 月格 segment／標籤的時區欄位重用（2026-10-22）：** 擁有者明確採用提案，Backlog → Next → In Progress → Done；基線 PR #175 合併的 `cd72dde`、四項 CI 全過。一次 grouping 自建既有 256 筆 reader，segment／開始標籤以新增可選參數共用；不附在 event／entry、不跨次或持久化，來源／時區／撤權重算。七項先失敗、修正通過；反向三個產品檔回基線仍七項失敗，再還原。三個固定 53 週、各 7,420 entries 的 paired grouping 輸出 hash 完全相同、輸入不變，原生轉換 37,100 → 7,791；四次交替計時與限制見 [方法／raw](docs/month-display-reuse.md)，不外推整體捲動或真機。lint／typecheck、1,347 單元＋17 Node、NY 實際時區 175 項、build／check:build 通過，相關 e2e 47 passed／3 desktop skipped。原稿／React 手機／桌面、淺空／深單筆實際對照，保留既有差異、React 無錯誤／水平溢出；server 已清理。更新 AGENTS §0.1、ADR §6；最新四項 CI／審查完成才依授權合併。RRule／clipping／衝突、53 週／焦點、欄位、0.4.3／v4／18 migrations、公告／部署不變；無 MCP／正式資料操作，真機及實際家庭帳號未驗。
 

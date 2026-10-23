@@ -690,8 +690,9 @@
 }
 
 /* ---------- App 內浮動寵物 ----------
-   DP-051 owns the layer geometry. The seven-state machine, drag handling and
-   real assets are DP-170／171; until then the CSS character keeps the原檔's
+   DP-170 measures this content layer for movement, preserving DP-051's resting
+   position. The seven-state machine and real assets are DP-171;
+   the CSS character keeps the原檔's
    60 × 60 footprint and outline so the layout it competes with is honest.
    DP-169 made the character a button that opens its speech bubble
    (`petBubble.css`); the layer itself still lets taps through. */
@@ -700,8 +701,8 @@
   position: absolute;
   z-index: 40;
   right: 12px;
-  bottom: 14px;
   left: 12px;
+  top: 0;
   height: 0;
   pointer-events: none;
 }
@@ -711,8 +712,8 @@
    `pointer-events: auto` on the pet. */
 .cal-pet {
   position: absolute;
-  bottom: 0;
-  left: 14px;
+  top: 0;
+  left: 0;
   width: 60px;
   height: 60px;
   border: 0;
@@ -721,6 +722,43 @@
   color: inherit;
   cursor: pointer;
   pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.cal-pet[hidden],
+.cal-pet-tab[hidden] {
+  display: none;
+}
+
+.cal-pet-tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  padding: 0;
+  font-size: 22px;
+  pointer-events: auto;
+}
+
+.cal-pet-move-note {
+  position: absolute;
+  z-index: 40;
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(158px + env(safe-area-inset-bottom));
+  left: calc(12px + env(safe-area-inset-left));
+  border: var(--bd) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 8px;
+  color: var(--fg);
+  font-size: 12px;
+  text-align: center;
 }
 
 .cal-pet-body {
