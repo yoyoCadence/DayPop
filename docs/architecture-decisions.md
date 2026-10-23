@@ -629,6 +629,16 @@ Mode B 由最新 main `0cd76de` 另立 DP-185。新增 `friendly_selected.py` �
 
 先交 Blender／PNG 幀序列／靜態替代／預覽，逐幀固定相機、比例、錨點與透明邊距，量測後才定動畫包格式與圖片預算；App 接入另 PR，先不自動走動、不綁待辦或 XP，不增加偏好／schema／版號。其後擁有者因 token 額度要求先交接給另一個 agent，**素材尚未開始**；DP-187 依 [三態交接](pet-motion-handoff-2026-10-23.md) 接手。PR #180 已四項 CI 全過並合併 `2708f4c`；DP-171／172／041 仍未結案。
 
+### 兩款三態素材試作（DP-187，2026-10-23）
+
+擁有者取消交給另一個 agent 的安排，明確由本 agent 接回三態；既有交接文件保留作定案紀錄，PR #181 已四項 CI 過後合併 `1177dcd`。本段沿三態計畫，不改已採用造型，另放 `motion/` 保留 DP-185 原檔／PNG／manifest。交付兩份原生 Blender keyed controls／shape keys、122 張透明幀、六張靜態替代與候選格式量測；idle 44×100ms、look 16×100ms 單次、grab 靜態，10fps 是試作取樣，正式格式／預算未定。
+
+同一角色三態共用相機、比例與 anchor。相機角度／中心沿已採用來源，ortho scale 一次增加 7.5% 留動作及縮圖濾波餘量；首輪 120px 通過但 60px 淡邊越界被驗收拒絕，因此重渲染全部，不降低每幀 8／4px 透明邊距要求。貓以原生 shape key 眨眼／耳部回應，五官跟頭部，短爪收起；無腿飛碟以參考 anchor 做小幅懸浮、頭罩／環帶／天線動作，沒有加腿、光束或自動巡遊。
+
+PNG／候選 decoded frame 時序／alpha／品質差／hash 與 native 相機／anchor／循環邊界都直接驗收真實產物。六項圖片／時序反向負控制及兩項 `.blend` 相機／循環負控制先失敗，精確還原後通過。真正 Chromium 預覽確認三種候選能動、PNG look 單次停止、reduce 換靜態、手機無橫溢出；這不是 App／真機或完整七態驗收。四段候選 Q85 WebP 281,482 bytes、無損 WebP 785,016、APNG 1,157,045；[方法、全部數字與預覽](pet-concepts/2026-10-23/motion/README.md)。不把 raw frames／review GIF 當 App 預載包，不自行採用圖片預算。
+
+下一段先確認動作品質、格式／預算與播放政策，再另 PR 接 registry／fallback／reduced-motion；不在這段做 App 接入、look 觸發政策、角色偏好、walk／sit／sleep／jump、XP 或完成回饋。DP-171／172／041 仍未結案；0.4.3／v4／18 migrations、Auth、公告及部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

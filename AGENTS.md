@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **兩款三態 Blender 試作（DP-187，2026-10-23）：** 擁有者要求由本 agent 接回；PR #181 四項 CI 過後合併 `1177dcd`，從最新 main 實作 `docs/pet-concepts/2026-10-23/motion/`。兩款 idle 4.4s（44 幀）／look 1.6s（16 幀單次）／grab 靜態，10fps 僅試作採樣；原生 keyed controls／shape keys、兩份 `.blend`、122 透明 PNG、六張靜態替代、候選編碼與互動／GIF 預覽。固定各角色相機／比例／錨點，逐幀 120px 至少 8px 透明、縮 60px 至少 4px；首輪縮圖淡邊失敗後增加共用留白重渲染，未降門檻。六項真實圖片／時序負控制＋兩項 native 相機／循環負控制，精確還原後通過；原 DP-185 檔案不變。四段候選動畫 Q85 WebP 281,482 bytes、無損 WebP 785,016、APNG 1,157,045，格式／預算仍未定案，詳見該目錄 README。**這是素材試作，App 仍 CSS；後四態／新偏好／七態／XP 未做**，DP-171／172／041 未結案，0.4.3／v4／18 migrations、公告與部署不變。
+
 - **造型已採用、三態交接（DP-186，2026-10-23）：** 擁有者已採用 DP-185 月光貓／無腿軌道噗，定案先做 `idle`（4.4s）／`look`（約 1.6s 單次）／`grab`（靜態），先交 Blender／PNG 幀序列／靜態替代與預覽，量測後再定格式／預算；App 接入另 PR，不自動走動、不綁待辦獎勵。PR #180 四項 CI 全過後合併 `2708f4c`（Chromium 259 passed／13 skipped、WebKit 5 passed）。隨後擁有者要求停止製作、先交接給另一個 agent；**三態尚未開始，下一項 DP-187**。完整決策、原檔／Blender 路徑、驗證證據、接手順序與限制見 `docs/pet-motion-handoff-2026-10-23.md`；下方 DP-185 的「待確認」已被本次採用補正。仍 CSS App／0.4.3／v4／18 migrations，DP-171／172／041 未結案。
 
 - **柔化貓咪與懸浮飛碟（DP-185，2026-10-23）：** 擁有者認為 DP-184 有詭異感，採納兩款一起改：小眼／少反光、貼合鼻嘴、短肢自然坐姿；飛碟移除腿與鞋形腳墊，改成懸浮生物；保留配色與 3D 漫畫方向。`friendly_selected.py` 增量重用前兩階段，實際曲面淺面五官、融合坐姿／前爪、霧面材質與整理環帶；只更新兩款，其他兩款來源／PNG、DP-184 比較圖逐 byte 不變。新增真實 Blender 原檔幾何／材質回歸，四組先失敗，反向換回 DP-184 再失敗、finally 精確還原後通過；圖片負控制／占比驗收仍過。最新兩款 120px 合計 25,812 bytes、60px 9,719 bytes；前後圖／命令與限制見 `docs/pet-concepts/2026-10-23/README.md`。**只是修改方向獲准，新造型仍待確認，確認後才規劃動作**；仍 idle／未接 App，預算／動畫／rig／七態／正式 keys 待定。DP-171／172／041 未結案，0.4.3／v4／18 migrations、公告與部署不變。

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>DayPop · Blender 三態素材試作</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#f5f3ee;color:#182037;font:16px/1.6 system-ui,sans-serif}
+  main{max-width:1100px;margin:auto;padding:28px}h1{font-size:28px;margin:4px 0}p{color:#596172}
+  .tools{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:22px 0}select,button,input{font:inherit}
+  button,select{min-height:44px;padding:5px 12px;border:1px solid #596172;border-radius:8px;background:white;color:#182037}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  article{padding:20px;background:white;border:1px solid #dededc;border-radius:16px}.stage{display:flex;align-items:center;justify-content:center;gap:20px;min-height:270px;background:#f5f3ee;border-radius:12px}
+  .dark .stage{background:#111827}.large{width:240px;height:240px}.small{width:60px;height:60px}.stage img{object-fit:contain;flex-shrink:0}
+  @media(max-width:450px){main{padding:16px}.stage{gap:6px}.large{width:200px;height:200px}}
+  #status{min-height:2em}a{color:#324b91}:focus-visible{outline:3px solid #4967ac;outline-offset:3px}
+</style>
+<main>
+  <p>DAYPOP / BLENDER MOTION STUDIES</p>
+  <h1>月光貓 ＋ 軌道噗 · 三態素材試作</h1>
+  <p>同一批 Blender 透明幀，放大與 60px 並列。這是素材預覽，尚未接入 App。</p>
+  <div class="tools">
+    <label>姿態 <select id="state"><option value="idle">idle · 4.4 秒循環</option><option value="look">look · 1.6 秒單次</option><option value="grab">grab · 靜態</option></select></label>
+    <label>來源 <select id="format"><option value="frames">PNG 幀序列</option><option value="webp">候選 WebP 無損</option><option value="apng">候選 APNG</option><option value="webpQ85">候選 WebP Q85</option></select></label>
+    <button id="play" type="button">暫停</button>
+    <button id="replay" type="button">從頭播放</button>
+    <label><input id="dark" type="checkbox">深色背景</label>
+    <label><input id="still" type="checkbox">靜態替代圖</label>
+  </div>
+  <p id="status" role="status">載入素材…</p>
+  <div id="cards" class="cards"></div>
+  <p><a href="contact-sheet.png">查看關鍵幀與原尺寸比較</a> · <a href="README.md">試作紀錄</a></p>
+</main>
+<script type="module">
+const manifest = await fetch('./manifest.json').then(r=>{if(!r.ok)throw Error('manifest');return r.json()});
+const state = document.querySelector('#state'), format = document.querySelector('#format');
+const still = document.querySelector('#still'), play = document.querySelector('#play');
+const status = document.querySelector('#status'), reduce = matchMedia('(prefers-reduced-motion: reduce)');
+let index=0, paused=false, timer, nativeReload=0;
+for(const char of manifest.characters){
+  const article=document.createElement('article');
+  const h=document.createElement('h2');h.textContent=char.id==='moon_cat'?'月光貓':'軌道噗';
+  const stage=document.createElement('div');stage.className='stage';
+  for(const size of ['large','small']){const img=document.createElement('img');img.className=size;img.alt='';img.width=size==='large'?240:60;img.height=img.width;img.dataset.kind=char.id;stage.append(img);}
+  article.append(h,stage);document.querySelector('#cards').append(article);
+}
+function show(){
+  clearTimeout(timer);
+  const staticMode=still.checked||reduce.matches||paused||document.hidden||state.value==='grab';
+  for(const char of manifest.characters){
+    const clip=char.clips[state.value];
+    const file=staticMode?clip.static:format.value==='frames'?clip.frames[index]:clip.candidates[format.value];
+    for(const img of document.querySelectorAll(`[data-kind="${char.id}"]`)){
+      const src='./'+file+(format.value!=='frames'&&!staticMode?'?replay='+nativeReload:'');
+      if(img.getAttribute('src')!==src)img.setAttribute('src',src);
+    }
+  }
+  status.textContent=reduce.matches?'系統要求減少動態效果：顯示靜態替代圖':staticMode?'靜態顯示':format.value==='frames'?`PNG 幀 ${index+1} / ${manifest.characters[0].clips[state.value].frames.length}`:'候選動畫包播放中';
+  play.textContent=paused?'播放':'暫停';
+  if(!staticMode&&format.value==='frames')timer=setTimeout(()=>{
+    const clip=manifest.characters[0].clips[state.value];index++;
+    if(index>=clip.frames.length){index=0;if(!clip.loop)paused=true;}
+    show();
+  },100);
+}
+for(const input of [state,format,still])input.addEventListener('change',()=>{index=0;paused=false;nativeReload++;show()});
+play.addEventListener('click',()=>{paused=!paused;show()});
+document.querySelector('#replay').addEventListener('click',()=>{index=0;paused=false;nativeReload++;show()});
+document.querySelector('#dark').addEventListener('change',e=>document.body.classList.toggle('dark',e.target.checked));
+reduce.addEventListener('change',show);document.addEventListener('visibilitychange',()=>{index=0;show()});
+show();
+</script>
+</html>

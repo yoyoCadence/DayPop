@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-187 — 月光貓＋軌道噗三態素材試作（2026-10-23 擁有者定案，交另一個 agent）：** 已採用 DP-185 造型與三態先行方案；做 idle 4.4s、look 約 1.6s 單次、grab 靜態，先交 Blender／PNG 幀序列／靜態替代／預覽與實測，固定相機／比例／錨點並逐幀驗收透明安全區。先合併 DP-186 文件 PR、從最新 main 開獨立分支再移入 In Progress；詳細依 [交接](docs/pet-motion-handoff-2026-10-23.md)。不接 App、不做後四態／自動走動／XP／新偏好／schema／版號／部署，格式與圖片預算等量測後再定。
+> **2026-10-23 接回實作：** 擁有者明確表示「不用特別寫交接了，你就是那個要接手的 agent」。既有定案文件保留；PR #181 四項 CI 通過後合併 `1177dcd`，DP-187 由 Next 移入 In Progress，沿三態方案製作，不另等待其他 agent。
 
 > **2026-10-23 DP-185 定案與指定：** 擁有者認為 DP-184 造型有詭異感，採納兩款一起調整：貓縮小眼睛／減少反光、鼻嘴融入臉部、短肢自然坐姿；飛碟移除長腿與鞋形腳墊、改成懸浮生物並簡化表情；兩款降低塑膠光澤、整理接縫，保留配色與 3D 漫畫方向。由 Next 移入 In Progress，僅交付 idle／來源與前後圖；造型再確認後才規劃動作。
 
@@ -214,6 +214,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -420,6 +421,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-187 — 月光貓＋軌道噗三態素材試作（2026-10-23）：** 擁有者要求由本 agent 接回，PR #181 四項 CI 過後合併 `1177dcd`，從最新 main 開分支，Next → In Progress → Done。沿已確認造型／三態做兩份原生 Blender 控制／shape-key 動畫、122 張透明 PNG、六張靜態替代、候選無損 WebP／APNG／Q85 與互動／GIF／十二背景預覽；原 DP-185 檔案逐 byte 不變。idle 44×100ms／look 16×100ms 單次／grab 靜態，10fps 是試作；相機／比例／anchor 固定，逐幀 120／60px 透明安全區驗收，首輪縮圖越界後重渲染、不降門檻。六項圖片／時序反向負控制、兩項 native 相機／循環負控制拒絕後精確還原，decoded frames／時長／alpha／hash 與75樣本來源檢查過；真實 Chromium 看到候選動、look 停、reduce 靜態、手機無橫溢出。完整來源／bytes 與限制見 [試作紀錄](docs/pet-concepts/2026-10-23/motion/README.md)。lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 e2e 9 passed；空 Supabase 子環境、實際時區列印，預覽 session／server 核對清理。四項最新 CI 通過與審查後才依授權合併。格式／圖片預算及播放政策未定案，未做 App 接入／後四態／角色偏好／XP／schema／版本／公告／部署，DP-171／172／041 未結案。
 
 - [x] **DP-186 — 已採用造型與三態計畫交接（2026-10-23）：** 擁有者採用 DP-185 造型與三態先行方案，隨後要求先停止製作、交接給另一個 agent 並上 GitHub；經 Next → In Progress → Done，另開純文件 PR。主檔 [三態交接](docs/pet-motion-handoff-2026-10-23.md) 整理已定案內容、PR #180 已合併 `2708f4c`／四項 CI 全過證據、Blender／來源／命令、驗收及產品邊界；更新 AGENTS §0.1／ADR／canonical／素材規範與概念 README，DP-187 移入 Next。重新實跑 lint／typecheck、1,365 單元＋17 Node、build／check:build、相關 e2e 9 passed、17 個 Markdown 本機連結；空 Supabase 子環境、時區有輸出，背景 server 核對清理。純文件無產品修正可撤除，不新增假回歸；本交接 PR 最新 CI／合併交接手 agent 處理。**三態未開始，沒有改任何素材／App／schema／版本／公告／部署。**
 

@@ -1,0 +1,130 @@
+{
+  "task": "DP-187",
+  "method": "Mean absolute RGB error after RGBA compositing onto #f5f3ee, divided by 255; whole 120x120 canvas, all decoded frames. Not perceptual equivalence or browser decode speed.",
+  "clips": [
+    {
+      "character": "moon_cat",
+      "state": "idle",
+      "frames": 44,
+      "durationMs": 4400,
+      "pngBytes": 595193,
+      "candidates": {
+        "webp": {
+          "bytes": 317202,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "apng": {
+          "bytes": 484515,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400.0,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "bytes": 112830,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.003254266521423384
+        }
+      }
+    },
+    {
+      "character": "moon_cat",
+      "state": "look",
+      "frames": 16,
+      "durationMs": 1600,
+      "pngBytes": 216617,
+      "candidates": {
+        "webp": {
+          "bytes": 114960,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "apng": {
+          "bytes": 176083,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600.0,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "bytes": 37998,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600,
+          "maxCompositedMeanAbsoluteError": 0.003246187363834423
+        }
+      }
+    },
+    {
+      "character": "moon_cat",
+      "state": "grab",
+      "frames": 1,
+      "durationMs": null,
+      "pngBytes": 13390,
+      "candidates": {}
+    },
+    {
+      "character": "orbit_ufo",
+      "state": "idle",
+      "frames": 44,
+      "durationMs": 4400,
+      "pngBytes": 454388,
+      "candidates": {
+        "webp": {
+          "bytes": 258504,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "apng": {
+          "bytes": 363428,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400.0,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "bytes": 95760,
+          "decodedFrames": 44,
+          "decodedDurationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0035867828612926654
+        }
+      }
+    },
+    {
+      "character": "orbit_ufo",
+      "state": "look",
+      "frames": 16,
+      "durationMs": 1600,
+      "pngBytes": 165353,
+      "candidates": {
+        "webp": {
+          "bytes": 94350,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "apng": {
+          "bytes": 133019,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600.0,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "bytes": 34894,
+          "decodedFrames": 16,
+          "decodedDurationMs": 1600,
+          "maxCompositedMeanAbsoluteError": 0.0035694444444444445
+        }
+      }
+    },
+    {
+      "character": "orbit_ufo",
+      "state": "grab",
+      "frames": 1,
+      "durationMs": null,
+      "pngBytes": 10481,
+      "candidates": {}
+    }
+  ]
+}
