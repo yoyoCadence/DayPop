@@ -26,7 +26,11 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+> **最新合併基底（2026-10-25）：** DP-195 PR #190 head `20e3dc4` 四項 CI 與完成審查無發現、無未解決討論後合併 `dcd8986`。run `40143777448`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-196 已移至此 main，只送兩張 jump 與 registry／預算守門；沒有部署。
+
 > **最新合併基底（2026-10-25）：** DP-194 PR #189 head `6d5a15e` 四 CI 全過；審查停滯逾 9 小時，重新 Ready 後同一 head 完成無發現、無未解決討論，才合併 `1227676`。run `40101980156`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-195 已移至此 main，只送編碼評估；沒有部署。
+
+- **jump 五態 registry（DP-196，2026-10-24）：** 採 DP-195 貓完整十幀 Q55/A70、飛碟 DP-194 原 Q85，兩張新 WebP 與來源 bytes／hash 一致，靜態直接共用 idle PNG。每款七實檔，貓 196,286／飛碟 173,845 bytes；每款 192 KiB 與原上限不變，新增 jump 32 KiB。`check:build` 查十四個唯一 hash 輸出，Node 比對五段已發布來源。三 registry／三預算來源基線先失敗，反向舊 registry 三／舊 gate 兩／停用上限六失敗、finally 精確還原；真實 dist 缺圖／變造／jump cap／整款 cap 四項拒絕，還原後通過。1,391 單元＋29 Node、lint／typecheck／build／check:build，Chromium 18＋WebKit 7 e2e、兩 viewport 真實組件單次／60px／共享 PNG／reduce／hidden／錯圖 CSS／console 全過，歷史三輪 checker 仍過。詳見 [接入紀錄](docs/pet-assets-integration.md)。**App 仍觸發四態，jump 尚無 cue；新動作品質仍待擁有者目視驗收**。貓只餘 322 bytes，未完成七態；最新 PR 四 CI／審查後才合併，0.4.3／v4／18 migrations、公告／部署不變。
 
 - **jump 編碼評估（DP-195，2026-10-24）：** [八個候選、量測與交接](docs/pet-concepts/2026-10-24/jump-encoding/README.md) 保留六／七幀因逐原始時間點 MAE 超限的失敗資料；完整十幀 Q55/A70／Q60/A50 在淺深底均低於 0.008、8／4px 透明及單次時序通過。建議貓 Q55/A70 15,436 bytes、飛碟原 Q85 21,472，共用 idle PNG，五態 196,286／173,845。貓僅餘 322 bytes，不代表七態可裝入；色彩／alpha 有損，新動作品質仍待擁有者目視確認。十項候選／metadata 負控制精確還原；1,389 單元＋27 Node、lint／typecheck／build／check:build、兩 viewport 實際 Asia/Taipei 十個原圖／候選在放大／60px 的播放／停止／重播／PNG／reduce／深色／console 通過，對照板與截圖目視。App 尚未採用，原幀／Blender／四態包／192 KiB／0.4.3／v4／18 migrations／公告／部署不變。最新 PR 四 CI／審查後合併，下一段 DP-196 只接 registry；DP-171／172／041 未結案。
 

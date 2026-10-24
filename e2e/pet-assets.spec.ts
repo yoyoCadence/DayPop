@@ -15,7 +15,7 @@ async function ready(page: Page, pattern: RegExp) {
 test('預設貓 idle 會動，泡泡靜態，兩次關閉各播放 look 後回 idle；名稱與焦點不變', async ({ page }) => {
   const clean = monitorBrowser(page);
   const requested: string[] = [];
-  page.on('request', request => { if (request.resourceType() === 'image' && /orbit-ufo|sleep/.test(request.url())) requested.push(request.url()); });
+  page.on('request', request => { if (request.resourceType() === 'image' && /orbit-ufo|sleep|jump/.test(request.url())) requested.push(request.url()); });
   await openApp(page);
   console.log('DP-188 browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
   await ready(page, /moon-cat-idle.*webp/);

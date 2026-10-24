@@ -699,6 +699,12 @@ Q85 候選 26,058／21,472 bytes，共用 idle PNG 的五態包為貓 206,908／
 
 App 採用另立 DP-196，只新增 typed jump registry 與 32 KiB 單檔守門、既有 idle PNG 回退／reduce；觸發政策另段，不加 XP／偏好／schema。0.4.3／v4／18 migrations、公告與部署不變。
 
+### jump 候選接入 registry（DP-196，2026-10-24）
+
+採 DP-195 的貓完整十幀 Q55/A70，飛碟保留 DP-194 Q85；每款僅增加 jump WebP，still 共用 idle PNG，durationMs=1000。App 四態播放程式不改，jump 只供 typed registry，尚無觸發／單次 cue 時計。貓 196,286／飛碟 173,845 bytes、每款 192 KiB 不變，新增 jump 32 KiB 單檔守門；十四個唯一建置檔 bytes／hash 與五段已發布來源均查驗。詳細 [責任、反向驗證與限制](pet-assets-integration.md) 記錄六項上限負控制與真實 dist 四項拒絕，finally 精確還原。
+
+一般 App 不下載 jump；真實組件在隔離暫存頁驗原生單次／60px／共享 PNG／reduce／隱藏／錯圖 CSS，該頁已刪除。前景睡眠、look／grab、焦點、離線／資料契約不變。後續回饋接線另 PR，不加 XP／偏好／schema／公告／部署；新動作品質仍待擁有者目視確認，七態未完成。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
