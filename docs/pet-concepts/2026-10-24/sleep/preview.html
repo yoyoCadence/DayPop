@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>DayPop · sleep 素材試作</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f3ee;color:#182037;font:16px/1.6 system-ui,sans-serif}
+main{max-width:1050px;margin:auto;padding:24px}h1{font-size:28px}p{color:#596172}
+.tools{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:24px 0}button,select{font:inherit;min-height:44px;padding:6px 12px;background:white;color:#182037;border:1px solid #596172;border-radius:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}article{background:white;border-radius:16px;padding:16px;border:1px solid #dededc}
+.stage{display:flex;align-items:center;justify-content:center;gap:12px;min-height:260px;background:#f5f3ee;border-radius:10px}.dark .stage{background:#111827}
+.large{width:240px;height:240px}.small{width:60px;height:60px}img{object-fit:contain;flex-shrink:0}a{color:#324b91}
+:focus-visible{outline:3px solid #4967ac;outline-offset:3px}@media(max-width:450px){main{padding:16px}.large{width:200px;height:200px}.stage{gap:6px}}
+</style>
+<main>
+<p>DAYPOP / BLENDER MOTION STUDIES</p>
+<h1>月光貓 ＋ 軌道噗 · sleep 素材試作</h1>
+<p>4.4 秒緩慢循環，原生閉眼與呼吸。沿用已採用造型與固定取景，尚未接入 App。</p>
+<div class="tools">
+<label>來源 <select id="format"><option value="webpQ85">WebP Q85</option><option value="webp">無損 WebP</option><option value="frames">PNG 幀序列</option></select></label>
+<button id="play" type="button">暫停</button>
+<label><input id="still" type="checkbox">靜態替代圖</label>
+<label><input id="dark" type="checkbox">深色背景</label>
+</div>
+<p id="status" role="status">載入素材…</p>
+<div id="cards" class="cards"></div>
+<p><a href="contact-sheet.png">查看關鍵幀與 60px 比較</a> · <a href="README.md">來源與驗收紀錄</a></p>
+</main>
+<script type="module">
+const manifest = await fetch('./manifest.json').then(response => {if(!response.ok)throw Error('manifest');return response.json()});
+const format=document.querySelector('#format'), still=document.querySelector('#still'), play=document.querySelector('#play');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+let paused=false, lastFrame=-1;
+for(const character of manifest.characters){
+  const article=document.createElement('article');
+  const title=document.createElement('h2');title.textContent=character.id==='moon_cat'?'月光貓':'軌道噗';
+  const stage=document.createElement('div');stage.className='stage';
+  for(const size of ['large','small']){const image=document.createElement('img');image.className=size;image.alt=title.textContent+' sleep';stage.append(image)}
+  article.append(title,stage);document.querySelector('#cards').append(article);character.images=[...stage.children];
+}
+function refresh(index=0){
+  const stopped=paused||still.checked||reduce.matches||document.hidden;
+  for(const character of manifest.characters){
+    const path=stopped?character.static:format.value==='frames'?character.frames[index]:character.candidates[format.value];
+    for(const image of character.images){if(image.getAttribute('src')!==path)image.src=path}
+  }
+  document.querySelector('#status').textContent=stopped?'靜態替代圖 · 動態已停止':'sleep · 4.4 秒循環 · 放大與 60px';
+}
+format.addEventListener('change',()=>refresh());still.addEventListener('change',()=>refresh());
+play.addEventListener('click',()=>{paused=!paused;play.textContent=paused?'播放':'暫停';refresh()});
+document.querySelector('#dark').addEventListener('change',event=>document.body.classList.toggle('dark',event.target.checked));
+reduce.addEventListener('change',()=>refresh());document.addEventListener('visibilitychange',()=>refresh());
+function tick(now){const index=Math.floor(now/100)%44;if(format.value==='frames'&&index!==lastFrame){lastFrame=index;refresh(index)}requestAnimationFrame(tick)}
+refresh();requestAnimationFrame(tick);
+</script>
+</html>

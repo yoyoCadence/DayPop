@@ -78,6 +78,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-24 持續開發授權：** 擁有者再次要求「每次完成一個段落就開 PR 並 merge，再持續開發，不用特別問除非必要」。每段獨立分支、驗證、中文 PR，最新 head 四項 CI 與審查通過才合併，再從最新 main 接續；保留文件與任務板供任何 agent 接手。沒有增加部署或遠端 migration 套用授權。DP-188 PR #183 已四項 CI 全過、審查無發現，合併 `868fdbb`（run `40033060475`）。下一段從 DP-041 拆出 DP-189：先讓勾選待辦回傳既有 queue 的保存確認，不先定 XP／獎勵／新 schema；由 Backlog → Next → In Progress。
 
+> **2026-10-24 DP-190 接續：** 依擁有者持續開發／逐段 PR 與合併授權，從 DP-171 的後續素材拆出兩款 `sleep` 試作，Backlog → Next → In Progress。先沿已採用造型與 DP-187 原生 controls／shape keys，做閉眼、緩慢呼吸／懸浮的 4.4 秒循環；相機／比例／anchor 與 8／4px 透明邊距不改。交新目錄的來源、真實幀、Q85／靜態替代、量測、預覽與負控制。這是 agent 依既有方向提出並執行的素材段落，不代表擁有者已目視驗收；不接 App、睡眠時間表／自動走動／XP、不改既有三態或已採用預算。PR #184 最後 CI 等待期間在獨立分支準備，發 PR 前對齊合併後最新 main。
+
+- [ ] **DP-191 — 四態編碼候選與預算評估（DP-171 子項）：** DP-190 合併後從最新 main 接續；將暫存探查變成可重跑的量測／候選，對照既有 10fps 與約 5fps 的 Q85，保留 idle／sleep 4.4s、look 1.6s 與末幀回原姿態，按原始 100ms timeline 驗收每個 hold 區間的實際 decoded 品質、alpha、時長／循環和整款下載 bytes。另交 60px 對照與真實負控制；原 Blender／PNG／App 資產、192 KiB 預算與播放政策不變，候選通過後才另段決定 App 接入。
+
 > **2026-10-23 接回實作：** 擁有者明確表示「不用特別寫交接了，你就是那個要接手的 agent」。既有定案文件保留；PR #181 四項 CI 通過後合併 `1177dcd`，DP-187 由 Next 移入 In Progress，沿三態方案製作，不另等待其他 agent。
 
 > **2026-10-23 DP-185 定案與指定：** 擁有者認為 DP-184 造型有詭異感，採納兩款一起調整：貓縮小眼睛／減少反光、鼻嘴融入臉部、短肢自然坐姿；飛碟移除長腿與鞋形腳墊、改成懸浮生物並簡化表情；兩款降低塑膠光澤、整理接縫，保留配色與 3D 漫畫方向。由 Next 移入 In Progress，僅交付 idle／來源與前後圖；造型再確認後才規劃動作。
@@ -216,6 +220,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -397,6 +402,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-17**：第一段 DP-169（對話泡泡）完成，寵物已是可點的按鈕、不再整層 `aria-hidden`；DP-170–172 與本條的素材、狀態機、拖曳仍未做。
 - [x] **DP-169 — 已完成（2026-10-17），見 Done；照原稿的問候與今日／明日待辦搬，不是下面原條目的內容。** 原條目：寵物對話泡泡（DP-040 第一段）：點擊或以鍵盤啟動寵物，開啟漫畫對話泡泡，顯示今日剩餘待辦數、下一個行程，以及「查看」與「新增」入口。內容用可預期的本機規則，不用 AI。`PetLayer` 要改成有可及性名稱的可聚焦控制項，裝飾的部分維持隱藏。可以一併接回原稿的三個接點：搜尋點待辦開泡泡（`:1295` 的 `showTodosBubble()`）、關閉桌寵時同時關泡泡（`:995`）、設定頁的說明文字（DP-163）。資料只讀，不需要 schema。泡泡不是可靠提醒，不得這樣宣稱（DP-042）。若泡泡是 modal，沿用 DP-154 的焦點管理。
 - [ ] **DP-171 — 寵物素材 registry 與七種狀態（DP-040 第三段）：** 依 `寵物素材規範 Pet Asset Spec.md`：四個品種（`cat`／`bear`／`bunny`／`chick`）、七種狀態（含 `grab`）、120×120 素材顯示為 60×60。建立 typed asset registry（`PET_ASSETS[kind][state]`），缺圖時退回現有的 CSS 角色。素材要通過 `check:build`（無遠端依賴）。`performance-budget.json` 目前只管 JS／CSS，圖片體積的上限與是否進 app shell 快取要另外定。**前置**：素材檔本身要先存在；沒有素材時這一項只能做 registry 與 fallback。
+  > **2026-10-24 現況：** DP-188 已接預設月光貓 idle／look／grab、typed 兩款 registry 與每款 192 KiB 預算，補正下方「未做 registry／預算未定」的歷史。DP-190 另交兩款 sleep 原生素材與預覽，動作品質待擁有者目視驗收、尚未接 App；四態直接加包會超限，DP-191 先做候選編碼／時序與品質評估。walk／sit／jump 素材、sleep 產品觸發及完整七態仍未完成，本父項不結案。
   > **2026-10-23 擁有者改選先做正式素材：** 指定 Blender、精緻卡通 3D＋漫畫描邊、固定配色；摩卡只是粗糙範例，只要求保留貓咪，其他由 Codex 探索非動物（例如太空船生物）。因此先另立 DP-183 做四款 idle 概念與可編輯來源，不能把本條歷史四動物直接當作已定案清單。新 keys／名稱、七態／動畫、rig、預算及快取待選定後再定；本條未結案，不先做 registry 或 DP-172 migration。
 - [ ] **DP-172 — 選擇夥伴偏好（DP-040 第四段，依賴 DP-171）：** 原稿設定頁的「選擇夥伴」需要一個新的偏好欄位。這代表 migration、重新產生 `database.types.ts`、guest 與帳號快取的 schema version 提升（v4 → v5）、write barrier 與遷移回歸測試。高風險，獨立 PR；migration 要由專案擁有者 push 之後才能部署前端（比照 DP-138）。不得把這個值另存在臨時 storage，那會變成第二套資料模型。
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
@@ -425,6 +431,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-190 — 月光貓與軌道噗 sleep 素材試作（2026-10-24）：** 依持續開發／逐段 PR 與合併授權，Backlog → Next → In Progress → Done。PR #184 等 CI 時從當時 main `868fdbb` 準備獨立分支；其四項 CI 過／審查無發現並合併 `cf79edf` 後，對齊最新 main 才發本 PR。新增兩份原生 Blender、88 張透明 PNG、兩靜態替代、無損／Q85 WebP、互動／GIF／十二背景預覽。sleep 閉眼／緩慢呼吸／懸浮 4.4s；原模型／curve／shape-key 幾何／shader graph、相機／比例／基準 anchor 不變，每幀 120px 8px／60px 4px 透明。五產物＋三 native 負控制皆拒絕，finally 精確還原，hash／正向重驗通過；Q85 貓 107,120／飛碟 93,440 bytes，詳見 [來源與驗收](docs/pet-concepts/2026-10-24/sleep/README.md)。最終 lint／typecheck、1,382 單元＋24 Node、build／check:build、32 本機連結通過；Chromium 390×844／1280×900 的原生播放、PNG 幀、暫停／reduce／深色、console／無溢出通過並目視。**這是 agent 沿既有方向的素材試作，sleep 品質尚待擁有者目視驗收**；直接加入會超既有每款 192 KiB，DP-191 先評估候選編碼。舊素材與 App 三態／資產／預算不變，未做播放觸發／選角／XP／schema／版本／公告／部署；本 PR 最新四項 CI 與審查過後才合併。
 
 - [x] **DP-189 — 待辦完成操作的保存確認（DP-041 前置，2026-10-24）：** 依持續開發／每段 PR 與 merge 授權，由 Backlog → Next → In Progress → Done；基線 DP-188 PR #183 合併 `868fdbb`。`toggleTodo` 回傳既有 `confirmed()` 的 `Promise<void>`，repository 確認才 resolve、原錯誤 reject，失敗警告與 queue 恢復不變，舊的不等待畫面安全。新增遠端拒絕、真實 local repository 連續完成／取消完成各筆獨立確認、忽略拒絕後續寫入驗證；兩項先在舊程式失敗，反向單行基線也同樣兩項失敗，finally 精確還原並核對 SHA-256。lint／typecheck、1,382 單元＋24 Node、build／check:build 通過；相關 Chromium 手機／桌面 14 passed／2 既有 skipped、實際時區 `Asia/Taipei`，含 guest 與 FakeSupabase 帳號待辦重載。最新四項 CI 與審查通過後才合併。resolve 只代表命令結束，不代表可獎勵的完成轉換；沒有 XP／動作觸發、repository／schema／Auth／版本／公告／部署變更。契約與後續界線見 ADR §4。
 

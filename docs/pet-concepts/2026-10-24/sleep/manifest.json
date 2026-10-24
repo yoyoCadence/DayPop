@@ -1,0 +1,337 @@
+{
+  "task": "DP-190",
+  "productionReady": false,
+  "appIntegrated": false,
+  "appearanceApproved": true,
+  "sleepMotionApproved": false,
+  "trialFps": 10,
+  "baseCommit": "868fdbbce96604e4d2f9fb1d7881f7a6f0a3a6a9",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "source": "source/moon_cat.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "frames": [
+        "frames/moon_cat/000.png",
+        "frames/moon_cat/001.png",
+        "frames/moon_cat/002.png",
+        "frames/moon_cat/003.png",
+        "frames/moon_cat/004.png",
+        "frames/moon_cat/005.png",
+        "frames/moon_cat/006.png",
+        "frames/moon_cat/007.png",
+        "frames/moon_cat/008.png",
+        "frames/moon_cat/009.png",
+        "frames/moon_cat/010.png",
+        "frames/moon_cat/011.png",
+        "frames/moon_cat/012.png",
+        "frames/moon_cat/013.png",
+        "frames/moon_cat/014.png",
+        "frames/moon_cat/015.png",
+        "frames/moon_cat/016.png",
+        "frames/moon_cat/017.png",
+        "frames/moon_cat/018.png",
+        "frames/moon_cat/019.png",
+        "frames/moon_cat/020.png",
+        "frames/moon_cat/021.png",
+        "frames/moon_cat/022.png",
+        "frames/moon_cat/023.png",
+        "frames/moon_cat/024.png",
+        "frames/moon_cat/025.png",
+        "frames/moon_cat/026.png",
+        "frames/moon_cat/027.png",
+        "frames/moon_cat/028.png",
+        "frames/moon_cat/029.png",
+        "frames/moon_cat/030.png",
+        "frames/moon_cat/031.png",
+        "frames/moon_cat/032.png",
+        "frames/moon_cat/033.png",
+        "frames/moon_cat/034.png",
+        "frames/moon_cat/035.png",
+        "frames/moon_cat/036.png",
+        "frames/moon_cat/037.png",
+        "frames/moon_cat/038.png",
+        "frames/moon_cat/039.png",
+        "frames/moon_cat/040.png",
+        "frames/moon_cat/041.png",
+        "frames/moon_cat/042.png",
+        "frames/moon_cat/043.png"
+      ],
+      "durationMs": 4400,
+      "frameDurationMs": 100,
+      "loop": true,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/moon_cat.blend": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+        "../../2026-10-23/motion/frames/moon_cat/idle/000.png": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a"
+      },
+      "static": "previews/moon_cat/sleep-static.png",
+      "pngBytes": 582239,
+      "candidates": {
+        "webp": "previews/moon_cat/sleep.webp",
+        "webpQ85": "previews/moon_cat/sleep.q85.webp"
+      },
+      "candidateBytes": {
+        "webp": 303272,
+        "webpQ85": 107120
+      },
+      "measurements": {
+        "webp": {
+          "decodedFrames": 44,
+          "durationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "decodedFrames": 44,
+          "durationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.003001452432824982
+        }
+      },
+      "sha256": {
+        "source/moon_cat.blend": "bf48e069250f03bc12da00df45f3f5bfeb0493b7185cba63828d8fd414b1edf7",
+        "frames/moon_cat/000.png": "8c76ed4b12a7f8aaa9928a440ce5a61da8263e8ba60be8d4a714d13a6cf71e75",
+        "frames/moon_cat/001.png": "d2a26678427d5c0209960f05b23d713d546f44f6a5008fd7baba0c8fae57f349",
+        "frames/moon_cat/002.png": "99fbcc0582e9309689e2e9eafc1efa698692c85bf159cf66104ede5c5c5c66ba",
+        "frames/moon_cat/003.png": "5a8f4f1663023ed150e70cbee54e65938cbc28b7691c7d9f799fbe8a3282fda3",
+        "frames/moon_cat/004.png": "27d1d1851057a4d99a8c1dedf53f622e91a19d3e7d3c424c8a0d53693c858b7d",
+        "frames/moon_cat/005.png": "87116e98dafd5913923d00bab82ba494abd60804316bf00c566474acbedda559",
+        "frames/moon_cat/006.png": "1b5aa686bf82e6560ec26f511eadc2d45ccc4ecf00f9feb6cc22a2c04c39cc56",
+        "frames/moon_cat/007.png": "050d3324c094e30fe7782a311234d2fab51a04ca0547b98b65643358ac65f056",
+        "frames/moon_cat/008.png": "8bff44a63f0b2cf495d04dc827316dc50ebf6159a27dfbd8307e8f8523ded122",
+        "frames/moon_cat/009.png": "d87934efdaa3e59d4bdd34f8e062b1b2dfb557ee137ca658d39f1dc20a219503",
+        "frames/moon_cat/010.png": "8d171a98b3df0d06ab2469dadf78f336817ed10fb4c2d2142d35dd2cc229c832",
+        "frames/moon_cat/011.png": "dad45f1f8525afd1a8bc0715e2c0703575e6145f6bbe13b8df911ab3716ad46d",
+        "frames/moon_cat/012.png": "36a6c4d8c516037946047540ee9f215a3c0145a3609e604507a507f413c77bd5",
+        "frames/moon_cat/013.png": "2190a7cbc4ea7d60f389f640c668144d71ace34487c423846c4bd269dc8305a9",
+        "frames/moon_cat/014.png": "e2c492c4995ee39de92a5b01430ecd0a2389d8415dd32ab6bf607df4519884ac",
+        "frames/moon_cat/015.png": "73ec3f77f2f354d161c7724952070226007c162bb604dc2bab59e7cf6fe2d1e8",
+        "frames/moon_cat/016.png": "20d226ffae12e40b14e7946158f6db15db02991cacd965262980d23f05b3a354",
+        "frames/moon_cat/017.png": "884becac9311c115c56900b0ceeebb3a84c4f4ed6507b76068e43433a1ef89e0",
+        "frames/moon_cat/018.png": "2597a74e947c421b8cbdfa71b31da80d6923fde652aa95737a0892c78ed1a701",
+        "frames/moon_cat/019.png": "9a3021c347a909bd5d488b543c3b969369349c22d911dcc4436a33ab2345ff38",
+        "frames/moon_cat/020.png": "ff64fb5441c906ebcfa3b36194f560af88d60a73236a327f6e353645e7d3a1c8",
+        "frames/moon_cat/021.png": "ef965442f50c29b88996b355512e80bc1e4b3712ccfe6dc1407f74f38695215a",
+        "frames/moon_cat/022.png": "3aee843e404f22f59fe556cb1fb561d8d2d51642992e2ff85e99221f780851e2",
+        "frames/moon_cat/023.png": "be750082deec32415caa809efa25bd098f1f930b16df8f47283999b75f640cde",
+        "frames/moon_cat/024.png": "5f4d21a820fbe9e6359e930c9b433701bb074af179bda38a683e144369c3d208",
+        "frames/moon_cat/025.png": "73bfd99895b4c7305ceff8b77931cab10bee02f5f4f86ffa29b13858bea73fb1",
+        "frames/moon_cat/026.png": "537e8df329c0629d5e54dca471523e89d5e7dfb47d21bc13050a23a083f6d198",
+        "frames/moon_cat/027.png": "29f1150337fd61d9551e61b7f5346be4170ecf9f9b5aa0f1e25b6236f59d1c64",
+        "frames/moon_cat/028.png": "48271361de700c2558b262f7db9bc2f9ca50303c709cd21e045549d55ddf7c4a",
+        "frames/moon_cat/029.png": "7161b6c71223ff951100a97255467450a485a087bafcc13522a5fb74637321f6",
+        "frames/moon_cat/030.png": "8a228832eb15dbdb6b6db9e7f9257eaedbfbd03107058fa16649c6db2ab8430d",
+        "frames/moon_cat/031.png": "135ab6505183b28f8dadbf65997bc4c7e249ffb7357df1cad5ed44f8b6a22a00",
+        "frames/moon_cat/032.png": "2578a4437625b01cb59d5f9df371f696f8522637bf8ba0b47369bc30c2a9c4ff",
+        "frames/moon_cat/033.png": "0e44cd78b6d49011ea3310b2e1e50a17ed81683c3c3ed36b1f711a7fb3d56faf",
+        "frames/moon_cat/034.png": "1c434650875bc480c09f69f56e96e1d33bada387b649617a883c3801338cee5f",
+        "frames/moon_cat/035.png": "dcc8bdbeee3ebd705149379d0bafd7407c27728e26cc34a59bafc537074a4b61",
+        "frames/moon_cat/036.png": "51a022db98ac2944ec10dd295bab1d5f28bdb4d48758e7029fada086141f4ab3",
+        "frames/moon_cat/037.png": "64d7e56ae3ec43f83136d3b1156f1277ff1b7b92015d8feec4179d11f64e1be1",
+        "frames/moon_cat/038.png": "42463b70404f8a8cd0e2661b365cde5a1ed629264bca8f4a48909b7b0fde603b",
+        "frames/moon_cat/039.png": "ff08840d98125cdfa809b1a7ac9903375a2b6a49e07ca173082ddc00bac8a236",
+        "frames/moon_cat/040.png": "0567bdedfcc45ccbaf86d4809b644c164bd6d4debeaabf0afc69e0fc8fc6ff1a",
+        "frames/moon_cat/041.png": "3f137fd3c2b63dfd5214569486c8865751ef8caa61690d173faa1f15d647f2a3",
+        "frames/moon_cat/042.png": "f489d3aa37ef762b36f5aeeb3e454600d9c9fb5a849de2915ca37fa8e774ae7d",
+        "frames/moon_cat/043.png": "c0e6a5e61e83ae7d11791d2f620cee3370d048bcfa567fa8be972c7efaaf3f56",
+        "previews/moon_cat/sleep-static.png": "8c76ed4b12a7f8aaa9928a440ce5a61da8263e8ba60be8d4a714d13a6cf71e75",
+        "previews/moon_cat/sleep.webp": "80ceccfd9f2e44de15ff1970e26f73166b1a798567f4a2aef6292ce685e2752c",
+        "previews/moon_cat/sleep.q85.webp": "a9cdce3ed52fd925ed0d1c95c6191275c573848ba466a8a91f3baed1f677e05f"
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "source": "source/orbit_ufo.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "frames": [
+        "frames/orbit_ufo/000.png",
+        "frames/orbit_ufo/001.png",
+        "frames/orbit_ufo/002.png",
+        "frames/orbit_ufo/003.png",
+        "frames/orbit_ufo/004.png",
+        "frames/orbit_ufo/005.png",
+        "frames/orbit_ufo/006.png",
+        "frames/orbit_ufo/007.png",
+        "frames/orbit_ufo/008.png",
+        "frames/orbit_ufo/009.png",
+        "frames/orbit_ufo/010.png",
+        "frames/orbit_ufo/011.png",
+        "frames/orbit_ufo/012.png",
+        "frames/orbit_ufo/013.png",
+        "frames/orbit_ufo/014.png",
+        "frames/orbit_ufo/015.png",
+        "frames/orbit_ufo/016.png",
+        "frames/orbit_ufo/017.png",
+        "frames/orbit_ufo/018.png",
+        "frames/orbit_ufo/019.png",
+        "frames/orbit_ufo/020.png",
+        "frames/orbit_ufo/021.png",
+        "frames/orbit_ufo/022.png",
+        "frames/orbit_ufo/023.png",
+        "frames/orbit_ufo/024.png",
+        "frames/orbit_ufo/025.png",
+        "frames/orbit_ufo/026.png",
+        "frames/orbit_ufo/027.png",
+        "frames/orbit_ufo/028.png",
+        "frames/orbit_ufo/029.png",
+        "frames/orbit_ufo/030.png",
+        "frames/orbit_ufo/031.png",
+        "frames/orbit_ufo/032.png",
+        "frames/orbit_ufo/033.png",
+        "frames/orbit_ufo/034.png",
+        "frames/orbit_ufo/035.png",
+        "frames/orbit_ufo/036.png",
+        "frames/orbit_ufo/037.png",
+        "frames/orbit_ufo/038.png",
+        "frames/orbit_ufo/039.png",
+        "frames/orbit_ufo/040.png",
+        "frames/orbit_ufo/041.png",
+        "frames/orbit_ufo/042.png",
+        "frames/orbit_ufo/043.png"
+      ],
+      "durationMs": 4400,
+      "frameDurationMs": 100,
+      "loop": true,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/orbit_ufo.blend": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+        "../../2026-10-23/motion/frames/orbit_ufo/idle/000.png": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac"
+      },
+      "static": "previews/orbit_ufo/sleep-static.png",
+      "pngBytes": 450618,
+      "candidates": {
+        "webp": "previews/orbit_ufo/sleep.webp",
+        "webpQ85": "previews/orbit_ufo/sleep.q85.webp"
+      },
+      "candidateBytes": {
+        "webp": 252928,
+        "webpQ85": 93440
+      },
+      "measurements": {
+        "webp": {
+          "decodedFrames": 44,
+          "durationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "decodedFrames": 44,
+          "durationMs": 4400,
+          "maxCompositedMeanAbsoluteError": 0.0034904684095860565
+        }
+      },
+      "sha256": {
+        "source/orbit_ufo.blend": "1187523583b1fd660ccbbf252c0a03cc4f540639d7e949cf4d59ca9b51dfb1eb",
+        "frames/orbit_ufo/000.png": "dac669ee850760145e6e5f5b54527c75d8a703ea02431585a9b17b6c7b57a259",
+        "frames/orbit_ufo/001.png": "0375a4df7662037896b0803e9e066075d50346f00cc6fa92d25a5089dfa752e7",
+        "frames/orbit_ufo/002.png": "0eb8c03c4562e89575097a6fdf8119fb644f2a9e300f8b90c771b7853bae16b7",
+        "frames/orbit_ufo/003.png": "6072615fb19c6b2f670044a6a668a52d052d6c3f54284f718726752e482a6a68",
+        "frames/orbit_ufo/004.png": "3209c05c88613593cce8a07a400387b2d9992bcee15b908adc2e99f3b2a49060",
+        "frames/orbit_ufo/005.png": "843be39d2f720f317dac198e591bc96a9b81b05fa2ea9cbe4f4bfab61358f4b7",
+        "frames/orbit_ufo/006.png": "2486edce16f769fe96746510016c7e810b4d3c244c1a5997848fbaf688e09f2f",
+        "frames/orbit_ufo/007.png": "5819866ac977731e7baa6278260a90827c2ec573f84cd42f5eb4b68ab4dba772",
+        "frames/orbit_ufo/008.png": "096e7dc66ca475c8e9e2461b2db3a7f8583029ee8b05fece945d7cc55c1dfde1",
+        "frames/orbit_ufo/009.png": "3c9f0d7a282aa267be615607e042ec697807b427b1101aca45595ab24e4e1fd8",
+        "frames/orbit_ufo/010.png": "d6e306e1224917392d28cd5c48dea1e98d5538bb10ea7878027f585c3eb9b112",
+        "frames/orbit_ufo/011.png": "ab8921071c34f9fa3b7201113153c4f8876bc4b84aac51df8a2e0745ac0d381a",
+        "frames/orbit_ufo/012.png": "fc6d139872155f7186dc219d40851f8eb9f542b099f63ee382cdb52a43127a33",
+        "frames/orbit_ufo/013.png": "0477f68a42f80fec717aa148e54fd7410a114cbec69a6b09d78ded786d897391",
+        "frames/orbit_ufo/014.png": "06e206ad996a7bc20662cf8e556a6a7022ac31688b35826964384dbbcf1bde94",
+        "frames/orbit_ufo/015.png": "f3d5838cf9c68b0cd0f336479c5010a9805b28ca6668f346ab498be9798a49c2",
+        "frames/orbit_ufo/016.png": "c1a943c15dcf7fe23c9e02fd6b43aa0effa4b8f40bdf42015e72287150579582",
+        "frames/orbit_ufo/017.png": "f25682f4d810ba31182b3890be95a3e974ea88e8f5c41d5b4eb675a0affbae01",
+        "frames/orbit_ufo/018.png": "20a36267a5b2638867180d41f7154cce4cd1ea981baeee0adf774df7bcc9f7e4",
+        "frames/orbit_ufo/019.png": "4be5d9e8074db50ff5ae0cbfb42a7b6538469fd84f6e5dfcc35634dc96d4f34d",
+        "frames/orbit_ufo/020.png": "b8ab4722b2f157cc6bc4b00d514a1908530d4a680c41a2a439989141ef1c3c40",
+        "frames/orbit_ufo/021.png": "f3bfa215bfa2fd29807eb57c75955f37ed78baa93c43f8d04008d3de4b49e27d",
+        "frames/orbit_ufo/022.png": "e69e3e54048ff64e08d6afbe2aa39a06aa912edad646b2b4324d087fdd7af1d5",
+        "frames/orbit_ufo/023.png": "e4a86b05abeee07dda02272f474a5971d0c3376cac06cb9b799b5a2bc1360312",
+        "frames/orbit_ufo/024.png": "86d02ba0cb7fa44b7a80a5e0f42801faec7b27e1ec6c3de8ca03e315e3612cc6",
+        "frames/orbit_ufo/025.png": "b6cfe8a2a7d3bcadf1ee804e06f349667ec74cf4257d8b80d0aa11b3aea7e84c",
+        "frames/orbit_ufo/026.png": "d8388844555ff012b1dd238b81efbec36409b50423f0df7067f13e153023cca5",
+        "frames/orbit_ufo/027.png": "fb8411d7425ee1e3708b62f1ab5f8b9e0b5702f52dceede2c196e566025bc2d5",
+        "frames/orbit_ufo/028.png": "16da4ceb41c09d63bd98d0150dd50f1a66459d007444893f476667ad9a6b2bc0",
+        "frames/orbit_ufo/029.png": "248ae4786cb6b5a681adfcc43959f79dec45acdb041574d7c5c864504ad0f019",
+        "frames/orbit_ufo/030.png": "d1771819565583250644ccb10309033bf70ed0ec9103bc7b857491adbd11e9f2",
+        "frames/orbit_ufo/031.png": "4c56b3f8f4fea57bf44e3d0956a03d196368d4a18d89678c99e529227c500437",
+        "frames/orbit_ufo/032.png": "ba73df670bdc92d9edf729ffb189a4c5005d12a5516670da73f92aef17bef526",
+        "frames/orbit_ufo/033.png": "793a58abe968a7d5818f4d5073238e3d6fc966b709b4704a1be8e83d9da73eaf",
+        "frames/orbit_ufo/034.png": "f88d22b532d278c8c3416303e637e95a05fd21390296a88a523be8accb195aea",
+        "frames/orbit_ufo/035.png": "e673aa951637ee24bffd18d6ed39c07b372c1dd6135d02840fddad62b49eb2ec",
+        "frames/orbit_ufo/036.png": "c501057964bf72688f78e03412cd9e35dda37219ac85196be9e05da59f54112e",
+        "frames/orbit_ufo/037.png": "e52b368ea509efb55de6e4ab06cc58ccb96df6bc65e4bbf02e2d758ee5e026bf",
+        "frames/orbit_ufo/038.png": "89c51eb19adac956ab8c3aa6ab489cb661f1796cc8d75eb10b47f978b291092c",
+        "frames/orbit_ufo/039.png": "c8fb9bb2200148035b782282514a6162068c9712cd1587e8b3d0eb8c515df395",
+        "frames/orbit_ufo/040.png": "25c4fdf53523a3c514512f69959d3459567650862abb5f1953ccab536d04dcd3",
+        "frames/orbit_ufo/041.png": "27e52cc1c1a113bba493439062a9716339520fad0407c65af5fe234747fe49e6",
+        "frames/orbit_ufo/042.png": "65d406dce168b57c8697c25b85a6b0386878e847ac7aed65eb3e10d70ae31be2",
+        "frames/orbit_ufo/043.png": "dd56bcf184356f98d519227f976c5a4a63d4c43e2c936f3b5c2fa003144d91ba",
+        "previews/orbit_ufo/sleep-static.png": "dac669ee850760145e6e5f5b54527c75d8a703ea02431585a9b17b6c7b57a259",
+        "previews/orbit_ufo/sleep.webp": "e9bccb5102a7ba517a289c076b880f4f07148cc78c1bff30cac2237bfebb29ac",
+        "previews/orbit_ufo/sleep.q85.webp": "6ff5c66897f6f4fcc1e791c71eab7ed8ca408c230fb3974f7e7af58dbfe9f486"
+      }
+    }
+  ]
+}

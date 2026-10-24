@@ -655,6 +655,16 @@ idle 原生循環；關閉泡泡才給一次 look cue，解碼完成後計 1.6 �
 
 三項新增回歸涵蓋延遲的遠端拒絕與下一筆繼續、真實 local repository 的完成／取消完成各筆確認及 reload、既有 caller 忽略拒絕仍安全。兩項在基線先失敗；暫時反向還原該產品單行，再取得同樣兩項失敗，finally 精確還原並核對 SHA-256。完整 1,382 單元＋24 Node、lint／typecheck／build／check:build，相關 Chromium 14 passed／2 既有 skipped 通過，browser 實際時區 `Asia/Taipei`。Browser plugin not available，使用既有專案 Playwright。帳號案例是 FakeSupabase，不是正式資料或真機驗收。後續仍由 DP-171／172／041 分段處理。
 
+### 兩款 sleep 素材試作（DP-190，2026-10-24）
+
+依擁有者「每段開發／PR／CI 與審查通過後合併，再繼續」的持續授權，agent 從 DP-171 拆出 sleep 素材段落，沿已採用造型提出閉眼／緩慢呼吸與懸浮的 4.4 秒循環。**這不是擁有者已目視採用新動作或定案睡眠觸發政策**；App 仍 DP-188 三態，不接時間表／自動走動／待辦獎勵。
+
+兩份新的可編輯 Blender、88 張 120px 透明幀、PNG 靜態替代與無損／Q85 WebP 另放 [2026-10-24/sleep](pet-concepts/2026-10-24/sleep/README.md)，舊來源／App 圖片不變。原 mesh／curve／shape-key 幾何與 shader nodes／links／參數、相機／比例／基準 anchor 不改；45 個 native 樣本確認真正閉眼與 keyed 循環邊界，每幀 120／60px 實查 8／4px 透明。五項產物與三項原生負控制均拒絕後精確還原。
+
+Q85 貓 107,120／飛碟 93,440 bytes，加各自新 PNG 後直接併入原包會是 298,162／255,147 bytes，超過每款 196,608。既有預算與 App 資產維持原樣；DP-191 先正式量測候選取樣／編碼、原時間軸的 held-frame 品質、透明／循環與每款 bytes，再另段接入。素材與預覽不是 App 預載包，也不是完整七態完成。
+
+本機最終 1,382 單元＋24 Node、lint／typecheck／build／check:build、32 本機連結通過；Chromium 手機／桌面確認兩種原生 WebP、PNG 幀、暫停／reduce 與深色、console、無水平溢出並查看截圖。Browser plugin not available，使用專案 Playwright；Blender／Pillow 驗收在本機，不增加 CI 相依。這些不能代替擁有者動作品質或 iOS standalone 驗收。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

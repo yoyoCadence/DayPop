@@ -1,0 +1,193 @@
+{
+  "task": "DP-190",
+  "productionReady": false,
+  "appIntegrated": false,
+  "appearanceApproved": true,
+  "sleepMotionApproved": false,
+  "trialFps": 10,
+  "baseCommit": "868fdbbce96604e4d2f9fb1d7881f7a6f0a3a6a9",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "source": "source/moon_cat.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "frames": [
+        "frames/moon_cat/000.png",
+        "frames/moon_cat/001.png",
+        "frames/moon_cat/002.png",
+        "frames/moon_cat/003.png",
+        "frames/moon_cat/004.png",
+        "frames/moon_cat/005.png",
+        "frames/moon_cat/006.png",
+        "frames/moon_cat/007.png",
+        "frames/moon_cat/008.png",
+        "frames/moon_cat/009.png",
+        "frames/moon_cat/010.png",
+        "frames/moon_cat/011.png",
+        "frames/moon_cat/012.png",
+        "frames/moon_cat/013.png",
+        "frames/moon_cat/014.png",
+        "frames/moon_cat/015.png",
+        "frames/moon_cat/016.png",
+        "frames/moon_cat/017.png",
+        "frames/moon_cat/018.png",
+        "frames/moon_cat/019.png",
+        "frames/moon_cat/020.png",
+        "frames/moon_cat/021.png",
+        "frames/moon_cat/022.png",
+        "frames/moon_cat/023.png",
+        "frames/moon_cat/024.png",
+        "frames/moon_cat/025.png",
+        "frames/moon_cat/026.png",
+        "frames/moon_cat/027.png",
+        "frames/moon_cat/028.png",
+        "frames/moon_cat/029.png",
+        "frames/moon_cat/030.png",
+        "frames/moon_cat/031.png",
+        "frames/moon_cat/032.png",
+        "frames/moon_cat/033.png",
+        "frames/moon_cat/034.png",
+        "frames/moon_cat/035.png",
+        "frames/moon_cat/036.png",
+        "frames/moon_cat/037.png",
+        "frames/moon_cat/038.png",
+        "frames/moon_cat/039.png",
+        "frames/moon_cat/040.png",
+        "frames/moon_cat/041.png",
+        "frames/moon_cat/042.png",
+        "frames/moon_cat/043.png"
+      ],
+      "durationMs": 4400,
+      "frameDurationMs": 100,
+      "loop": true,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/moon_cat.blend": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+        "../../2026-10-23/motion/frames/moon_cat/idle/000.png": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a"
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "source": "source/orbit_ufo.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "frames": [
+        "frames/orbit_ufo/000.png",
+        "frames/orbit_ufo/001.png",
+        "frames/orbit_ufo/002.png",
+        "frames/orbit_ufo/003.png",
+        "frames/orbit_ufo/004.png",
+        "frames/orbit_ufo/005.png",
+        "frames/orbit_ufo/006.png",
+        "frames/orbit_ufo/007.png",
+        "frames/orbit_ufo/008.png",
+        "frames/orbit_ufo/009.png",
+        "frames/orbit_ufo/010.png",
+        "frames/orbit_ufo/011.png",
+        "frames/orbit_ufo/012.png",
+        "frames/orbit_ufo/013.png",
+        "frames/orbit_ufo/014.png",
+        "frames/orbit_ufo/015.png",
+        "frames/orbit_ufo/016.png",
+        "frames/orbit_ufo/017.png",
+        "frames/orbit_ufo/018.png",
+        "frames/orbit_ufo/019.png",
+        "frames/orbit_ufo/020.png",
+        "frames/orbit_ufo/021.png",
+        "frames/orbit_ufo/022.png",
+        "frames/orbit_ufo/023.png",
+        "frames/orbit_ufo/024.png",
+        "frames/orbit_ufo/025.png",
+        "frames/orbit_ufo/026.png",
+        "frames/orbit_ufo/027.png",
+        "frames/orbit_ufo/028.png",
+        "frames/orbit_ufo/029.png",
+        "frames/orbit_ufo/030.png",
+        "frames/orbit_ufo/031.png",
+        "frames/orbit_ufo/032.png",
+        "frames/orbit_ufo/033.png",
+        "frames/orbit_ufo/034.png",
+        "frames/orbit_ufo/035.png",
+        "frames/orbit_ufo/036.png",
+        "frames/orbit_ufo/037.png",
+        "frames/orbit_ufo/038.png",
+        "frames/orbit_ufo/039.png",
+        "frames/orbit_ufo/040.png",
+        "frames/orbit_ufo/041.png",
+        "frames/orbit_ufo/042.png",
+        "frames/orbit_ufo/043.png"
+      ],
+      "durationMs": 4400,
+      "frameDurationMs": 100,
+      "loop": true,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/orbit_ufo.blend": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+        "../../2026-10-23/motion/frames/orbit_ufo/idle/000.png": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac"
+      }
+    }
+  ]
+}
