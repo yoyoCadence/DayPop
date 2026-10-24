@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **jump 編碼評估（DP-195，2026-10-24）：** [八個候選、量測與交接](docs/pet-concepts/2026-10-24/jump-encoding/README.md) 保留六／七幀因逐原始時間點 MAE 超限的失敗資料；完整十幀 Q55/A70／Q60/A50 在淺深底均低於 0.008、8／4px 透明及單次時序通過。建議貓 Q55/A70 15,436 bytes、飛碟原 Q85 21,472，共用 idle PNG，五態 196,286／173,845。貓僅餘 322 bytes，不代表七態可裝入；色彩／alpha 有損，新動作品質仍待擁有者目視確認。十項候選／metadata 負控制精確還原；1,389 單元＋27 Node、lint／typecheck／build／check:build、兩 viewport 實際 Asia/Taipei 十個原圖／候選在放大／60px 的播放／停止／重播／PNG／reduce／深色／console 通過，對照板與截圖目視。App 尚未採用，原幀／Blender／四態包／192 KiB／0.4.3／v4／18 migrations／公告／部署不變。最新 PR 四 CI／審查後合併，下一段 DP-196 只接 registry；DP-171／172／041 未結案。
+
 > **最新合併基底（2026-10-24）：** DP-193 PR #188 head `2289711` 四項 CI／完成審查無發現、無未解決討論後合併 `67d8ea8`；run `40100232030`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-194 已移至此最新 main，只交新素材與紀錄；沒有部署。
 
 - **兩款 jump 試作（DP-194，2026-10-24）：** 沿已採用造型另交兩份原生 Blender、20 張透明幀、靜態替代、無損／Q85 與單次／60px 預覽。十幀 1 秒，原生與真正渲染首末幀回到舊 idle；模型／材質／相機／基準 anchor 不變。首輪貓縮圖留白 3px 失敗後縮小新動作，8／4px 全過；七圖片／四原生負控制精確還原，改循序執行避開共用來源干擾。Q85 貓 26,058／飛碟 21,472 bytes；共用 idle PNG 五態為 206,908／173,845，貓仍超 192 KiB 10,300 bytes，故 App 包不動。1,389 單元＋27 Node、lint／typecheck／build／check:build、兩 viewport 真實 Asia/Taipei 單次／重播／60px／PNG 末幀／reduce／深色／console 通過，關鍵幀／十二背景／截圖目視。完整 [來源與交接](docs/pet-concepts/2026-10-24/jump/README.md)；新動作未經擁有者目視驗收，最新 PR 四 CI／審查過後才合併，下一段 DP-195 先評估編碼。DP-171／172／041 未結案，0.4.3／v4／18 migrations、圖片／預算／公告／部署不變。

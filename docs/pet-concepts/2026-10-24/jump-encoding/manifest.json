@@ -1,0 +1,538 @@
+{
+  "task": "DP-195",
+  "appIntegrated": false,
+  "candidateAdopted": false,
+  "sourceCommit": "6d5a15eb64a0dadd72c7195dfc93838791371e78",
+  "qualityLimit": 0.008,
+  "characterLimitBytes": 196608,
+  "recommended": {
+    "moon_cat": "fullQ55A70",
+    "orbit_ufo": "reference"
+  },
+  "characters": [
+    {
+      "id": "moon_cat",
+      "basePackageBytes": 180850,
+      "inputSha256": {
+        "frames/moon_cat/000.png": "d6873526603ee22093f0402876b907a6497a5cc80b4bf304ef5913ab380eeee9",
+        "frames/moon_cat/001.png": "b5f2c4ea52c78b886357fce86989df8ffffb9c324a4d98b37e4f4c00185a432b",
+        "frames/moon_cat/002.png": "e8c166c52e5908287a1ee6f4d6756089bd6c8e8916c974bd60ee272071dc9168",
+        "frames/moon_cat/003.png": "3fdf3ccceb02eed1bbd64321e7cfb521cf7a2d0d5da831e3336aeaa4277f2dda",
+        "frames/moon_cat/004.png": "ec6ffc683862b2d8932d0f3f968b0ddb622df11ea7e0db51b957ed3a45f0b49f",
+        "frames/moon_cat/005.png": "86048a6731edfb2e4124fca0dc46574ff1835050d40b5fef9f507a8697858677",
+        "frames/moon_cat/006.png": "9821b5da55e3ed6dfc0c4fefa9128f0a4ac87bbe2e5b66aab43365d6beaead8a",
+        "frames/moon_cat/007.png": "2ae25386e36890786a82764c212a318fb9e0b43a2ce29141dcaf049d0b7f69c5",
+        "frames/moon_cat/008.png": "8ad50057e592eec2b02d0e42b5461f89fcf938d9bd20cd896ce217672d1975bb",
+        "frames/moon_cat/009.png": "34d7f533b6df58045d4a78eab0d7f0897e8791d8fbeeb042c90a64f048cc2cb3",
+        "previews/moon_cat/jump.q85.webp": "f2a1987924750a2994bbabd779fcab83aefee89934c4b15d922a01ff146a5f63"
+      },
+      "reference": {
+        "path": "../jump/previews/moon_cat/jump.q85.webp",
+        "bytes": 26058,
+        "measurement": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "decodedDurationsMs": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "maxTimelineMeanAbsoluteError": 0.003264978213507625,
+          "meanTimelineMeanAbsoluteError": 0.002914297385620915,
+          "maxDarkTimelineMeanAbsoluteError": 0.0032627995642701526,
+          "maxMatchedFrameAlphaError": 0
+        }
+      },
+      "candidates": {
+        "sixQ85": {
+          "path": "candidates/moon_cat/sixQ85.webp",
+          "policy": {
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              9
+            ],
+            "durations": [
+              200,
+              200,
+              200,
+              200,
+              100,
+              100
+            ],
+            "quality": 85,
+            "alphaQuality": 100
+          },
+          "minimizeSize": false,
+          "variantBytes": {
+            "False": 15368,
+            "True": 15422
+          },
+          "bytes": 15368,
+          "sha256": "00bc8d57f88aa509700e17320d6faef5f0fcebf218f376f1006b26690e058253",
+          "measurement": {
+            "decodedFrames": 6,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              200,
+              200,
+              200,
+              200,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.019240922294843865,
+            "meanTimelineMeanAbsoluteError": 0.00623366920842411,
+            "maxDarkTimelineMeanAbsoluteError": 0.023633805374001452,
+            "maxMatchedFrameAlphaError": 0
+          },
+          "packageBytes": 196218,
+          "eligible": false
+        },
+        "sevenQ75": {
+          "path": "candidates/moon_cat/sevenQ75.webp",
+          "policy": {
+            "indices": [
+              0,
+              2,
+              3,
+              4,
+              6,
+              8,
+              9
+            ],
+            "durations": [
+              200,
+              100,
+              100,
+              200,
+              200,
+              100,
+              100
+            ],
+            "quality": 75,
+            "alphaQuality": 100
+          },
+          "minimizeSize": false,
+          "variantBytes": {
+            "False": 15106,
+            "True": 15158
+          },
+          "bytes": 15106,
+          "sha256": "175c98681960614227d949e4b916267f6f1ae260f337751181b4a65c4c32cb9e",
+          "measurement": {
+            "decodedFrames": 7,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              200,
+              100,
+              100,
+              200,
+              200,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.014228485838779956,
+            "meanTimelineMeanAbsoluteError": 0.00548326978939724,
+            "maxDarkTimelineMeanAbsoluteError": 0.016231027596223673,
+            "maxMatchedFrameAlphaError": 0
+          },
+          "packageBytes": 195956,
+          "eligible": false
+        },
+        "fullQ55A70": {
+          "path": "candidates/moon_cat/fullQ55A70.webp",
+          "policy": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "durations": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "quality": 55,
+            "alphaQuality": 70
+          },
+          "minimizeSize": true,
+          "variantBytes": {
+            "False": 15590,
+            "True": 15436
+          },
+          "bytes": 15436,
+          "sha256": "1c963f0a6192675b0a04635c974d3a9329ac4db41acc935b20d903d440b2e881",
+          "measurement": {
+            "decodedFrames": 10,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.004873093681917211,
+            "meanTimelineMeanAbsoluteError": 0.004726298111837327,
+            "maxDarkTimelineMeanAbsoluteError": 0.004730573710965868,
+            "maxMatchedFrameAlphaError": 11
+          },
+          "packageBytes": 196286,
+          "eligible": true
+        },
+        "fullQ60A50": {
+          "path": "candidates/moon_cat/fullQ60A50.webp",
+          "policy": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "durations": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "quality": 60,
+            "alphaQuality": 50
+          },
+          "minimizeSize": true,
+          "variantBytes": {
+            "False": 15384,
+            "True": 15250
+          },
+          "bytes": 15250,
+          "sha256": "805b7fe72f7efed7108411fa54b481aaa90fb5b44ac7c334bbfee763f649ccbc",
+          "measurement": {
+            "decodedFrames": 10,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.004923474945533769,
+            "meanTimelineMeanAbsoluteError": 0.004666594045025418,
+            "maxDarkTimelineMeanAbsoluteError": 0.004707334785766158,
+            "maxMatchedFrameAlphaError": 15
+          },
+          "packageBytes": 196100,
+          "eligible": true
+        }
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "basePackageBytes": 152373,
+      "inputSha256": {
+        "frames/orbit_ufo/000.png": "1531f4f4aa3b21a965659040bdf9b84055c12b2bbc3f3137e1fa37ea1a834434",
+        "frames/orbit_ufo/001.png": "58cf986c20390ba47a5042abf9e9866542b9b1b2974aeb4f11ed49233a800325",
+        "frames/orbit_ufo/002.png": "6a23c6f91a0b69cf82fd0d532e1e82aad64063ff27cce45578d1bfc938f34d98",
+        "frames/orbit_ufo/003.png": "bda434f56f568c2c3e6ac6c745b61a0b02655c87d344d4cdf2e6649cb0338b0c",
+        "frames/orbit_ufo/004.png": "4c1c1a7044b808ccfde6a2dcfb3a1d469ec3ed64dcef7aa83e863b2084317b7e",
+        "frames/orbit_ufo/005.png": "c5124839fa0bbf28185714a3f4bd4f46e48762c7a15821803b7b10b8b7b7425d",
+        "frames/orbit_ufo/006.png": "bfb8ac0275785abc8f3ecb02ce9405f5dd35ff7b0d5d8dddbf3edaf952bf0735",
+        "frames/orbit_ufo/007.png": "88fe44d7237e5c4b935fd20344b5d6edee2e0b41c83dfd7a881eb131cd40b056",
+        "frames/orbit_ufo/008.png": "db1fe538508818969eefeb7fa4459209b4f1ae7ac9d391edcfcc3c5a2ea569f5",
+        "frames/orbit_ufo/009.png": "60afbe93fb6ffa5aa4c6403a943074c76d8766ef6096323f74a5478ac49803e4",
+        "previews/orbit_ufo/jump.q85.webp": "2f1700c47f281ec9b17147eeb61cb39e2267aceb273494ae6481e893bff6b713"
+      },
+      "reference": {
+        "path": "../jump/previews/orbit_ufo/jump.q85.webp",
+        "bytes": 21472,
+        "measurement": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "decodedDurationsMs": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "maxTimelineMeanAbsoluteError": 0.0037824074074074075,
+          "meanTimelineMeanAbsoluteError": 0.0034699981844589687,
+          "maxDarkTimelineMeanAbsoluteError": 0.0037802287581699344,
+          "maxMatchedFrameAlphaError": 0
+        }
+      },
+      "candidates": {
+        "sixQ85": {
+          "path": "candidates/orbit_ufo/sixQ85.webp",
+          "policy": {
+            "indices": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              9
+            ],
+            "durations": [
+              200,
+              200,
+              200,
+              200,
+              100,
+              100
+            ],
+            "quality": 85,
+            "alphaQuality": 100
+          },
+          "minimizeSize": true,
+          "variantBytes": {
+            "False": 12860,
+            "True": 12858
+          },
+          "bytes": 12858,
+          "sha256": "cc030050e8ab77cf36bc355f0f3b3e114d43337f741eec582f384e18ca82dc4d",
+          "measurement": {
+            "decodedFrames": 6,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              200,
+              200,
+              200,
+              200,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.029443627450980392,
+            "meanTimelineMeanAbsoluteError": 0.00891289941902687,
+            "maxDarkTimelineMeanAbsoluteError": 0.03359740377632534,
+            "maxMatchedFrameAlphaError": 0
+          },
+          "packageBytes": 165231,
+          "eligible": false
+        },
+        "sevenQ75": {
+          "path": "candidates/orbit_ufo/sevenQ75.webp",
+          "policy": {
+            "indices": [
+              0,
+              2,
+              3,
+              4,
+              6,
+              8,
+              9
+            ],
+            "durations": [
+              200,
+              100,
+              100,
+              200,
+              200,
+              100,
+              100
+            ],
+            "quality": 75,
+            "alphaQuality": 100
+          },
+          "minimizeSize": true,
+          "variantBytes": {
+            "False": 12478,
+            "True": 12476
+          },
+          "bytes": 12476,
+          "sha256": "962e0995bf6e6bcd2a51cffc5d5877d1342c88caaeab9453962796def833f490",
+          "measurement": {
+            "decodedFrames": 7,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              200,
+              100,
+              100,
+              200,
+              200,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.024639887436456065,
+            "meanTimelineMeanAbsoluteError": 0.006981917211328977,
+            "maxDarkTimelineMeanAbsoluteError": 0.02641167392883079,
+            "maxMatchedFrameAlphaError": 0
+          },
+          "packageBytes": 164849,
+          "eligible": false
+        },
+        "fullQ55A70": {
+          "path": "candidates/orbit_ufo/fullQ55A70.webp",
+          "policy": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "durations": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "quality": 55,
+            "alphaQuality": 70
+          },
+          "minimizeSize": false,
+          "variantBytes": {
+            "False": 12762,
+            "True": 12792
+          },
+          "bytes": 12762,
+          "sha256": "ea1de2e1f10005f98f72ffabb9d7ed1da3c65b72a5011760113f2ffb38cf295d",
+          "measurement": {
+            "decodedFrames": 10,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.005333424110384895,
+            "meanTimelineMeanAbsoluteError": 0.00501860929557008,
+            "maxDarkTimelineMeanAbsoluteError": 0.005238108206245461,
+            "maxMatchedFrameAlphaError": 11
+          },
+          "packageBytes": 165135,
+          "eligible": true
+        },
+        "fullQ60A50": {
+          "path": "candidates/orbit_ufo/fullQ60A50.webp",
+          "policy": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "durations": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "quality": 60,
+            "alphaQuality": 50
+          },
+          "minimizeSize": false,
+          "variantBytes": {
+            "False": 12662,
+            "True": 12724
+          },
+          "bytes": 12662,
+          "sha256": "6656fa73e0ed49308c48b4068fa953912f0592bd3accf388e68149eded2a200a",
+          "measurement": {
+            "decodedFrames": 10,
+            "durationMs": 1000,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "maxTimelineMeanAbsoluteError": 0.005097857661583152,
+            "meanTimelineMeanAbsoluteError": 0.004896977124183006,
+            "maxDarkTimelineMeanAbsoluteError": 0.004932280319535222,
+            "maxMatchedFrameAlphaError": 16
+          },
+          "packageBytes": 165035,
+          "eligible": true
+        }
+      }
+    }
+  ]
+}
