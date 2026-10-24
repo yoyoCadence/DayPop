@@ -1,0 +1,213 @@
+{
+  "task": "DP-194",
+  "productionReady": false,
+  "appIntegrated": false,
+  "appearanceApproved": true,
+  "jumpMotionApproved": false,
+  "trialFps": 10,
+  "baseCommit": "b15904530b78b8512d06232b0edab0afe645ca01",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "source": "source/moon_cat.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "frames": [
+        "frames/moon_cat/000.png",
+        "frames/moon_cat/001.png",
+        "frames/moon_cat/002.png",
+        "frames/moon_cat/003.png",
+        "frames/moon_cat/004.png",
+        "frames/moon_cat/005.png",
+        "frames/moon_cat/006.png",
+        "frames/moon_cat/007.png",
+        "frames/moon_cat/008.png",
+        "frames/moon_cat/009.png"
+      ],
+      "durationMs": 1000,
+      "frameDurationMs": 100,
+      "loop": false,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/moon_cat.blend": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+        "../../2026-10-23/motion/frames/moon_cat/idle/000.png": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a"
+      },
+      "static": "previews/moon_cat/jump-static.png",
+      "pngBytes": 135017,
+      "candidates": {
+        "webp": "previews/moon_cat/jump.webp",
+        "webpQ85": "previews/moon_cat/jump.q85.webp"
+      },
+      "candidateBytes": {
+        "webp": 71998,
+        "webpQ85": 26058
+      },
+      "measurements": {
+        "webp": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "maxCompositedMeanAbsoluteError": 0.003264978213507625
+        }
+      },
+      "sha256": {
+        "source/moon_cat.blend": "0746937dc26ce3d10b4c18ff425d0abf02bf5eec5a5234a8f23ac6ab302cd6cd",
+        "frames/moon_cat/000.png": "d6873526603ee22093f0402876b907a6497a5cc80b4bf304ef5913ab380eeee9",
+        "frames/moon_cat/001.png": "b5f2c4ea52c78b886357fce86989df8ffffb9c324a4d98b37e4f4c00185a432b",
+        "frames/moon_cat/002.png": "e8c166c52e5908287a1ee6f4d6756089bd6c8e8916c974bd60ee272071dc9168",
+        "frames/moon_cat/003.png": "3fdf3ccceb02eed1bbd64321e7cfb521cf7a2d0d5da831e3336aeaa4277f2dda",
+        "frames/moon_cat/004.png": "ec6ffc683862b2d8932d0f3f968b0ddb622df11ea7e0db51b957ed3a45f0b49f",
+        "frames/moon_cat/005.png": "86048a6731edfb2e4124fca0dc46574ff1835050d40b5fef9f507a8697858677",
+        "frames/moon_cat/006.png": "9821b5da55e3ed6dfc0c4fefa9128f0a4ac87bbe2e5b66aab43365d6beaead8a",
+        "frames/moon_cat/007.png": "2ae25386e36890786a82764c212a318fb9e0b43a2ce29141dcaf049d0b7f69c5",
+        "frames/moon_cat/008.png": "8ad50057e592eec2b02d0e42b5461f89fcf938d9bd20cd896ce217672d1975bb",
+        "frames/moon_cat/009.png": "34d7f533b6df58045d4a78eab0d7f0897e8791d8fbeeb042c90a64f048cc2cb3",
+        "previews/moon_cat/jump-static.png": "d6873526603ee22093f0402876b907a6497a5cc80b4bf304ef5913ab380eeee9",
+        "previews/moon_cat/jump.webp": "fb44ec9fd005befd3a6617a8beb96d4b537cbe30e3afe3132a40f5eae2977a57",
+        "previews/moon_cat/jump.q85.webp": "f2a1987924750a2994bbabd779fcab83aefee89934c4b15d922a01ff146a5f63"
+      },
+      "budgetTrial": {
+        "currentAppBytes": 180850,
+        "characterLimitBytes": 196608,
+        "withJumpSharingIdlePng": 206908,
+        "withJumpAndOwnPng": 220487
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "source": "source/orbit_ufo.blend",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "frames": [
+        "frames/orbit_ufo/000.png",
+        "frames/orbit_ufo/001.png",
+        "frames/orbit_ufo/002.png",
+        "frames/orbit_ufo/003.png",
+        "frames/orbit_ufo/004.png",
+        "frames/orbit_ufo/005.png",
+        "frames/orbit_ufo/006.png",
+        "frames/orbit_ufo/007.png",
+        "frames/orbit_ufo/008.png",
+        "frames/orbit_ufo/009.png"
+      ],
+      "durationMs": 1000,
+      "frameDurationMs": 100,
+      "loop": false,
+      "inputSha256": {
+        "../../2026-10-23/motion/source/orbit_ufo.blend": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+        "../../2026-10-23/motion/frames/orbit_ufo/idle/000.png": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac"
+      },
+      "static": "previews/orbit_ufo/jump-static.png",
+      "pngBytes": 102696,
+      "candidates": {
+        "webp": "previews/orbit_ufo/jump.webp",
+        "webpQ85": "previews/orbit_ufo/jump.q85.webp"
+      },
+      "candidateBytes": {
+        "webp": 58308,
+        "webpQ85": 21472
+      },
+      "measurements": {
+        "webp": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "maxCompositedMeanAbsoluteError": 0.0
+        },
+        "webpQ85": {
+          "decodedFrames": 10,
+          "durationMs": 1000,
+          "maxCompositedMeanAbsoluteError": 0.0037824074074074075
+        }
+      },
+      "sha256": {
+        "source/orbit_ufo.blend": "508cda36f9bb5fa5451a5c76564b8f188592d736ecb9f6d3b93664155eb1e13e",
+        "frames/orbit_ufo/000.png": "1531f4f4aa3b21a965659040bdf9b84055c12b2bbc3f3137e1fa37ea1a834434",
+        "frames/orbit_ufo/001.png": "58cf986c20390ba47a5042abf9e9866542b9b1b2974aeb4f11ed49233a800325",
+        "frames/orbit_ufo/002.png": "6a23c6f91a0b69cf82fd0d532e1e82aad64063ff27cce45578d1bfc938f34d98",
+        "frames/orbit_ufo/003.png": "bda434f56f568c2c3e6ac6c745b61a0b02655c87d344d4cdf2e6649cb0338b0c",
+        "frames/orbit_ufo/004.png": "4c1c1a7044b808ccfde6a2dcfb3a1d469ec3ed64dcef7aa83e863b2084317b7e",
+        "frames/orbit_ufo/005.png": "c5124839fa0bbf28185714a3f4bd4f46e48762c7a15821803b7b10b8b7b7425d",
+        "frames/orbit_ufo/006.png": "bfb8ac0275785abc8f3ecb02ce9405f5dd35ff7b0d5d8dddbf3edaf952bf0735",
+        "frames/orbit_ufo/007.png": "88fe44d7237e5c4b935fd20344b5d6edee2e0b41c83dfd7a881eb131cd40b056",
+        "frames/orbit_ufo/008.png": "db1fe538508818969eefeb7fa4459209b4f1ae7ac9d391edcfcc3c5a2ea569f5",
+        "frames/orbit_ufo/009.png": "60afbe93fb6ffa5aa4c6403a943074c76d8766ef6096323f74a5478ac49803e4",
+        "previews/orbit_ufo/jump-static.png": "1531f4f4aa3b21a965659040bdf9b84055c12b2bbc3f3137e1fa37ea1a834434",
+        "previews/orbit_ufo/jump.webp": "3d68008e8d59009afb0b125a93166fb0dcb2ba23d661eaff909ad06717e8f007",
+        "previews/orbit_ufo/jump.q85.webp": "2f1700c47f281ec9b17147eeb61cb39e2267aceb273494ae6481e893bff6b713"
+      },
+      "budgetTrial": {
+        "currentAppBytes": 152373,
+        "characterLimitBytes": 196608,
+        "withJumpSharingIdlePng": 173845,
+        "withJumpAndOwnPng": 184170
+      }
+    }
+  ]
+}

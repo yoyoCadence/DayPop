@@ -687,6 +687,12 @@ checker 按每個原 100ms interval 比較 decoded 幀，涵蓋被 hold 的省�
 
 快速切換快取圖時，trace 實證 load／decode 發生在 passive effect 之前，active=false、圖片仍 isConnected=true，導致永遠 hidden；掛載旗標改用 layout effect 同步於 commit，保留過期 decode 防護。不是單純延長測試等待；撤掉 50ms 畫面提交嘗試、恢復精確 119999／120000ms 瀏覽器斷言後，三種情境各三輪全過。政策、負控制、原生真等兩分鐘、離線與限制見 [紀錄](pet-idle-sleep.md)。素材品質不冒充擁有者已目視確認；圖片／預算／0.4.3／v4／18 migrations／公告／部署不變。
 
+### 兩款 jump 素材試作（DP-194，2026-10-24）
+
+依持續開發授權，從 DP-171 拆出約 1 秒單次蓄力／小幅輕躍／回原姿態，先交素材與預算評估，不視為擁有者已目視採用動作。兩款沿 DP-187 mesh／材質／固定相機與基準 anchor，以原生 controls／既有 shape key 交十幀 10fps；真正首末 PNG 解碼像素與原 idle 相同。原生來源、透明 8／4px、單次時序與十一項負控制見 [製作與驗收](pet-concepts/2026-10-24/jump/README.md)。
+
+Q85 候選 26,058／21,472 bytes，共用 idle PNG 的五態包為貓 206,908／飛碟 173,845 bytes，貓仍比既有 192 KiB 超 10,300。故不接 App 或放寬預算，下一段 DP-195 先量短動作編碼與時序。動作觸發、待辦回饋／XP、選角另段；原四態包、0.4.3／v4／18 migrations、公告與部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
