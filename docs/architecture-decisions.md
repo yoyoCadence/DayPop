@@ -693,6 +693,12 @@ checker 按每個原 100ms interval 比較 decoded 幀，涵蓋被 hold 的省�
 
 Q85 候選 26,058／21,472 bytes，共用 idle PNG 的五態包為貓 206,908／飛碟 173,845 bytes，貓仍比既有 192 KiB 超 10,300。故不接 App 或放寬預算，下一段 DP-195 先量短動作編碼與時序。動作觸發、待辦回饋／XP、選角另段；原四態包、0.4.3／v4／18 migrations、公告與部署不變。
 
+### jump 編碼與五態預算（DP-195，2026-10-24）
+
+沿 DP-194 原幀獨立評估，不改來源／四態包。六／七幀 hold 雖符合體積，對原十個時間點的淺深底 MAE 超 0.008，保留失敗比較；完整十幀調整色彩／alpha 後符合門檻與原取樣時序。建議貓 Q55/A70、飛碟原 Q85，共用 idle PNG，五態包 196,286／173,845 bytes，仍守 192 KiB；貓只餘 322 bytes，不代表七態已滿足預算。完整 [方法、候選與限制](pet-concepts/2026-10-24/jump-encoding/README.md) 記錄 alpha 量化差異、真實解碼／透明／負控制與 60px 檢視。這是 agent 的編碼建議，未冒充擁有者美術驗收。
+
+App 採用另立 DP-196，只新增 typed jump registry 與 32 KiB 單檔守門、既有 idle PNG 回退／reduce；觸發政策另段，不加 XP／偏好／schema。0.4.3／v4／18 migrations、公告與部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

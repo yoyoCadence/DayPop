@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>DayPop · jump 編碼評估</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f3ee;color:#182037;font:16px/1.6 system-ui,sans-serif}
+main{max-width:1150px;margin:auto;padding:24px}h1{font-size:28px}p{color:#596172}h2{font-size:20px}
+.tools{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:24px 0}button{font:inherit;min-height:44px;padding:6px 12px;background:white;color:#182037;border:1px solid #596172;border-radius:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border-radius:16px;padding:14px;border:1px solid #dededc}
+.stage{display:flex;align-items:center;justify-content:center;gap:6px;min-height:220px;background:#f5f3ee;border-radius:10px}.dark .stage{background:#111827}
+.large{width:200px;height:200px}.small{width:60px;height:60px}img{object-fit:contain;flex-shrink:0}a{color:#324b91}
+:focus-visible{outline:3px solid #4967ac;outline-offset:3px}@media(max-width:450px){main{padding:16px}}
+</style>
+<main>
+<p>DAYPOP / MOTION ENCODING STUDY</p>
+<h1>jump 編碼評估 · 原圖與編碼候選</h1>
+<p>1 秒單次；完整十幀候選調整色彩與 alpha 編碼。六／七幀候選的逐時間點差異超標，保留供比較。都未接 App。</p>
+<div class="tools">
+<button id="play" type="button">全部重播一次</button>
+<label><input id="still" type="checkbox">靜態替代圖</label>
+<label><input id="dark" type="checkbox">深色背景</label>
+</div>
+<p id="status" role="status">載入候選…</p>
+<div id="cards" class="cards"></div>
+<p><a href="full-frame-comparison.png">完整十幀淺深底比較</a> · <a href="comparison-300ms.png">300ms 相位比較</a> · <a href="README.md">方法、預算與限制</a></p>
+</main>
+<script type="module">
+const manifest=await fetch('./manifest.json').then(response=>{if(!response.ok)throw Error('manifest');return response.json()});
+const still=document.querySelector('#still'),reduce=matchMedia('(prefers-reduced-motion: reduce)');
+const cards=[];let replay=0;
+for(const char of manifest.characters){
+  const variants=[['reference','原十幀 Q85/A100',char.reference.path],['fullQ55A70','十幀 Q55/A70',char.candidates.fullQ55A70.path],['fullQ60A50','十幀 Q60/A50',char.candidates.fullQ60A50.path],['sixQ85','六幀 Q85（未通過）',char.candidates.sixQ85.path],['sevenQ75','七幀 Q75（未通過）',char.candidates.sevenQ75.path]];
+  for(const [key,label,path] of variants){
+    const article=document.createElement('article');article.dataset.variant=key;article.dataset.kind=char.id;
+    const title=document.createElement('h2');title.textContent=(char.id==='moon_cat'?'月光貓':'軌道噗')+' · '+label;
+    const stage=document.createElement('div');stage.className='stage';
+    for(const size of ['large','small']){const image=document.createElement('img');image.className=size;image.alt=title.textContent;stage.append(image)}
+    article.append(title,stage);document.querySelector('#cards').append(article);
+    cards.push({images:[...stage.children],path,static:'../../2026-10-23/motion/previews/'+char.id+'/idle-static.png'});
+  }
+}
+function refresh(){
+  const stopped=still.checked||reduce.matches||document.hidden;
+  for(const card of cards)for(const image of card.images)image.src=stopped?card.static:card.path+'?replay='+replay;
+  document.querySelector('#status').textContent=stopped?'靜態 idle PNG · 動態已停止':'1 秒單次 · 放大與 60px；精確相位請看對照圖';
+}
+function restart(){replay++;refresh()}
+document.querySelector('#play').addEventListener('click',restart);
+still.addEventListener('change',restart);reduce.addEventListener('change',restart);
+document.addEventListener('visibilitychange',restart);
+document.querySelector('#dark').addEventListener('change',event=>document.body.classList.toggle('dark',event.target.checked));
+refresh();
+</script>
+</html>
