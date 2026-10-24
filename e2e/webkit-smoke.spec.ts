@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { checkPetSleep } from './fixtures/petSleep';
 import {
   agendaRow,
   calendarViewButton,
@@ -13,6 +14,11 @@ import {
 // iOS device claim. Every test uses a fresh guest context and the real adapter.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('前景閒置睡眠與輸入喚醒保留既有圖片、焦點與資料契約', async ({ page }) => {
+  // Mobile WebKit has no native mouse wheel; Chromium exercises that input.
+  await checkPetSleep(page, false);
 });
 
 async function openWebKit(page: Page) {

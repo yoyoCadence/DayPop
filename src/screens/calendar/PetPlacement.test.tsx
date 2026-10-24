@@ -33,6 +33,7 @@ afterEach(() => {
   host.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 const pet = () => host.querySelector<HTMLButtonElement>('.cal-pet')!;
 const tab = () => host.querySelector<HTMLButtonElement>('.cal-pet-tab')!;
@@ -190,4 +191,101 @@ it('unmounts assets when collapsed and expands to idle without a look cue', () =
   expect(artwork()).toBeNull();
   act(() => tab().click());
   expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+});
+
+function restartWithClock() {
+  act(() => root.render(null));
+  vi.useFakeTimers();
+  act(() => root.render(<PetLayer petName="摩卡" todos={[]} todayKey="2026-10-22" greeted onGreeted={() => {}} onAddTodo={() => {}} onToggleTodo={() => {}} onDeleteTodo={() => {}} />));
+}
+const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+it('sleeps only after 120 seconds, wakes for each input and never changes data or focus', () => {
+  restartWithClock();
+  const before = { ...localStorage };
+  act(() => pet().focus());
+  advance(119999);
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+  advance(1);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*webp/);
+  expect(document.activeElement).toBe(pet());
+  for (const event of [new Event('pointerdown'), new KeyboardEvent('keydown', { key: 'a' }), new WheelEvent('wheel')]) {
+    act(() => document.dispatchEvent(event));
+    expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+    advance(119999);
+    expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+    advance(1);
+    expect(artwork().getAttribute('src')).toMatch(/sleep.*webp/);
+  }
+  expect({ ...localStorage }).toEqual(before);
+  expect(document.activeElement).toBe(pet());
+});
+it('discards hidden and background idle time, restarting a full interval when visible', async () => {
+  restartWithClock();
+  advance(119000);
+  await act(async () => host.querySelector('input')!.focus());
+  advance(240000);
+  expect(artwork()).toBeNull();
+  await act(async () => host.querySelector('input')!.blur());
+  advance(119999);
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+  advance(1);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*webp/);
+  const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  advance(240000);
+  expect(artwork()).toBeNull();
+  hidden.mockReturnValue(false);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  advance(119999);
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+  advance(1);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*webp/);
+  expect(localStorage.getItem(key)).toBeNull();
+});
+it('gives bubble, look, grab and collapse priority over sleep and restarts after each', async () => {
+  restartWithClock(); advance(120000);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*webp/);
+  open(); advance(240000);
+  expect(artwork().getAttribute('src')).toMatch(/idle.*png/);
+  await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="關閉"]')!.click());
+  advance(120000);
+  expect(artwork().getAttribute('src')).toMatch(/look.*webp/);
+  await decoded(); advance(1600);
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  advance(120000);
+  expect(artwork().getAttribute('src')).toMatch(/sleep.*webp/);
+  pointer('pointerdown', 50, 550); pointer('pointermove', 150, 550); advance(240000);
+  expect(artwork().getAttribute('src')).toMatch(/grab.*png/);
+  pointer('pointercancel', 150, 550); advance(119999);
+  expect(artwork().getAttribute('src')).toMatch(/idle.*webp/);
+  advance(1); open(); clickText('收起夥伴'); advance(240000);
+  expect(artwork()).toBeNull();
+  act(() => tab().click()); advance(119999);
+  expect(artwork()?.getAttribute('src')).toMatch(/idle.*webp/);
+  advance(1);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*webp/);
+});
+it('uses the sleep PNG in reduced motion without postponing or replaying the idle deadline', () => {
+  const media = Object.assign(new EventTarget(), { matches: true });
+  vi.stubGlobal('matchMedia', () => media);
+  restartWithClock(); advance(120000);
+  expect(artwork()?.getAttribute('src')).toMatch(/sleep.*png/);
+  act(() => { media.matches = false; media.dispatchEvent(new Event('change')); });
+  expect(artwork().getAttribute('src')).toMatch(/sleep.*webp/);
+  act(() => { media.matches = true; media.dispatchEvent(new Event('change')); });
+  expect(artwork().getAttribute('src')).toMatch(/sleep.*png/);
+  act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' })));
+  expect(artwork().getAttribute('src')).toMatch(/idle.*png/);
+  advance(120000);
+  expect(artwork().getAttribute('src')).toMatch(/sleep.*png/);
+});
+it('leaves no idle clock or input listener capable of restarting one after unmount', () => {
+  restartWithClock(); advance(119999);
+  act(() => root.render(null));
+  expect(vi.getTimerCount()).toBe(0);
+  act(() => document.dispatchEvent(new Event('pointerdown')));
+  expect(vi.getTimerCount()).toBe(0);
+  advance(240000);
+  expect(vi.getTimerCount()).toBe(0);
+  expect(host.querySelector('.cal-pet-art')).toBeNull();
 });

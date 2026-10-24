@@ -6,6 +6,7 @@ import { PetBubble, type PetBubbleMode } from './PetBubble';
 import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { PetArtwork } from './PetArtwork';
+import { IdlePetArtwork } from './IdlePetArtwork';
 
 export interface PetLayerProps {
   petName: string;
@@ -57,6 +58,7 @@ export function PetLayer({
   const placement = usePetPlacement(bubble !== null, layerRef, controlRef, bubbleLayerRef);
   // One count for the badge and the greeting, so they cannot disagree.
   const lists = useMemo(() => petBubbleTodos(todos, todayKey), [todos, todayKey]);
+  const pose = placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : 'idle';
   const label =
     lists.open > 0
       ? `${petName}，今天還有 ${lists.open} 件待辦`
@@ -95,9 +97,9 @@ export function PetLayer({
           onPointerCancel={placement.onPointerCancel}
           onLostPointerCapture={placement.onPointerCancel}
         >
-          <PetArtwork pose={placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : 'idle'}
+          {pose === 'idle' ? <IdlePetArtwork paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork pose={pose}
             paused={bubble !== null} hidden={placement.hidden} cue={lookCue}
-            onLookDone={cue => setLookCue(current => current === cue ? null : current)} />
+            onLookDone={cue => setLookCue(current => current === cue ? null : current)} />}
           {lists.open > 0 && (
             <span className="cal-pet-badge" aria-hidden="true">
               {lists.open}

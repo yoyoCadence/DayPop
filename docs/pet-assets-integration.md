@@ -1,5 +1,7 @@
 # 預設月光貓三態接入（DP-188，2026-10-23）
 
+> **DP-193 現況（2026-10-24）：** 前景可見 idle 連續 120 秒後 sleep，輸入立即喚醒；泡泡／look／grab 優先，隱藏時間不累計，reduce 用 sleep PNG。新增 [播放政策與驗收](pet-idle-sleep.md)，並修正快取圖片早於 passive effect 解碼時保持隱藏的競態。下方 DP-188／192 為各階段交付紀錄。
+
 > **DP-192 後續接入（2026-10-24）：** idle 採 DP-191 減樣，sleep 加入 registry；使用者介面仍觸發 idle／look／grab。下方 DP-188 八檔／數字保留為原始交付紀錄，現況依本節。
 
 ## 混合編碼與 sleep registry（DP-192）

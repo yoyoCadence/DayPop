@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PET_ASSETS, type PetKind, type PetPose } from './petAssets';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -50,7 +50,9 @@ function DecodedArtwork({ src, onReady, onUnavailable }: { src: string; onReady(
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const active = useRef(false);
-  useEffect(() => {
+  // A cached image may load/decode before passive effects. Mark this committed
+  // instance synchronously so that a valid early load is not discarded forever.
+  useLayoutEffect(() => {
     active.current = true;
     return () => { active.current = false; };
   }, []);

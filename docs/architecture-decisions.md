@@ -681,6 +681,12 @@ checker 按每個原 100ms interval 比較 decoded 幀，涵蓋被 hold 的省�
 
 `PetArtwork` 與 `PetLayer` 播放／計時不改，sleep 共用既有 PNG／reduce／hidden／background／錯圖 CSS。一般 e2e 額外確保 sleep 與飛碟不下載；兩款 sleep 在暫存隔離檢視頁實掛元件確認原生動畫與回退，不新增產品測試入口。來源／數字／反向負控制／驗收／限制見 [接入紀錄](pet-assets-integration.md)。睡眠觸發另段 DP-193；不加偏好、XP、schema、版本或部署，素材入 registry 不代表已獲擁有者目視驗收。
 
+### 前景閒置睡眠與快取載入生命週期（DP-193，2026-10-24）
+
+依持續開發授權由 agent 採 120 秒前景 idle 門檻；`IdlePetArtwork` 的可用分支才掛 `RestingPet`，一個 timeout 與 document pointerdown／keydown／wheel capture／passive 訂閱。輸入立即喚醒重計；泡泡／look／grab、暫藏／背景、收起／離開頁面均卸載時計，恢復不補計背景時間。reduce 仍可進 sleep，但讀真正 PNG。視覺狀態只留元件記憶體，沒有新偏好或資料欄位；60px／名字／徽章／焦點／放置幾何不變。
+
+快速切換快取圖時，trace 實證 load／decode 發生在 passive effect 之前，active=false、圖片仍 isConnected=true，導致永遠 hidden；掛載旗標改用 layout effect 同步於 commit，保留過期 decode 防護。不是單純延長測試等待；撤掉 50ms 畫面提交嘗試、恢復精確 119999／120000ms 瀏覽器斷言後，三種情境各三輪全過。政策、負控制、原生真等兩分鐘、離線與限制見 [紀錄](pet-idle-sleep.md)。素材品質不冒充擁有者已目視確認；圖片／預算／0.4.3／v4／18 migrations／公告／部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
