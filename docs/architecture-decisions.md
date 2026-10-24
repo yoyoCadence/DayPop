@@ -675,6 +675,12 @@ checker 按每個原 100ms interval 比較 decoded 幀，涵蓋被 hold 的省�
 
 最終 lint／typecheck、1,382 單元＋24 Node、build／check:build 通過；Chromium 390×844／1280×900、實際 Asia/Taipei 的兩款三動畫／look 單次重播／靜態／reduce／深色、console／無溢出通過。首次桌面飛碟 look 未取到變化，三次獨立重播有動、等 decode 後明確重播與連續取樣再全過；沒有修改產品時長來掩蓋測試。Browser plugin not available，沿專案 Playwright，候選驗收 Python／Pillow 在本機，未增加 CI 相依。
 
+### 混合編碼與 sleep registry（DP-192，2026-10-24）
+
+依持續開發授權採 DP-191 建議：idle／sleep 約 5fps、look 原 10fps；新增 sleep WebP／PNG 只供 typed registry，App 尚無睡眠觸發。兩款各六個實檔為 180,850／152,373 bytes，每款 192 KiB 與 idle／look／PNG 原門檻不動，sleep 新增 64 KiB。來源逐 byte 與三段已交付 manifest hash、唯一 content-hashed 建置檔、各上限均由 Node 守門驗證；DP-191 checker 固定讀其原四項預算鍵，原量測檔不回寫。
+
+`PetArtwork` 與 `PetLayer` 播放／計時不改，sleep 共用既有 PNG／reduce／hidden／background／錯圖 CSS。一般 e2e 額外確保 sleep 與飛碟不下載；兩款 sleep 在暫存隔離檢視頁實掛元件確認原生動畫與回退，不新增產品測試入口。來源／數字／反向負控制／驗收／限制見 [接入紀錄](pet-assets-integration.md)。睡眠觸發另段 DP-193；不加偏好、XP、schema、版本或部署，素材入 registry 不代表已獲擁有者目視驗收。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

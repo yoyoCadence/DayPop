@@ -20,15 +20,47 @@ function render(pose: PetPose = 'idle', cue: number | null = null, paused = fals
 }
 const image = () => host.querySelector<HTMLImageElement>('img')!;
 async function load() { await act(async () => image().dispatchEvent(new Event('load'))); }
-it('uses approved three-state assets for both internal keys; unmade states keep the existing CSS', () => {
+it('registers the mixed four-state package for both keys; unmade poses keep CSS', () => {
   for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
-    expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'look']);
+    expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'look', 'sleep']);
     expect(PET_ASSETS[kind].look?.still).toBe(PET_ASSETS[kind].idle?.still);
+    expect(PET_ASSETS[kind].look?.durationMs).toBe(1600);
   }
-  render('sleep');
+  render('walk');
   expect(image()).toBeNull();
   expect(host.querySelector('.cal-pet-body')).not.toBeNull();
 });
+for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
+  it(`${kind} sleep decodes, uses its actual PNG when stopped, removes hidden images and falls back on failure`, async () => {
+    const sleep = (paused = false, hidden = false) => act(() => root.render(
+      <PetArtwork kind={kind} pose="sleep" cue={null} paused={paused} hidden={hidden} onLookDone={done} />,
+    ));
+    sleep();
+    expect(image()?.getAttribute('src')).toMatch(/sleep.*webp/);
+    expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+    await load();
+    expect(image().hidden).toBe(false);
+    sleep(true);
+    expect(image().getAttribute('src')).toMatch(/sleep.*png/);
+    await load();
+    sleep();
+    act(() => { media.matches = true; media.dispatchEvent(new Event('change')); });
+    expect(image().getAttribute('src')).toMatch(/sleep.*png/);
+    sleep(false, true);
+    expect(image()).toBeNull();
+    sleep();
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    try {
+      act(() => document.dispatchEvent(new Event('visibilitychange')));
+      expect(image()).toBeNull();
+    } finally { hidden.mockRestore(); }
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+    act(() => image().dispatchEvent(new Event('error')));
+    expect(image()).toBeNull();
+    expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+    expect(done).not.toHaveBeenCalled();
+  });
+}
 it('keeps CSS until decode finishes, and an actual decode failure keeps that fallback', async () => {
   render();
   expect(image().hidden).toBe(true);

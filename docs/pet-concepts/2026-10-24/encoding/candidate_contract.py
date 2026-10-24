@@ -46,7 +46,9 @@ def limits():
     pets = json.loads((REPO / "performance-budget.json").read_text(encoding="utf8"))["pets"]
     for name in ("maxCharacterBytes", "maxIdleBytes", "maxLookBytes", "maxStaticBytes"):
         assert type(pets.get(name)) is int and pets[name] > 0, "invalid existing pet limit"
-    return pets
+    # This historical evaluation records its four original gates; later added
+    # pose limits must not invalidate that recorded experiment.
+    return {name: pets[name] for name in ("maxCharacterBytes", "maxIdleBytes", "maxLookBytes", "maxStaticBytes")}
 
 
 def inspect(path, sources, state, held=False):
