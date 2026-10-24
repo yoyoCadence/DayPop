@@ -80,7 +80,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 > **2026-10-24 DP-190 接續：** 依擁有者持續開發／逐段 PR 與合併授權，從 DP-171 的後續素材拆出兩款 `sleep` 試作，Backlog → Next → In Progress。先沿已採用造型與 DP-187 原生 controls／shape keys，做閉眼、緩慢呼吸／懸浮的 4.4 秒循環；相機／比例／anchor 與 8／4px 透明邊距不改。交新目錄的來源、真實幀、Q85／靜態替代、量測、預覽與負控制。這是 agent 依既有方向提出並執行的素材段落，不代表擁有者已目視驗收；不接 App、睡眠時間表／自動走動／XP、不改既有三態或已採用預算。PR #184 最後 CI 等待期間在獨立分支準備，發 PR 前對齊合併後最新 main。
 
-- [ ] **DP-191 — 四態編碼候選與預算評估（DP-171 子項）：** DP-190 合併後從最新 main 接續；將暫存探查變成可重跑的量測／候選，對照既有 10fps 與約 5fps 的 Q85，保留 idle／sleep 4.4s、look 1.6s 與末幀回原姿態，按原始 100ms timeline 驗收每個 hold 區間的實際 decoded 品質、alpha、時長／循環和整款下載 bytes。另交 60px 對照與真實負控制；原 Blender／PNG／App 資產、192 KiB 預算與播放政策不變，候選通過後才另段決定 App 接入。
+> **2026-10-24 DP-191 準備順序：** DP-190 已完整交付為 PR #185，CI 等待期間先在獨立分支準備候選量測，由 Next → In Progress；從最新 main `cf79edf` 建分支後暫接 `23f09c4` 作依賴，#185 四項 CI／審查過後合併才將本段重放到最新 main 並開 PR，不重送 DP-190 素材。範圍仍是編碼評估，不接 App 或採用新動作／播放政策。
+
+- [ ] **DP-192 — 採用混合編碼與 sleep registry（DP-171 子項）：** DP-191 合併後採用其建議包：idle 約 5fps、look 原 10fps、grab 原 PNG，sleep 先進 typed registry，沒有自動睡眠觸發。兩款各六檔、每款仍 192 KiB；新增 sleep 單檔守門、真實輸出 bytes／來源核對與負控制，保住 PNG／reduce／暫藏／背景／失敗 CSS、60px 幾何與原有泡泡／look 時序。不改角色偏好、XP／schema／版本／公告／部署；睡眠觸發獨立後續段落，素材入 registry 不代表擁有者已目視確認 sleep。
 
 > **2026-10-23 接回實作：** 擁有者明確表示「不用特別寫交接了，你就是那個要接手的 agent」。既有定案文件保留；PR #181 四項 CI 通過後合併 `1177dcd`，DP-187 由 Next 移入 In Progress，沿三態方案製作，不另等待其他 agent。
 
@@ -220,6 +222,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -431,6 +434,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-191 — 四態編碼候選與預算評估（2026-10-24）：** 依持續開發／每段 PR 與合併授權，Next → In Progress → Done；#185 CI 期間獨立準備，四項通過／審查無發現後合併 `404ba8e`，本段再移到該最新 main，不重送 DP-190。六個 Q85 減樣候選、完整原 100ms timeline 比對、每幀 8／4px alpha、真實 look 末幀／時長／循環／每款 bytes、已交付來源 manifest hash 核對；七實檔＋一 provenance 負控制精確還原後通過。全減樣貓 163,896／飛碟 137,149 bytes；**建議保留原 10fps look、idle／sleep 約 5fps，四態含 PNG 為 180,850／152,373，低於每款 196,608**。量測不是感知等價，微動 hold 時序會變；來源／方法與 [原生對照](docs/pet-concepts/2026-10-24/encoding/README.md) 留供接手。最新基底 lint／typecheck、1,382 單元＋24 Node、build／check:build 通過；Chromium 390×844／1280×900 兩款三動畫／look 單次重播／PNG／reduce／深色與 console／無溢出通過並目視。桌面首次飛碟 look 取樣失敗，三次重播與 decode 後明確重播／連續取樣重跑通過。**本段未採用候選或改 App／預算／播放政策**；後續 DP-192 採混合包但 sleep 僅 registry，0.4.3／v4／18 migrations、公告／部署不變。最新 PR 四項 CI 與審查通過後才合併。
 
 - [x] **DP-190 — 月光貓與軌道噗 sleep 素材試作（2026-10-24）：** 依持續開發／逐段 PR 與合併授權，Backlog → Next → In Progress → Done。PR #184 等 CI 時從當時 main `868fdbb` 準備獨立分支；其四項 CI 過／審查無發現並合併 `cf79edf` 後，對齊最新 main 才發本 PR。新增兩份原生 Blender、88 張透明 PNG、兩靜態替代、無損／Q85 WebP、互動／GIF／十二背景預覽。sleep 閉眼／緩慢呼吸／懸浮 4.4s；原模型／curve／shape-key 幾何／shader graph、相機／比例／基準 anchor 不變，每幀 120px 8px／60px 4px 透明。五產物＋三 native 負控制皆拒絕，finally 精確還原，hash／正向重驗通過；Q85 貓 107,120／飛碟 93,440 bytes，詳見 [來源與驗收](docs/pet-concepts/2026-10-24/sleep/README.md)。最終 lint／typecheck、1,382 單元＋24 Node、build／check:build、32 本機連結通過；Chromium 390×844／1280×900 的原生播放、PNG 幀、暫停／reduce／深色、console／無溢出通過並目視。**這是 agent 沿既有方向的素材試作，sleep 品質尚待擁有者目視驗收**；直接加入會超既有每款 192 KiB，DP-191 先評估候選編碼。舊素材與 App 三態／資產／預算不變，未做播放觸發／選角／XP／schema／版本／公告／部署；本 PR 最新四項 CI 與審查過後才合併。
 

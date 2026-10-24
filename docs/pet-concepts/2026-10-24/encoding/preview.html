@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>DayPop · 四態編碼對照</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f3ee;color:#182037;font:16px/1.6 system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:24px}h1{font-size:28px}p{color:#596172}
+.tools{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:24px 0}select,button{font:inherit;min-height:44px;padding:6px 12px;background:white;color:#182037;border:1px solid #596172;border-radius:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}article{background:white;padding:16px;border:1px solid #dededc;border-radius:14px}
+.stage{display:flex;justify-content:center;align-items:center;gap:12px;min-height:240px;background:#f5f3ee;border-radius:10px}.dark .stage{background:#111827}
+.large{width:220px;height:220px}.small{width:60px;height:60px}img{object-fit:contain;flex-shrink:0}
+a{color:#324b91}:focus-visible{outline:3px solid #4967ac;outline-offset:3px}@media(max-width:450px){main{padding:16px}.large{width:200px;height:200px}.stage{gap:6px}}
+</style>
+<main>
+<p>DAYPOP / ENCODING COMPARISON</p><h1>四態編碼對照</h1>
+<p>左／上為既有 10fps，右／下為約 5fps 候選；並列放大與 60px。這是編碼評估，尚未套用到 App。</p>
+<p>建議包保留原 10fps look，idle／sleep 用約 5fps；原有 look 的微動時序也能保留在 192 KiB 內。</p>
+<div class="tools">
+<label>角色 <select id="kind"><option value="moon_cat">月光貓</option><option value="orbit_ufo">軌道噗</option></select></label>
+<label>姿態 <select id="state"><option value="idle">idle · 4.4 秒</option><option value="look">look · 1.6 秒單次</option><option value="sleep">sleep · 4.4 秒</option><option value="grab">grab · 原靜態</option></select></label>
+<button id="replay" type="button">從頭播放</button>
+<label><input id="still" type="checkbox">靜態替代圖</label>
+<label><input id="dark" type="checkbox">深色背景</label>
+</div>
+<p id="status" role="status">載入候選…</p>
+<div class="cards"><article data-version="reference"><h2>既有 10fps</h2><div class="stage"><img class="large" alt="既有素材放大"><img class="small" alt="既有素材 60px"></div><p class="bytes"></p></article>
+<article data-version="candidate"><h2>約 5fps 候選</h2><div class="stage"><img class="large" alt="候選放大"><img class="small" alt="候選 60px"></div><p class="bytes"></p></article></div>
+<p><a href="README.md">方法、限制與驗收</a> · <a href="manifest.json">原始 bytes／decoded 時序／畫質量測</a></p>
+</main>
+<script type="module">
+const manifest=await fetch('./manifest.json').then(response=>{if(!response.ok)throw Error('manifest');return response.json()});
+const kind=document.querySelector('#kind'),state=document.querySelector('#state'),still=document.querySelector('#still');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');let cue=0;
+function render(){
+  const character=manifest.characters.find(character=>character.id===kind.value),pose=state.value;
+  const stopped=still.checked||reduce.matches||document.hidden||pose==='grab';
+  const staticPath=character.statics.find(file=>file.path.endsWith('/'+(pose==='look'?'idle':pose)+'-static.png')).path;
+  for(const version of ['reference','candidate']){
+    const article=document.querySelector('[data-version="'+version+'"]');
+    const clip=character.clips[pose];
+    const path=stopped?staticPath:version==='reference'?clip.referencePath:clip.path;
+    for(const image of article.querySelectorAll('img'))image.src=path+'?cue='+cue;
+    article.querySelector('.bytes').textContent=stopped?'沿用真正 PNG 靜態替代':(version==='reference'?clip.referenceBytes:clip.bytes).toLocaleString()+' bytes';
+  }
+  document.querySelector('#status').textContent=(stopped?'靜態替代圖':'時長保持 '+(pose==='look'?'1.6':'4.4')+' 秒')+' · 全減樣 '+character.totalBytes.toLocaleString()+'／保留原 look '+character.mixedTotalBytes.toLocaleString()+' bytes（上限 '+manifest.limits.maxCharacterBytes.toLocaleString()+'）';
+}
+kind.addEventListener('change',()=>{cue++;render()});state.addEventListener('change',()=>{cue++;render()});
+still.addEventListener('change',()=>{cue++;render()});document.querySelector('#replay').addEventListener('click',()=>{cue++;render()});
+reduce.addEventListener('change',()=>{cue++;render()});document.addEventListener('visibilitychange',()=>{cue++;render()});
+document.querySelector('#dark').addEventListener('change',event=>document.body.classList.toggle('dark',event.target.checked));render();
+</script>
+</html>

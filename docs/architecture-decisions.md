@@ -665,6 +665,16 @@ Q85 貓 107,120／飛碟 93,440 bytes，加各自新 PNG 後直接併入原包�
 
 本機最終 1,382 單元＋24 Node、lint／typecheck／build／check:build、32 本機連結通過；Chromium 手機／桌面確認兩種原生 WebP、PNG 幀、暫停／reduce 與深色、console、無水平溢出並查看截圖。Browser plugin not available，使用專案 Playwright；Blender／Pillow 驗收在本機，不增加 CI 相依。這些不能代替擁有者動作品質或 iOS standalone 驗收。
 
+### 四態編碼候選與預算評估（DP-191，2026-10-24）
+
+DP-190 四態原包超限後，依持續開發授權獨立量測，原幀／Blender／App 資產與 192 KiB 預算不變。[候選／方法／限制](pet-concepts/2026-10-24/encoding/README.md) 記錄每兩原幀取一、以 200ms hold 的 Q85，look 保留真正最後一幀並維持 1.6s；原 idle／sleep 各 4.4s。WebP 合併相鄰相同幀後 idle／sleep 實際 20 幀、look 9 幀，不能稱所有幀都固定 200ms，也不能將「總時長相同」說成「微動時序完全相同」。
+
+checker 按每個原 100ms interval 比較 decoded 幀，涵蓋被 hold 的省略幀；整張合成 RGB 平均絕對差／255 最大 <0.008，不等於感知等價或真機順暢。每幀 120px 8px／縮 60px 4px alpha、loop／總時長、look 最後 alpha、已交付來源 manifest hashes 與實際包 bytes 都核對；七實檔＋一 provenance 負控制 finally 精確還原後通過。
+
+全減樣四態含三張 PNG 為貓 163,896／飛碟 137,149 bytes；**建議保留原 10fps look，只減樣較慢的 idle／sleep，合計 180,850／152,373**，仍在每款 196,608 內。新候選只放文件目錄，不複製 PNG 或原 look。App 採用另立 DP-192，sleep 先只進 registry，觸發政策另段；本段不採候選、不改原圖片／預算／worker／schema。
+
+最終 lint／typecheck、1,382 單元＋24 Node、build／check:build 通過；Chromium 390×844／1280×900、實際 Asia/Taipei 的兩款三動畫／look 單次重播／靜態／reduce／深色、console／無溢出通過。首次桌面飛碟 look 未取到變化，三次獨立重播有動、等 decode 後明確重播與連續取樣再全過；沒有修改產品時長來掩蓋測試。Browser plugin not available，沿專案 Playwright，候選驗收 Python／Pillow 在本機，未增加 CI 相依。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
