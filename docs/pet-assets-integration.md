@@ -21,7 +21,7 @@
 
 另直接對十二個真實建置輸出降低 sleep／整款上限、移除 sleep 清單項，以及實際追加一個 sleep 輸出 byte，四種皆拒絕；finally 還原輸出與 SHA-256，原預算下兩款重新通過。100 個本機文件連結與最終 lint／typecheck 亦通過。
 
-PR #186 等 CI 時從 main `404ba8e` 獨立準備、暫接 `984509d` 作素材依賴；發本段 PR 前需先對齊 #186 四項 CI／審查通過合併後的最新 main。最新 head 四項 CI 與審查通過才合併；下一段另做前景閒置 sleep 觸發，尚未實作。
+PR #186 head `984509d` 四項 CI／審查無發現後合併 `a85b60f`（run `40079654688`；Chromium 271 passed／13 skipped、WebKit 6 passed）；本段已移至該最新 main，不重送候選。最新 head 四項 CI 與審查通過才合併；下一段另做前景閒置 sleep 觸發，尚未實作。
 
 基線為 DP-187 PR #182 合併的 `65bfab5`。本項依已核准方案把月光貓接進 App，軌道噗只登記在 typed registry；名稱仍讀既有 `petName`，預設「摩卡」，沒有新增角色選擇或第二份偏好儲存。App 仍為 0.4.3、user-data v4、18 檔 migration，公告與部署另行決定。
 
