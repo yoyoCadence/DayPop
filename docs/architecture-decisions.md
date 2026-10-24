@@ -647,6 +647,14 @@ idle 原生循環；關閉泡泡才給一次 look cue，解碼完成後計 1.6 �
 
 每款 ≤192 KiB（idle ≤128、look ≤48、每張 PNG ≤16），目前貓 177,790／飛碟 151,453 bytes。`check:build` 核對實際輸出的 hash 檔與來源 bytes，缺漏／重複／無效預算或超限均失敗；未選用飛碟也計入。沒有整包預載或擴充安裝 cache，沿現有 runtime cache，離線首次未快取 PNG 可回靜態 CSS。完整責任、命令與驗證限制見 [接入紀錄](pet-assets-integration.md)。後四態、選夥伴與 XP 留 DP-171／172／041；0.4.3／v4／18 migrations、公告／部署不變。
 
+### 待辦勾選的保存確認（DP-189，2026-10-24）
+
+依擁有者持續開發／每段 PR 與合併授權，先完成 DP-041 已列的保存確認前置。`DataActions.toggleTodo(id): Promise<void>` 共用 DP-133／134／141 的 `confirmed()`：在同一 serialized queue 中，該筆 repository 成功後才 resolve、失敗以原錯誤 reject；provider 仍發布原有失敗警告，後續操作不受拒絕污染。不等待 Promise 的舊畫面有 rejection handler，不產生 unhandled rejection。repository 契約、完成／取消完成語意與 UI 不變。
+
+**resolve 只代表命令結束，不代表「發生了可給獎的完成」。** 既有 repository 對 missing id 可 no-op，取消完成也成功；未來回饋／XP 必須另辨識真正完成轉換、來源／去重與 session，不能對所有成功 Promise 直接給獎。這一段不接動作或成長，也不改 schema。
+
+三項新增回歸涵蓋延遲的遠端拒絕與下一筆繼續、真實 local repository 的完成／取消完成各筆確認及 reload、既有 caller 忽略拒絕仍安全。兩項在基線先失敗；暫時反向還原該產品單行，再取得同樣兩項失敗，finally 精確還原並核對 SHA-256。完整 1,382 單元＋24 Node、lint／typecheck／build／check:build，相關 Chromium 14 passed／2 既有 skipped 通過，browser 實際時區 `Asia/Taipei`。Browser plugin not available，使用既有專案 Playwright。帳號案例是 FakeSupabase，不是正式資料或真機驗收。後續仍由 DP-171／172／041 分段處理。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

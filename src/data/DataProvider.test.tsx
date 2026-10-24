@@ -80,7 +80,7 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
-  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'deleteEvent', 'cancelEventOccurrence', 'addCalendar', 'updateCalendar', 'deleteCalendar'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134/141)', async (method) => {
+  it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'toggleTodo', 'deleteEvent', 'cancelEventOccurrence', 'addCalendar', 'updateCalendar', 'deleteCalendar'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134/141/189)', async (method) => {
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
     let reject!: (error: Error) => void;
     let calls = 0;
@@ -101,7 +101,8 @@ describe('DataProvider', () => {
                 : method === 'addCalendar' ? actions.addCalendar({ name: '草稿', color: '#2563eb' })
                   : method === 'updateCalendar' ? actions.updateCalendar(id, { name: '草稿' })
                     : method === 'deleteCalendar' ? actions.deleteCalendar(id)
-                      : actions.addTodo({ title: '草稿', date: '2026-10-06' });
+                      : method === 'toggleTodo' ? actions.toggleTodo(id)
+                        : actions.addTodo({ title: '草稿', date: '2026-10-06' });
       expect(pending).toBeInstanceOf(Promise);
       outcome = pending.catch((error) => error);
       actions.updatePreferences({ petName: '下一筆' });
@@ -132,6 +133,51 @@ describe('DataProvider', () => {
     expect(settled).toBe(false);
     await act(async () => { resolve(data); await pending; });
     expect(settled).toBe(true);
+    expect(latest().state).toEqual({ status: 'ready', data });
+  });
+
+  it('confirms each toggle after its own persisted completion or undo, in call order (DP-189)', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const todo = (await repository.addTodo({ title: '等保存', date: '2026-10-24' })).todos[0]!;
+    const toggle = repository.toggleTodo.bind(repository);
+    const release: (() => void)[] = [];
+    const completed: boolean[] = [];
+    repository.toggleTodo = async (id) => {
+      await new Promise<void>(resolve => { release.push(resolve); });
+      return toggle(id);
+    };
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    await act(async () => {
+      first = latest().actions.toggleTodo(todo.id).then(() => { completed.push(true); });
+      second = latest().actions.toggleTodo(todo.id).then(() => { completed.push(false); });
+    });
+    expect(release).toHaveLength(1);
+    expect(completed).toEqual([]);
+    expect((await repository.load()).todos[0]!.completedAt).toBeNull();
+    await act(async () => { release[0]!(); await first; });
+    expect(completed).toEqual([true]);
+    expect(release).toHaveLength(2);
+    expect((await repository.load()).todos[0]!.completedAt).not.toBeNull();
+    expect(latest().state).toMatchObject({ status: 'ready', saving: true });
+    await act(async () => { release[1]!(); await second; });
+    expect(completed).toEqual([true, false]);
+    expect((await repository.load()).todos[0]!.completedAt).toBeNull();
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ completedAt: null }] } });
+    const state = latest().state;
+    expect(state.status === 'ready' && state.saving).toBeFalsy();
+  });
+
+  it('safely reports an ignored toggle rejection and still accepts the next write (DP-189)', async () => {
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    const repository = asyncRepository(data);
+    repository.toggleTodo = async () => { throw new RemoteDataError('保存待辦', new Error('offline')); };
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    await act(async () => { latest().actions.toggleTodo('missing'); });
+    expect(latest().state).toMatchObject({ status: 'ready', data, warning: { kind: 'write-failed' } });
+    await act(async () => { await latest().actions.addTodo({ title: '下一筆', date: '2026-10-24' }); });
     expect(latest().state).toEqual({ status: 'ready', data });
   });
 

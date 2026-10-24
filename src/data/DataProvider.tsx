@@ -230,7 +230,7 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         return confirmed(() => activeRepository.addTodo(input));
       },
       toggleTodo(id) {
-        run(() => activeRepository.toggleTodo(id));
+        return confirmed(() => activeRepository.toggleTodo(id));
       },
       async renameTodo(id, title,options) {
         await enqueue(() => activeRepository.renameTodo(id, title),options);
