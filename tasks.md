@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-193 — 前景閒置睡眠（DP-171 子項）：** DP-192 合併後從最新 main 接續；沿持續開發授權採保守的 120 秒前景閒置門檻，只在可見、展開、未開泡泡且為 idle 的夥伴啟用 sleep，pointerdown／keydown／wheel 立即喚醒並重計；look／grab 優先，暫藏／背景／收起／關閉時清 timer、恢復重計，不補播背景時間。狀態只留元件記憶體，reduce 仍用 sleep PNG；不新增時間表、偏好、XP、自動走動或儲存。先做生命週期／優先序回歸及實際瀏覽器、離線驗收，維持每段 PR／四 CI 與審查過後合併。
+- [ ] **DP-194 — 兩款 jump 素材試作（DP-171 子項）：** 從 DP-171 Backlog 拆出至 Next；DP-193 合併後從最新 main 接續，先沿既有 Blender 模型／材質／相機／anchor 做約 1 秒單次的小幅壓身／輕躍／回原姿態，交原生來源、120px PNG 幀、靜態替代、WebP 候選與 60px 預覽。逐幀保留 8／4px 透明並驗證真正末幀、時序、來源未變與負控制，量測合併圖片預算；不先改 App 或放寬 192 KiB，不綁待辦獎勵／XP，不代表擁有者已目視確認新動作。每段仍獨立 PR、四 CI／審查後合併。
 
 > **2026-10-24 持續開發授權：** 擁有者再次要求「每次完成一個段落就開 PR 並 merge，再持續開發，不用特別問除非必要」。每段獨立分支、驗證、中文 PR，最新 head 四項 CI 與審查通過才合併，再從最新 main 接續；保留文件與任務板供任何 agent 接手。沒有增加部署或遠端 migration 套用授權。DP-188 PR #183 已四項 CI 全過、審查無發現，合併 `868fdbb`（run `40033060475`）。下一段從 DP-041 拆出 DP-189：先讓勾選待辦回傳既有 queue 的保存確認，不先定 XP／獎勵／新 schema；由 Backlog → Next → In Progress。
 
@@ -223,6 +223,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-193 準備順序：** #187 等 CI 時從 main `a85b60f` 開獨立分支，暫接 `4c23d84` registry 依賴，由 Next 移入 In Progress；四項 CI／審查過後合併 `b159045`，本段已移至該最新 main，不重送混合圖片。
 
 
 > **DP-192 準備順序：** PR #186 等待 CI 時從最新 main `404ba8e` 開獨立分支，暫接 `984509d` 作素材依賴，由 Next 移入 In Progress；合併 `a85b60f` 後已將本段移至最新 main，再開 PR，不重送編碼候選。
@@ -438,6 +440,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-193 — 前景閒置睡眠（2026-10-24）：** Next → In Progress → Done；基底為 #187 四項 CI／審查過後合併 `b159045`。可見前景 idle 120 秒後 sleep，三種輸入喚醒；泡泡／look／grab 優先，隱藏／背景／收起不補計，reduce 用 PNG。元件擁有 timer／listener，不持久化。修正快取圖片 load／decode 早於 passive effect 的 active 競態，改 layout effect；原精確門檻三種情境各三輪全過。1,389 單元＋27 Node、lint／typecheck／build／check:build、Chromium 18＋WebKit 7／真 production 離線缺 sleep 回 CSS、喚醒回快取 idle，guest bytes 不變；兩 viewport 真等約 120.78 秒原生睡眠／動畫／PNG／喚醒／焦點／60px 目視通過。舊 Layer 四失敗、漏 listener 一失敗，finally 精確還原，44 相關＋27 Node 回歸通過；初版清理檢查不足已補即時 timer 斷言。來源與限制見 [紀錄](docs/pet-idle-sleep.md)。圖片、192 KiB、0.4.3／v4／18 migrations／公告／部署不變，sleep 品質不冒充擁有者已目視驗收；最新 PR 四項 CI／審查後才合併，後續 DP-194 僅 jump 素材試作。
 
 - [x] **DP-192 — 混合編碼與 sleep registry（2026-10-24）：** Next → In Progress → Done；PR #186 head `984509d` 四項 CI／審查無發現後合併 `a85b60f`（run `40079654688`；Chromium 271 passed／13 skipped、WebKit 6 passed）；本段已移至該最新 main，不重送候選。兩款各六檔，idle／sleep 約 5fps、look 原 10fps／原 PNG 不變；貓 180,850／飛碟 152,373 bytes，仍每款 192 KiB、新 sleep 64 KiB。三份已交付來源 bytes／hash 與十二真實建置檔守門；三項 registry／兩項舊 gate／六項停用預算／實檔變造負控制拒絕，finally 精確還原後通過。1,384 單元＋27 Node、lint／typecheck／build／check:build、Chromium 14＋WebKit 6；手機／桌面 App 與兩款 sleep 隔離檢視、實際 Asia/Taipei／console／60px／回退通過並目視。詳 [接入紀錄](docs/pet-assets-integration.md)。**sleep 僅 registry，App 仍觸發三態，品質尚待擁有者目視驗收**；無選角／XP／schema／版本／公告／部署，最新 PR 四項 CI／審查過後才合併。
 

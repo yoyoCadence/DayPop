@@ -1,5 +1,7 @@
 # App 內浮動寵物小幫手素材規範 — In-App Pet Companion Asset Spec
 
+> **2026-10-24 現況（DP-192–193）：** 已採 idle／sleep 約 5fps＋look 原 10fps 的混合包，各款六檔為貓 180,850／飛碟 152,373 bytes；每款仍 192 KiB、新 sleep 單檔 64 KiB，舊上限不變。App 月光貓前景閒置 120 秒後 sleep，輸入喚醒、暫藏／背景重新計時、泡泡／look／grab 優先，reduce 使用 PNG。這是依持續開發授權由 agent 採用的政策；sleep 品質仍待擁有者目視驗收，完整七態／選角／XP 未完成。最新見 [播放政策](docs/pet-idle-sleep.md)與 [素材接入](docs/pet-assets-integration.md)；下方試作／歷史狀態不回寫。
+
 > **2026-10-24 sleep 試作（DP-190）：** 兩款固定造型／相機／anchor 的原生閉眼、4.4 秒循環與 88 張透明幀另見 [試作紀錄](docs/pet-concepts/2026-10-24/sleep/README.md)。沿 120／60px 與 8／4px 邊距，舊三態不變；sleep 品質待擁有者目視驗收，未接 App，也未增加既有預算或定睡眠觸發政策。素材段落不代表完整七態完成。
 
 給美術／動畫師的交付規範。角色未來會浮在 DayPop App viewport 上層，可由使用者拖到不擋內容的位置；活動範圍是 App 畫面，不是 Windows／macOS 作業系統桌面。現有 React 介面仍是正常文件流中的 CSS 摘要佔位，浮動層與拖曳會在後續功能實作。

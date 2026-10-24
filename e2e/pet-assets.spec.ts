@@ -1,8 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { monitorBrowser, openApp } from './support';
+import { checkPetSleep } from './fixtures/petSleep';
 
 const pet = (page: Page) => page.locator('button.cal-pet');
 const image = (page: Page) => pet(page).locator('img');
+test('前景閒置 120 秒睡眠，輸入喚醒，暫藏／泡泡／look／grab 優先且資料不變', async ({ page }) => {
+  await checkPetSleep(page);
+});
 async function ready(page: Page, pattern: RegExp) {
   await expect(image(page)).toHaveAttribute('src', pattern);
   await expect(image(page)).toBeVisible();
