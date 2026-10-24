@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-24 持續開發授權：** 擁有者再次要求「每次完成一個段落就開 PR 並 merge，再持續開發，不用特別問除非必要」。每段獨立分支、驗證、中文 PR，最新 head 四項 CI 與審查通過才合併，再從最新 main 接續；保留文件與任務板供任何 agent 接手。沒有增加部署或遠端 migration 套用授權。DP-188 PR #183 已四項 CI 全過、審查無發現，合併 `868fdbb`（run `40033060475`）。下一段從 DP-041 拆出 DP-189：先讓勾選待辦回傳既有 queue 的保存確認，不先定 XP／獎勵／新 schema；由 Backlog → Next → In Progress。
+
 > **2026-10-23 接回實作：** 擁有者明確表示「不用特別寫交接了，你就是那個要接手的 agent」。既有定案文件保留；PR #181 四項 CI 通過後合併 `1177dcd`，DP-187 由 Next 移入 In Progress，沿三態方案製作，不另等待其他 agent。
 
 > **2026-10-23 DP-185 定案與指定：** 擁有者認為 DP-184 造型有詭異感，採納兩款一起調整：貓縮小眼睛／減少反光、鼻嘴融入臉部、短肢自然坐姿；飛碟移除長腿與鞋形腳墊、改成懸浮生物並簡化表情；兩款降低塑膠光澤、整理接縫，保留配色與 3D 漫畫方向。由 Next 移入 In Progress，僅交付 idle／來源與前後圖；造型再確認後才規劃動作。
@@ -214,6 +216,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -397,6 +400,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **2026-10-23 擁有者改選先做正式素材：** 指定 Blender、精緻卡通 3D＋漫畫描邊、固定配色；摩卡只是粗糙範例，只要求保留貓咪，其他由 Codex 探索非動物（例如太空船生物）。因此先另立 DP-183 做四款 idle 概念與可編輯來源，不能把本條歷史四動物直接當作已定案清單。新 keys／名稱、七態／動畫、rig、預算及快取待選定後再定；本條未結案，不先做 registry 或 DP-172 migration。
 - [ ] **DP-172 — 選擇夥伴偏好（DP-040 第四段，依賴 DP-171）：** 原稿設定頁的「選擇夥伴」需要一個新的偏好欄位。這代表 migration、重新產生 `database.types.ts`、guest 與帳號快取的 schema version 提升（v4 → v5）、write barrier 與遷移回歸測試。高風險，獨立 PR；migration 要由專案擁有者 push 之後才能部署前端（比照 DP-138）。不得把這個值另存在臨時 storage，那會變成第二套資料模型。
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
+  > **2026-10-24 DP-189 前置完成：** `toggleTodo` 已回傳 queue 的保存確認；忽略結果仍安全。這只完成下方第 (1) 點，不代表實作回饋或成長。不存在 id 的 no-op、取消完成、匯入、重試及帳號切換都不能僅以 Promise resolve 當成可給獎的完成，後續仍須另定轉換身分與規則。
   > **2026-10-13 審查補充（動工前要先有答案）**：(1) 回饋與獎勵只能在「待辦已確認保存為完成」之後發生。`toggleTodo` 目前對 UI 回傳 `void`（`dataContext.ts:74`），第一步是比照 DP-133／134／141 讓它回傳既有 queue 的確認結果。(2) 先定規則：重複勾選與取消完成、父子待辦、匯入的資料、重試（DP-142）與帳號切換，同一來源不得重複給獎勵。(3) 成長資料走既有 repository；如果需要 ledger 或新表，獨立 migration 加 RLS 測試，不與動畫 PR 混在一起。(4) 優先解鎖表情、配件與日常互動，不用斷連續天數或扣生命值來懲罰。上方 Proposed data architecture 寫的是「寵物 XP 優先由已完成待辦推導」，若改成 ledger 要同步那一句。
 - [ ] **DP-042 — 可靠背景提醒／推播：** 另行設計 Web Push subscription、排程、撤銷、時區與權限；目前頁面開啟時的 Notification timer 不視為可靠提醒。
 - [ ] **DP-043 — 安全 AI 助理：** 若產品決定保留 AI，改由 Supabase Edge Function／受控 server endpoint 管理 provider secret、rate limit、輸入最小化與稽核；禁止在 browser localStorage 保存 secret。
@@ -421,6 +425,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-189 — 待辦完成操作的保存確認（DP-041 前置，2026-10-24）：** 依持續開發／每段 PR 與 merge 授權，由 Backlog → Next → In Progress → Done；基線 DP-188 PR #183 合併 `868fdbb`。`toggleTodo` 回傳既有 `confirmed()` 的 `Promise<void>`，repository 確認才 resolve、原錯誤 reject，失敗警告與 queue 恢復不變，舊的不等待畫面安全。新增遠端拒絕、真實 local repository 連續完成／取消完成各筆獨立確認、忽略拒絕後續寫入驗證；兩項先在舊程式失敗，反向單行基線也同樣兩項失敗，finally 精確還原並核對 SHA-256。lint／typecheck、1,382 單元＋24 Node、build／check:build 通過；相關 Chromium 手機／桌面 14 passed／2 既有 skipped、實際時區 `Asia/Taipei`，含 guest 與 FakeSupabase 帳號待辦重載。最新四項 CI 與審查通過後才合併。resolve 只代表命令結束，不代表可獎勵的完成轉換；沒有 XP／動作觸發、repository／schema／Auth／版本／公告／部署變更。契約與後續界線見 ADR §4。
 
 - [x] **DP-188 — 預設月光貓三態接入（2026-10-23）：** 依核准方案由 Next → In Progress → Done，基線 PR #182 合併 `65bfab5`。Q85 WebP＋PNG 接入預設月光貓，飛碟僅 typed registry；idle 循環、關閉泡泡 look 單次（解碼後計時）、真正拖移／鍵盤移動 grab，泡泡／reduce 靜態、暫藏／背景／收起移除圖片，失敗回原 CSS。補正 look 載入失敗與解碼前暫藏／背景殘留，不回來補播；原名字／徽章／泡泡／60px 幾何／焦點保留。八個產物等於 DP-187 來源，貓 177,790／飛碟 151,453 bytes，`check:build` 守每款 192 KiB 與 idle 128／look 48／PNG 16 KiB，也核對缺漏／重複／輸出 bytes。1,379 單元＋24 Node、lint／typecheck／build／check:build 通過；相關 Chromium 去重 35 passed／3 skipped、WebKit 6 passed。十二主題 axe 本機 180 秒逾時後單獨給 360 秒通過約 3.4 分鐘，不改門檻／CI；十二主題、徽章與桌面深色圖目視，production 真離線首次缺 PNG 回靜態 CSS／資料逐字不變。四項產品基線反向失敗、停用預算六項失敗，finally 精確還原並核對 hash，詳見 [接入紀錄](docs/pet-assets-integration.md)。本 PR 最新四項 CI 過後才依既有授權合併，沒有自動部署；後四態／選夥伴／XP 留 DP-171／172／041，0.4.3／v4／18 migrations／公告不動。
 

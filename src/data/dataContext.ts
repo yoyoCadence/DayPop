@@ -48,7 +48,7 @@ export type DataState =
 /**
  * Every write the UI is allowed to make. Identities are stable across renders.
  * Event-sheet saves (DP-133) and deletions (DP-134), and the calendar dialog's
- * writes (DP-141), return confirmation; other callers may ignore those
+ * writes (DP-141), and todo toggles (DP-189), return confirmation; callers may ignore those
  * promises safely, while DataProvider still reports the failure.
  */
 export interface DataActions {
@@ -74,7 +74,8 @@ export interface DataActions {
   renameTodo(id: string, title: string, options?: SharingWriteOptions): Promise<void>;
   setTodoPriority(id: string, priority: TodoPriority, options?: SharingWriteOptions): Promise<void>;
   rescheduleTodo(id: string, date: string, options?: SharingWriteOptions): Promise<void>;
-  toggleTodo(id: string): void;
+  /** Confirms the queued command; a missing id remains the repository's no-op, not a rewardable completion. */
+  toggleTodo(id: string): Promise<void>;
   deleteTodo(id: string): void;
   setTodoSharingScope?(id: string,scope: 'inherit'|'private'): Promise<void>;
   setCalendarShare?(id: string,permission: 'view'|'edit'|null): Promise<void>;
