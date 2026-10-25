@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-203 — walk 原生可行性試作（DP-171 子項）：** 從 Backlog 排入 Next。貓沿已確認坐姿模型的現有 controls 做明確命名的「原地踏爪」候選與模型限制，不冒充完整站立四肢步態；軌道噗試作 root 傾斜滑行。另目錄交 Blender／實幀／原生循環與實檔預算量測／負控制／120與60px 預覽。原 mesh／造型／相機／base anchor 與 8／4px 保留，不接 App／自動位移；若需要新站姿／rig，先交具體模型方案與擁有者造型決定。DP-202 的貓六態假設包只餘 10,760 bytes，不能預先保證第七態可裝入。等 DP-202 最新四 CI／完成審查合併後移至最新 main 發自己的 PR。
+- [ ] **DP-204 — 原地步態的模型與預算方案：** 由 DP-171 拆出，Backlog → Next。原方向只定貓原地步態、未要求站立四肢；先比較保留坐姿、固定頭身尾而只動前爪的原生小試作，量完整八取樣是否能減少編碼成本，保留 DP-203 原試作。站立四肢／新rig只列具體成本與造型替代方案，不自動重塑已採模型或放寬192KiB／品質門檻；小動作不可冒充完整四肢行走。App新key／位移／偏好／XP／schema／版本／部署不在本段。等 DP-203 最新四CI／完成審查合併後從最新main發獨立PR。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-203 發布基底（2026-10-26）：** PR #197 head `939e0b0` 的 run `40194574393` 四 CI／完成審查無發現、無未解決討論後合併 `96b3836`（Chromium 285 passed／13 skipped、WebKit 8 passed）；本段已對齊此最新 main，輸入 SHA 重核、保留 preparationCommit，Blender／PNG／WebP bytes 不變；只送 motion 可行性，不重送 sit 或產品圖，自己的最新四 CI／完成審查過才合併。
 
 > **DP-202 發布基底：** PR #196 head `5b5c123` 的 run `40192734289` 四 CI／完成審查無發現、無未解決討論後合併 `0a0f3de`（Chromium 285 passed／13 skipped、WebKit 8 passed）；本段已重放至此最新 main，重新核對發布輸入 SHA、保留 preparationCommit，PNG／Blender／編碼 bytes 不變；只送 sit 素材與 walk 可行性，不重送產品圖，自己的最新四 CI／完成審查過才合併。
 
@@ -463,6 +465,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-203 — 原地踏爪與傾斜滑行可行性（2026-10-25）：** Backlog → Next → In Progress → Done。兩份原生 .blend／16 真實PNG、0.8秒八取樣及六編碼候選，原模型／材質／相機／base anchor保留；貓不是完整四肢行走。貓Q75full 18,078、假設包203,926超192KiB；held 6,572但MAE0.009209拒絕，沒有同時符合品質與總量的候選。飛碟首輪60px邊距3px被攔，修整路徑後8／4px過；Q75full 14,444、假設包174,813數值過，held MAE0.020034拒絕。十二圖片／metadata＋八native負控制全拒絕並finally精確還原，16實幀與兩閉環重渲染pixels一致。兩viewport淺深底28圖／六原生60px完整週期後循環／PNG暫停重播／reduce／鍵盤／拒絕文案／版面／連結／console過，實際時區列印、板與截圖目視，CLI／server核對清理；lint／typecheck／本機連結／diff過，產品相對前段零差異。詳 [試作與限制](docs/pet-concepts/2026-10-25/motion-feasibility/README.md)。沒有接App／採用候選／七態完成或擁有者品質驗收；192KiB／五態／0.4.3／v4／18migrations／公告／部署不變。依賴與自己的最新四CI／完成審查通過才合併；下一段DP-204先量保留坐姿、僅前爪動作的成本，並交模型／預算方案。
 
 - [x] **DP-202 — 放鬆 sit 與 walk 可行性（2026-10-25）：** Backlog → Next → In Progress → Done。兩份原生靜態 .blend／真實 PNG／RGB128，造型／材質／相機／base anchor 保留；九圖片＋六 native 負控制拒絕、finally 精確還原，兩款重渲染 pixels 一致。RGB128 11,540／8,175 bytes，alpha 精確同原圖、8／4px／MAE <0.008，假設六態 185,848／160,369，不保證 walk。兩 viewport 淺深色 12 圖原生解碼／120與60px／alpha／Enter切色／reduce／版面／連結／console 過，實際 Asia/Taipei、板與截圖目視，CLI／server 清理。詳 [素材與 walk 模型限制](docs/pet-concepts/2026-10-25/sit/README.md)。素材候選未接 App／未經擁有者品質驗收；五態／預算／自動走動／XP／schema／版本／公告／部署不改，依賴與本項最新四 CI／完成審查通過後才合併。下一項 DP-203 原地踏爪／傾斜滑行可行性，不冒充貓完整四肢步態。
 

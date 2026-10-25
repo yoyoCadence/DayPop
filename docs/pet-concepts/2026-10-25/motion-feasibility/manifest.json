@@ -1,0 +1,438 @@
+{
+  "task": "DP-203",
+  "productionReady": false,
+  "appIntegrated": false,
+  "fullCatWalkImplemented": false,
+  "ownerMotionApproved": false,
+  "sourceCommit": "96b3836991affc3c471b1189a445d54082ad614f",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "motion": "paw_step",
+      "source": "source/moon_cat.blend",
+      "inputSource": "../../2026-10-23/motion/source/moon_cat.blend",
+      "inputSourceSha256": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "frames": [
+        "frames/moon_cat/000.png",
+        "frames/moon_cat/001.png",
+        "frames/moon_cat/002.png",
+        "frames/moon_cat/003.png",
+        "frames/moon_cat/004.png",
+        "frames/moon_cat/005.png",
+        "frames/moon_cat/006.png",
+        "frames/moon_cat/007.png"
+      ],
+      "frameDurationMs": 100,
+      "durationMs": 800,
+      "closureFrame": 9,
+      "sixStateHypotheticalBytes": 185848,
+      "candidates": {
+        "q85-full": {
+          "path": "previews/moon_cat/paw_step-q85-full.webp",
+          "bytes": 21564,
+          "sha256": "8fe75f2f1a251b3530795bbf23b5d5877d4674bc2701af348a36a76c7b9e24aa",
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "minimizeSize": false,
+          "measurement": {
+            "decodedFrames": 8,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 0,
+            "lightMaxTimelineMAE120": 0.003170479302832244,
+            "lightWorstTimelineMs120": 400,
+            "darkMaxTimelineMAE120": 0.0031691176470588236,
+            "darkWorstTimelineMs120": 400,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 0,
+            "lightMaxTimelineMAE60": 0.0023888888888888887,
+            "lightWorstTimelineMs60": 400,
+            "darkMaxTimelineMAE60": 0.002384894698620189,
+            "darkWorstTimelineMs60": 400
+          },
+          "qualityEligible": true,
+          "packageEligible": false,
+          "hypotheticalPackageBytes": 207412,
+          "remainingBytes": -10804
+        },
+        "q75-full": {
+          "path": "previews/moon_cat/paw_step-q75-full.webp",
+          "bytes": 18078,
+          "sha256": "f1a6443669db47fb62cc41e060bb9092176a1e052dddfb2edfaed33e9b846056",
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "minimizeSize": false,
+          "measurement": {
+            "decodedFrames": 8,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 0,
+            "lightMaxTimelineMAE120": 0.004312363834422658,
+            "lightWorstTimelineMs120": 500,
+            "darkMaxTimelineMAE120": 0.004311002178649237,
+            "darkWorstTimelineMs120": 500,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 0,
+            "lightMaxTimelineMAE60": 0.003340958605664488,
+            "lightWorstTimelineMs60": 500,
+            "darkMaxTimelineMAE60": 0.0033420479302832245,
+            "darkWorstTimelineMs60": 500
+          },
+          "qualityEligible": true,
+          "packageEligible": false,
+          "hypotheticalPackageBytes": 203926,
+          "remainingBytes": -7318
+        },
+        "q75-held": {
+          "path": "previews/moon_cat/paw_step-q75-held.webp",
+          "bytes": 6572,
+          "sha256": "7760134202d49a3ec98a9a6ef4b066e8ce946b75ab5551125a2443e6451fc96f",
+          "indices": [
+            0,
+            2,
+            4,
+            6
+          ],
+          "minimizeSize": true,
+          "measurement": {
+            "decodedFrames": 4,
+            "decodedDurationsMs": [
+              200,
+              200,
+              200,
+              200
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 255,
+            "lightMaxTimelineMAE120": 0.008368554829339143,
+            "lightWorstTimelineMs120": 100,
+            "darkMaxTimelineMAE120": 0.009208514887436457,
+            "darkWorstTimelineMs120": 500,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 251,
+            "lightMaxTimelineMAE60": 0.007152868554829339,
+            "lightWorstTimelineMs60": 100,
+            "darkMaxTimelineMAE60": 0.00846151053013798,
+            "darkWorstTimelineMs60": 500
+          },
+          "qualityEligible": false,
+          "packageEligible": true,
+          "hypotheticalPackageBytes": 192420,
+          "remainingBytes": 4188
+        }
+      },
+      "static": "previews/moon_cat/static.png",
+      "sha256": {
+        "source/moon_cat.blend": "ebf99c17b24e3e02ac1d2a68c126c8363b2717cd3adcf082211e897aaa8d79aa",
+        "frames/moon_cat/000.png": "d6a9cee0e4e5345a69bd31044c921d905d5c59d1106b59e23765c8f156ce62a9",
+        "frames/moon_cat/001.png": "39d6a966f73304e1b076a0f15574c4470edaa5023ae80b3782c2c22ec019f039",
+        "frames/moon_cat/002.png": "1e43a58998a6c68975d9921d202c14922bef63fd7c00d1169cfdead86b7bdd99",
+        "frames/moon_cat/003.png": "59e54331e094925ee2fee59758c60ac7c876521ac6128c3c62a29e7e6ead2652",
+        "frames/moon_cat/004.png": "4bb797fca31a4f1815e088731dd52333d26401b5eea2c62431668b38c466ad29",
+        "frames/moon_cat/005.png": "b9fbb37a777a999c7140a42e970c457d2d914e1a054f7fd44fa80589c381be6a",
+        "frames/moon_cat/006.png": "69a039726abfbda2940c7ec63eab7743e39eb097bf2db756531bbb966cdea1ce",
+        "frames/moon_cat/007.png": "1524be56126262ba834eb6f31ee858009ce38e9024ff0a08c2ff2188f35e19f1",
+        "previews/moon_cat/static.png": "dc3d7cbffedf6954d732da3b5e9be3c4d0c337b50c0fe37b6c339b7e425b62fa"
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "motion": "glide",
+      "source": "source/orbit_ufo.blend",
+      "inputSource": "../../2026-10-23/motion/source/orbit_ufo.blend",
+      "inputSourceSha256": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "frames": [
+        "frames/orbit_ufo/000.png",
+        "frames/orbit_ufo/001.png",
+        "frames/orbit_ufo/002.png",
+        "frames/orbit_ufo/003.png",
+        "frames/orbit_ufo/004.png",
+        "frames/orbit_ufo/005.png",
+        "frames/orbit_ufo/006.png",
+        "frames/orbit_ufo/007.png"
+      ],
+      "frameDurationMs": 100,
+      "durationMs": 800,
+      "closureFrame": 9,
+      "sixStateHypotheticalBytes": 160369,
+      "candidates": {
+        "q85-full": {
+          "path": "previews/orbit_ufo/glide-q85-full.webp",
+          "bytes": 17500,
+          "sha256": "f33cab18a916d578f4f2e9a75fbbb5fea84153fc7ae8721455541c006e5cb8e3",
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "minimizeSize": true,
+          "measurement": {
+            "decodedFrames": 8,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 0,
+            "lightMaxTimelineMAE120": 0.003473220769789397,
+            "lightWorstTimelineMs120": 200,
+            "darkMaxTimelineMAE120": 0.0034734931009440815,
+            "darkWorstTimelineMs120": 200,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 0,
+            "lightMaxTimelineMAE60": 0.0025050835148874365,
+            "lightWorstTimelineMs60": 400,
+            "darkMaxTimelineMAE60": 0.002504720406681191,
+            "darkWorstTimelineMs60": 400
+          },
+          "qualityEligible": true,
+          "packageEligible": true,
+          "hypotheticalPackageBytes": 177869,
+          "remainingBytes": 18739
+        },
+        "q75-full": {
+          "path": "previews/orbit_ufo/glide-q75-full.webp",
+          "bytes": 14444,
+          "sha256": "a7dd0edd703d2450bcd1ada91247908b74a53253baac733fc6aac56b7debb173",
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "minimizeSize": true,
+          "measurement": {
+            "decodedFrames": 8,
+            "decodedDurationsMs": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 0,
+            "lightMaxTimelineMAE120": 0.004360021786492375,
+            "lightWorstTimelineMs120": 200,
+            "darkMaxTimelineMAE120": 0.004357661583151779,
+            "darkWorstTimelineMs120": 200,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 0,
+            "lightMaxTimelineMAE60": 0.0033264342774146694,
+            "lightWorstTimelineMs60": 400,
+            "darkMaxTimelineMAE60": 0.0033238925199709514,
+            "darkWorstTimelineMs60": 400
+          },
+          "qualityEligible": true,
+          "packageEligible": true,
+          "hypotheticalPackageBytes": 174813,
+          "remainingBytes": 21795
+        },
+        "q75-held": {
+          "path": "previews/orbit_ufo/glide-q75-held.webp",
+          "bytes": 7220,
+          "sha256": "c39ac6fd1d0c5349aa58a6795e3448a08569eb7155b202e740c590a85d4f09f0",
+          "indices": [
+            0,
+            2,
+            4,
+            6
+          ],
+          "minimizeSize": true,
+          "measurement": {
+            "decodedFrames": 4,
+            "decodedDurationsMs": [
+              200,
+              200,
+              200,
+              200
+            ],
+            "durationMs": 800,
+            "maxMatchedFrameAlphaError": 0,
+            "alphaSafe120": true,
+            "maxTimelineAlphaError120": 255,
+            "lightMaxTimelineMAE120": 0.020034404502541757,
+            "lightWorstTimelineMs120": 500,
+            "darkMaxTimelineMAE120": 0.019498547567175017,
+            "darkWorstTimelineMs120": 500,
+            "alphaSafe60": true,
+            "maxTimelineAlphaError60": 230,
+            "lightMaxTimelineMAE60": 0.018187726942628903,
+            "lightWorstTimelineMs60": 500,
+            "darkMaxTimelineMAE60": 0.018823166303558462,
+            "darkWorstTimelineMs60": 500
+          },
+          "qualityEligible": false,
+          "packageEligible": true,
+          "hypotheticalPackageBytes": 167589,
+          "remainingBytes": 29019
+        }
+      },
+      "static": "previews/orbit_ufo/static.png",
+      "sha256": {
+        "source/orbit_ufo.blend": "943d2c5940720ab5f3eaff4c4eea9680e72f4a0955e4a2fa3687a9cc3c8fe76c",
+        "frames/orbit_ufo/000.png": "3f9b19b2ed25a73dc35b4a8ea5fcf9ed7ad72906e9ecbce09c1d01bf13ba9a68",
+        "frames/orbit_ufo/001.png": "1d27802f01b36ce7077ecbb89393bc5495190e237d2c5673efeeb9dcb9ae3c18",
+        "frames/orbit_ufo/002.png": "e6c40c63ef1ac81ed39884ff086877faa083657ea8b58f2a5636393d3aab87a0",
+        "frames/orbit_ufo/003.png": "e707b913def34106c29e3c634b4b399ad078ab7c6e01421952c3d2611abf670f",
+        "frames/orbit_ufo/004.png": "f1e08af3dae92e810c059790008bf2b2694fe098c82b743532d634b0eea2a13e",
+        "frames/orbit_ufo/005.png": "c56056523591bedfecd977906a064f6608850e455d284bc8714351658460484a",
+        "frames/orbit_ufo/006.png": "b9e089703be5631e2b6db92ed7b27e3ab3963129cdcdd200dbeb7b326a7d918a",
+        "frames/orbit_ufo/007.png": "c4cf29fe69d103cdf87545b0b4ddbd09b8bfbf206af13c7d9cc28fb3a9fab7d0",
+        "previews/orbit_ufo/static.png": "a8222a2f4fc2b2a87daf0899f73246fba8f16f23a8b6f6980ea6bf4ba8854bd9"
+      }
+    }
+  ],
+  "pillowVersion": "12.2.0",
+  "preparationCommit": "dd1004555410a51cf0358086bd26338e4e169522",
+  "policy": {
+    "characterLimitBytes": 196608,
+    "qualityLimit": 0.008,
+    "plans": {
+      "q85-full": [
+        85,
+        1
+      ],
+      "q75-full": [
+        75,
+        1
+      ],
+      "q75-held": [
+        75,
+        2
+      ]
+    },
+    "budgetIsHypothetical": true,
+    "catStudyIsNotFullWalking": true
+  }
+}

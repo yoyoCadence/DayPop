@@ -26,11 +26,13 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **原地踏爪與傾斜滑行可行性（DP-203，2026-10-25）：** 沿既有模型 controls 做貓 paw_step／飛碟 glide，各八個真實 100ms PNG／0.8 秒循環、兩份 .blend 與六個編碼候選；不是貓完整四肢行走，沒有 App 接入。貓 Q75 full 18,078 bytes，加假設六態包為 203,926、超 192 KiB；held 雖只 6,572，最大 MAE 0.009209 被拒。飛碟路徑首輪真正60px右邊距3px先失敗，修整路徑後8／4px過，Q75 full 14,444、假設包174,813，數值與總量過；held MAE0.020034拒絕。十二圖片／metadata＋八 native 負控制全拒絕，finally實檔精確還原；16原幀＋兩閉環原檔重渲染pixels一致。兩viewport淺深底28圖／六原生60px完整週期後循環／PNG暫停重播／reduce／鍵盤／拒絕文案／版面／console過，實際時區列印、板與截圖目視，CLI／server核對清理。詳 [結果與限制](docs/pet-concepts/2026-10-25/motion-feasibility/README.md)。貓本批沒有同時符合品質與預算的候選，原方向僅貓原地步態；若要求站立四肢，才需新模型方案與擁有者造型決定，下一段先量保留坐姿的局部前爪成本；Q75仍有可見有損紋理。PR #197 已合併 96b3836，本段已對齊此最新 main，只發可行性 PR，自己的最新四CI／完成審查過才合併。原五態／192KiB／0.4.3／v4／18migrations／公告／部署不變，七態、擁有者品質、DP-171／172／041／真機未完成。
+
 - **放鬆 sit 素材與 walk 可行性（DP-202，2026-10-25）：** 兩款原生靜態 sit 沿已採造型／材質／相機／base anchor，另交 .blend、真實 PNG／RGB128、淺深底 120／60px 比較；未接 App、姿勢未經擁有者驗收。原生 PNG 13,302／10,337 bytes，RGB128 11,540／8,175，alpha 精確相同、8／4px／MAE <0.008；假設 DP-201 五態再加 RGB128 為 185,848／160,369，貓餘 10,760，不能保證 walk。九項圖片與六項 native 負控制拒絕並 finally 精確還原，兩份 .blend 重開重渲染 pixels 完全相同。兩 viewport 淺深底原生解碼／尺寸／alpha／鍵盤／reduce／版面／console 通過，實際 Asia/Taipei、截圖目視，CLI／server 已核對清理。貓後肢已融合在坐姿 body，下一段先做明確命名的原地踏爪／飛碟滑行可行性，不冒充完整四肢行走；新站姿／rig 需具體方案與造型決定。詳 [素材、來源與限制](docs/pet-concepts/2026-10-25/sit/README.md)。PR #196 已合併 0a0f3de，本段已對齊此最新 main，自己的四 CI／審查過才合併；192 KiB／App／0.4.3／v4／18 migrations／公告／部署不改，DP-171／172／041／七態與真機未完成。
 
 - **保守循環編碼接入（DP-201，2026-10-25）：** 四張 App idle／sleep WebP 逐 byte 採 DP-200 Q75／A100，保留 20 decoded frames／相同 phase／4.4 秒與 matched alpha=0，色彩仍有損；五態貓 174,308／飛碟 152,194 bytes，餘 22,300／44,414，每款 192 KiB 與各檔上限不變。來源基線先失敗，四次反向舊 WebP 皆拒絕，finally 精確還原後過；1,402 單元＋29 Node、lint／typecheck／build／check:build、相關 Chromium 28＋WebKit 8 通過。兩 viewport 淺深色 App 的 idle／sleep 在完整週期後仍原生循環，PNG reduce／喚醒／60px／焦點／資料／console 正常，實際時區列印、截圖目視，CLI／本次 server 已核對清理。詳 [採用與限制](docs/pet-loop-encoding-adoption.md)。PR #195 已合併 b019628，本項已重放至此最新 main，只發自己的接入 PR，再等自己的四 CI／完成審查才合併；PNG／look／jump／registry／播放政策／0.4.3／v4／18 migrations／公告／部署不變。walk／sit、擁有者品質與真機驗收未完成。
 
-> **最新合併基底（2026-10-25）：** DP-201 PR #196 head `5b5c123` 四 CI／完成審查無發現、無未解決討論後合併 `0a0f3de`；run `40192734289`，Chromium 285 passed／13 skipped（18.5 分鐘）、WebKit 8 passed。DP-202 已移至此最新 main，只送 sit 素材與可行性，沒有部署。
+> **最新合併基底（2026-10-26）：** DP-202 PR #197 head `939e0b0` 四 CI／完成審查無發現、無未解決討論後合併 `96b3836`；run `40194574393`，Chromium 285 passed／13 skipped（18.1 分鐘）、WebKit 8 passed。DP-203 已移至此最新 main，只送動作可行性，沒有部署。
 
 > **最新合併基底（2026-10-25）：** DP-198 PR #193 head `8638a4b` 四 CI／完成審查無發現、無未解決討論後合併 `4efa018`；run `40166083800`，Chromium 285 passed／13 skipped（16.7 分鐘）、WebKit 8 passed。DP-199 已移至此最新 main，只送六張 PNG 接入與來源回歸，沒有部署。
 
