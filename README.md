@@ -1,6 +1,10 @@
 # 日蹦 DayPop
 
-DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；行程、待辦、貼圖、主題、Supabase Auth、帳號資料保存、舊資料匯入與私人附件均已接入，正式 hosting、Google OAuth provider 與行動裝置驗收仍在發布路徑上。
+DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯出的完整多頁原型，依原設計漸進搬移成 React + TypeScript + Vite 的可維護產品；行程、待辦、貼圖、主題、Supabase Auth、帳號資料保存、舊資料匯入與私人附件均已接入，並提供 GitHub Pages staging。Google OAuth provider 已啟用；實際行動裝置與正式放行的剩餘驗收見任務板。
+
+## 開始使用共用日曆
+
+0.4.4「家庭日曆一起用」發布候選已準備，部署成功後即可依 [兩帳號使用指引](docs/shared-calendar-start.md) 建立家庭、接受邀請並明確開啟日曆分享，選擇共同編輯或唯讀。先在「設定 → 關於」確認線上版本；合併不代表已部署。發布進度與驗證範圍見 [發布準備紀錄](docs/calendar-release-readiness-2026-10-26.md)。
 
 ![日蹦 DayPop — 把每一天排得剛剛好](showcase/hero.png)
 
@@ -37,8 +41,9 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - mobile-first PWA manifest、service worker 與基本 App shell 啟動快取
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
 - 登入後以 Supabase 保存行程、待辦、貼圖、偏好與私人附件；遊客資料與帳號資料保持隔離
+- 家庭邀請與日曆分享：共同編輯／唯讀、日曆擁有者的私人事項、前景重新確認分享及衝突保留草稿（目前程式已完成，線上需更新至 0.4.4）
 - 舊 `calpet.v2` 資料可先預覽、確認後原子匯入，成功、失敗與重試都不刪除原始資料
-- Supabase migrations、10 張公開資料表、owner-only RLS、private Storage bucket 與產生的 TypeScript database types
+- 18 筆 Supabase migrations、14 張公開資料表全 RLS、46 policies、private Storage bucket 與產生的 TypeScript database types；分享權限依有效家庭成員與明確分享設定判斷
 
 日曆、搜尋與綜覽三個分頁已依原始 Claude Design 逐段搬移並以 Playwright 並排比對；設定分頁的外觀主題與日曆管理已搬移，其餘區塊與其他 dialog 仍待搬移（DP-014）。原稿中沒有真正能力的部分（天氣、雲端同步狀態、AI）一律停用並保留版面位置，不以假的成功狀態充數；貼圖與登入帳號的私人附件已分別接上真實資料。`日曆桌寵 Calendar Pet.dc.html`、generated `support.js` 與 `寵物素材規範 Pet Asset Spec.md` 共同作為搬移依據；正式功能不在 generated runtime 上繼續堆疊。設計優先序與頁面範圍見 [Claude Design 設計基準](docs/claude-design-source-of-truth.md)，功能狀態見 [原型行為與設計保全清單](docs/prototype-behavior-baseline.md)。
 
@@ -85,7 +90,7 @@ npm run build -- --base=/DayPop/
 
 Staging 網址：**https://yoyocadence.github.io/DayPop/**（2026-08-13 首次部署，驗收結果見 [`docs/deployment.md`](docs/deployment.md) §5.1）。
 
-需要真實帳號的登入驗收（DP-023，同時是 DP-033 尚未完成的部分）與實機瀏覽器 QA（DP-032）都還沒做，因此還不到「可開始日常使用」的階段。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
+DP-023／033 的真實 Email／Google 登入、保存、登出隔離與重登已由擁有者於 2026-08-22 驗收；0.4.4 的真實雙帳號分享與真機驗收仍待發布後執行。DP-032 剩餘項目與 DP-034 正式放行保留在任務板，沒有因自動化通過而代為放行。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
 
 ## Supabase 開發
 

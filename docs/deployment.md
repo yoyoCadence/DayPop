@@ -799,3 +799,11 @@ npx supabase migration list --linked
 lint／typecheck／1,312 單元＋7 Node／build／check:build、相關家庭分享 e2e 17 passed／1 skipped 通過；App 輸出大小與 DP-048 相同，v4、0.4.3、歷史公告、CSP／PWA 不變。詳見 [權限驗證紀錄](family-sharing-permissions-verification.md) 與 [MCP handoff §0.14](supabase-mcp-handoff.md#014-dp-049-五帳號權限驗證2026-10-20)。
 
 本項最新 CI 通過才依授權合併，完成指定四項家庭範圍。**家庭前端尚未部署；真實帳號／OAuth／真機／staging 未驗收。發布版本、公告與部署仍由擁有者另行決定，先 migration 再前端的順序不變。**
+
+### 5.28 0.4.4 家庭日曆發布候選（DP-205，2026-10-26）
+
+擁有者要求優先讓不同帳號開始使用日曆及共用事項。唯讀 preflight 確認線上仍 0.4.3、最後 Deploy staging 為 10月18日 `39093740111`，公開 bundle 未含分享；linked 18 筆 migration 與本機一致，公開 Auth health/settings 正常、Email／Google／註冊開啟。**不用新 migration 或再次 push 第 18 檔。**
+
+0.4.4「家庭日曆一起用」新增六條短公告並由 generator 更新 App／PWA 版號，七份歷史公告不變。1,402 單元＋29 Node、lint／typecheck／Pages base build／資產與線上公告檢查，相關 Chromium 42 passed／2 skipped＋WebKit 8、本機 production 登入入口與公告檢查均過。本項最新四 CI／完成審查後才合併；尚未 dispatch，合併不代表已發布。發布沿 §3.4 選合併後 main，保留全部品質閘門。
+
+完整 preflight、驗證範圍與尚未完成項見 [發布紀錄](calendar-release-readiness-2026-10-26.md)。發布後讓 A／B 依 [開始使用共用行事曆](shared-calendar-start.md) 驗證真實保存、邀請、edit／private／view／撤權；目前不把固定假資料 e2e 或公開 Auth 設定當成真實帳號／Google OAuth／真機通過，也不因此標記 DP-034 正式放行。

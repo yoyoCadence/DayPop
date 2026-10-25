@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-204 — 原地步態的模型與預算方案：** 由 DP-171 拆出，Backlog → Next。原方向只定貓原地步態、未要求站立四肢；先比較保留坐姿、固定頭身尾而只動前爪的原生小試作，量完整八取樣是否能減少編碼成本，保留 DP-203 原試作。站立四肢／新rig只列具體成本與造型替代方案，不自動重塑已採模型或放寬192KiB／品質門檻；小動作不可冒充完整四肢行走。App新key／位移／偏好／XP／schema／版本／部署不在本段。等 DP-203 最新四CI／完成審查合併後從最新main發獨立PR。
+目前集中完成 DP-205 多帳號與共享日曆發布；寵物後續暫緩。
 
 
 
@@ -225,6 +225,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+- [ ] **DP-205 — 多帳號與共用行事曆發布準備（2026-10-26優先）：** 由擁有者直接指定，Backlog → Next → In Progress。已核對線上0.4.3／最後部署10月18日、公開bundle無calendar_sharing_manifest；linked專案18檔migration與本機一致，Auth health/settings 200、Email／Google／註冊開啟、Email需驗證。準備獨立0.4.4候選且保留歷史公告，驗登入／session與帳號隔離、家庭邀請／分享edit與private／共同維護、撤權／衝突草稿、更新與離線，交兩帳號操作指引。自己的最新四CI／完成審查通過才合併，部署沿既有staging流程與授權界線，不新增migration或查改正式使用者資料。
+
+> **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
 
 > **DP-203 發布基底（2026-10-26）：** PR #197 head `939e0b0` 的 run `40194574393` 四 CI／完成審查無發現、無未解決討論後合併 `96b3836`（Chromium 285 passed／13 skipped、WebKit 8 passed）；本段已對齊此最新 main，輸入 SHA 重核、保留 preparationCommit，Blender／PNG／WebP bytes 不變；只送 motion 可行性，不重送 sit 或產品圖，自己的最新四 CI／完成審查過才合併。
 
