@@ -1,5 +1,7 @@
 # 預設月光貓三態接入（DP-188，2026-10-23）
 
+> **DP-201 現況（2026-10-25）：** 四張 idle／sleep 已逐 byte 採 DP-200 Q75／A100，20 decoded frames／phase／4.4 秒與 matched alpha=0 不變，五態包降為 174,308／152,194 bytes。上限、PNG／look／jump／播放政策不改；詳 [來源、原生播放與離線驗證](pet-loop-encoding-adoption.md)。色彩有損，擁有者品質與七態未完成，下方各段體積保留為歷史。
+
 > **DP-199 現況（2026-10-25）：** 六張 App 靜態 PNG 已逐 byte 採 DP-198 RGB128，原 alpha 保留、五態包改為 190,980／167,288 bytes，上限與動畫／播放政策不變。來源回歸、原生解碼與離線證據見 [PNG 接入紀錄](pet-static-png-adoption.md)；下方體積與尚未採用為歷史。色彩品質仍待擁有者目視確認，七態未完成。
 
 > **DP-197 現況（2026-10-25）：** 已確認待辦完成可觸發單次 jump，與既有四態共用生命週期；取消／失敗／跨頁／帳號／暫藏不補播，沒有 XP 或新泡泡。素材與預算不改，詳見 [完成回饋契約與驗證](pet-completion-feedback.md)。下方 registry-only 敘述保留為 DP-196 當時狀態。

@@ -1,5 +1,7 @@
 # Blender 創意夥伴概念試作（DP-183）
 
+> **循環編碼接入（DP-201，2026-10-25）：** [App 採用與驗證](../../pet-loop-encoding-adoption.md) 已採四張 Q75／A100 idle／sleep，原 20 decoded frames／phase／4.4 秒及 matched alpha=0 保留，五態包 174,308／152,194 bytes；本目錄原幀／Blender／動畫不改。下方候選未採用為 DP-200 當時歷史，擁有者品質與七態仍未完成。
+
 > **循環動畫參數評估（DP-200，2026-10-25）：** [16 候選與相同時間點比較](../2026-10-25/loop-encoding/README.md) 保留目前 idle／sleep phase，保守建議 Q75／A100、matched alpha=0；Q35 雖數值合格，陰影斑駁不作建議。假設五態包 174,308／152,194 bytes，尚未採用、不保證七態，原 Blender／PNG／動畫不改，擁有者品質仍待驗收。
 
 > **靜態 PNG 接入（DP-199，2026-10-25）：** [App 採用與實檔驗證](../../pet-static-png-adoption.md) 已採 DP-198 六張 RGB128 PNG，原 alpha 不變，五態包 190,980／167,288 bytes；本目錄母 PNG／Blender 與動畫不改。色彩品質仍待擁有者目視確認、七態未完成；下方未換圖為 DP-198 評估當時歷史。

@@ -26,7 +26,9 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
-> **最新合併基底（2026-10-25）：** DP-199 PR #194 head `72c9841` 四 CI／完成審查無發現、無未解決討論後合併 `1cbbc5b`；run `40167373443`，Chromium 285 passed／13 skipped（22.0 分鐘）、WebKit 8 passed。DP-200 已移至此最新 main，只交循環編碼評估，沒有部署。
+- **保守循環編碼接入（DP-201，2026-10-25）：** 四張 App idle／sleep WebP 逐 byte 採 DP-200 Q75／A100，保留 20 decoded frames／相同 phase／4.4 秒與 matched alpha=0，色彩仍有損；五態貓 174,308／飛碟 152,194 bytes，餘 22,300／44,414，每款 192 KiB 與各檔上限不變。來源基線先失敗，四次反向舊 WebP 皆拒絕，finally 精確還原後過；1,402 單元＋29 Node、lint／typecheck／build／check:build、相關 Chromium 28＋WebKit 8 通過。兩 viewport 淺深色 App 的 idle／sleep 在完整週期後仍原生循環，PNG reduce／喚醒／60px／焦點／資料／console 正常，實際時區列印、截圖目視，CLI／本次 server 已核對清理。詳 [採用與限制](docs/pet-loop-encoding-adoption.md)。PR #195 已合併 b019628，本項已重放至此最新 main，只發自己的接入 PR，再等自己的四 CI／完成審查才合併；PNG／look／jump／registry／播放政策／0.4.3／v4／18 migrations／公告／部署不變。walk／sit、擁有者品質與真機驗收未完成。
+
+> **最新合併基底（2026-10-25）：** DP-200 PR #195 head `a4433f8` 四 CI／完成審查無發現、無未解決討論後合併 `b019628`；run `40190259102`，Chromium 285 passed／13 skipped（21.9 分鐘）、WebKit 8 passed。DP-201 已移至此最新 main，只送本項接入，沒有部署。
 
 > **最新合併基底（2026-10-25）：** DP-198 PR #193 head `8638a4b` 四 CI／完成審查無發現、無未解決討論後合併 `4efa018`；run `40166083800`，Chromium 285 passed／13 skipped（16.7 分鐘）、WebKit 8 passed。DP-199 已移至此最新 main，只送六張 PNG 接入與來源回歸，沒有部署。
 
