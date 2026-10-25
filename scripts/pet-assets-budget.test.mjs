@@ -64,16 +64,23 @@ test('production images equal the published five-state package, including full-f
   const jump = 'docs/pet-concepts/2026-10-24/jump/';
   const jumpEncoding = 'docs/pet-concepts/2026-10-24/jump-encoding/';
   const staticEncoding = 'docs/pet-concepts/2026-10-25/static-encoding/';
-  const manifests = await Promise.all([old, sleep, encoding, jump, jumpEncoding, staticEncoding].map(async path => JSON.parse(await readFile(new URL(`${path}manifest.json`, root), 'utf8'))));
+  const loopEncoding = 'docs/pet-concepts/2026-10-25/loop-encoding/';
+  const manifests = await Promise.all([old, sleep, encoding, jump, jumpEncoding, staticEncoding, loopEncoding].map(async path => JSON.parse(await readFile(new URL(`${path}manifest.json`, root), 'utf8'))));
   for (const kind of ['moon_cat', 'orbit_ufo']) {
     const slug = kind.replace('_', '-');
-    const candidates = manifests[2].characters.find(c => c.id === kind);
+    const loops = manifests[6].characters.find(c => c.id === kind);
     const jumpSource = manifests[kind === 'moon_cat' ? 4 : 3].characters.find(c => c.id === kind);
     const jumpFile = kind === 'moon_cat' ? jumpSource.candidates.fullQ55A70.path : jumpSource.candidates.webpQ85;
     const jumpHash = kind === 'moon_cat' ? jumpSource.candidates.fullQ55A70.sha256 : jumpSource.sha256[jumpFile];
     let total = 0;
     for (const [file, source, hash] of [
-      ...['idle', 'sleep'].map(pose => [`${pose}.webp`, encoding + candidates.clips[pose].path, candidates.clips[pose].sha256]),
+      ...['idle', 'sleep'].map(pose => {
+        assert.equal(loops.recommended[pose], 'q75a100', `${kind}-${pose} conservative encoding`);
+        const candidate = loops.clips[pose].candidates.q75a100;
+        assert.equal(candidate.eligible, true, `${kind}-${pose} timeline candidate`);
+        assert.equal(candidate.measurement.maxMatchedFrameAlphaError, 0, `${kind}-${pose} matched alpha`);
+        return [`${pose}.webp`, loopEncoding + candidate.path, candidate.sha256];
+      }),
       ['look.webp', `${old}previews/${kind}/look.q85.webp`, manifests[0].characters.find(c => c.id === kind).sha256[`previews/${kind}/look.q85.webp`]],
       ['jump.webp', (kind === 'moon_cat' ? jumpEncoding : jump) + jumpFile, jumpHash],
       ...['idle', 'grab', 'sleep'].map(pose => {
@@ -87,7 +94,7 @@ test('production images equal the published five-state package, including full-f
       assert.equal(createHash('sha256').update(bytes).digest('hex'), hash, `${slug}-${file} published hash`);
       total += bytes.length;
     }
-    assert.equal(total, kind === 'moon_cat' ? 190980 : 167288);
+    assert.equal(total, kind === 'moon_cat' ? 174308 : 152194);
   }
 });
 test('missing, unhashed, duplicated or different build bytes fail closed', () => fixture(async ({ source, files }) => {

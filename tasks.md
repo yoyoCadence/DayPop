@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-201 — 保守循環編碼候選接入（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next。採 DP-200 Q75／alpha 100 的四段 idle／sleep WebP，維持相同 20 decoded frames／phase／4.4 秒／來源 alpha；更新 App bytes／SHA／固定包量與實檔驗證。五態包 174,308／152,194 bytes，192 KiB 與各檔上限、PNG／look／jump／播放政策不變，不新增 walk／sit／自動走動／XP／偏好／schema／版本／部署。等 DP-200 最新四 CI／完成審查通過合併後，從最新 main 發獨立 PR；不宣稱擁有者品質或七態／真機驗收完成。
+- [ ] **DP-202 — 放鬆 sit 姿勢試作與 walk 可行性（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next；查明貓後腿與坐姿身體已融合，walk 另段評估站姿／rig，不在本項製作步態。沿已記錄方向做貓更放鬆坐姿、無腿飛碟降低懸浮／環帶放平的靜態 sit；官方 Blender、造型／材質／相機／anchor、120／60px 與 8／4px 安全區不變。另目錄交可編輯來源、真實 PNG／編碼量測與預覽、負控制及 walk 可行性紀錄；原五態來源／App／192 KiB／自動走動／偏好／XP／schema／版本／部署不改。先素材試作，不保證七態可裝入或擁有者已驗收，接 App 另 PR。等 DP-201 CI／完成審查合併後移至最新 main 發獨立 PR。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-201 發布基底：** PR #195 head `a4433f8` 的 run `40190259102` 四 CI／完成審查無發現、無未解決討論後合併 `b019628`（Chromium 285 passed／13 skipped、WebKit 8 passed）；本項已重放至此最新 main，只送四張 WebP、來源守門與交接，不重送候選或前項產品碼。自己的最新四 CI／完成審查過才合併。
 
 > **DP-200 準備順序：** 當時 main `4ef75ce` 的獨立分支暫接 DP-197–199 完成本機候選與驗證。#194 head `72c9841` 四 CI／完成審查無發現、無未解決討論後合併 `1cbbc5b`（run `40167373443`，Chromium 285 passed／13 skipped、WebKit 8 passed），本段已移至此最新 main，只送循環參數候選與評估，不重送素材／產品碼，自己的四 CI／完成審查過才合併。
 
@@ -459,6 +461,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-201 — 保守循環編碼接入（2026-10-25）：** Backlog → Next → In Progress → Done。四張 App idle／sleep WebP 逐 byte 採 DP-200 Q75／A100，20 decoded frames／phase／4.4 秒與 matched alpha=0，五態包 174,308／152,194 bytes，上限不變。來源基線先失敗，四次反向舊圖各拒絕，finally 精確還原正向過。完整 1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 Chromium 28＋WebKit 8；兩 viewport 淺深色原生 idle／sleep 在完整週期後仍循環，reduce／喚醒／60px／焦點／guest bytes／版面／console，實際時區列印，截圖目視，CLI／server 按 PID／command 核對清理。詳 [接入、來源與限制](docs/pet-loop-encoding-adoption.md)。PNG／look／jump／registry／播放政策、母檔／歷史 manifest／0.4.3／v4／18 migrations／公告／部署不變；依賴與自己的四 CI／完成審查過才合併，擁有者品質／真機與七態未完成。下一段 DP-202 只做 walk／sit 素材試作，不加自動走動。
 
 - [x] **DP-200 — idle／sleep 參數與預算評估（2026-10-25）：** Backlog → Next → In Progress → Done。16 WebP 候選，保留目前 20 decoded frames／相同 phase／4.4 秒循環，原始 44 時間點淺深底 120／60px MAE <0.008／8與4px 全過。Q35 雖數值合格，120px 陰影斑駁不建議；保守 Q75／A100 matched alpha=0，假設五態包 174,308／152,194 bytes。十一項缺檔／來源／動畫結構／相同總長錯 phase／alpha／品質／實檔上限／metadata 負控制拒絕，finally 17 檔精確還原正向過。兩 viewport 四方案原生 60px 幀變化、Q75 週期後繼續循環、PNG 暫停／reduce／淺深色／選單／版面／console，實際 Asia/Taipei，板與截圖目視；首輪同姿態的測試前置改成週期後多點取樣。lint／typecheck／checker／diff 過，App 相對 DP-199 零差異，CLI／Vite 經 PID／command 核對清理。詳 [候選、來源與限制](docs/pet-concepts/2026-10-25/loop-encoding/README.md)。App 未採用、母檔／預算／0.4.3／v4／18 migrations／公告／部署不變；自己的四 CI／完成審查後才合併，品質／七態仍未獲擁有者驗收，採用另 DP-201。
 
