@@ -1,5 +1,7 @@
 # Blender 創意夥伴概念試作（DP-183）
 
+> **walk 可行性（DP-203，2026-10-25）：** [原地踏爪／傾斜滑行與完整量測](../2026-10-25/motion-feasibility/README.md) 交兩份 .blend、16 實幀與六候選。貓完整取樣超192KiB、held品質拒絕；飛碟full數值通過。沒有宣稱貓完整行走／七態完成或接入App；新站立四肢模型須另交方案與擁有者造型決定。
+
 > **sit 試作（DP-202，2026-10-25）：** [兩款放鬆靜態姿勢與 walk 可行性](../2026-10-25/sit/README.md) 另交原生 Blender／真實 PNG／RGB128／120與60px 比較，造型／材質／相機沿用；十五項圖片與 native 負控制、重渲染逐像素一致。只是候選，未接 App、sit 品質待擁有者驗收；貓後肢融合的模型限制與未完成 walk 有明確記錄。
 
 > **循環編碼接入（DP-201，2026-10-25）：** [App 採用與驗證](../../pet-loop-encoding-adoption.md) 已採四張 Q75／A100 idle／sleep，原 20 decoded frames／phase／4.4 秒及 matched alpha=0 保留，五態包 174,308／152,194 bytes；本目錄原幀／Blender／動畫不改。下方候選未採用為 DP-200 當時歷史，擁有者品質與七態仍未完成。
