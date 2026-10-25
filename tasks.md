@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-199 — 保留 alpha 的 PNG 候選接入（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next；採 DP-198 RGB128 六張靜態 PNG，維持既有檔名、三張 PNG 的共享關係與動畫／播放政策，更新來源 bytes／hash／實檔守門與驗證。預算維持每款 192 KiB／PNG 16 KiB，候選五態包 190,980／167,288；不新增狀態／自動走動／選角／XP／schema／版本／部署，也不宣稱七態預算完成或擁有者已驗收色彩品質。等 DP-198 CI／審查合併後從最新 main 發獨立 PR。
+- [ ] **DP-200 — idle／sleep 編碼參數與剩餘預算評估（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next。DP-199 後貓五態僅餘 5,628 bytes；沿已採完整來源與 DP-191 目前採樣／時序，不新做 walk／sit、不放寬品質／8與4px／每款 192 KiB。比較較低 WebP RGB／alpha quality 的候選，在原始時間點量淺深底 120／60px、透明邊距與完整循環；保留失敗資料、反向守門與實際播放。先只交候選／量測／可重現文件，App 採用另 PR，不保證七態可裝入、不代表擁有者目視驗收。等 DP-199 合併後移至最新 main 發獨立 PR。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-199 準備順序：** 從當時 main `4ef75ce` 的獨立分支暫接 DP-197／198 完成本機接入與驗證；#192 合併 `c38e7b4` 後，#193 head `8638a4b` 四 CI／完成審查無發現、無未解決討論後合併 `4efa018`（run `40166083800`，Chromium 285 passed／13 skipped、WebKit 8 passed）。本段已移至此最新 main，只送六 PNG 與來源守門，不重送前項產品碼／候選；自己的四 CI／審查仍須通過。
 
 > **DP-198 準備順序：** 從當時最新 main `dcd8986` 建獨立分支，暫接 #191 `e9d40a5` 與 DP-197 `b8c4c9b`。#191 合併 `4ef75ce`；#192 head `c35979b` 四 CI／完成審查無發現、無未解決討論後合併 `c38e7b4`（run `40164518454`，Chromium 285 passed／13 skipped、WebKit 8 passed）。本段已移至此最新 main，只送本機完成的候選與評估，不重送產品碼／App 素材，採用另 DP-199；自己的四 CI／審查仍須通過。
 
@@ -455,6 +457,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-199 — 保留 alpha 的 PNG 接入（2026-10-25）：** Backlog → Next → In Progress → Done。六張 App PNG 逐 byte 採 DP-198 RGB128，來源回歸查 eligible／bytes／SHA，五態包 190,980／167,288 bytes、PNG 16 KiB／每款 192 KiB 不變。舊圖來源基線先失敗，再逐一換回六舊圖皆拒絕，finally 精確還原通過。完整 1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 Chromium 28＋WebKit 8；控制後 pet-assets 12 再過、不重複加總。兩 viewport 淺深色 reduce 下 idle／grab／sleep PNG、六圖原生 alpha 120／60px 差異 0、60px／焦點／資料／console 通過，截圖目視，實際時區列印。162 個本機文件連結與 diff 通過，CLI／本次 Vite 經 PID／command 核對後清理。詳 [採用紀錄](docs/pet-static-png-adoption.md)。動畫／registry／播放政策／來源母檔／歷史 manifest／0.4.3／v4／18 migrations／公告／部署不變；自己的四 CI／完成審查後才合併，擁有者品質與七態未完成。下一段 DP-200 只評估既有動畫參數。
 
 - [x] **DP-198 — 靜態 PNG 編碼與七態剩餘預算評估（2026-10-25）：** Backlog → Next → In Progress → Done。六原 PNG／24 候選，索引量化雖 MAE 合格但改變 alpha，飛碟 grab indexed128 還縮為 3px 邊距，十二索引候選明確不採。保留逐像素 alpha 的 RGB128／256 全過 120／60px、8／4px 及淺深底 ≤0.008；建議 RGB128，假設五態包 190,980／167,288，省 5,306／6,557 bytes，尚未解決七態。八項缺檔／來源／模式／alpha／eligibility／單檔與整款真實超量負控制拒絕，finally 25 檔精確還原後正向通過。兩 viewport 四方案原生 PNG／canvas alpha、120與60px／淺深／選單／版面／console，實際 Asia/Taipei；對照板與手機／桌面截圖目視。來源／方法與修正過的測試前置見 [交接](docs/pet-concepts/2026-10-25/static-encoding/README.md)。只有候選與文件，App／母 PNG／Blender／動畫／上限／0.4.3／v4／18 migrations／公告／部署不變，色彩品質仍待擁有者目視確認；自己的最新四 CI／審查過才合併，再接 DP-199。
 
