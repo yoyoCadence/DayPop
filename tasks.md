@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-200 — idle／sleep 編碼參數與剩餘預算評估（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next。DP-199 後貓五態僅餘 5,628 bytes；沿已採完整來源與 DP-191 目前採樣／時序，不新做 walk／sit、不放寬品質／8與4px／每款 192 KiB。比較較低 WebP RGB／alpha quality 的候選，在原始時間點量淺深底 120／60px、透明邊距與完整循環；保留失敗資料、反向守門與實際播放。先只交候選／量測／可重現文件，App 採用另 PR，不保證七態可裝入、不代表擁有者目視驗收。等 DP-199 合併後移至最新 main 發獨立 PR。
+- [ ] **DP-201 — 保守循環編碼候選接入（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next。採 DP-200 Q75／alpha 100 的四段 idle／sleep WebP，維持相同 20 decoded frames／phase／4.4 秒／來源 alpha；更新 App bytes／SHA／固定包量與實檔驗證。五態包 174,308／152,194 bytes，192 KiB 與各檔上限、PNG／look／jump／播放政策不變，不新增 walk／sit／自動走動／XP／偏好／schema／版本／部署。等 DP-200 最新四 CI／完成審查通過合併後，從最新 main 發獨立 PR；不宣稱擁有者品質或七態／真機驗收完成。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-200 準備順序：** 當時 main `4ef75ce` 的獨立分支暫接 DP-197–199 完成本機候選與驗證。#194 head `72c9841` 四 CI／完成審查無發現、無未解決討論後合併 `1cbbc5b`（run `40167373443`，Chromium 285 passed／13 skipped、WebKit 8 passed），本段已移至此最新 main，只送循環參數候選與評估，不重送素材／產品碼，自己的四 CI／完成審查過才合併。
 
 > **DP-199 準備順序：** 從當時 main `4ef75ce` 的獨立分支暫接 DP-197／198 完成本機接入與驗證；#192 合併 `c38e7b4` 後，#193 head `8638a4b` 四 CI／完成審查無發現、無未解決討論後合併 `4efa018`（run `40166083800`，Chromium 285 passed／13 skipped、WebKit 8 passed）。本段已移至此最新 main，只送六 PNG 與來源守門，不重送前項產品碼／候選；自己的四 CI／審查仍須通過。
 
@@ -457,6 +459,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-200 — idle／sleep 參數與預算評估（2026-10-25）：** Backlog → Next → In Progress → Done。16 WebP 候選，保留目前 20 decoded frames／相同 phase／4.4 秒循環，原始 44 時間點淺深底 120／60px MAE <0.008／8與4px 全過。Q35 雖數值合格，120px 陰影斑駁不建議；保守 Q75／A100 matched alpha=0，假設五態包 174,308／152,194 bytes。十一項缺檔／來源／動畫結構／相同總長錯 phase／alpha／品質／實檔上限／metadata 負控制拒絕，finally 17 檔精確還原正向過。兩 viewport 四方案原生 60px 幀變化、Q75 週期後繼續循環、PNG 暫停／reduce／淺深色／選單／版面／console，實際 Asia/Taipei，板與截圖目視；首輪同姿態的測試前置改成週期後多點取樣。lint／typecheck／checker／diff 過，App 相對 DP-199 零差異，CLI／Vite 經 PID／command 核對清理。詳 [候選、來源與限制](docs/pet-concepts/2026-10-25/loop-encoding/README.md)。App 未採用、母檔／預算／0.4.3／v4／18 migrations／公告／部署不變；自己的四 CI／完成審查後才合併，品質／七態仍未獲擁有者驗收，採用另 DP-201。
 
 - [x] **DP-199 — 保留 alpha 的 PNG 接入（2026-10-25）：** Backlog → Next → In Progress → Done。六張 App PNG 逐 byte 採 DP-198 RGB128，來源回歸查 eligible／bytes／SHA，五態包 190,980／167,288 bytes、PNG 16 KiB／每款 192 KiB 不變。舊圖來源基線先失敗，再逐一換回六舊圖皆拒絕，finally 精確還原通過。完整 1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 Chromium 28＋WebKit 8；控制後 pet-assets 12 再過、不重複加總。兩 viewport 淺深色 reduce 下 idle／grab／sleep PNG、六圖原生 alpha 120／60px 差異 0、60px／焦點／資料／console 通過，截圖目視，實際時區列印。162 個本機文件連結與 diff 通過，CLI／本次 Vite 經 PID／command 核對後清理。詳 [採用紀錄](docs/pet-static-png-adoption.md)。動畫／registry／播放政策／來源母檔／歷史 manifest／0.4.3／v4／18 migrations／公告／部署不變；自己的四 CI／完成審查後才合併，擁有者品質與七態未完成。下一段 DP-200 只評估既有動畫參數。
 
