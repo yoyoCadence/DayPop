@@ -20,17 +20,48 @@ function render(pose: PetPose = 'idle', cue: number | null = null, paused = fals
 }
 const image = () => host.querySelector<HTMLImageElement>('img')!;
 async function load() { await act(async () => image().dispatchEvent(new Event('load'))); }
-it('registers the mixed four-state package for both keys; unmade poses keep CSS', () => {
+it('registers the mixed five-state package for both keys; unmade poses keep CSS', () => {
   for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
-    expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'look', 'sleep']);
+    expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'jump', 'look', 'sleep']);
     expect(PET_ASSETS[kind].look?.still).toBe(PET_ASSETS[kind].idle?.still);
     expect(PET_ASSETS[kind].look?.durationMs).toBe(1600);
+    expect(PET_ASSETS[kind].jump?.still).toBe(PET_ASSETS[kind].idle?.still);
+    expect(PET_ASSETS[kind].jump?.durationMs).toBe(1000);
   }
   render('walk');
   expect(image()).toBeNull();
   expect(host.querySelector('.cal-pet-body')).not.toBeNull();
 });
 for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
+  it(`${kind} jump decodes, shares idle PNG, removes hidden images and falls back on failure`, async () => {
+    const jump = (paused = false, hidden = false) => act(() => root.render(
+      <PetArtwork kind={kind} pose="jump" cue={null} paused={paused} hidden={hidden} onLookDone={done} />,
+    ));
+    jump();
+    expect(image()?.getAttribute('src')).toMatch(/jump.*webp/);
+    expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+    await load();
+    expect(image().hidden).toBe(false);
+    jump(true);
+    expect(image().getAttribute('src')).toMatch(/idle.*png/);
+    await load();
+    jump();
+    act(() => { media.matches = true; media.dispatchEvent(new Event('change')); });
+    expect(image().getAttribute('src')).toMatch(/idle.*png/);
+    jump(false, true);
+    expect(image()).toBeNull();
+    jump();
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    try {
+      act(() => document.dispatchEvent(new Event('visibilitychange')));
+      expect(image()).toBeNull();
+    } finally { hidden.mockRestore(); }
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+    act(() => image().dispatchEvent(new Event('error')));
+    expect(image()).toBeNull();
+    expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+    expect(done).not.toHaveBeenCalled();
+  });
   it(`${kind} sleep decodes, uses its actual PNG when stopped, removes hidden images and falls back on failure`, async () => {
     const sleep = (paused = false, hidden = false) => act(() => root.render(
       <PetArtwork kind={kind} pose="sleep" cue={null} paused={paused} hidden={hidden} onLookDone={done} />,

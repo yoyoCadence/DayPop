@@ -76,7 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-196 — jump 候選與 typed registry 接入（DP-171 子項）：** 採 DP-195 建議，貓完整十幀 Q55/A70、飛碟保留 DP-194 Q85；共用既有 idle PNG，不改四態或每款 192 KiB。新增 jump 單檔 32 KiB 守門、實檔來源 hash／去重總量與失敗／reduce／隱藏生命週期驗證；先只進 registry，觸發政策另段，不加待辦獎勵／XP／偏好／schema。發 PR 前對齊前段合併後 main。
+- [ ] **DP-197 — 已確認完成操作的 jump 回饋（DP-171 子項）：** 沿原素材規範的完成待辦開心回饋與 DP-189 的可 await 確認，先核對跨頁／失敗／帳號切換及泡泡／look／grab 優先、暫藏不補播的契約，再以獨立 PR 接單次 1 秒 cue。只回饋成功的未完成→完成操作，不追蹤載入／同步資料差異、不加 XP／升級／新泡泡或偏好。前三段依序 CI／審查合併後再發本 PR。
+
 
 
 > **2026-10-24 持續開發授權：** 擁有者再次要求「每次完成一個段落就開 PR 並 merge，再持續開發，不用特別問除非必要」。每段獨立分支、驗證、中文 PR，最新 head 四項 CI 與審查通過才合併，再從最新 main 接續；保留文件與任務板供任何 agent 接手。沒有增加部署或遠端 migration 套用授權。DP-188 PR #183 已四項 CI 全過、審查無發現，合併 `868fdbb`（run `40033060475`）。下一段從 DP-041 拆出 DP-189：先讓勾選待辦回傳既有 queue 的保存確認，不先定 XP／獎勵／新 schema；由 Backlog → Next → In Progress。
@@ -224,6 +225,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+
+> **DP-196 準備順序：** 製作時從 main `67d8ea8` 建獨立分支，暫接 DP-195 素材依賴。PR #190 head `20e3dc4` 四項 CI、完成審查無發現／無未解決討論後合併 `dcd8986`（run `40143777448`，Chromium 275 passed／13 skipped、WebKit 7 passed）；本段已對齊該最新 main，只送兩張新 jump 與 registry／守門，不重送舊候選、Blender 或睡眠產品程式。
 
 
 > **DP-195 準備順序：** #189 等 CI 時從 main `67d8ea8` 開獨立分支，暫接 `6d5a15e` 作素材依賴；該 head 四 CI 全過，審查停滯逾 9 小時後於 2026-10-25 重新 Ready，完成無發現、無未解決討論才合併 `1227676`（run `40101980156`，Chromium 275 passed／13 skipped、WebKit 7 passed）。本段已移至該最新 main，只送編碼候選與文件，不重送跳躍 Blender／PNG 或睡眠產品程式。
@@ -447,6 +451,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-196 — jump 候選與 typed registry（2026-10-24）：** Backlog → Next → In Progress → Done。兩張新 WebP 分別等於貓 DP-195 Q55/A70、飛碟 DP-194 Q85；完整十幀 1 秒，共用 idle PNG。每款七實檔／十四 hash 輸出，196,286／173,845 bytes，原 192 KiB 不改、新 jump 32 KiB。三 registry／三預算來源基線先失敗；舊 registry 三／舊 gate 兩／停用上限六失敗，finally 精確還原。真實 dist 缺 jump／變造／jump cap／整款 cap 四項拒絕並還原通過；歷史三輪 checker 保持通過。1,391 單元＋29 Node、lint／typecheck／build／check:build，25 e2e（Chromium 18／WebKit 7）、兩 viewport 真實組件單次／60px／PNG／reduce／hidden／錯圖 CSS／console 通過；截圖目視，暫存入口已刪、server 核對停止。完整 [接入紀錄](docs/pet-assets-integration.md)。App 仍觸發四態，jump cue 另 DP-197；新動作品質未冒充擁有者已驗收，貓僅餘 322 bytes、七態未完成，0.4.3／v4／18 migrations／公告／部署不變。最新 PR 四 CI／完成審查後才合併。
 
 - [x] **DP-195 — jump 編碼與五態預算評估（2026-10-24）：** Backlog → Next → In Progress → Done。六／七幀雖體積符合，逐原始時間點淺深底 MAE 超 0.008 被拒，保留四個失敗比較；完整十幀調整色彩／alpha 後四個候選通過。建議貓 Q55/A70 15,436 bytes、飛碟保留 Q85 21,472，共用 idle PNG 五態包 196,286／173,845，貓只剩 322 bytes，未宣稱七態預算完成。原十幀各 100ms／1 秒單次，120／60px 8／4px 透明；十項真實候選／metadata 負控制拒絕、finally 精確還原，錯末幀已同步體積／hash 後仍由畫面門檻拒絕。1,389 單元＋27 Node、lint／typecheck／build／check:build；兩 viewport 實際 Asia/Taipei 的十個原圖／候選放大與 60px 播放／停止／重播／共享 PNG／reduce／深色／console 通過，對照板與截圖目視。完整 [方法、數字與限制](docs/pet-concepts/2026-10-24/jump-encoding/README.md)。App 尚未採用，舊 PNG／Blender／四態包／預算／0.4.3／v4／18 migrations／公告／部署不變；最新 PR 四 CI／審查過後合併，再接 DP-196 registry。
 

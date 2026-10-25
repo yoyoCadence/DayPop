@@ -8,6 +8,7 @@
     "maxIdleBytes": 131072,
     "maxLookBytes": 49152,
     "maxSleepBytes": 65536,
+    "maxJumpBytes": 32768,
     "maxStaticBytes": 16384
   },
   "css": {

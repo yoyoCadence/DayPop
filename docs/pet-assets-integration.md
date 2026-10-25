@@ -1,5 +1,32 @@
 # 預設月光貓三態接入（DP-188，2026-10-23）
 
+> **DP-196 現況（2026-10-24）：** jump 候選已接 typed registry，共用 idle PNG；App 仍只觸發 idle／look／grab／sleep，跳躍回饋尚未接線。新動作品質仍待擁有者目視確認。下方各段數字與狀態保留為歷史。
+
+## 完整十幀 jump 與共享 PNG（DP-196）
+
+發布基底已對齊 DP-195 PR #190 合併後的 main `dcd8986`。該 PR head `20e3dc4` 的 run `40143777448` 四項 CI 全過（Chromium 275 passed／13 skipped、WebKit 7 passed），完成審查無發現、無未解決討論後才依授權合併。本 PR 只含 registry 這一段，仍須自己的最新 head CI／審查，沒有部署。
+
+依持續開發授權採 [DP-195 建議](pet-concepts/2026-10-24/jump-encoding/README.md)：貓使用 `fullQ55A70.webp`，飛碟沿 [DP-194 原 Q85](pet-concepts/2026-10-24/jump/README.md)。兩張新 App WebP 逐 byte 等於已發布候選，沒有重新編碼、改 PNG／Blender／原幀或既有四態。兩款完整十幀、每幀 100ms、1 秒單次，jump 的 still 直接重用 idle PNG，durationMs 為 1000。
+
+| 角色 | 原四態六檔 bytes | 新 jump WebP | 五態七檔合計 | 192 KiB 餘裕 |
+| --- | ---: | ---: | ---: | ---: |
+| 月光貓 | 180,850 | 15,436 | 196,286 | 322 |
+| 軌道噗 | 152,373 | 21,472 | 173,845 | 22,763 |
+
+每款仍 ≤196,608 bytes，原 idle／look／sleep／PNG 門檻不改；新增 jump 單檔 ≤32 KiB。`check:build` 要求每款精確七個來源實檔／十四個唯一 content-hashed 輸出，實檔 bytes 對齊來源並計總量。Node 來源回歸同時對照 DP-187／190／191／194／195 manifest SHA，固定兩款最終 bytes，沒有把共享 PNG 重算一次。
+
+`PetArtwork`／`PetLayer`／閒置時計沒有產品改動。jump 在 registry 共用既有解碼、PNG、reduce、隱藏／背景移除圖片及失敗 CSS；尚無 App cue，也不會完成任何 `onLookDone`。未改待辦行為或預載／worker；一般 App e2e 另外拒絕 jump 圖片下載。此段沒有實作單次 cue 的結束／優先權或完成待辦回饋，不能將 registry 列數當成 UI 已能觸發五態。
+
+三項 registry／jump 生命週期與三項預算／來源回歸先在舊程式失敗。反向恢復舊 registry 再得相同三失敗、舊建置守門兩失敗；停用單檔與整款上限使六項負控制失敗。兩個產品檔 finally 逐 byte 還原並核對 SHA。再對真實 dist 移除 jump、追加變造 bytes、把 jump 上限降到 15,435、整款降到 196,285，四項皆拒絕，finally 還原後原預算通過。三輪歷史素材／編碼 checker 在新增 maxJumpBytes 後仍通過，歷史 manifest 與包體積沒有回寫。
+
+本機 lint／typecheck、88 檔 1,391 單元＋29 Node、build／check:build 全過。JS 含 worker 746,451 raw／219,851 gzip、CSS 112,388／27,272 bytes；圖片如表。相關 Chromium 18＋WebKit 7，共 25 e2e 通過，包含閒置睡眠／輸入喚醒、look、移動／鍵盤／收起焦點，以及真正 production 首次離線缺 PNG／sleep WebP 的 CSS 回退與 guest bytes 保留。Node 實際 `Etc/GMT-8`、browser `Asia/Taipei` 均列印，e2e 子環境的 Supabase URL／key 長度都為 0。
+
+Browser plugin not available，沿專案 Playwright：390×844／1280×900 的正常 App identity／非空白／無 Vite overlay／60×60／無 jump 請求通過；另在已刪除的隔離暫存 HTML 掛真實 `PetArtwork`，兩款原生 jump 在 60px 會動且播完保持不動，暫停／reduce 用共享 idle PNG、隱藏移除圖片、損壞 WebP 與 PNG 都回 CSS，console 無錯與無水平溢出。已目視 App、兩款 native／深色截圖，位於 `%TEMP%/daypop-dp196-*`；伺服器按監聽與命令核對後已停止，沒有留下產品 QA 入口。
+
+0.4.3／v4／18 migrations、公告／部署不變，DP-171／172／041 未結案。七態仍缺 walk／sit；貓只餘 322 bytes，不能直接加圖或放寬上限。最新 PR 的四項 CI／完成審查無發現且無未解決討論後才合併，前段的通過不代替本 PR。下一段再處理已確認完成操作的 jump cue，保留泡泡／look／grab 與隱藏契約，不加入 XP。
+
+本輪七份變更文件共 154 個本機 Markdown 連結通過；素材規範與 canonical 紀錄同步補上「registry 五態、App 觸發四態」的界線。DP-194 PR #189 審查停滯逾 9 小時後，以同一 head 重新 Ready 恢復，完成無發現且四 CI 全過才合併 `1227676`，沒有跳過審查；DP-195 與本段仍各自需要自己的 CI／審查及最新 main 基底。
+
 > **DP-193 現況（2026-10-24）：** 前景可見 idle 連續 120 秒後 sleep，輸入立即喚醒；泡泡／look／grab 優先，隱藏時間不累計，reduce 用 sleep PNG。新增 [播放政策與驗收](pet-idle-sleep.md)，並修正快取圖片早於 passive effect 解碼時保持隱藏的競態。下方 DP-188／192 為各階段交付紀錄。
 
 > **DP-192 後續接入（2026-10-24）：** idle 採 DP-191 減樣，sleep 加入 registry；使用者介面仍觸發 idle／look／grab。下方 DP-188 八檔／數字保留為原始交付紀錄，現況依本節。
