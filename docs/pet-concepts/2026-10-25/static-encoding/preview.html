@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>DP-198 靜態 PNG 編碼比較</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:16px;font:16px/1.5 system-ui,sans-serif;background:#f3f3f3;color:#202020}main{max-width:1200px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{margin:8px 0}header{margin-bottom:16px}label{display:inline-block;margin:8px 16px 8px 0}select{font:inherit;max-width:100%;padding:6px}#grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}.card{border:1px solid #999;border-radius:10px;padding:12px;background:#fff;min-width:0}.card h2{font-size:18px;margin:0}.images{display:grid;grid-template-columns:1fr 1fr;gap:8px}figure{margin:8px 0;min-width:0}figcaption{font-size:14px}img{display:block;max-width:100%;margin:8px auto;background:#f5f3ee}.status{font-weight:600}.bytes{font-size:14px}.dark{background:#111827;color:#eee}.dark .card{background:#1f2937}.dark img{background:#111827}output{display:block;white-space:pre-line}
+</style>
+<main>
+<header>
+<h1>靜態 PNG 編碼比較</h1>
+<p>原圖與候選各顯示原生 120px、60px。這是離線素材評估，App 尚未採用。RGB 候選保留逐像素 alpha；索引候選只保留作失敗對照。</p>
+<label>候選 <select id="plan"><option value="rgb128">RGB 128 色，保留 alpha</option><option value="rgb256">RGB 256 色，保留 alpha</option><option value="indexed256">索引 256 色（不採）</option><option value="indexed128">索引 128 色（不採）</option></select></label>
+<label><input id="dark" type="checkbox">深色背景</label>
+<output id="summary" aria-live="polite"></output>
+</header>
+<div id="grid"></div>
+</main>
+<template id="card"><article class="card"><h2></h2><p class="status"></p><p class="bytes"></p><div class="images"><figure><figcaption>原圖</figcaption><img class="original large" width="120" height="120" alt="原圖 120px"><img class="original small" width="60" height="60" alt="原圖 60px"></figure><figure><figcaption>候選</figcaption><img class="candidate large" width="120" height="120" alt="候選 120px"><img class="candidate small" width="60" height="60" alt="候選 60px"></figure></div></article></template>
+<script type="module">
+const data = await (await fetch('manifest.json')).json();
+const plan = document.querySelector('#plan'), dark = document.querySelector('#dark');
+dark.checked = matchMedia('(prefers-color-scheme: dark)').matches;
+function theme(){document.body.classList.toggle('dark',dark.checked)}
+function render(){
+  const cards=[];
+  for(const char of data.characters) for(const [state,row] of Object.entries(char.states)){
+    const item=row.candidates[plan.value], card=document.querySelector('#card').content.cloneNode(true);
+    card.querySelector('h2').textContent=char.id+' / '+state;
+    card.querySelector('.status').textContent=item.eligible?'通過本輪技術門檻，待目視驗收':'不採：alpha 改變或透明安全區不足';
+    card.querySelector('.bytes').textContent=row.sourceBytes+' → '+item.bytes+' bytes';
+    for(const image of card.querySelectorAll('.original')) image.src=row.source;
+    for(const image of card.querySelectorAll('.candidate')) image.src=item.path;
+    cards.push(card);
+  }
+  document.querySelector('#grid').replaceChildren(...cards);
+  document.querySelector('#summary').textContent=data.characters.map(char=>{
+    const allowed=Object.values(char.states).every(row=>row.candidates[plan.value].eligible);
+    return char.id+': 原包 '+char.baselinePackageBytes+' bytes；'+(allowed?'候選包 '+char.hypotheticalPackageBytes[plan.value]+' bytes，尚非七態預算':'候選不合格，不能以較小體積視為可用預算');
+  }).join('\n');
+}
+plan.addEventListener('change',render);dark.addEventListener('change',theme);theme();render();
+</script>
+</html>

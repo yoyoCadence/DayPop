@@ -1,0 +1,823 @@
+{
+  "task": "DP-198",
+  "appIntegrated": false,
+  "candidateAdopted": false,
+  "sourceCommit": "e9d40a50f2d2b6714df0783b1d855e4eb203409c",
+  "pillowVersion": "12.2.0",
+  "policy": {
+    "characterLimitBytes": 196608,
+    "staticLimitBytes": 16384,
+    "qualityLimit": 0.008,
+    "alpha": "exact at 120 and 60",
+    "plans": {
+      "indexed256": [
+        "indexed",
+        256
+      ],
+      "indexed128": [
+        "indexed",
+        128
+      ],
+      "rgb256": [
+        "exactAlpha",
+        256
+      ],
+      "rgb128": [
+        "exactAlpha",
+        128
+      ]
+    }
+  },
+  "characters": [
+    {
+      "id": "moon_cat",
+      "baselinePackageBytes": 196286,
+      "states": {
+        "idle": {
+          "source": "../../2026-10-23/motion/previews/moon_cat/idle-static.png",
+          "sourceSha256": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a",
+          "sourceBytes": 13572,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/moon_cat/idle-indexed256.png",
+              "bytes": 3347,
+              "sha256": "b0cb7e23416b2179fede12a1327762c1042d1421032870608710efecd39d183d",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  13,
+                  98,
+                  107
+                ],
+                "maxAlphaError120": 29,
+                "lightMeanAbsoluteError120": 0.004665305010893246,
+                "darkMeanAbsoluteError120": 0.004554647785039942,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  56
+                ],
+                "maxAlphaError60": 12,
+                "lightMeanAbsoluteError60": 0.0034386347131445173,
+                "darkMeanAbsoluteError60": 0.003611837327523602,
+                "mode": "P",
+                "rgbColors": 232
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/moon_cat/idle-indexed128.png",
+              "bytes": 2789,
+              "sha256": "1ee7d2ba31909181f340b2d566a9ce3bed1567f93d13314ed34304e92bf5332d",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  13,
+                  98,
+                  107
+                ],
+                "maxAlphaError120": 45,
+                "lightMeanAbsoluteError120": 0.005180918663761801,
+                "darkMeanAbsoluteError120": 0.0049783042846768336,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  56
+                ],
+                "maxAlphaError60": 16,
+                "lightMeanAbsoluteError60": 0.003706245461147422,
+                "darkMeanAbsoluteError60": 0.0038522149600580973,
+                "mode": "P",
+                "rgbColors": 128
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/moon_cat/idle-rgb256.png",
+              "bytes": 12470,
+              "sha256": "615371060e09d1923d5c5b6b746f6ea55015bf74cb6e96b6f6a15ae116f043aa",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  13,
+                  98,
+                  107
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.0016096586782861292,
+                "darkMeanAbsoluteError120": 0.001608841684822077,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  56
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.001114015976761075,
+                "darkMeanAbsoluteError60": 0.0011143790849673203,
+                "mode": "RGBA",
+                "rgbColors": 255
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/moon_cat/idle-rgb128.png",
+              "bytes": 11774,
+              "sha256": "b48f66565d1cd87418c137c49a5bb0fbcd268644d9f026667af784c954971a10",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  13,
+                  98,
+                  107
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.002475490196078431,
+                "darkMeanAbsoluteError120": 0.0024728576615831517,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  56
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0019074074074074074,
+                "darkMeanAbsoluteError60": 0.0019084967320261439,
+                "mode": "RGBA",
+                "rgbColors": 127
+              },
+              "eligible": true
+            }
+          }
+        },
+        "grab": {
+          "source": "../../2026-10-23/motion/previews/moon_cat/grab-static.png",
+          "sourceSha256": "0d90dac6103c7c42346b0e4cda13486ba2a62e419d11948379d1fbec8b258c7f",
+          "sourceBytes": 13390,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/moon_cat/grab-indexed256.png",
+              "bytes": 3328,
+              "sha256": "7235d22cdc871fbcbb480421d03d62a8bfce8a2e3473eb792ab6ac92e2f3417c",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  14,
+                  98,
+                  105
+                ],
+                "maxAlphaError120": 29,
+                "lightMeanAbsoluteError120": 0.004596223674655047,
+                "darkMeanAbsoluteError120": 0.004499546114742193,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 11,
+                "lightMeanAbsoluteError60": 0.0033547567175018157,
+                "darkMeanAbsoluteError60": 0.003573347857661583,
+                "mode": "P",
+                "rgbColors": 228
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/moon_cat/grab-indexed128.png",
+              "bytes": 2776,
+              "sha256": "76c345bd4259f326cf63edb5b3372255ea1507b8527b616c4a72e4a866e571f9",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  14,
+                  98,
+                  105
+                ],
+                "maxAlphaError120": 42,
+                "lightMeanAbsoluteError120": 0.0051085693536673926,
+                "darkMeanAbsoluteError120": 0.004905228758169935,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 14,
+                "lightMeanAbsoluteError60": 0.0036517792302106027,
+                "darkMeanAbsoluteError60": 0.0038184458968772692,
+                "mode": "P",
+                "rgbColors": 128
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/moon_cat/grab-rgb256.png",
+              "bytes": 12322,
+              "sha256": "9a40beb6f3abea98929394df52bdec3e94adf1cea6f0a8b6f16fea8048f83bfc",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  14,
+                  98,
+                  105
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.001638888888888889,
+                "darkMeanAbsoluteError120": 0.0016377087872185912,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0011917211328976035,
+                "darkMeanAbsoluteError60": 0.0011935366739288307,
+                "mode": "RGBA",
+                "rgbColors": 253
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/moon_cat/grab-rgb128.png",
+              "bytes": 11729,
+              "sha256": "e1bb4ad787d73308984a9be0f96119e05eec62ee5f395701f5fe5809b0d0c4ff",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  14,
+                  98,
+                  105
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.0024822076978939724,
+                "darkMeanAbsoluteError120": 0.0024804829339143066,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.001919753086419753,
+                "darkMeanAbsoluteError60": 0.001919026870007262,
+                "mode": "RGBA",
+                "rgbColors": 128
+              },
+              "eligible": true
+            }
+          }
+        },
+        "sleep": {
+          "source": "../../2026-10-24/sleep/previews/moon_cat/sleep-static.png",
+          "sourceSha256": "8c76ed4b12a7f8aaa9928a440ce5a61da8263e8ba60be8d4a714d13a6cf71e75",
+          "sourceBytes": 13252,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/moon_cat/sleep-indexed256.png",
+              "bytes": 3266,
+              "sha256": "b5cd0c10dab2ec483fd8b237281b493cb5f8dec617d1ce68a8ffbaf4af384216",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  15,
+                  98,
+                  106
+                ],
+                "maxAlphaError120": 29,
+                "lightMeanAbsoluteError120": 0.004565087145969499,
+                "darkMeanAbsoluteError120": 0.004464324618736384,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 10,
+                "lightMeanAbsoluteError60": 0.003392156862745098,
+                "darkMeanAbsoluteError60": 0.003584241103848947,
+                "mode": "P",
+                "rgbColors": 225
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/moon_cat/sleep-indexed128.png",
+              "bytes": 2724,
+              "sha256": "a25b10dd56482f88ded73a60a68258536ab2f59ad6116212faa3ef6282a20470",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  15,
+                  98,
+                  106
+                ],
+                "maxAlphaError120": 45,
+                "lightMeanAbsoluteError120": 0.0049757625272331156,
+                "darkMeanAbsoluteError120": 0.0048348765432098765,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 15,
+                "lightMeanAbsoluteError60": 0.0036049382716049384,
+                "darkMeanAbsoluteError60": 0.003775599128540305,
+                "mode": "P",
+                "rgbColors": 128
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/moon_cat/sleep-rgb256.png",
+              "bytes": 12079,
+              "sha256": "9c8edb85f6288194ac6a76d89e71a65382551d9796c9a23fb14496663b74a484",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  15,
+                  98,
+                  106
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.0015285039941902688,
+                "darkMeanAbsoluteError120": 0.0015254175744371823,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0010697167755991286,
+                "darkMeanAbsoluteError60": 0.001070806100217865,
+                "mode": "RGBA",
+                "rgbColors": 253
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/moon_cat/sleep-rgb128.png",
+              "bytes": 11405,
+              "sha256": "5ab4aa425740c0f744e20bc6913f6c3fea17bc36f93040e282f1a8ab7d5f7952",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  22,
+                  15,
+                  98,
+                  106
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.002300744371822803,
+                "darkMeanAbsoluteError120": 0.0023023783587509078,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  9,
+                  5,
+                  51,
+                  55
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0017679738562091504,
+                "darkMeanAbsoluteError60": 0.0017676107480029048,
+                "mode": "RGBA",
+                "rgbColors": 127
+              },
+              "eligible": true
+            }
+          }
+        }
+      },
+      "recommended": "rgb128",
+      "hypotheticalPackageBytes": {
+        "indexed256": 166013,
+        "indexed128": 164361,
+        "rgb256": 192943,
+        "rgb128": 190980
+      },
+      "remainingBytes": 5628
+    },
+    {
+      "id": "orbit_ufo",
+      "baselinePackageBytes": 173845,
+      "states": {
+        "idle": {
+          "source": "../../2026-10-23/motion/previews/orbit_ufo/idle-static.png",
+          "sourceSha256": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac",
+          "sourceBytes": 10318,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/orbit_ufo/idle-indexed256.png",
+              "bytes": 2897,
+              "sha256": "2b9d8f1912b7c31d5ecbc1bae25a4e9e535a1cbc705a45cd4d609cc987af13ba",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  108,
+                  93
+                ],
+                "maxAlphaError120": 30,
+                "lightMeanAbsoluteError120": 0.003402414669571532,
+                "darkMeanAbsoluteError120": 0.0032618010167029775,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 8,
+                "lightMeanAbsoluteError60": 0.0024506172839506173,
+                "darkMeanAbsoluteError60": 0.0024691358024691358,
+                "mode": "P",
+                "rgbColors": 249
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/orbit_ufo/idle-indexed128.png",
+              "bytes": 2229,
+              "sha256": "5b89de4a24bf250ef941166d7c596a5be1711c522a350b84d34d81b740221e3a",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  108,
+                  93
+                ],
+                "maxAlphaError120": 51,
+                "lightMeanAbsoluteError120": 0.004131989832970225,
+                "darkMeanAbsoluteError120": 0.0039161220043572986,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 14,
+                "lightMeanAbsoluteError60": 0.002871459694989107,
+                "darkMeanAbsoluteError60": 0.002839869281045752,
+                "mode": "P",
+                "rgbColors": 128
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/orbit_ufo/idle-rgb256.png",
+              "bytes": 8759,
+              "sha256": "d909cc0170f1683e9c88b6b5fe674bbd1b1a262b12793c5371311273eef09742",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  108,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.0016969862018881626,
+                "darkMeanAbsoluteError120": 0.001695533769063181,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.001143427741466957,
+                "darkMeanAbsoluteError60": 0.0011485112563543935,
+                "mode": "RGBA",
+                "rgbColors": 246
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/orbit_ufo/idle-rgb128.png",
+              "bytes": 8144,
+              "sha256": "ba34c92da5243fad7852201115de5d1a646d4cbabef13a92529e9b60c7f9ff81",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  108,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.002423474945533769,
+                "darkMeanAbsoluteError120": 0.0024227487291212783,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0016641249092229483,
+                "darkMeanAbsoluteError60": 0.001663761801016703,
+                "mode": "RGBA",
+                "rgbColors": 126
+              },
+              "eligible": true
+            }
+          }
+        },
+        "grab": {
+          "source": "../../2026-10-23/motion/previews/orbit_ufo/grab-static.png",
+          "sourceSha256": "66927fcb8cb74deed1e156ac63feb81d58b30bdf4f2de2ed021ac6463f9c4e1f",
+          "sourceBytes": 10481,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/orbit_ufo/grab-indexed256.png",
+              "bytes": 2834,
+              "sha256": "08e87528636e32a93324e95bbca0c24aee3a69a829e12f8c0f742e46061f4dcd",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  15,
+                  27,
+                  109,
+                  93
+                ],
+                "maxAlphaError120": 30,
+                "lightMeanAbsoluteError120": 0.0034233841684822076,
+                "darkMeanAbsoluteError120": 0.0032401960784313724,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  5,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 11,
+                "lightMeanAbsoluteError60": 0.002349673202614379,
+                "darkMeanAbsoluteError60": 0.002418300653594771,
+                "mode": "P",
+                "rgbColors": 250
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/orbit_ufo/grab-indexed128.png",
+              "bytes": 2235,
+              "sha256": "82a4fc1ec46d263c757d428a912ba9573ce7543cf7d4ade76bdfb7fcca97d15b",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  15,
+                  27,
+                  109,
+                  93
+                ],
+                "maxAlphaError120": 54,
+                "lightMeanAbsoluteError120": 0.004216684822076979,
+                "darkMeanAbsoluteError120": 0.003923293391430646,
+                "alphaSafe60": false,
+                "alphaBox60": [
+                  5,
+                  12,
+                  57,
+                  49
+                ],
+                "maxAlphaError60": 17,
+                "lightMeanAbsoluteError60": 0.0028082788671023964,
+                "darkMeanAbsoluteError60": 0.0028326071169208424,
+                "mode": "P",
+                "rgbColors": 128
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/orbit_ufo/grab-rgb256.png",
+              "bytes": 8894,
+              "sha256": "5e6d0069f63f3faea5c95937bfd05a00b2f90c12b638b5ab3d511afad1c44e04",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  15,
+                  27,
+                  109,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.001706971677559913,
+                "darkMeanAbsoluteError120": 0.0017078794480755266,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  5,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0011230936819172114,
+                "darkMeanAbsoluteError60": 0.001121278140885984,
+                "mode": "RGBA",
+                "rgbColors": 254
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/orbit_ufo/grab-rgb128.png",
+              "bytes": 8351,
+              "sha256": "3a1401bd026ea315fae95b0df0f806e6bb99d511d026878a5130c6ae54f4a253",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  15,
+                  27,
+                  109,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.002457970225127088,
+                "darkMeanAbsoluteError120": 0.0024586056644880176,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  5,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0016938997821350763,
+                "darkMeanAbsoluteError60": 0.0016877269426289034,
+                "mode": "RGBA",
+                "rgbColors": 128
+              },
+              "eligible": true
+            }
+          }
+        },
+        "sleep": {
+          "source": "../../2026-10-24/sleep/previews/orbit_ufo/sleep-static.png",
+          "sourceSha256": "dac669ee850760145e6e5f5b54527c75d8a703ea02431585a9b17b6c7b57a259",
+          "sourceBytes": 10254,
+          "candidates": {
+            "indexed256": {
+              "path": "candidates/orbit_ufo/sleep-indexed256.png",
+              "bytes": 2789,
+              "sha256": "bb1b63e4ad277010d453c8a75a393c65cf6e80d7ccae57303dc10ed3a50d6304",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  107,
+                  93
+                ],
+                "maxAlphaError120": 30,
+                "lightMeanAbsoluteError120": 0.003426924473493101,
+                "darkMeanAbsoluteError120": 0.003242283950617284,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 9,
+                "lightMeanAbsoluteError60": 0.002458968772694263,
+                "darkMeanAbsoluteError60": 0.0024800290486564998,
+                "mode": "P",
+                "rgbColors": 246
+              },
+              "eligible": false
+            },
+            "indexed128": {
+              "path": "candidates/orbit_ufo/sleep-indexed128.png",
+              "bytes": 2188,
+              "sha256": "5e1781e123e30fca363901193ca8b2e402aec09302bcbbf4e7396a7a5248c39e",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  107,
+                  93
+                ],
+                "maxAlphaError120": 56,
+                "lightMeanAbsoluteError120": 0.004175018155410312,
+                "darkMeanAbsoluteError120": 0.0038789941902687,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  11,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 22,
+                "lightMeanAbsoluteError60": 0.002842774146695715,
+                "darkMeanAbsoluteError60": 0.00288961510530138,
+                "mode": "P",
+                "rgbColors": 127
+              },
+              "eligible": false
+            },
+            "rgb256": {
+              "path": "candidates/orbit_ufo/sleep-rgb256.png",
+              "bytes": 8600,
+              "sha256": "5a6d7c38610b065cb39a432272e5b47f2a7954e17a7772eb35e5b1372542f8c7",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  107,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.0016462418300653594,
+                "darkMeanAbsoluteError120": 0.001644880174291939,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.001121278140885984,
+                "darkMeanAbsoluteError60": 0.001120551924473493,
+                "mode": "RGBA",
+                "rgbColors": 251
+              },
+              "eligible": true
+            },
+            "rgb128": {
+              "path": "candidates/orbit_ufo/sleep-rgb128.png",
+              "bytes": 8001,
+              "sha256": "40fcb8994773800dc0db7210dc9bad855c670e1a1b7ace86136873ae1d08ebf4",
+              "measurement": {
+                "alphaSafe120": true,
+                "alphaBox120": [
+                  13,
+                  27,
+                  107,
+                  93
+                ],
+                "maxAlphaError120": 0,
+                "lightMeanAbsoluteError120": 0.002355392156862745,
+                "darkMeanAbsoluteError120": 0.0023520334059549744,
+                "alphaSafe60": true,
+                "alphaBox60": [
+                  4,
+                  12,
+                  56,
+                  49
+                ],
+                "maxAlphaError60": 0,
+                "lightMeanAbsoluteError60": 0.0016597676107480029,
+                "darkMeanAbsoluteError60": 0.0016619462599854757,
+                "mode": "RGBA",
+                "rgbColors": 127
+              },
+              "eligible": true
+            }
+          }
+        }
+      },
+      "recommended": "rgb128",
+      "hypotheticalPackageBytes": {
+        "indexed256": 151312,
+        "indexed128": 149444,
+        "rgb256": 169045,
+        "rgb128": 167288
+      },
+      "remainingBytes": 29320
+    }
+  ]
+}
