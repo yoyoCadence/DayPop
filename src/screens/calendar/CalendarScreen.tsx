@@ -83,6 +83,7 @@ export function CalendarScreen({
     deleteEventAttachment,
     createEventAttachmentUrl,
     capabilities,
+    todoCompletions,
   } = useDayPopData();
   const monthRef = useRef<MonthViewHandle>(null);
 
@@ -452,6 +453,7 @@ export function CalendarScreen({
           徽章只算最上層的待辦（DP-121），和泡泡共用 `petBubbleTodos()`。 */}
       {data.preferences.petEnabled && (
         <PetLayer
+          todoCompletions={todoCompletions}
           petName={data.preferences.petName}
           todos={data.todos}
           todayKey={todayKey}

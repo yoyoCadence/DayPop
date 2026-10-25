@@ -99,9 +99,15 @@ export interface DataActions {
   importData(command: ImportCommand): Promise<void>;
 }
 
+/** Session-only command feedback, with no stored payload or replay. */
+export interface TodoCompletionSource {
+  subscribe(listener: () => void): () => void;
+}
+
 export interface DataContextValue {
   state: DataState;
   actions: DataActions;
+  todoCompletions?: TodoCompletionSource;
   capabilities: { eventAttachments: boolean };
   sharing?: SharingSession;
   personalData?: DayPopUserData;
@@ -140,6 +146,7 @@ export function useDayPopDataState(): DataContextValue {
 export function useDayPopData(): DataActions & {
   data: DayPopUserData;
   capabilities: DataContextValue['capabilities'];
+  todoCompletions?: TodoCompletionSource;
   sharing?: SharingSession;
   personalData: DayPopUserData;
 } {
@@ -147,6 +154,6 @@ export function useDayPopData(): DataActions & {
   if (value.state.status !== 'ready') {
     throw new Error('DayPop 資料尚未就緒，畫面不應該在此時掛載。');
   }
-  return { data: value.state.data, personalData:value.personalData ?? value.state.data, sharing:value.sharing,
+  return { data: value.state.data, personalData:value.personalData ?? value.state.data, sharing:value.sharing, todoCompletions:value.todoCompletions,
     capabilities: value.capabilities, ...value.actions };
 }

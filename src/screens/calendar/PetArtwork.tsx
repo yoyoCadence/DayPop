@@ -12,13 +12,14 @@ function subscribeVisibility(change: () => void) {
   return () => document.removeEventListener('visibilitychange', change);
 }
 
-export function PetArtwork({ kind = 'moon_cat', pose, paused, hidden = false, cue, onLookDone }: {
-  kind?: PetKind; pose: PetPose; paused: boolean; hidden?: boolean; cue: number | null; onLookDone(cue: number): void;
+export function PetArtwork({ kind = 'moon_cat', pose, paused, hidden = false, cue, onCueDone }: {
+  kind?: PetKind; pose: PetPose; paused: boolean; hidden?: boolean; cue: number | null; onCueDone(cue: number): void;
 }) {
   const reduce = useSyncExternalStore(subscribeMotion, () => window.matchMedia?.(motionQuery).matches ?? false);
   const background = useSyncExternalStore(subscribeVisibility, () => document.hidden);
   const stopped = paused || hidden || reduce || background;
   const asset = PET_ASSETS[kind][pose];
+  const singlePlay = pose === 'look' || pose === 'jump';
   // An invisible pet needs no image request, including during initial geometry measurement.
   const src = hidden || background ? undefined : stopped ? asset?.still : asset?.animation ?? asset?.still;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,15 +31,15 @@ export function PetArtwork({ kind = 'moon_cat', pose, paused, hidden = false, cu
   }, [cue]);
   // Invisible cues are discarded even when their image has not decoded yet.
   useEffect(() => {
-    if ((hidden || background) && pose === 'look' && cue !== null) onLookDone(cue);
-  }, [hidden, background, pose, cue, onLookDone]);
+    if ((hidden || background) && singlePlay && cue !== null) onCueDone(cue);
+  }, [hidden, background, singlePlay, cue, onCueDone]);
   function ready() {
-    if (pose === 'look' && cue !== null && asset?.durationMs && timer.current === null) {
-      timer.current = setTimeout(() => onLookDone(cue), asset.durationMs);
+    if (singlePlay && cue !== null && asset?.durationMs && timer.current === null) {
+      timer.current = setTimeout(() => onCueDone(cue), asset.durationMs);
     }
   }
   function unavailable() {
-    if (pose === 'look' && cue !== null) onLookDone(cue);
+    if (singlePlay && cue !== null) onCueDone(cue);
   }
   return <span className="cal-pet-art" aria-hidden="true" data-paused={stopped}>
     {src ? <DecodedArtwork key={`${src}:${cue ?? ''}`} src={src} onReady={ready} onUnavailable={unavailable} /> : <CssPet />}

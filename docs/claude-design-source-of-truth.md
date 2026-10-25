@@ -1,5 +1,7 @@
 # DayPop Claude Design 設計基準
 
+> **2026-10-25／DP-197 補充：** 沿素材規範的完成回饋，已確認未完成→完成命令才播 1 秒 jump；不新增原稿的稱讚泡泡或 XP。跨頁／帳號不繼承，泡泡／look／grab／暫藏等優先而直接略過；60px、徽章、焦點與既有幾何不變。詳 [契約與瀏覽器／離線證據](pet-completion-feedback.md)，下方 registry-only 敘述是前段歷史。
+
 > **2026-10-25／DP-196 補充：** jump 候選僅加入 typed registry，沿既有 PNG／reduce／隱藏／錯圖 CSS 生命週期；App 的 idle／look／grab／sleep 播放及既有名稱／徽章／60px／焦點／放置幾何不變，尚未接跳躍觸發或完成回饋。來源與體積見 [接入紀錄](pet-assets-integration.md)，動作品質仍待擁有者目視確認；原稿其餘 UI 不重設計。
 
 > **2026-10-24／DP-192–193 補充：** 依擁有者持續開發／逐段 PR 與合併授權，agent 採用混合編碼與前景 idle 120 秒睡眠政策；輸入喚醒，背景／暫藏重計，泡泡／look／grab 優先，reduce 使用真正 PNG。這是後續視覺行為擴充，sleep 素材品質沒有宣稱已獲擁有者目視驗收。既有 60px、名字、徽章、焦點與幾何保留，詳 [政策與驗收](pet-idle-sleep.md)；原稿其餘 UI 不重設計。

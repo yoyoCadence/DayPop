@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-197 — 已確認完成操作的 jump 回饋（DP-171 子項）：** 沿原素材規範的完成待辦開心回饋與 DP-189 的可 await 確認，先核對跨頁／失敗／帳號切換及泡泡／look／grab 優先、暫藏不補播的契約，再以獨立 PR 接單次 1 秒 cue。只回饋成功的未完成→完成操作，不追蹤載入／同步資料差異、不加 XP／升級／新泡泡或偏好。前三段依序 CI／審查合併後再發本 PR。
+- [ ] **DP-198 — 靜態 PNG 編碼與七態剩餘預算評估（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next；月光貓五態只餘 322 bytes，先量現有六張靜態替代的索引色 PNG 候選與淺／深底、透明邊界／60px 品質，保留原幀／Blender／App。只交候選與可重現驗收，不宣稱尚未製作的 walk／sit 可裝入，也不接自動走動、選角或 XP；採用與後續素材另 PR。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-197 準備順序：** #190 CI 期間從獨立分支暫接 `20e3dc4`＋registry `73c7341`。#191 head `e9d40a5` 四項 CI、完成審查無發現／無未解決討論後合併 `4ef75ce`（run `40145125378`，Chromium 275 passed／13 skipped、WebKit 7 passed），本段已移至該最新 main，只送完成回饋與驗證，不重送素材。
 
 
 > **DP-196 準備順序：** 製作時從 main `67d8ea8` 建獨立分支，暫接 DP-195 素材依賴。PR #190 head `20e3dc4` 四項 CI、完成審查無發現／無未解決討論後合併 `dcd8986`（run `40143777448`，Chromium 275 passed／13 skipped、WebKit 7 passed）；本段已對齊該最新 main，只送兩張新 jump 與 registry／守門，不重送舊候選、Blender 或睡眠產品程式。
@@ -451,6 +453,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-197 — 已確認完成操作的 jump 回饋（2026-10-25）：** Next → In Progress → Done。queue 確認目標完成才送無 payload 訊號，收件人於命令發起時擷取且確認時仍須訂閱；跨頁／帳號、取消／失敗／缺 id／載入／同步／匯入不誤播，父子獨立。泡泡／look／grab／隱藏／背景／收起優先、丟棄不排隊；idle／sleep 單次 jump，解碼後 1 秒、PNG／reduce 正常結束，舊 timer 不清新 cue。1,402 單元＋29 Node、lint／typecheck／build／check:build；六組反向控制拒絕並 finally 精確還原，75 相關回歸及反向移除 Calendar 接線的真實手機流程還原後通過。相關 e2e 去重 44 passed／2 既有 skipped，含 production 首次離線缺 jump 仍保存、回快取 idle、reload 不補播。兩 viewport 淺深色原生計時與 WebP、60px／焦點／資料／console 已目視，實際 browser Asia/Taipei／Node Etc/GMT-8 有佐證。詳 [契約、修正過的測試前置與限制](docs/pet-completion-feedback.md)。沒有 XP／新泡泡／偏好／圖片／0.4.3／v4／18 migrations／公告／部署變更，七態與擁有者動作品質驗收未完成。等依賴 #191 合併後從最新 main 發獨立 PR，自己的四 CI／完成審查過才合併；下一段 DP-198 只評估靜態編碼。
 
 - [x] **DP-196 — jump 候選與 typed registry（2026-10-24）：** Backlog → Next → In Progress → Done。兩張新 WebP 分別等於貓 DP-195 Q55/A70、飛碟 DP-194 Q85；完整十幀 1 秒，共用 idle PNG。每款七實檔／十四 hash 輸出，196,286／173,845 bytes，原 192 KiB 不改、新 jump 32 KiB。三 registry／三預算來源基線先失敗；舊 registry 三／舊 gate 兩／停用上限六失敗，finally 精確還原。真實 dist 缺 jump／變造／jump cap／整款 cap 四項拒絕並還原通過；歷史三輪 checker 保持通過。1,391 單元＋29 Node、lint／typecheck／build／check:build，25 e2e（Chromium 18／WebKit 7）、兩 viewport 真實組件單次／60px／PNG／reduce／hidden／錯圖 CSS／console 通過；截圖目視，暫存入口已刪、server 核對停止。完整 [接入紀錄](docs/pet-assets-integration.md)。App 仍觸發四態，jump cue 另 DP-197；新動作品質未冒充擁有者已驗收，貓僅餘 322 bytes、七態未完成，0.4.3／v4／18 migrations／公告／部署不變。最新 PR 四 CI／完成審查後才合併。
 
