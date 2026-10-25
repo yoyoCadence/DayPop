@@ -711,6 +711,12 @@ App 採用另立 DP-196，只新增 typed jump registry 與 32 KiB 單檔守門�
 
 確認時背景／暫藏／收起／泡泡／look／grab 優先，略過即丟棄；idle／sleep 才播完整十幀 1 秒 jump，新命令用新 cue。共用 look 的解碼後單次時計、PNG／reduce／失敗／隱藏清理，舊 timer 不完成新 cue。資料 queue 與 `Promise<void>` 拒絕契約不變，角色不位移或搶焦點。完整 [跨頁、負控制、production 離線與真實畫面證據](pet-completion-feedback.md) 保留限制；0.4.3／v4／18 migrations／公告／部署不變，七態與擁有者動作品質驗收未完成。
 
+### 保留靜態透明度的 PNG 量化評估（DP-198，2026-10-25）
+
+五態貓只剩 322 bytes；先量六張靜態替代，不放寬每款 192 KiB／PNG 16 KiB。索引 PNG 明顯較小，但 alpha 改變且飛碟 grab 128 色縮圖只餘 3px 邊距，故保留為不採的對照。建議先以 RGB Median Cut 128 色、再放回原 alpha 的 RGBA PNG：原生及離線 120／60px alpha 差異均為 0，淺深底整張 MAE 最大約 0.00249／0.00246，低於沿用的 0.008。這是有損色彩候選，品質仍待目視驗收。
+
+假設採用後五態包為 190,980／167,288 bytes，idle PNG 共享只算一次；walk／sit 尚無實測，不能聲稱七態預算完成。本段只交 [可重現候選、拒絕資料與證據](pet-concepts/2026-10-25/static-encoding/README.md)，來源固定在已發布 manifest，不依賴未來 App 圖片。採用另 DP-199，動畫、播放政策、XP／選角／schema／版本／公告／部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

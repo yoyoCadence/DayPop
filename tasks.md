@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-198 — 靜態 PNG 編碼與七態剩餘預算評估（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next；月光貓五態只餘 322 bytes，先量現有六張靜態替代的索引色 PNG 候選與淺／深底、透明邊界／60px 品質，保留原幀／Blender／App。只交候選與可重現驗收，不宣稱尚未製作的 walk／sit 可裝入，也不接自動走動、選角或 XP；採用與後續素材另 PR。
+- [ ] **DP-199 — 保留 alpha 的 PNG 候選接入（DP-171 子項）：** 依持續開發授權由 Backlog 排入 Next；採 DP-198 RGB128 六張靜態 PNG，維持既有檔名、三張 PNG 的共享關係與動畫／播放政策，更新來源 bytes／hash／實檔守門與驗證。預算維持每款 192 KiB／PNG 16 KiB，候選五態包 190,980／167,288；不新增狀態／自動走動／選角／XP／schema／版本／部署，也不宣稱七態預算完成或擁有者已驗收色彩品質。等 DP-198 CI／審查合併後從最新 main 發獨立 PR。
 
 
 
@@ -225,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+> **DP-198 準備順序：** 從當時最新 main `dcd8986` 建獨立分支，暫接 #191 `e9d40a5` 與 DP-197 `b8c4c9b`。#191 合併 `4ef75ce`；#192 head `c35979b` 四 CI／完成審查無發現、無未解決討論後合併 `c38e7b4`（run `40164518454`，Chromium 285 passed／13 skipped、WebKit 8 passed）。本段已移至此最新 main，只送本機完成的候選與評估，不重送產品碼／App 素材，採用另 DP-199；自己的四 CI／審查仍須通過。
 
 > **DP-197 準備順序：** #190 CI 期間從獨立分支暫接 `20e3dc4`＋registry `73c7341`。#191 head `e9d40a5` 四項 CI、完成審查無發現／無未解決討論後合併 `4ef75ce`（run `40145125378`，Chromium 275 passed／13 skipped、WebKit 7 passed），本段已移至該最新 main，只送完成回饋與驗證，不重送素材。
 
@@ -453,6 +455,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-198 — 靜態 PNG 編碼與七態剩餘預算評估（2026-10-25）：** Backlog → Next → In Progress → Done。六原 PNG／24 候選，索引量化雖 MAE 合格但改變 alpha，飛碟 grab indexed128 還縮為 3px 邊距，十二索引候選明確不採。保留逐像素 alpha 的 RGB128／256 全過 120／60px、8／4px 及淺深底 ≤0.008；建議 RGB128，假設五態包 190,980／167,288，省 5,306／6,557 bytes，尚未解決七態。八項缺檔／來源／模式／alpha／eligibility／單檔與整款真實超量負控制拒絕，finally 25 檔精確還原後正向通過。兩 viewport 四方案原生 PNG／canvas alpha、120與60px／淺深／選單／版面／console，實際 Asia/Taipei；對照板與手機／桌面截圖目視。來源／方法與修正過的測試前置見 [交接](docs/pet-concepts/2026-10-25/static-encoding/README.md)。只有候選與文件，App／母 PNG／Blender／動畫／上限／0.4.3／v4／18 migrations／公告／部署不變，色彩品質仍待擁有者目視確認；自己的最新四 CI／審查過才合併，再接 DP-199。
 
 - [x] **DP-197 — 已確認完成操作的 jump 回饋（2026-10-25）：** Next → In Progress → Done。queue 確認目標完成才送無 payload 訊號，收件人於命令發起時擷取且確認時仍須訂閱；跨頁／帳號、取消／失敗／缺 id／載入／同步／匯入不誤播，父子獨立。泡泡／look／grab／隱藏／背景／收起優先、丟棄不排隊；idle／sleep 單次 jump，解碼後 1 秒、PNG／reduce 正常結束，舊 timer 不清新 cue。1,402 單元＋29 Node、lint／typecheck／build／check:build；六組反向控制拒絕並 finally 精確還原，75 相關回歸及反向移除 Calendar 接線的真實手機流程還原後通過。相關 e2e 去重 44 passed／2 既有 skipped，含 production 首次離線缺 jump 仍保存、回快取 idle、reload 不補播。兩 viewport 淺深色原生計時與 WebP、60px／焦點／資料／console 已目視，實際 browser Asia/Taipei／Node Etc/GMT-8 有佐證。詳 [契約、修正過的測試前置與限制](docs/pet-completion-feedback.md)。沒有 XP／新泡泡／偏好／圖片／0.4.3／v4／18 migrations／公告／部署變更，七態與擁有者動作品質驗收未完成。等依賴 #191 合併後從最新 main 發獨立 PR，自己的四 CI／完成審查過才合併；下一段 DP-198 只評估靜態編碼。
 

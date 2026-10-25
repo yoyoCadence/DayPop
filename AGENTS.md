@@ -26,6 +26,10 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+> **最新合併基底（2026-10-25）：** DP-197 PR #192 head `c35979b` 四項 CI、完成審查無發現／無未解決討論後合併 `c38e7b4`；run `40164518454`，Chromium 285 passed／13 skipped（21.5 分鐘）、WebKit 8 passed。DP-198 已移至此最新 main，只交候選與評估，沒有部署。
+
+- **靜態 PNG 編碼評估（DP-198，2026-10-25）：** [24 候選、比較與重現方式](docs/pet-concepts/2026-10-25/static-encoding/README.md) 量六張既有 PNG 的索引與保留 alpha RGB 量化；十二索引候選因 alpha 改變不採，飛碟 grab indexed128 的 60px 右邊距亦只剩 3px。RGB128／256 均符合 8／4px、淺深底 120／60px MAE ≤0.008，逐像素 alpha 不變；建議 RGB128，假設五態包 190,980／167,288 bytes，省 5,306／6,557，仍不宣稱七態能裝入。八項實檔／metadata 負控制拒絕，25 檔 finally 精確還原；兩 viewport 四方案原生解碼／canvas alpha／120與60px／淺深／版面／console 通過，browser 實際 Asia/Taipei，對照板與截圖目視。App 尚未採用、母 PNG／動畫／Blender／預算／0.4.3／v4／18 migrations／公告／部署不變；PNG 色彩有損與新動作品質仍待擁有者目視確認。#192 CI 期間獨立準備，合併後移至最新 main 發自己的 PR；下一段 DP-199 只採用已驗候選與來源守門。
+
 > **最新合併基底（2026-10-25）：** DP-196 PR #191 head `e9d40a5` 四項 CI、完成審查無發現／無未解決討論後合併 `4ef75ce`；run `40145125378`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-197 已移至此最新 main，只送完成回饋與驗證，沒有部署。
 
 - **已確認待辦完成回饋（DP-197，2026-10-25）：** `toggleTodo` 確認目標完成後，向操作發起時已訂閱且確認時仍存在的角色送無 payload 訊號；各 DataProvider 獨立，跨頁／帳號不繼承，取消／失敗／缺 id／載入／同步／匯入不發。泡泡／look／grab／隱藏／背景／收起直接丟棄，idle／sleep 才單次 jump，PNG／reduce 正常結束，舊 cue 不清新 cue。1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 e2e 去重 44 passed／2 既有 skipped、六組反向控制拒絕後精確還原；兩 viewport 淺深色原生計時約 1 秒、60px／焦點／資料／console 通過並目視，production 首次離線缺 jump 仍保存完成、回 idle，reload 不補播。詳 [契約、證據與限制](docs/pet-completion-feedback.md)。以 #191 registry 依賴準備，發 PR 前移至最新 main，最新四 CI／審查後才合併。圖片／0.4.3／v4／18 migrations／公告／部署不變；新動作品質未冒充擁有者驗收，七態／選角／XP 未完成。
