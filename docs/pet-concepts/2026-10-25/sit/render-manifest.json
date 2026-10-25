@@ -1,0 +1,97 @@
+{
+  "task": "DP-202",
+  "productionReady": false,
+  "appIntegrated": false,
+  "appearanceApproved": true,
+  "sitPoseApproved": false,
+  "sourceCommit": "0a0f3de91531b8c5f4c821ccc7455195d1a54099",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "source": "source/moon_cat.blend",
+      "frame": "frames/moon_cat/sit.png",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "inputSource": "../../2026-10-23/motion/source/moon_cat.blend",
+      "inputSourceSha256": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+      "idleReference": "../../2026-10-23/motion/frames/moon_cat/idle/000.png",
+      "idleReferenceSha256": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a"
+    },
+    {
+      "id": "orbit_ufo",
+      "source": "source/orbit_ufo.blend",
+      "frame": "frames/orbit_ufo/sit.png",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "inputSource": "../../2026-10-23/motion/source/orbit_ufo.blend",
+      "inputSourceSha256": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+      "idleReference": "../../2026-10-23/motion/frames/orbit_ufo/idle/000.png",
+      "idleReferenceSha256": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac"
+    }
+  ],
+  "preparationCommit": "250ee98e65900842dafed344f323c1ee52bad540"
+}

@@ -729,6 +729,10 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 採 DP-200 建議 Q75／alpha 100 的四張 idle／sleep，App bytes／SHA 等於已驗候選，保留 20 decoded frames／原 phase／4.4 秒與 matched alpha=0。五態七唯一檔案 174,308／152,194 bytes、192 KiB 與各態上限不變，沒有改 registry／播放政策或其他圖。來源反向舊圖四次拒絕並還原；完整單元／建置、原生循環／PNG reduce／喚醒、Chromium／WebKit 與 production 離線證據見 [接入紀錄](pet-loop-encoding-adoption.md)。色彩仍有損，擁有者品質與七態／真機驗收未完成，沒有 schema／版本／公告或部署變更。
 
+### 放鬆 sit 與 walk 模型可行性（DP-202，2026-10-25）
+
+沿發布的 DP-187 Blender 原生 controls，兩款各做一幀 relaxed sit，不改 mesh／材質／相機／base transforms；身體／頭眼放鬆與飛碟降低懸浮／環帶放平。另交原檔、真實 PNG／RGB128、相同 alpha 與安全區／品質量測、十五項負控制及逐像素一致的 native 重渲染，詳 [交付與限制](pet-concepts/2026-10-25/sit/README.md)。這是素材候選，不決定 App 的 sit／walk 播放政策或自動位移；六態假設包 185,848／160,369 bytes 不等於七態完成。現有貓後肢融合在坐姿 body、只有兩前爪 controls，因此原地踏爪必須明確命名，完整站立步態需要先交模型方案供擁有者決定；軌道噗可由現有 root 試作傾斜滑行。原五態／192 KiB／偏好／XP／schema／版本／公告／部署不變。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
