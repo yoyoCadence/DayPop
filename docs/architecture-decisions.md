@@ -721,6 +721,10 @@ App 採用另立 DP-196，只新增 typed jump registry 與 32 KiB 單檔守門�
 
 依持續開發授權採 DP-198 RGB128 六張 PNG，App 檔案逐 byte 對齊候選／SHA，歷史原 PNG 與 manifest 不回寫。只減少靜態色彩數，逐像素 alpha、三 PNG 共享、動畫與播放政策維持；每款五態 190,980／167,288 bytes，上限仍 192 KiB／PNG 16 KiB。六次反向舊圖來源拒絕並精確還原，完整單元／建置、Chromium／WebKit／production 離線與原生 alpha／60px 驗證見 [接入紀錄](pet-static-png-adoption.md)。這是色彩有損採用，不冒充擁有者品質確認；七態與真機仍未完成，沒有 XP／偏好／schema／版本／公告或部署變更。
 
+### 既有循環動畫的保守參數評估（DP-200，2026-10-25）
+
+DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-191 原採樣與合併後 20 幀 phase，不再減幀或放寬 192 KiB。四參數方案數值皆過 120／60px 淺深底 <0.008／8與4px，Q35 的 120px 陰影仍可見斑駁，因此另以 Q75／alpha 100 作保守建議，matched alpha 差為零。假設五態包 174,308／152,194 bytes，不保證七態可容納或擁有者已驗收。完整 [真實解碼、最差原始時間點對照、十一負控制與原生循環證據](pet-concepts/2026-10-25/loop-encoding/README.md) 保留更小方案供比較；本段不改 App／來源／預算，採用另 PR。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

@@ -26,9 +26,13 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+> **最新合併基底（2026-10-25）：** DP-199 PR #194 head `72c9841` 四 CI／完成審查無發現、無未解決討論後合併 `1cbbc5b`；run `40167373443`，Chromium 285 passed／13 skipped（22.0 分鐘）、WebKit 8 passed。DP-200 已移至此最新 main，只交循環編碼評估，沒有部署。
+
 > **最新合併基底（2026-10-25）：** DP-198 PR #193 head `8638a4b` 四 CI／完成審查無發現、無未解決討論後合併 `4efa018`；run `40166083800`，Chromium 285 passed／13 skipped（16.7 分鐘）、WebKit 8 passed。DP-199 已移至此最新 main，只送六張 PNG 接入與來源回歸，沒有部署。
 
 > **最新合併基底（2026-10-25）：** DP-197 PR #192 head `c35979b` 四項 CI、完成審查無發現／無未解決討論後合併 `c38e7b4`；run `40164518454`，Chromium 285 passed／13 skipped（21.5 分鐘）、WebKit 8 passed。DP-198 已移至此最新 main，只交候選與評估，沒有部署。
+
+- **idle／sleep 參數評估（DP-200，2026-10-25）：** [16 候選、對照與驗證](docs/pet-concepts/2026-10-25/loop-encoding/README.md) 保留目前取樣、20 decoded frames／4.4 秒／相同 phase；四參數方案都過淺深底 120／60px MAE <0.008 與 8／4px。Q35 雖數值合格，120px 陰影可見斑駁，不建議；保守建議 Q75／A100，matched alpha=0，假設五態 174,308／152,194 bytes，餘 22,300／44,414，不保證七態。十一項真實結構／phase／alpha／品質／單檔／metadata 負控制拒絕並 finally 17 檔精確還原；兩 viewport 四方案原生循環超過 4.4 秒、PNG／reduce／淺深色／版面／console 通過，實際 Asia/Taipei，板與截圖目視。產品相對 DP-199 零差異，App 尚未採用、來源／預算／0.4.3／v4／18 migrations／公告／部署不變；依賴依序合併後從最新 main 發自己的 PR，四 CI／完成審查過才合併，採用另 DP-201。擁有者品質與真機驗收、DP-171／172／041 未完成。
 
 - **保留 alpha 的 PNG 接入（DP-199，2026-10-25）：** App 六張靜態 PNG 逐 byte 採 DP-198 RGB128，動畫／registry／播放政策不變，idle PNG 仍共用；五態貓 190,980／飛碟 167,288 bytes，省 5,306／6,557，每款 192 KiB／PNG 16 KiB 不變。來源 Node 查候選 eligible／bytes／SHA，六次反向舊 PNG 皆拒絕並 finally 精確還原；DP-198 歷史 manifest／原圖不回寫。1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 Chromium 28＋WebKit 8；兩 viewport 淺深色 PNG idle／grab／sleep、六圖原生 alpha 120／60px 差異 0、60px／焦點／資料／console 通過，截圖目視，實際時區列印。完整 [採用與驗證紀錄](docs/pet-static-png-adoption.md)。依賴 PR 合併後移至最新 main 發獨立 PR，自己的最新四 CI／完成審查後才合併；不代表七態、色彩／動作品質的擁有者驗收或真機完成。0.4.3／v4／18 migrations／公告／部署不變，下方未採用與舊數字為歷史。
 

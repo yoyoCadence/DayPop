@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DP-200 循環動畫編碼比較</title><link rel="icon" href="data:,">
+<style>
+:root{font-family:system-ui,sans-serif;color:#182037;background:#f5f3ee;color-scheme:light}*{box-sizing:border-box}body{max-width:1200px;margin:0 auto;padding:24px}h1{font-size:clamp(24px,4vw,36px);margin:0 0 12px}p{line-height:1.7}header{margin-bottom:24px}nav{display:flex;gap:12px;flex-wrap:wrap;align-items:center}button,select{font:inherit;padding:9px 12px;border:1px solid #8791a4;border-radius:8px;background:#fff;color:#182037}button:focus-visible,select:focus-visible{outline:3px solid #2677e5;outline-offset:3px}main{display:grid;gap:20px}article{border:1px solid #bec5d0;border-radius:16px;background:#fff;padding:20px}h2{margin:0 0 12px;font-size:22px}.comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:20px}.samples{display:flex;gap:8px;align-items:center;min-height:140px}.samples img:first-child{width:120px;height:120px}.samples img:last-child{width:60px;height:60px}.caption{color:#566176;font-size:14px;line-height:1.6}.status{font-weight:600}.summary{padding:14px;border-radius:10px;background:#e8edf4}body.dark{background:#111827;color:#f3f4f6;color-scheme:dark}body.dark article{background:#1a2332;border-color:#566176}body.dark .caption{color:#becadb}body.dark .summary{background:#253044}@media(max-width:480px){body{padding:16px}article{padding:16px}}
+</style>
+<header><h1>循環動畫編碼比較</h1><p>DP-200 · 候選尚未接入 App。對照原 10fps、目前約 5fps Q85，以及相同取樣與時序的編碼候選。每組顯示真正 120px 與 60px；瀏覽器各圖片起播可能不同步，精確比較見離線時間點量測與對照板。</p>
+<nav><label>候選 <select aria-label="候選"><option value="q75a100">保守建議 Q75 / alpha 100</option><option value="q55a100">比較 Q55 / alpha 100</option><option value="q55a70">比較 Q55 / alpha 70</option><option value="q35a50">僅數值合格 Q35 / alpha 50</option></select></label><button id="play">暫停，顯示 PNG</button><button id="theme">切換深色</button></nav>
+<p class="summary" id="summary" aria-live="polite">載入量測…</p><p>色彩與 alpha 皆可能有損。MAE／安全區通過不代表感知等價、擁有者已驗收、七態預算完成或真機效能改善。</p></header><main></main>
+<script type="module">
+const root = document.querySelector('main'), select = document.querySelector('select'), play = document.querySelector('#play');
+const manifest = await (await fetch('manifest.json')).json();
+let running = true, generation = 0;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+function render(){
+  root.replaceChildren();
+  const plan = select.value, moving = running && !reduce.matches;
+  const totals=[];
+  for(const char of manifest.characters){
+    let total=char.baselinePackageBytes;
+    for(const state of ['idle','sleep']){
+      const clip=char.clips[state], candidate=clip.candidates[plan];
+      total+=candidate.bytes-clip.reference.bytes;
+      const original=(state==='sleep'?'../../2026-10-24/sleep/':'../../2026-10-23/motion/')+'previews/'+char.id+'/'+state+'.q85.webp';
+      const still='../static-encoding/candidates/'+char.id+'/'+state+'-rgb128.png';
+      const article=document.createElement('article');
+      const heading=document.createElement('h2');heading.textContent=(char.id==='moon_cat'?'月光貓':'軌道噗')+' · '+state;article.append(heading);
+      const comparison=document.createElement('div');comparison.className='comparison';
+      for(const [label,url,bytes] of [['原 10fps',original,null],['目前 Q85/A100',clip.reference.path,clip.reference.bytes],['候選 '+plan,candidate.path,candidate.bytes]]){
+        const group=document.createElement('section'), title=document.createElement('h3');title.textContent=label;group.append(title);
+        const samples=document.createElement('div');samples.className='samples';
+        for(const size of [120,60]){const img=new Image();img.alt=label+' '+size+'px';img.src=moving?url+'?play='+generation:still;img.width=size;img.height=size;samples.append(img);}group.append(samples);
+        const note=document.createElement('p');note.className='caption';note.textContent=(bytes===null?'原始來源':bytes.toLocaleString()+' bytes')+' · '+(moving?'4.4 秒循環':'PNG 靜態替代');group.append(note);comparison.append(group);
+      }
+      article.append(comparison);
+      const status=document.createElement('p');status.className='status';status.textContent=!candidate.eligible?'量測不合格，不採用':plan==='q35a50'?'數值合格；120px 可見斑駁，不作建議':plan==='q75a100'?'保守建議；品質仍待擁有者目視確認':'數值合格，保留比較；品質仍待目視確認';article.append(status);
+      const detail=document.createElement('p');detail.className='caption';detail.textContent='最大時間點 MAE：'+Math.max(...Object.entries(candidate.measurement).filter(([key])=>key.includes('MaxTimelineMAE')).map(([,value])=>value)).toFixed(6)+'；'+candidate.measurement.decodedFrames+' 個解碼幀，總長 4.4 秒；120／60px 安全區 '+(candidate.measurement.alphaSafe120&&candidate.measurement.alphaSafe60?'通過':'失敗');article.append(detail);root.append(article);
+    }
+    totals.push((char.id==='moon_cat'?'月光貓':'軌道噗')+' 假設五態 '+total.toLocaleString()+' bytes，餘 '+(196608-total).toLocaleString());
+  }
+  document.querySelector('#summary').textContent=totals.join('；')+'。'+(reduce.matches?'系統減少動態：顯示真正 PNG。':'');
+  play.textContent=running?'暫停，顯示 PNG':'播放／重新起播';
+}
+select.addEventListener('change',()=>{generation++;render()});
+play.addEventListener('click',()=>{running=!running;generation++;render()});
+document.querySelector('#theme').addEventListener('click',()=>{const dark=document.body.classList.toggle('dark');document.querySelector('#theme').textContent=dark?'切換淺色':'切換深色'});
+reduce.addEventListener('change',render);
+render();
+</script>
+</html>
