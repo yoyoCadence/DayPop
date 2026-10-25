@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DP-202 放鬆坐姿試作</title><link rel="icon" href="data:,">
+<style>
+:root{font-family:system-ui,sans-serif;color:#182037;background:#f5f3ee;color-scheme:light}*{box-sizing:border-box}body{max-width:1160px;margin:auto;padding:24px}h1{font-size:clamp(24px,4vw,36px);margin:0 0 12px}p{line-height:1.7}button{font:inherit;min-height:44px;padding:9px 14px;border:1px solid #68738a;border-radius:8px;background:#fff;color:#182037}button:focus-visible{outline:3px solid #2677e5;outline-offset:3px}main{display:grid;gap:24px;margin-top:24px}article{border:1px solid #aeb7c5;border-radius:16px;padding:20px}h2{margin:0 0 16px}.comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px}.samples{display:flex;gap:16px;align-items:center;min-height:130px}.samples img:first-child{width:120px;height:120px}.samples img:last-child{width:60px;height:60px}.note{font-size:14px;color:#48546b}.budget{border-top:1px solid #aeb7c5;padding-top:16px}body.dark{color:#f3f4f6;background:#111827;color-scheme:dark}body.dark .note{color:#c1cad8}@media(max-width:480px){body{padding:16px}article{padding:16px}}
+a{color:#2458ad}body.dark a{color:#a3c8ff}html:has(body.dark){background:#111827;color-scheme:dark}
+</style>
+<header><h1>放鬆坐姿試作</h1><p>DP-202 · 沿已採用的造型，試作靜態 sit：貓放鬆身體與前爪、微垂頭眼；軌道噗降低懸浮高度、保持環帶水平。這是新姿勢的比較，尚未接入 App，也不代表擁有者已驗收。</p><button id="theme" aria-pressed="false">切換深色</button><p class="note">每組為原生 120px 與實際顯示 60px。兩個候選皆為靜態 PNG；RGB128 保留完整 alpha，色彩有損。數值合格不代表感知等價。</p></header>
+<main aria-label="兩款姿勢比較"></main>
+<footer><p>walk 尚未製作。六態餘額只是實檔相加，不能證明第七態可裝入；貓目前是融合後肢的坐姿模型，完整步態需要先處理原生模型／控制方式。<a href="README.md">製作、驗證與 walk 可行性紀錄</a></p></footer>
+<script type="module">
+const manifest = await (await fetch('manifest.json')).json();
+const main = document.querySelector('main');
+for (const char of manifest.characters) {
+  const article = document.createElement('article');
+  const title = document.createElement('h2');
+  title.textContent = char.id === 'moon_cat' ? '月光貓' : '軌道噗'; article.append(title);
+  const comparison = document.createElement('div'); comparison.className = 'comparison';
+  for (const [name, url, bytes] of [
+    ['原始 idle 首幀', char.idleReference, null],
+    ['原生 sit', char.candidates.originalPng.path, char.candidates.originalPng.bytes],
+    ['sit RGB128／完整 alpha', char.candidates.rgb128.path, char.candidates.rgb128.bytes],
+  ]) {
+    const section = document.createElement('section');
+    const heading = document.createElement('h3'); heading.textContent = name; section.append(heading);
+    const samples = document.createElement('div'); samples.className = 'samples';
+    for (const size of [120, 60]) {
+      const img = new Image(); img.src = url; img.alt = title.textContent + ' ' + name + ' ' + size + 'px';
+      img.width = size; img.height = size; samples.append(img);
+    }
+    section.append(samples);
+    const note = document.createElement('p'); note.className = 'note';
+    note.textContent = bytes === null ? '發布的 DP-187 來源，沒有改寫。' : bytes.toLocaleString() + ' bytes · 120／60px alpha 與原渲染相同，安全區通過。';
+    section.append(note); comparison.append(section);
+  }
+  article.append(comparison);
+  const budget = document.createElement('p'); budget.className = 'budget';
+  budget.textContent = '假設五態包再加 sit RGB128：' + char.candidates.rgb128.sixStatePackageBytes.toLocaleString() + ' bytes，192 KiB 尚餘 ' + char.remainingWithRgb128.toLocaleString() + ' bytes。這不是 App 已採用的六態包。';
+  article.append(budget); main.append(article);
+}
+document.querySelector('#theme').addEventListener('click', event => {
+  const dark = document.body.classList.toggle('dark');
+  event.currentTarget.textContent = dark ? '切換淺色' : '切換深色';
+  event.currentTarget.setAttribute('aria-pressed', String(dark));
+});
+</script>
+</html>

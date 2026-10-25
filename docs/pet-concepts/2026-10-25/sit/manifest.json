@@ -1,0 +1,239 @@
+{
+  "task": "DP-202",
+  "productionReady": false,
+  "appIntegrated": false,
+  "appearanceApproved": true,
+  "sitPoseApproved": false,
+  "sourceCommit": "0a0f3de91531b8c5f4c821ccc7455195d1a54099",
+  "characters": [
+    {
+      "id": "moon_cat",
+      "source": "source/moon_cat.blend",
+      "frame": "frames/moon_cat/sit.png",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.511463165283203
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.911015033721924
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.5058555603027344
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.84218692779541
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.10000000149011612
+      ],
+      "inputSource": "../../2026-10-23/motion/source/moon_cat.blend",
+      "inputSourceSha256": "447e18da4ec3d9187ff13d0b542cc70ac22fe284537fe43e7f90cbebbcceca06",
+      "idleReference": "../../2026-10-23/motion/frames/moon_cat/idle/000.png",
+      "idleReferenceSha256": "08a09824544db6523272f1d4b50b5b01bd7495a90d035bbb3fd8ef8d5e29319a",
+      "candidates": {
+        "originalPng": {
+          "path": "previews/moon_cat/sit.png",
+          "bytes": 13302,
+          "sha256": "bbe3528ccedf76eb915e970f408c509c49dba4ed63a1c8ac4876b00ba57889c1",
+          "measurement": {
+            "alphaSafe120": true,
+            "alphaBox120": [
+              22,
+              15,
+              99,
+              107
+            ],
+            "maxAlphaError120": 0,
+            "lightMeanAbsoluteError120": 0.0,
+            "darkMeanAbsoluteError120": 0.0,
+            "alphaSafe60": true,
+            "alphaBox60": [
+              9,
+              5,
+              51,
+              56
+            ],
+            "maxAlphaError60": 0,
+            "lightMeanAbsoluteError60": 0.0,
+            "darkMeanAbsoluteError60": 0.0
+          },
+          "sixStatePackageBytes": 187610,
+          "eligible": true
+        },
+        "rgb128": {
+          "path": "previews/moon_cat/sit-rgb128.png",
+          "bytes": 11540,
+          "sha256": "ca382dc53dd0d5f825b6fff71be37beea95310ee56e0b43d82fff5d38301c2a9",
+          "measurement": {
+            "alphaSafe120": true,
+            "alphaBox120": [
+              22,
+              15,
+              99,
+              107
+            ],
+            "maxAlphaError120": 0,
+            "lightMeanAbsoluteError120": 0.0024372730573710964,
+            "darkMeanAbsoluteError120": 0.0024381808278867104,
+            "alphaSafe60": true,
+            "alphaBox60": [
+              9,
+              5,
+              51,
+              56
+            ],
+            "maxAlphaError60": 0,
+            "lightMeanAbsoluteError60": 0.0018856209150326798,
+            "darkMeanAbsoluteError60": 0.0018845315904139433
+          },
+          "sixStatePackageBytes": 185848,
+          "eligible": true
+        }
+      },
+      "preview60": "previews/moon_cat/sit-60.png",
+      "baselinePackageBytes": 174308,
+      "characterLimitBytes": 196608,
+      "remainingWithRgb128": 10760,
+      "sha256": {
+        "source/moon_cat.blend": "5ef4c7a8738372312b5791eddf5f66be51f47631730d4adae24864354199ff08",
+        "frames/moon_cat/sit.png": "bbe3528ccedf76eb915e970f408c509c49dba4ed63a1c8ac4876b00ba57889c1",
+        "previews/moon_cat/sit-60.png": "308f28f70ebe6c72d17db0be15d3083d097bdca633fefaa4c40fde6b6453551d",
+        "previews/moon_cat/sit.png": "bbe3528ccedf76eb915e970f408c509c49dba4ed63a1c8ac4876b00ba57889c1",
+        "previews/moon_cat/sit-rgb128.png": "ca382dc53dd0d5f825b6fff71be37beea95310ee56e0b43d82fff5d38301c2a9"
+      }
+    },
+    {
+      "id": "orbit_ufo",
+      "source": "source/orbit_ufo.blend",
+      "frame": "frames/orbit_ufo/sit.png",
+      "camera": {
+        "matrix": [
+          [
+            0.9244385957717896,
+            -0.10190866887569427,
+            0.3674614727497101,
+            3.2951273918151855
+          ],
+          [
+            0.3813309669494629,
+            0.24705128371715546,
+            -0.8908155560493469,
+            -7.92947244644165
+          ],
+          [
+            5.448690387765964e-09,
+            0.9636287093162537,
+            0.2672446668148041,
+            3.741791009902954
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "scale": 2.9822332859039307
+      },
+      "anchor": [
+        0.0,
+        0.0,
+        0.6200000047683716
+      ],
+      "inputSource": "../../2026-10-23/motion/source/orbit_ufo.blend",
+      "inputSourceSha256": "07be401cc7810d5825493da05a066724524073e29a1cfe8872f00df165bff684",
+      "idleReference": "../../2026-10-23/motion/frames/orbit_ufo/idle/000.png",
+      "idleReferenceSha256": "e8e81c3278eb8ee735db8990cd5dbe485a0e7d98378118d988a8afd223ff94ac",
+      "candidates": {
+        "originalPng": {
+          "path": "previews/orbit_ufo/sit.png",
+          "bytes": 10337,
+          "sha256": "daf2c252c31dbb317c7dad15fa051e131be6c6a651ec50d779841ada1755fae3",
+          "measurement": {
+            "alphaSafe120": true,
+            "alphaBox120": [
+              13,
+              29,
+              108,
+              95
+            ],
+            "maxAlphaError120": 0,
+            "lightMeanAbsoluteError120": 0.0,
+            "darkMeanAbsoluteError120": 0.0,
+            "alphaSafe60": true,
+            "alphaBox60": [
+              4,
+              12,
+              56,
+              50
+            ],
+            "maxAlphaError60": 0,
+            "lightMeanAbsoluteError60": 0.0,
+            "darkMeanAbsoluteError60": 0.0
+          },
+          "sixStatePackageBytes": 162531,
+          "eligible": true
+        },
+        "rgb128": {
+          "path": "previews/orbit_ufo/sit-rgb128.png",
+          "bytes": 8175,
+          "sha256": "0517a9b23d5e41c2f9fccd8dee573a984a7df36dafe90ae3bf69874581fe7bc7",
+          "measurement": {
+            "alphaSafe120": true,
+            "alphaBox120": [
+              13,
+              29,
+              108,
+              95
+            ],
+            "maxAlphaError120": 0,
+            "lightMeanAbsoluteError120": 0.002386710239651416,
+            "darkMeanAbsoluteError120": 0.0023862563543936093,
+            "alphaSafe60": true,
+            "alphaBox60": [
+              4,
+              12,
+              56,
+              50
+            ],
+            "maxAlphaError60": 0,
+            "lightMeanAbsoluteError60": 0.0017037037037037038,
+            "darkMeanAbsoluteError60": 0.0017011619462599854
+          },
+          "sixStatePackageBytes": 160369,
+          "eligible": true
+        }
+      },
+      "preview60": "previews/orbit_ufo/sit-60.png",
+      "baselinePackageBytes": 152194,
+      "characterLimitBytes": 196608,
+      "remainingWithRgb128": 36239,
+      "sha256": {
+        "source/orbit_ufo.blend": "acc59096ef2803d60835575306196f50c60e19fc41d6aece02a4d12a8ffa0d0a",
+        "frames/orbit_ufo/sit.png": "daf2c252c31dbb317c7dad15fa051e131be6c6a651ec50d779841ada1755fae3",
+        "previews/orbit_ufo/sit-60.png": "706a028d3c3ffc76da514b70fbb20c9cc84643e7b1fb757e7d74a90a03470bff",
+        "previews/orbit_ufo/sit.png": "daf2c252c31dbb317c7dad15fa051e131be6c6a651ec50d779841ada1755fae3",
+        "previews/orbit_ufo/sit-rgb128.png": "0517a9b23d5e41c2f9fccd8dee573a984a7df36dafe90ae3bf69874581fe7bc7"
+      }
+    }
+  ],
+  "preparationCommit": "250ee98e65900842dafed344f323c1ee52bad540"
+}
