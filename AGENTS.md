@@ -26,6 +26,10 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+> **最新合併基底（2026-10-25）：** DP-196 PR #191 head `e9d40a5` 四項 CI、完成審查無發現／無未解決討論後合併 `4ef75ce`；run `40145125378`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-197 已移至此最新 main，只送完成回饋與驗證，沒有部署。
+
+- **已確認待辦完成回饋（DP-197，2026-10-25）：** `toggleTodo` 確認目標完成後，向操作發起時已訂閱且確認時仍存在的角色送無 payload 訊號；各 DataProvider 獨立，跨頁／帳號不繼承，取消／失敗／缺 id／載入／同步／匯入不發。泡泡／look／grab／隱藏／背景／收起直接丟棄，idle／sleep 才單次 jump，PNG／reduce 正常結束，舊 cue 不清新 cue。1,402 單元＋29 Node、lint／typecheck／build／check:build，相關 e2e 去重 44 passed／2 既有 skipped、六組反向控制拒絕後精確還原；兩 viewport 淺深色原生計時約 1 秒、60px／焦點／資料／console 通過並目視，production 首次離線缺 jump 仍保存完成、回 idle，reload 不補播。詳 [契約、證據與限制](docs/pet-completion-feedback.md)。以 #191 registry 依賴準備，發 PR 前移至最新 main，最新四 CI／審查後才合併。圖片／0.4.3／v4／18 migrations／公告／部署不變；新動作品質未冒充擁有者驗收，七態／選角／XP 未完成。
+
 > **最新合併基底（2026-10-25）：** DP-195 PR #190 head `20e3dc4` 四項 CI 與完成審查無發現、無未解決討論後合併 `dcd8986`。run `40143777448`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-196 已移至此 main，只送兩張 jump 與 registry／預算守門；沒有部署。
 
 > **最新合併基底（2026-10-25）：** DP-194 PR #189 head `6d5a15e` 四 CI 全過；審查停滯逾 9 小時，重新 Ready 後同一 head 完成無發現、無未解決討論，才合併 `1227676`。run `40101980156`，Chromium 275 passed／13 skipped、WebKit 7 passed。DP-195 已移至此 main，只送編碼評估；沒有部署。

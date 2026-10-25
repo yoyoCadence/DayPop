@@ -1,6 +1,6 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DataTransferError } from '../domain/dataTransfer';
 import type { DayPopUserData } from '../domain/types';
 import { LocalDataBlockedError, LocalDayPopRepository } from '../storage/localRepository';
@@ -80,6 +80,80 @@ function asyncRepository(data: DayPopUserData): DayPopRepository {
 }
 
 describe('DataProvider', () => {
+  it('notifies only confirmed target completions in serialized toggles, without parent or missing-id feedback', async () => {
+    const repository = new LocalDayPopRepository(new MemoryStorage());
+    await repository.load();
+    const parent = (await repository.addTodo({ title: '父', date: '2026-10-25' })).todos[0]!;
+    const child = (await repository.addTodo({ title: '子', date: '2026-10-25', parentId: parent.id })).todos[1]!;
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    const completed = vi.fn();
+    expect(latest().todoCompletions).toBeDefined();
+    const unsubscribe = latest().todoCompletions!.subscribe(completed);
+    await act(async () => {
+      const actions = latest().actions;
+      await Promise.all([actions.toggleTodo(child.id), actions.toggleTodo(child.id), actions.toggleTodo(parent.id), actions.toggleTodo('missing')]);
+    });
+    expect(completed).toHaveBeenCalledTimes(2);
+    expect(latest().state).toMatchObject({ status: 'ready', data: { todos: [{ completedAt: expect.any(String) }, { completedAt: null }] } });
+    await repository.toggleTodo(child.id);
+    await act(async () => latest().refresh());
+    expect(completed).toHaveBeenCalledTimes(2);
+    unsubscribe();
+    await act(async () => { await latest().actions.toggleTodo(parent.id); await latest().actions.toggleTodo(parent.id); });
+    expect(completed).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits for save, drops failure, and never hands pending feedback to a new subscriber', async () => {
+    const local = new LocalDayPopRepository(new MemoryStorage());
+    await local.load();
+    const data = await local.addTodo({ title: '遠端', date: '2026-10-25' });
+    const id = data.todos[0]!.id;
+    const saved = { ...data, todos: data.todos.map(todo => ({ ...todo, completedAt: '2026-10-25T00:00:00.000Z' })) };
+    const repository = asyncRepository(data);
+    let resolve!: (data: DayPopUserData) => void;
+    let reject!: (error: Error) => void;
+    repository.toggleTodo = () => new Promise((yes, no) => { resolve = yes; reject = no; });
+    await render(<DataProvider repository={repository}><Probe /></DataProvider>);
+    const old = vi.fn(), next = vi.fn();
+    expect(latest().todoCompletions).toBeDefined();
+    const unsubscribe = latest().todoCompletions!.subscribe(old);
+    let pending!: Promise<void>;
+    await act(async () => { pending = latest().actions.toggleTodo(id); });
+    expect(old).not.toHaveBeenCalled();
+    await act(async () => { reject(new Error('refused')); await expect(pending).rejects.toThrow('refused'); });
+    expect(old).not.toHaveBeenCalled();
+    await act(async () => { pending = latest().actions.toggleTodo(id); });
+    unsubscribe();
+    const stopNext = latest().todoCompletions!.subscribe(next);
+    await act(async () => { resolve(saved); await pending; });
+    expect(old).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+    await act(async () => { pending = latest().actions.toggleTodo(id); });
+    await act(async () => { resolve(saved); await pending; });
+    expect(next).toHaveBeenCalledTimes(1);
+    stopNext();
+  });
+
+  it('discards completion after its data identity unmounts, including late subscriptions', async () => {
+    const local = new LocalDayPopRepository(new MemoryStorage());
+    await local.load();
+    const data = await local.addTodo({ title: '舊帳號', date: '2026-10-25' });
+    const repository = asyncRepository(data);
+    let resolve!: (data: DayPopUserData) => void;
+    repository.toggleTodo = () => new Promise(yes => { resolve = yes; });
+    await render(<DataProvider key="old" repository={repository}><Probe /></DataProvider>);
+    const old = vi.fn(), next = vi.fn();
+    expect(latest().todoCompletions).toBeDefined();
+    latest().todoCompletions!.subscribe(old);
+    let pending!: Promise<void>;
+    await act(async () => { pending = latest().actions.toggleTodo(data.todos[0]!.id); });
+    await render(<DataProvider key="new" repository={asyncRepository(data)}><Probe /></DataProvider>);
+    latest().todoCompletions!.subscribe(next);
+    await act(async () => { resolve({ ...data, todos: data.todos.map(todo => ({ ...todo, completedAt: '2026-10-25T00:00:00.000Z' })) }); await pending; });
+    expect(old).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it.each(['addEvent', 'updateEvent', 'replaceEventOccurrence', 'addTodo', 'toggleTodo', 'deleteEvent', 'cancelEventOccurrence', 'addCalendar', 'updateCalendar', 'deleteCalendar'] as const)('awaits %s, exposes refusal and allows the already queued write to continue (DP-133/134/141/189)', async (method) => {
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
     let reject!: (error: Error) => void;

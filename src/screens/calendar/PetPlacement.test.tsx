@@ -47,6 +47,70 @@ function press(key: string) { act(() => pet().dispatchEvent(new KeyboardEvent('k
 function pointer(type: string, x: number, y: number) {
   act(() => pet().dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y, button: 0, bubbles: true })));
 }
+function completionPet() {
+  let completed: (() => void) | undefined;
+  const source = { subscribe(listener: () => void) { completed = listener; return () => { completed = undefined; }; } };
+  act(() => root.render(<PetLayer petName="摩卡" todos={[]} todayKey="2026-10-25" greeted onGreeted={() => {}} onAddTodo={() => {}} onToggleTodo={() => {}} onDeleteTodo={() => {}} todoCompletions={source} />));
+  return () => act(() => completed?.());
+}
+const completionImageSource = () => pet()?.querySelector('img')?.getAttribute('src');
+it('plays confirmed completion once from idle, restores idle after decode, and interrupts it on drag', async () => {
+  vi.useFakeTimers();
+  const complete = completionPet();
+  const before = localStorage.getItem('daypop.user-data');
+  complete();
+  expect(completionImageSource()).toMatch(/jump.*webp/);
+  await act(async () => pet().querySelector('img')!.dispatchEvent(new Event('load')));
+  act(() => vi.advanceTimersByTime(1000));
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+  complete();
+  pointer('pointerdown', 50, 550); pointer('pointermove', 150, 350);
+  expect(completionImageSource()).toMatch(/grab.*png/);
+  complete();
+  pointer('pointerup', 150, 350);
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+  expect(localStorage.getItem('daypop.user-data')).toBe(before);
+});
+it('drops completion during bubble, look, collapse and background without later replay', async () => {
+  vi.useFakeTimers();
+  const complete = completionPet();
+  open(); complete();
+  expect(completionImageSource()).toMatch(/idle.*png/);
+  clickText('✕'); complete();
+  expect(completionImageSource()).toMatch(/look.*webp/);
+  await act(async () => pet().querySelector('img')!.dispatchEvent(new Event('load')));
+  act(() => vi.advanceTimersByTime(1600));
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+  open(); clickText('收起夥伴'); complete();
+  act(() => tab().click());
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+  const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  complete();
+  hidden.mockRestore();
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+});
+it('wakes sleep for completion, restarts a new cue, and discards a covered pending jump', async () => {
+  act(() => root.render(null));
+  vi.useFakeTimers();
+  const complete = completionPet();
+  act(() => vi.advanceTimersByTime(120000));
+  expect(completionImageSource()).toMatch(/sleep.*webp/);
+  complete();
+  await act(async () => pet().querySelector('img')!.dispatchEvent(new Event('load')));
+  act(() => vi.advanceTimersByTime(500));
+  complete();
+  await act(async () => pet().querySelector('img')!.dispatchEvent(new Event('load')));
+  act(() => vi.advanceTimersByTime(500));
+  expect(completionImageSource()).toMatch(/jump.*webp/);
+  await act(async () => host.querySelector('input')!.focus());
+  expect(artwork()).toBeNull();
+  complete();
+  await act(async () => host.querySelector('input')!.blur());
+  act(() => vi.advanceTimersByTime(5000));
+  expect(completionImageSource()).toMatch(/idle.*webp/);
+});
 it('collapses to a focused edge tab and expands to the character, saving UI state only', () => {
   const data = localStorage.getItem('daypop.user-data');
   const resting = pet().style.transform.match(/-?[\d.]+/g)!.map(Number);

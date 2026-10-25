@@ -1,5 +1,6 @@
 import { expect, test as base, type Page } from '@playwright/test';
 import { backupData } from './fixtures/backupData';
+import { createEmptyUserData } from '../src/domain/types';
 import { buildProductionUpdates, startProductionUpdateSite, type ProductionUpdateSite } from './fixtures/productionUpdateSite';
 import { agendaRow, calendarViewButton, monitorBrowser, tabButton } from './support';
 
@@ -17,6 +18,60 @@ const guestKey = 'daypop.user-data';
 const seenKey = 'daypop.release-notes-seen';
 const fixedInstant = '2026-09-30T04:00:00.000Z';
 const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
+
+test('首次離線完成待辦缺 jump 圖片仍保存完成，回快取 idle 並在 reload 後不補播', async ({ page, context, site }) => {
+  const now = '2026-10-25T04:00:00.000Z';
+  const data = createEmptyUserData({ now });
+  data.preferences.timezone = 'Asia/Taipei';
+  data.todos = [{ id: '19700000-0000-4000-8000-000000000001', calendarId: data.calendars[0]!.id, parentId: null,
+    title: '離線完成回饋', dueDate: '2026-10-25', priority: 'none', sortOrder: 0, sharingScope: 'inherit', completedAt: null, createdAt: now, updatedAt: now }];
+  const problems: string[] = [], failed: string[] = [];
+  const path = [...site.builds.get(site.currentVersion)!.keys()].find(path => /^\/assets\/moon-cat-jump-.*\.webp$/.test(path));
+  expect(path).toBeTruthy();
+  const jumpUrl = `${site.origin}/DayPop${path}`, versionUrl = `${site.origin}/DayPop/version.json`;
+  const expectedFailures = [jumpUrl, versionUrl, `${versionUrl}?ts=${Date.parse(now)}`];
+  page.on('pageerror', error => problems.push(error.message));
+  page.on('console', message => {
+    if (!['error', 'warning'].includes(message.type())) return;
+    if (message.type() === 'error' && expectedFailures.includes(message.location().url) && message.text().startsWith('Failed to load resource:')) return;
+    problems.push(`${message.type()}: ${message.text()} (${message.location().url})`);
+  });
+  page.on('requestfailed', request => {
+    if (expectedFailures.includes(request.url())) failed.push(request.url());
+    else problems.push(`requestfailed: ${request.url()}`);
+  });
+  await page.clock.setFixedTime(new Date(now));
+  await page.goto(`${site.origin}/setup.html`);
+  await page.evaluate(({ data, now, version }) => {
+    localStorage.setItem('daypop.release-notes-seen', version);
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: now, data }));
+  }, { data, now, version: site.currentVersion });
+  await page.goto(`${site.origin}/DayPop/`);
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
+  await page.reload();
+  const pet = page.locator('button.cal-pet'), image = pet.locator('img');
+  await expect(image).toBeVisible();
+  const idleUrl = await image.evaluate(img => (img as HTMLImageElement).currentSrc);
+  await expect.poll(() => page.evaluate(async url => Boolean(await caches.match(url)), idleUrl)).toBe(true);
+  expect(await page.evaluate(async url => Boolean(await caches.match(url)), jumpUrl)).toBe(false);
+  await calendarViewButton(page, '列表').click();
+  await context.setOffline(true);
+  const row = agendaRow(page, '離線完成回饋');
+  await row.focus(); await row.press('Enter');
+  await expect.poll(() => failed.includes(jumpUrl)).toBe(true);
+  await expect(image).toHaveAttribute('src', /idle.*webp/); await expect(image).toBeVisible();
+  await expect(row).toBeFocused();
+  const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), guestKey);
+  expect(saved.data).toEqual({ ...data, todos: [{ ...data.todos[0], completedAt: now }] });
+  expect(saved.revision).toBe(1);
+  await page.reload();
+  await expect(image).toHaveAttribute('src', /idle.*webp/); await expect(image).toBeVisible();
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), guestKey)).toEqual(saved);
+  expect(failed.filter(url => url === jumpUrl)).toHaveLength(1);
+  expect(await page.evaluate(async url => Boolean(await caches.match(url)), jumpUrl)).toBe(false);
+  console.log('DP-197 production offline timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
+  expect(problems).toEqual([]);
+});
 
 test('寵物只有實際使用的素材進 runtime cache；離線首次缺 PNG 回靜態 CSS', async ({ page, context, site }) => {
   const problems: string[] = [];

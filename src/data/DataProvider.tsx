@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import { DataTransferError } from '../domain/dataTransfer';
 import { TodoInputError } from '../domain/todos';
 import { TitleInputError } from '../domain/titles';
@@ -16,6 +16,7 @@ import {
   type DayPopRepository,
 } from './repository';
 import { RemoteDataError } from './supabaseRepository';
+import { createTodoCompletionFeedback } from './todoCompletionFeedback';
 
 interface DataProviderProps {
   /** Injected by tests. Production uses the guest adapter — see below. */
@@ -39,6 +40,8 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
     [repository],
   );
   const [state, setState] = useState<DataState>(() => bootstrap(activeRepository));
+  const todoFeedback = useMemo(() => ({ repository: activeRepository, ...createTodoCompletionFeedback() }), [activeRepository]);
+  useLayoutEffect(() => () => todoFeedback.clear(), [todoFeedback]);
   // Bumping this re-runs the async load; the recovery screen uses it after a reset.
   const [generation, setGeneration] = useState(0);
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
@@ -230,7 +233,14 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         return confirmed(() => activeRepository.addTodo(input));
       },
       toggleTodo(id) {
-        return confirmed(() => activeRepository.toggleTodo(id));
+        const notify = todoFeedback.capture();
+        const result = enqueue(() => todoFeedback.repository.toggleTodo(id)).then(data => {
+          // The repository toggles only this row. A present, completed result
+          // therefore confirms an incomplete -> complete command, not a reload.
+          if (data.todos.find(todo => todo.id === id)?.completedAt != null) notify();
+        });
+        void result.catch(() => {});
+        return result;
       },
       async renameTodo(id, title,options) {
         await enqueue(() => activeRepository.renameTodo(id, title),options);
@@ -302,12 +312,13 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
         return activeRepository.createEventAttachmentUrl(id);
       },
     };
-  }, [activeRepository,askSharingConfirmation]);
+  }, [activeRepository,askSharingConfirmation,todoFeedback]);
 
   const value = useMemo<DataContextValue>(
     () => ({
       state,
       actions,
+      todoCompletions: todoFeedback.source,
       capabilities: { eventAttachments: canManageEventAttachments(activeRepository) },
       ...(canShareCalendars(activeRepository) && state.status==='ready'?{
         sharing:activeRepository.sharingSession(),personalData:activeRepository.personalData(),revalidateShares,
@@ -316,7 +327,7 @@ export function DataProvider({ children, repository }: PropsWithChildren<DataPro
       retainedSharingDrafts,keepSharingDraft,discardSharingDraft,
       refresh,
     }),
-    [actions, activeRepository, confirmation,refresh,revalidateShares,state,retainedSharingDrafts,keepSharingDraft,discardSharingDraft],
+    [actions, activeRepository, confirmation,refresh,revalidateShares,state,retainedSharingDrafts,keepSharingDraft,discardSharingDraft,todoFeedback],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

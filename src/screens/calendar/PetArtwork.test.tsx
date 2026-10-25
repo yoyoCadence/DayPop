@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 function render(pose: PetPose = 'idle', cue: number | null = null, paused = false, hidden = false) {
-  act(() => root.render(<PetArtwork pose={pose} cue={cue} paused={paused} hidden={hidden} onLookDone={done} />));
+  act(() => root.render(<PetArtwork pose={pose} cue={cue} paused={paused} hidden={hidden} onCueDone={done} />));
 }
 const image = () => host.querySelector<HTMLImageElement>('img')!;
 async function load() { await act(async () => image().dispatchEvent(new Event('load'))); }
@@ -32,10 +32,26 @@ it('registers the mixed five-state package for both keys; unmade poses keep CSS'
   expect(image()).toBeNull();
   expect(host.querySelector('.cal-pet-body')).not.toBeNull();
 });
+it('ends a jump once, one second after decode, and discards an invisible undecoded jump', async () => {
+  vi.useFakeTimers();
+  render('jump', 71);
+  act(() => vi.advanceTimersByTime(5000));
+  expect(done).not.toHaveBeenCalled();
+  await load();
+  act(() => vi.advanceTimersByTime(999));
+  expect(done).not.toHaveBeenCalled();
+  act(() => vi.advanceTimersByTime(1));
+  expect(done).toHaveBeenCalledExactlyOnceWith(71);
+  done.mockClear();
+  render('jump', 72);
+  render('jump', 72, false, true);
+  expect(done).toHaveBeenCalledExactlyOnceWith(72);
+  expect(image()).toBeNull();
+});
 for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
   it(`${kind} jump decodes, shares idle PNG, removes hidden images and falls back on failure`, async () => {
     const jump = (paused = false, hidden = false) => act(() => root.render(
-      <PetArtwork kind={kind} pose="jump" cue={null} paused={paused} hidden={hidden} onLookDone={done} />,
+      <PetArtwork kind={kind} pose="jump" cue={null} paused={paused} hidden={hidden} onCueDone={done} />,
     ));
     jump();
     expect(image()?.getAttribute('src')).toMatch(/jump.*webp/);
@@ -64,7 +80,7 @@ for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
   });
   it(`${kind} sleep decodes, uses its actual PNG when stopped, removes hidden images and falls back on failure`, async () => {
     const sleep = (paused = false, hidden = false) => act(() => root.render(
-      <PetArtwork kind={kind} pose="sleep" cue={null} paused={paused} hidden={hidden} onLookDone={done} />,
+      <PetArtwork kind={kind} pose="sleep" cue={null} paused={paused} hidden={hidden} onCueDone={done} />,
     ));
     sleep();
     expect(image()?.getAttribute('src')).toMatch(/sleep.*webp/);
@@ -125,25 +141,26 @@ it('reacts to reduced motion by replacing the native animation, including before
   act(() => { media.matches = false; media.dispatchEvent(new Event('change')); });
   expect(image().getAttribute('src')).toBe(url);
 });
-it('does not let an earlier look or an unmounted clock complete a later cue', async () => {
+it.each(['look', 'jump'] as const)('does not let an earlier %s or an unmounted clock complete a later cue', async pose => {
   vi.useFakeTimers();
-  render('look', 1); await load();
-  act(() => vi.advanceTimersByTime(800));
-  render('look', 2); await load();
-  act(() => vi.advanceTimersByTime(800));
+  const half = pose === 'look' ? 800 : 500;
+  render(pose, 1); await load();
+  act(() => vi.advanceTimersByTime(half));
+  render(pose, 2); await load();
+  act(() => vi.advanceTimersByTime(half));
   expect(done).not.toHaveBeenCalled();
-  act(() => vi.advanceTimersByTime(800));
+  act(() => vi.advanceTimersByTime(half));
   expect(done).toHaveBeenCalledExactlyOnceWith(2);
-  render('look', 3); await load();
+  render(pose, 3); await load();
   act(() => root.render(null));
   act(() => vi.advanceTimersByTime(5000));
   expect(done).toHaveBeenCalledTimes(1);
 });
-it('finishes a reduced-motion look as a still cue instead of keeping a deferred animation', async () => {
+it.each(['look', 'jump'] as const)('finishes a reduced-motion %s as a still cue instead of keeping a deferred animation', async pose => {
   vi.useFakeTimers(); media.matches = true;
-  render('look', 7); await load();
+  render(pose, 7); await load();
   expect(image().getAttribute('src')).toMatch(/idle.*png/);
-  act(() => vi.advanceTimersByTime(1600));
+  act(() => vi.advanceTimersByTime(pose === 'look' ? 1600 : 1000));
   expect(done).toHaveBeenCalledExactlyOnceWith(7);
 });
 it('falls back after a network error without removing the surrounding button or adding a message', () => {
@@ -153,11 +170,11 @@ it('falls back after a network error without removing the surrounding button or 
   expect(host.querySelector('.cal-pet-body')).not.toBeNull();
   expect(host.textContent).toBe('');
 });
-it('completes a failed look so a healthy idle asset can resume', async () => {
-  render('look', 8);
+it.each(['look', 'jump'] as const)('completes a failed %s so a healthy idle asset can resume', async pose => {
+  render(pose, 8);
   act(() => image().dispatchEvent(new Event('error')));
   expect(done).toHaveBeenCalledExactlyOnceWith(8);
-  render('look', 9);
+  render(pose, 9);
   Object.defineProperty(image(), 'decode', { value: () => Promise.reject(new Error('invalid look')) });
   await load();
   expect(done).toHaveBeenLastCalledWith(9);
@@ -169,8 +186,8 @@ it('discards a look hidden before decoding instead of replaying it on return', (
   expect(image()).toBeNull();
   expect(done).toHaveBeenCalledExactlyOnceWith(10);
 });
-it('discards a background look before decoding and removes its image request', () => {
-  render('look', 11);
+it.each(['look', 'jump'] as const)('discards a background %s before decoding and removes its image request', pose => {
+  render(pose, 11);
   const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
   try {
     act(() => document.dispatchEvent(new Event('visibilitychange')));

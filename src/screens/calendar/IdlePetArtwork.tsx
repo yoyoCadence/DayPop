@@ -12,7 +12,7 @@ function subscribeVisibility(change: () => void) {
 export function IdlePetArtwork({ kind, paused, hidden }: { kind?: PetKind; paused: boolean; hidden: boolean }) {
   const background = useSyncExternalStore(subscribeVisibility, () => document.hidden);
   return paused || hidden || background
-    ? <PetArtwork kind={kind} pose="idle" paused={paused} hidden={hidden} cue={null} onLookDone={ignoreLook} />
+    ? <PetArtwork kind={kind} pose="idle" paused={paused} hidden={hidden} cue={null} onCueDone={ignoreLook} />
     : <RestingPet kind={kind} />;
 }
 
@@ -39,5 +39,5 @@ function RestingPet({ kind }: { kind?: PetKind }) {
       for (const name of inputs) document.removeEventListener(name, wake, true);
     };
   }, []);
-  return <PetArtwork kind={kind} pose={sleeping ? 'sleep' : 'idle'} paused={false} cue={null} onLookDone={ignoreLook} />;
+  return <PetArtwork kind={kind} pose={sleeping ? 'sleep' : 'idle'} paused={false} cue={null} onCueDone={ignoreLook} />;
 }

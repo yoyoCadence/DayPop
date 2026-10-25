@@ -1,5 +1,7 @@
 # App 內浮動寵物小幫手素材規範 — In-App Pet Companion Asset Spec
 
+> **2026-10-25 回饋接線（DP-197）：** 五態現在可由已確認待辦完成觸發 jump，單次 1 秒、解碼後計時；reduce 用 PNG，忙碌／暫藏／背景不補播，沒有 XP／升級或新泡泡。來源、圖片體積及上限沿 DP-196，不代表七態已完成或新動作品質已經擁有者目視驗收。詳 [完成回饋紀錄](docs/pet-completion-feedback.md)，下方四態／無 cue 為歷史。
+
 > **2026-10-25 接入紀錄（DP-196）：** typed registry 已備 idle／look／grab／sleep／jump 五態；jump 新增貓 Q55/A70 與飛碟原 Q85 的完整十幀 1 秒 WebP，靜態共用 idle PNG，各款七實檔 196,286／173,845 bytes。每款仍 192 KiB，新 jump 單檔 32 KiB；App 仍只觸發四態，尚無跳躍 cue、待辦獎勵或 XP。新動作品質未宣稱擁有者已目視驗收，七態尚未完成；完整來源、反向驗證與限制見 [接入紀錄](docs/pet-assets-integration.md)。下方各輪狀態保留為歷史。
 
 > **2026-10-24 現況（DP-192–193）：** 已採 idle／sleep 約 5fps＋look 原 10fps 的混合包，各款六檔為貓 180,850／飛碟 152,373 bytes；每款仍 192 KiB、新 sleep 單檔 64 KiB，舊上限不變。App 月光貓前景閒置 120 秒後 sleep，輸入喚醒、暫藏／背景重新計時、泡泡／look／grab 優先，reduce 使用 PNG。這是依持續開發授權由 agent 採用的政策；sleep 品質仍待擁有者目視驗收，完整七態／選角／XP 未完成。最新見 [播放政策](docs/pet-idle-sleep.md)與 [素材接入](docs/pet-assets-integration.md)；下方試作／歷史狀態不回寫。

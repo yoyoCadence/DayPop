@@ -705,6 +705,12 @@ App 採用另立 DP-196，只新增 typed jump registry 與 32 KiB 單檔守門�
 
 一般 App 不下載 jump；真實組件在隔離暫存頁驗原生單次／60px／共享 PNG／reduce／隱藏／錯圖 CSS，該頁已刪除。前景睡眠、look／grab、焦點、離線／資料契約不變。後續回饋接線另 PR，不加 XP／偏好／schema／公告／部署；新動作品質仍待擁有者目視確認，七態未完成。
 
+### 已確認待辦完成的單次回饋（DP-197，2026-10-25）
+
+沿素材規範的完成待辦 jump，只在 `toggleTodo` 的 repository 確認結果中目標 `completedAt` 非空時發出無 payload 訊號；依切換契約，該結果代表此次完成轉換，不能以 Promise resolve 或重載差異當成獎勵。取消、缺 id、失敗不發，父子獨立；載入／同步／匯入沒有發送接點。DataProvider 擁有訂閱範圍，命令發起時擷取項目，只通知確認時仍訂閱者，跨頁重新掛載與帳號切換不繼承。沒有資料 schema、全域事件、持久化、XP／升級、偏好或新泡泡。
+
+確認時背景／暫藏／收起／泡泡／look／grab 優先，略過即丟棄；idle／sleep 才播完整十幀 1 秒 jump，新命令用新 cue。共用 look 的解碼後單次時計、PNG／reduce／失敗／隱藏清理，舊 timer 不完成新 cue。資料 queue 與 `Promise<void>` 拒絕契約不變，角色不位移或搶焦點。完整 [跨頁、負控制、production 離線與真實畫面證據](pet-completion-feedback.md) 保留限制；0.4.3／v4／18 migrations／公告／部署不變，七態與擁有者動作品質驗收未完成。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
