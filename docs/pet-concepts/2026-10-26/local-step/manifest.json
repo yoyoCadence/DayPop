@@ -1,0 +1,181 @@
+{
+  "task": "DP-204",
+  "sourceCommit": "aab6561aa4599f8ff77a62c2fa436a8be57fca9b",
+  "appIntegrated": false,
+  "productionReady": false,
+  "ownerMotionApproved": false,
+  "fullCatWalkImplemented": false,
+  "id": "moon_cat",
+  "motion": "paw_step_local",
+  "inputSource": "../../2026-10-25/motion-feasibility/source/moon_cat.blend",
+  "inputSourceSha256": "ebf99c17b24e3e02ac1d2a68c126c8363b2717cd3adcf082211e897aaa8d79aa",
+  "source": "source/moon_cat.blend",
+  "camera": {
+    "matrix": [
+      [
+        0.9244385957717896,
+        -0.10190866887569427,
+        0.3674614727497101,
+        3.511463165283203
+      ],
+      [
+        0.3813309669494629,
+        0.24705128371715546,
+        -0.8908155560493469,
+        -7.911015033721924
+      ],
+      [
+        5.448690387765964e-09,
+        0.9636287093162537,
+        0.2672446668148041,
+        3.5058555603027344
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "scale": 2.84218692779541
+  },
+  "anchor": [
+    0.0,
+    0.0,
+    0.10000000149011612
+  ],
+  "frames": [
+    "frames/000.png",
+    "frames/001.png",
+    "frames/002.png",
+    "frames/003.png",
+    "frames/004.png",
+    "frames/005.png",
+    "frames/006.png",
+    "frames/007.png"
+  ],
+  "durationMs": 800,
+  "frameDurationMs": 100,
+  "closureFrame": 9,
+  "animatedControls": [
+    "CTRL / paw 0",
+    "CTRL / paw 1"
+  ],
+  "pillowVersion": "12.2.0",
+  "sixStateHypotheticalBytes": 185848,
+  "recommended": "q85",
+  "policy": {
+    "characterLimitBytes": 196608,
+    "qualityLimit": 0.008,
+    "indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "alphaQuality": 100
+  },
+  "candidates": {
+    "q85": {
+      "path": "previews/paw-step-local-q85.webp",
+      "bytes": 5932,
+      "sha256": "a5d733d56125b83e6fc9906f6e49e1577582bf352bfb11cbafa48ea19b9e4596",
+      "minimizeSize": true,
+      "measurement": {
+        "decodedFrames": 8,
+        "decodedDurationsMs": [
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ],
+        "durationMs": 800,
+        "maxMatchedFrameAlphaError": 0,
+        "alphaSafe120": true,
+        "maxTimelineAlphaError120": 0,
+        "lightMaxTimelineMAE120": 0.002933188090050835,
+        "lightWorstTimelineMs120": 500,
+        "darkMaxTimelineMAE120": 0.002930737109658678,
+        "darkWorstTimelineMs120": 500,
+        "alphaSafe60": true,
+        "maxTimelineAlphaError60": 0,
+        "lightMaxTimelineMAE60": 0.002218954248366013,
+        "lightWorstTimelineMs60": 500,
+        "darkMaxTimelineMAE60": 0.0022222222222222222,
+        "darkWorstTimelineMs60": 500
+      },
+      "qualityEligible": true,
+      "packageEligible": true,
+      "hypotheticalPackageBytes": 191780,
+      "remainingBytes": 4828
+    },
+    "q75": {
+      "path": "previews/paw-step-local-q75.webp",
+      "bytes": 4928,
+      "sha256": "8a6df50b9bfb7af19d23d2b28fe506cbf29070eb4d17d215a8598ec67fb8ff22",
+      "minimizeSize": true,
+      "measurement": {
+        "decodedFrames": 8,
+        "decodedDurationsMs": [
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ],
+        "durationMs": 800,
+        "maxMatchedFrameAlphaError": 0,
+        "alphaSafe120": true,
+        "maxTimelineAlphaError120": 0,
+        "lightMaxTimelineMAE120": 0.003912490922294844,
+        "lightWorstTimelineMs120": 0,
+        "darkMaxTimelineMAE120": 0.003910403050108932,
+        "darkWorstTimelineMs120": 0,
+        "alphaSafe60": true,
+        "maxTimelineAlphaError60": 0,
+        "lightMaxTimelineMAE60": 0.003,
+        "lightWorstTimelineMs60": 0,
+        "darkMaxTimelineMAE60": 0.0030083514887436456,
+        "darkWorstTimelineMs60": 0
+      },
+      "qualityEligible": true,
+      "packageEligible": true,
+      "hypotheticalPackageBytes": 190776,
+      "remainingBytes": 5832
+    }
+  },
+  "static": "previews/static.png",
+  "sha256": {
+    "source/moon_cat.blend": "fae9e8fb23144a0e6ee6c817522feeacfc5c41cdacc7681111dbd8772ce33662",
+    "frames/000.png": "3e463d5a88116e01462bbfb6e9e625702f1c3746233442261df5eee6267e4691",
+    "frames/001.png": "910fa9b278228b17c2b571bacb73f40b3f7325e4c046e5811ab7318de316e8ea",
+    "frames/002.png": "10b47e75af6e536cd7f87865f8c8d0bdca05c5744a4a2ff0651f37372463e501",
+    "frames/003.png": "5715671e506592647254a66ad58c161ad164515c00043b33983fdb996ac5e1b1",
+    "frames/004.png": "bc14ccf7dc05c18fb8de9bd0af4d04fcede9780562afc175a56a2fe9844a527c",
+    "frames/005.png": "e1632b26d2ff07d25d06b20b17ee15cdac2e12f0cf3bf89a742b1a7066f6c5f0",
+    "frames/006.png": "4eaeb66fb89eff393d34852f7a0f6a783cfee7720e9f05a3c52ae03ac1e52121",
+    "frames/007.png": "4bcf6b2bdf3a06e94d1b547e727824fec2d8405f629a3e48e585c050d1ebaf96",
+    "previews/static.png": "dc3d7cbffedf6954d732da3b5e9be3c4d0c337b50c0fe37b6c339b7e425b62fa"
+  }
+}

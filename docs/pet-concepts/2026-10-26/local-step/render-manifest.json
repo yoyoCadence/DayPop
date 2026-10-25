@@ -1,0 +1,64 @@
+{
+  "task": "DP-204",
+  "sourceCommit": "aab6561aa4599f8ff77a62c2fa436a8be57fca9b",
+  "appIntegrated": false,
+  "productionReady": false,
+  "ownerMotionApproved": false,
+  "fullCatWalkImplemented": false,
+  "id": "moon_cat",
+  "motion": "paw_step_local",
+  "inputSource": "../../2026-10-25/motion-feasibility/source/moon_cat.blend",
+  "inputSourceSha256": "ebf99c17b24e3e02ac1d2a68c126c8363b2717cd3adcf082211e897aaa8d79aa",
+  "source": "source/moon_cat.blend",
+  "camera": {
+    "matrix": [
+      [
+        0.9244385957717896,
+        -0.10190866887569427,
+        0.3674614727497101,
+        3.511463165283203
+      ],
+      [
+        0.3813309669494629,
+        0.24705128371715546,
+        -0.8908155560493469,
+        -7.911015033721924
+      ],
+      [
+        5.448690387765964e-09,
+        0.9636287093162537,
+        0.2672446668148041,
+        3.5058555603027344
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "scale": 2.84218692779541
+  },
+  "anchor": [
+    0.0,
+    0.0,
+    0.10000000149011612
+  ],
+  "frames": [
+    "frames/000.png",
+    "frames/001.png",
+    "frames/002.png",
+    "frames/003.png",
+    "frames/004.png",
+    "frames/005.png",
+    "frames/006.png",
+    "frames/007.png"
+  ],
+  "durationMs": 800,
+  "frameDurationMs": 100,
+  "closureFrame": 9,
+  "animatedControls": [
+    "CTRL / paw 0",
+    "CTRL / paw 1"
+  ]
+}

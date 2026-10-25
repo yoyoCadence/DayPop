@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DP-204 保留坐姿的局部步態</title><link rel="icon" href="data:,">
+<style>
+:root{font-family:system-ui,sans-serif;color:#182037;background:#f5f3ee;color-scheme:light}*{box-sizing:border-box}body{max-width:1160px;margin:auto;padding:24px}h1{font-size:clamp(24px,4vw,36px);margin:0 0 12px}p{line-height:1.7}nav{display:flex;gap:12px;flex-wrap:wrap}button{font:inherit;min-height:44px;padding:9px 14px;border:1px solid #68738a;border-radius:8px;background:#fff;color:#182037}button:focus-visible{outline:3px solid #2677e5;outline-offset:3px}main{margin-top:24px}article{border:1px solid #aeb7c5;border-radius:16px;padding:20px}h2{margin:0 0 16px}.comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px}.samples{display:flex;gap:16px;align-items:center;min-height:130px}.samples img:first-child{width:120px;height:120px}.samples img:last-child{width:60px;height:60px}.note{font-size:14px;color:#48546b}.status{font-weight:650}.reject{color:#a02b20}.strip{display:grid;grid-template-columns:repeat(auto-fit,60px);gap:16px}.strip figure{margin:0}.strip img{width:60px;height:60px}.strip figcaption{font-size:13px}a{color:#2458ad}body.dark{color:#f3f4f6;background:#111827;color-scheme:dark}body.dark .note{color:#c1cad8}body.dark .reject{color:#ffb4a8}body.dark a{color:#a3c8ff}html:has(body.dark){background:#111827;color-scheme:dark}@media(max-width:480px){body{padding:16px}article{padding:16px}}
+</style>
+<header><h1>保留坐姿的局部步態</h1><p>DP-204 · 沿已確認坐姿，保留 DP-203 相同的八個前爪取樣，固定頭／身體／尾巴。這是新動作範圍候選，節省來自減少部位變化；色彩仍有損，動作尚未經擁有者驗收，也未接入 App。</p><nav><button id="play">暫停，顯示 PNG</button><button id="theme" aria-pressed="false">切換深色</button></nav><p class="note" id="play-status" aria-live="polite"></p><p>全部 8 幀各 100ms，完整 0.8 秒循環。建議先比較較高品質 Q85：5,932 bytes，六態假設基線加此 WebP 為 191,780 bytes，低於 192 KiB；未含新獨立替代圖成本。</p></header>
+<main><article><h2>月光貓 · 原地交替前爪</h2><div class="comparison"></div><h3>局部方案的八個原始 PNG · 原生顯示 60px</h3><div class="strip"></div></article></main>
+<footer><p>保留坐姿、沒有新增後腿或站立模型。完整四肢行走與 App 位移／播放政策仍未實作。動畫各自起播，精確比較見同時間點的原生來源對照板。<a href="README.md">來源、量測與模型方案</a></p></footer>
+<script type="module">
+const m=await (await fetch('manifest.json')).json();
+const priorFolder='../../2026-10-25/motion-feasibility/';
+const prior=(await (await fetch(priorFolder+'manifest.json')).json()).characters.find(c=>c.id==='moon_cat');
+const comparison=document.querySelector('.comparison'),strip=document.querySelector('.strip'),play=document.querySelector('#play');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');let running=true,generation=0;
+function render(){
+  comparison.replaceChildren();strip.replaceChildren();const moving=running&&!reduce.matches&&!document.hidden;
+  for(const [label,item,url] of [
+    ['DP-203 全身回應 Q85',prior.candidates['q85-full'],priorFolder+prior.candidates['q85-full'].path],
+    ['局部 Q85 · 保守建議',m.candidates.q85,m.candidates.q85.path],
+    ['局部 Q75 · 比較',m.candidates.q75,m.candidates.q75.path],
+  ]){
+    const section=document.createElement('section'),heading=document.createElement('h3');heading.textContent=label;section.append(heading);
+    const samples=document.createElement('div');samples.className='samples';
+    for(const size of [120,60]){const img=new Image();img.src=moving?url+'?play='+generation:m.static;img.alt=label+' '+size+'px';img.width=img.height=size;samples.append(img);}section.append(samples);
+    const note=document.createElement('p');note.className='note';note.textContent=item.bytes.toLocaleString()+' bytes · 假設包 '+item.hypotheticalPackageBytes.toLocaleString()+' bytes';section.append(note);
+    const status=document.createElement('p');status.className='status'+(!item.packageEligible?' reject':'');status.textContent=item.packageEligible?'品質數值與假設總量通過；姿態仍待驗收':'品質數值通過，超出 192 KiB';section.append(status);comparison.append(section);
+  }
+  m.frames.forEach((path,index)=>{const figure=document.createElement('figure'),img=new Image(),caption=document.createElement('figcaption');img.src=path;img.alt='局部原始 '+index*100+'ms';img.width=img.height=60;caption.textContent=index*100+'ms';figure.append(img,caption);strip.append(figure);});
+  play.textContent=running?'暫停，顯示 PNG':'播放／重新起播';
+  document.querySelector('#play-status').textContent=reduce.matches?'系統減少動態：顯示真正 PNG。':moving?'瀏覽器原生 WebP 循環。':'目前顯示真正 PNG。';
+}
+play.addEventListener('click',()=>{running=!running;generation++;render()});reduce.addEventListener('change',render);document.addEventListener('visibilitychange',render);
+document.querySelector('#theme').addEventListener('click',event=>{const dark=document.body.classList.toggle('dark');event.currentTarget.textContent=dark?'切換淺色':'切換深色';event.currentTarget.setAttribute('aria-pressed',String(dark));});render();
+</script></html>
