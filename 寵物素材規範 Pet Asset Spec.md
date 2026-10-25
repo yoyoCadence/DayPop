@@ -1,5 +1,7 @@
 # App 內浮動寵物小幫手素材規範 — In-App Pet Companion Asset Spec
 
+> **2026-10-25 靜態 PNG 採用（DP-199）：** 六張 App PNG 採 DP-198 RGB128，原 alpha 完全保留、idle PNG 繼續共用，動畫與觸發政策不改。五態各款七實檔 190,980／167,288 bytes，仍每款 192 KiB／PNG 16 KiB。色彩有損、擁有者品質與完整七態仍未完成；詳 [來源、實檔與瀏覽器驗證](docs/pet-static-png-adoption.md)。下方舊體積為各階段歷史。
+
 > **2026-10-25 回饋接線（DP-197）：** 五態現在可由已確認待辦完成觸發 jump，單次 1 秒、解碼後計時；reduce 用 PNG，忙碌／暫藏／背景不補播，沒有 XP／升級或新泡泡。來源、圖片體積及上限沿 DP-196，不代表七態已完成或新動作品質已經擁有者目視驗收。詳 [完成回饋紀錄](docs/pet-completion-feedback.md)，下方四態／無 cue 為歷史。
 
 > **2026-10-25 接入紀錄（DP-196）：** typed registry 已備 idle／look／grab／sleep／jump 五態；jump 新增貓 Q55/A70 與飛碟原 Q85 的完整十幀 1 秒 WebP，靜態共用 idle PNG，各款七實檔 196,286／173,845 bytes。每款仍 192 KiB，新 jump 單檔 32 KiB；App 仍只觸發四態，尚無跳躍 cue、待辦獎勵或 XP。新動作品質未宣稱擁有者已目視驗收，七態尚未完成；完整來源、反向驗證與限制見 [接入紀錄](docs/pet-assets-integration.md)。下方各輪狀態保留為歷史。

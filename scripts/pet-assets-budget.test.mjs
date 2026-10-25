@@ -56,14 +56,15 @@ test('a missing or altered emitted jump asset fails even when the other six file
   assert((await checkPetAssets(source, files, limits)).problems.some(p => p.includes('moon-cat-jump.webp')));
 }));
 
-test('production images equal the published five-state package, including full-frame jump and shared PNGs', async () => {
+test('production images equal the published five-state package, including full-frame jump and exact-alpha shared PNGs', async () => {
   const root = new URL('../', import.meta.url);
   const old = 'docs/pet-concepts/2026-10-23/motion/';
   const sleep = 'docs/pet-concepts/2026-10-24/sleep/';
   const encoding = 'docs/pet-concepts/2026-10-24/encoding/';
   const jump = 'docs/pet-concepts/2026-10-24/jump/';
   const jumpEncoding = 'docs/pet-concepts/2026-10-24/jump-encoding/';
-  const manifests = await Promise.all([old, sleep, encoding, jump, jumpEncoding].map(async path => JSON.parse(await readFile(new URL(`${path}manifest.json`, root), 'utf8'))));
+  const staticEncoding = 'docs/pet-concepts/2026-10-25/static-encoding/';
+  const manifests = await Promise.all([old, sleep, encoding, jump, jumpEncoding, staticEncoding].map(async path => JSON.parse(await readFile(new URL(`${path}manifest.json`, root), 'utf8'))));
   for (const kind of ['moon_cat', 'orbit_ufo']) {
     const slug = kind.replace('_', '-');
     const candidates = manifests[2].characters.find(c => c.id === kind);
@@ -76,18 +77,17 @@ test('production images equal the published five-state package, including full-f
       ['look.webp', `${old}previews/${kind}/look.q85.webp`, manifests[0].characters.find(c => c.id === kind).sha256[`previews/${kind}/look.q85.webp`]],
       ['jump.webp', (kind === 'moon_cat' ? jumpEncoding : jump) + jumpFile, jumpHash],
       ...['idle', 'grab', 'sleep'].map(pose => {
-        const base = pose === 'sleep' ? sleep : old;
-        const manifest = manifests[pose === 'sleep' ? 1 : 0].characters.find(c => c.id === kind);
-        const path = `previews/${kind}/${pose}-static.png`;
-        return [`${pose}.png`, base + path, manifest.sha256[path]];
+        const candidate = manifests[5].characters.find(c => c.id === kind).states[pose].candidates.rgb128;
+        assert.equal(candidate.eligible, true, `${kind}-${pose} exact-alpha candidate`);
+        return [`${pose}.png`, staticEncoding + candidate.path, candidate.sha256];
       }),
     ]) {
       const bytes = await readFile(new URL(`src/assets/pets/${slug}-${file}`, root));
-      assert.deepEqual(bytes, await readFile(new URL(source, root)), `${slug}-${file} source bytes`);
+      assert(bytes.equals(await readFile(new URL(source, root))), `${slug}-${file} source bytes`);
       assert.equal(createHash('sha256').update(bytes).digest('hex'), hash, `${slug}-${file} published hash`);
       total += bytes.length;
     }
-    assert.equal(total, kind === 'moon_cat' ? 196286 : 173845);
+    assert.equal(total, kind === 'moon_cat' ? 190980 : 167288);
   }
 });
 test('missing, unhashed, duplicated or different build bytes fail closed', () => fixture(async ({ source, files }) => {
