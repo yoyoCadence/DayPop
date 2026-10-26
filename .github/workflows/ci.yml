@@ -102,6 +102,15 @@ jobs:
         run: npm ci
 
       # Playwright 的套件版號由 package-lock 固定；只下載對應的 Chromium。
+      # DP-210：Azure mirror 曾持續低速下載到 job 逾時；改用 runner 已有的
+      # 官方 Ubuntu fallback，保留原 sources／Signed-By 與所有測試門檻。
+      - name: Use Ubuntu archive for browser dependencies
+        run: |
+          test -f /etc/apt/apt-mirrors.txt
+          grep -Eq '^https://archive[.]ubuntu[.]com/ubuntu/([[:space:]]|$)' /etc/apt/apt-mirrors.txt
+          sudo sed -i '\#^http://azure\.archive\.ubuntu\.com/ubuntu/#d' /etc/apt/apt-mirrors.txt
+          grep -E '^https://(archive|security)[.]ubuntu[.]com/ubuntu/([[:space:]]|$)' /etc/apt/apt-mirrors.txt
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
@@ -137,6 +146,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # 同 Chromium：只避開退化的 Azure mirror，不跳過依賴或測試。
+      - name: Use Ubuntu archive for browser dependencies
+        run: |
+          test -f /etc/apt/apt-mirrors.txt
+          grep -Eq '^https://archive[.]ubuntu[.]com/ubuntu/([[:space:]]|$)' /etc/apt/apt-mirrors.txt
+          sudo sed -i '\#^http://azure\.archive\.ubuntu\.com/ubuntu/#d' /etc/apt/apt-mirrors.txt
+          grep -E '^https://(archive|security)[.]ubuntu[.]com/ubuntu/([[:space:]]|$)' /etc/apt/apt-mirrors.txt
 
       - name: Install WebKit
         run: npx playwright install --with-deps webkit
