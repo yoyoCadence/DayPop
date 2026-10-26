@@ -4,7 +4,7 @@
 
 canonical 來源仍是 [`../AGENTS.md`](../AGENTS.md) 與 [`../tasks.md`](../tasks.md)；這裡只寫部署本身。
 
-> **2026-10-26 新增日曆修正待套用（DP-209）：** 隔離本機真實 Auth／HTTP 發現第 18 檔 SELECT policy 會拒絕新增日曆的 RETURNING；第 19 檔候選只補本人 owner 判斷，10 檔 386 pgTAP／8 組本機 HTTP 與 types 已驗。遠端尚待擁有者 CLI，順序與限制見 [MCP handoff §0.15](supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。套用即可修正既有 0.4.4 的新增路徑，不需要重發前端；勿將下方入口 QA 當成新日曆真實服務已驗收。
+> **2026-10-26 新增日曆修正已套用（DP-209）：** PR #202 已合併 `c64292b`，擁有者完成第 19 檔 CLI 套用；只讀 postflight 確認 19 檔對齊、14 表全 RLS、46 policies／96 constraints／55 個 repo functions 與本機一致，遠端 public types 無 schema 差異。新增日曆的本人 SELECT 條件已生效，既有線上 0.4.4 不需重新部署；實際雙帳號操作仍依 [指引](shared-calendar-start.md) 留 DP-206 驗收。額外 event trigger、型別產生器差異及本機／遠端驗證界線見 [handoff §0.15](supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。沒有再次發布前端或修改歷史公告。
 
 > **2026-10-26 最新狀態（DP-205）：** 擁有者已明確授權發布 0.4.4「家庭日曆一起用」，Deploy staging #16／`40253002837` 從 `0629821` 完成四 gate＋build＋publish，線上已更新。真正 0.4.3 舊 client 經 UI 更新到 0.4.4、原資料 hash／行程不變；公開成品／Auth 入口與手機桌面 QA 已過。完整證據見 [發布驗證](deployment-verification-2026-10-26.md)，兩帳號可依 [指引](shared-calendar-start.md) 開始操作；真實雙帳號／OAuth／真機與 DP-034 正式放行仍分別保留。下方較早「目前狀態」及 §5.28 候選是當時的歷史。
 

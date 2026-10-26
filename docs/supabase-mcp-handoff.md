@@ -187,13 +187,15 @@ security 仍只有既有 Auth leaked-password WARN；performance 仍有 §0.13 �
 
 ## 0.15 DP-209 新增日曆 RETURNING 修正候選（2026-10-26）
 
+**已合併、擁有者已套用並完成只讀 postflight：** [PR #202](https://github.com/yoyoCadence/DayPop/pull/202) head `25e3434` 的 CI `40271811926` 四項全過（1,404 單元＋29 Node、386 pgTAP、WebKit 8、Chromium 287 passed／13 skipped），相同 head 審查完成無發現、無未解決討論後，合併為 `c64292b`。擁有者回報「已套用，19 檔對齊」；2026-10-26 agent 以 linked CLI 只讀 history／catalog／types／security advisor 獨立核對如下。DP-208 從此 main 接入 HTTP CI；下方八組及 pgTAP 均是本機證據。
+
 DP-208 的隔離本機 GoTrue／PostgREST／Kong／Postgres 真實 HTTP 驗證，在既有 18 檔 migration 上重現：正式 `SupabaseDayPopRepository.addCalendar()` 的 upsert RETURNING 回 `42501`。登入、本人行程保存已成功，失敗的是新日曆的回傳；不是以 fake client 推測的錯誤。既有 pgTAP 多先建立日曆再查詢，沒有覆蓋這個 statement。
 
 第 18 檔的 `calendars_read_authorized` 只呼叫 STABLE `calendar_access(id)`，其同 statement 快照看不到剛插入的日曆。第 19 檔 [`20261026044627_calendar_owner_insert_returning.sql`](../supabase/migrations/20261026044627_calendar_owner_insert_returning.sql) 只追加本人 `(select auth.uid()) = owner_id` 判斷；非本人仍經同一份 membership／明確分享 helper。依 [PostgreSQL 17 的快照契約](https://www.postgresql.org/docs/17/xfunc-volatility.html)，不需要改 helper volatility 或放寬其他帳號的存取。**不回寫已套用的第 18 檔。**
 
 本機專用 stack `DayPopHTTP208`（API 127.0.0.1:54331／DB 54332）由零重建 19 檔，10 檔 386 pgTAP 通過；新 10 項在舊 policy 先有 7 項失敗，再以 transaction 暫時還原舊 policy 同樣 7 項失敗，rollback 後新 owner predicate／固定假帳號零殘留已確認。generated public types 與已提交型別相同。保存於 `test/dp-208-sharing-http`／`9b9abfe` 的 HTTP 驗證器，以兩個真實本機 Auth session 走正式 family service／repository，8/8 通過：各自保存、新增日曆、受邀 Email、明確接受及分享、共同編輯／作者、private、衝突、view、撤權及重新登入。兩個隨機假帳號每次均 finally 清理；server key 僅留 Node 建立／清理 fixture，不傳前端或用於產品操作。這不是正式帳號／Email 寄達／Google OAuth／真機驗收。
 
-**遠端尚未套用，第 19 檔仍待擁有者 CLI。** 本輪 readonly linked migration list 已確認前 18 檔 local／remote 逐一相同，第 19 檔 remote 為空；沒有 MCP Supabase tools，未以其他專案 connector 代替，也沒有執行 remote DDL／reset／查改正式資料。依既有分工，自己的最新四 CI／完成審查後合併，再由擁有者執行：
+**以下 CLI 套用步驟已由擁有者完成，不需重跑 push。** 套用前 readonly linked migration list 曾確認前 18 檔相同、只有第 19 檔待推；正式 DDL 由擁有者執行，agent 沒有 remote DDL／reset／查改正式資料：
 
 ```powershell
 npx supabase migration list
@@ -203,7 +205,15 @@ npx supabase db push
 npx supabase migration list
 ```
 
-套用後應為 19 檔對齊、14 張 public 表全 RLS、46 policies；只有 `calendars_read_authorized` 的 qual 改變，其他 policies／functions／constraints／public types 不變。需再記錄遠端 metadata／types 與安全 rollback 證據，不能把本機結果當遠端通過。這是純 policy 修正，**目前已發布的 0.4.4 不需重新部署即可受益**；v4、App 版號與不可回寫公告均不動。DP-208 的 HTTP CI 接線接著獨立完成，DP-206 實帳號／真機仍保留。
+套用後只讀核對結果：
+
+- Linked migration list 正好 19 檔，逐檔 local／remote 相同，最新 `20261026044627`。14 張 public 表全部 RLS、46 policies；`calendars_read_authorized` 僅對 authenticated SELECT，qual 為本人 owner 或既有 `calendar_access(id)`。
+- 已用相同 catalog SELECT 對照專用本機 19 檔結果：14 表 RLS、46 policies 的 command／roles／qual／with-check、96 constraints 定義，以及 repo 的 55 個 public／daypop_family／daypop_private functions 的 arguments／body／SECURITY DEFINER／volatility／search_path／anon 與 authenticated execute 權限全部相同。比對只正規化 JSON key 順序及 CRLF；核對完已停止專用本機資料庫。
+- 遠端另有 repo 沒有的 `public.rls_auto_enable()`，掛在 postgres 擁有的 `ensure_rls` DDL event trigger，只處理 CREATE TABLE／CREATE TABLE AS／SELECT INTO；固定 pg_catalog path、anon／authenticated 無 execute。本輪未建立或變更它，不能宣稱其來源時間已驗證。其自動開啟 RLS 用途對應 [Supabase 官方 event trigger 說明](https://supabase.com/docs/guides/database/postgres/event-triggers#example-trigger-function---auto-enable-row-level-security)；沒有為消除差異刪除遠端物件。
+- 遠端 generated types 的 public schema／RPC 與 repo 相同；扣除 linked-only `__InternalSupabase`（PostgREST 14.17）及五處等價泛型括號後，正規化輸出同為 23,676 字元，沒有提交遠端輸出。這些是既有 §0.9／§0.12 記錄的產生器差異。
+- Security advisor 仍只有既有 `auth_leaked_password_protection` WARN，沒有新增 RLS／function 警告。這次沒有 Supabase MCP tools，因此改用 CLI 的唯讀 Management API；**沒有重跑遠端 rollback pgTAP 或正式帳號 HTTP**，386 pgTAP／8 組 HTTP 仍明確是本機／CI 證據。
+
+這是純 policy 修正，**目前已發布的 0.4.4 不需重新部署即可受益**；v4、App 版號與不可回寫公告均不動。DP-208 的 HTTP CI 接線另 PR #203，DP-206 實帳號／Email 寄達／OAuth／真機仍保留。PR #201 的邀請取消登入修正雖已合併，但尚未另行部署，不能把它算入線上 0.4.4。
 
 ## 1. 交接當下已驗證的狀態
 
