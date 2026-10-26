@@ -232,6 +232,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
@@ -476,6 +477,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-210 — 瀏覽器 CI 的 Ubuntu 下載鏡像（2026-10-26）：** Backlog → Next → In Progress → Done。從 DP-206 PR #205 已合併 04e4a85 接續；該 head 3a78dcb 最終四 CI／完成審查無發現與未解決討論，WebKit 先有兩次 10 分鐘 Azure 套件下載逾時、同 head 第三次 140 MB 10 秒並 8 passed／24.1 秒。只加 Chromium／WebKit 兩個相同的 APT 前置，先核對 HTTPS archive 存在，再只移除 Azure HTTP 那列；官方 archive／security fallback 與原 sources／簽章不變。Bash 語法、隔離 fixture 保留官方來源與冪等、缺 archive／仿冒 host／缺檔拒絕且不修改通過；移除新增前置及註解後，workflow 與 main 逐字相同，四 jobs／原命令／25及10分鐘上限／workers／retries／測試未變。自己的最新四 CI／相同 head 完成審查後才合併；實際 Linux 安裝及全 gate 不能沿用 #205 的數字。沒有新 action／依賴／secret、產品／schema／版號／已發布公告或部署變更；真實雙帳號核心已完成，Email 寄達／OAuth／真機與 DP-034 放行界線保留，寵物暫緩。
 
 - [x] **DP-206 — 共用日曆線上專用雙帳號驗收（2026-10-26）：** Backlog → Next → In Progress → Done。依擁有者「你建立兩個測試帳號先測試」的明確委託，從 PR #204 合併 75ad125 接續；兩個全新線上 QA 帳號由管理介面確認 Email，產品操作皆從正式 0.4.4 表單真實密碼登入。A 新增日曆／家庭邀請、B 明確接受、A 明確 edit 分享、B 改共用行程及新增待辦、A reload 讀回、雙向個人／private 隔離、view 停用編輯、off 移除分享保留本人事項、B logout／密碼重登均過；最後只恢復 QA 日曆 edit，帳號與假資料保留供擁有者使用。390×844／1280×900、實際 Etc/GMT-8、console 各 0 errors／warnings、無 overlay／水平溢出、四種畫面截圖目視；兩邊已登出、CLI 關閉，憑證僅本機 TEMP，邀請暫存清除，未提交或輸出。詳 [線上流程與驗證界線](docs/family-sharing-http.md#dp-206-線上專用雙帳號驗收2026-10-26)。第 19 檔既已套用，現有線上 0.4.4 可直接使用；本輪不修改產品／schema／v4／版號／公告或部署。管理端確認不等於 Email 寄達，Google OAuth／真機／standalone 本輪未驗，DP-032／077／034 界線不變，DP-207 取消登入修正尚未部署；寵物維持暫緩。
 
