@@ -1,0 +1,128 @@
+{
+  "httpCheckedAt": "2026-10-26T01:28:26.688Z",
+  "actualTimezone": "Etc/GMT-8",
+  "workflow": {
+    "runId": 40253002837,
+    "runNumber": 16,
+    "url": "https://github.com/yoyoCadence/DayPop/actions/runs/40253002837",
+    "sourceCommit": "0629821148b7fb33219cde5e778ddecdfb6150f2",
+    "status": "success",
+    "artifactId": 12621886861,
+    "artifactSha256": "500601ea10e6b0badfefae060d62adae2359639aabed9dd155492d249a220a2a"
+  },
+  "release": {
+    "version": "0.4.4",
+    "releasedAt": "2026-10-26",
+    "title": "家庭日曆一起用",
+    "changes": [
+      "建立家庭與邀請連結，成員登入後確認加入",
+      "日曆可分享給家庭，選擇共同編輯或唯讀",
+      "共用行程與待辦一起維護，單一事項可保持私人",
+      "返回 App 時重新整理分享，編輯衝突保留草稿",
+      "收到的分享不放入本機快取或個人備份",
+      "月曆長捲動維持固定視窗，減少重複行程計算"
+    ]
+  },
+  "checks": {
+    "hasSharing": true,
+    "hasFamily": true,
+    "hasExpectedProject": true,
+    "csp": true,
+    "manifestScope": "./",
+    "publishedArtifactMatches": true
+  },
+  "assets": [
+    {
+      "path": "/DayPop/",
+      "bytes": 1801,
+      "sha256": "5cbecc088424f224eb8f0de2cbc73f4400dbed2a2913ab7c3e9bf4d0d7e65647",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/assets/index-1b5KXnN6.js",
+      "bytes": 745134,
+      "sha256": "97284929e1ef968017c752ca8fbee7dfe499c8b9d4fe0243a15a78e2da44008b",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/assets/index-BFWLpSJ8.css",
+      "bytes": 113935,
+      "sha256": "fde2613b3c1232ad492b5362e0b582d5c21bf459e17e6fab555ac3977477609a",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/sw.js",
+      "bytes": 1795,
+      "sha256": "f0fb258ea5e5749f1e71c114f985ba1f1be4dcac5ab25dc2ed7721700704686e",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/version.json",
+      "bytes": 502,
+      "sha256": "96c975f682f3a3710dc0824c6d59d076ace543cba9de93e527a59195316efa0a",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/manifest.webmanifest",
+      "bytes": 955,
+      "sha256": "a024cdf896c9d3ad63e338ecb565ee13020e2af5a889a65c5e4ae6ea5a497acb",
+      "matchesPublishedArtifact": true
+    }
+  ],
+  "publicAuth": {
+    "healthStatus": 200,
+    "settingsStatus": 200,
+    "emailEnabled": true,
+    "googleEnabled": true,
+    "signupDisabled": false,
+    "emailAutoConfirm": false,
+    "accountLoginTest": "not-run"
+  },
+  "guestUpdate": {
+    "beforeVersion": "0.4.3",
+    "afterVersion": "0.4.4",
+    "automaticNavigationType": "reload",
+    "schemaVersion": 4,
+    "revision": 1,
+    "bytes": 990,
+    "sha256Before": "cb2208df17fcf31649364e1dc15c47e8c08c9c178c5b02c4f35c1d5039257b93",
+    "sha256After": "cb2208df17fcf31649364e1dc15c47e8c08c9c178c5b02c4f35c1d5039257b93",
+    "sha256AfterManualReload": "cb2208df17fcf31649364e1dc15c47e8c08c9c178c5b02c4f35c1d5039257b93",
+    "cachesBefore": [
+      "daypop-app-shell-0.4.3"
+    ],
+    "cachesAfter": [
+      "daypop-app-shell-0.4.4"
+    ],
+    "eventVisibleAfterUpdateAndReload": true,
+    "profile": "isolated guest; no cloud writes"
+  },
+  "browser": {
+    "url": "https://yoyocadence.github.io/DayPop/",
+    "title": "日蹦 DayPop",
+    "actualTimezone": "Etc/GMT-8",
+    "viewports": [
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 1280,
+        "height": 900
+      }
+    ],
+    "fourTabsResponsive": true,
+    "initialNoticeBox": {
+      "x": 15,
+      "y": 244.09375,
+      "width": 360,
+      "height": 355.796875
+    },
+    "familyAndShareEntryCards": 2,
+    "emailAndGoogleLoginEnabled": true,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "realTwoAccountSharingTest": "not-run",
+    "physicalPhoneTest": "not-run"
+  }
+}

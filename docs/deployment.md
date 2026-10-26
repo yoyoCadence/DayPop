@@ -4,6 +4,8 @@
 
 canonical 來源仍是 [`../AGENTS.md`](../AGENTS.md) 與 [`../tasks.md`](../tasks.md)；這裡只寫部署本身。
 
+> **2026-10-26 最新狀態（DP-205）：** 擁有者已明確授權發布 0.4.4「家庭日曆一起用」，Deploy staging #16／`40253002837` 從 `0629821` 完成四 gate＋build＋publish，線上已更新。真正 0.4.3 舊 client 經 UI 更新到 0.4.4、原資料 hash／行程不變；公開成品／Auth 入口與手機桌面 QA 已過。完整證據見 [發布驗證](deployment-verification-2026-10-26.md)，兩帳號可依 [指引](shared-calendar-start.md) 開始操作；真實雙帳號／OAuth／真機與 DP-034 正式放行仍分別保留。下方較早「目前狀態」及 §5.28 候選是當時的歷史。
+
 > **2026-10-13 目前狀態（DP-149）：** 第 15／16 檔 migration 已以正式 CLI 套用，並於 2026-10-12 部署 v0.4.2；線上手機／桌面 smoke test 通過。0.4.2 公告自此也不可回寫，§5.18–5.23 的「候選」「尚未套用／部署」是歷史。可追溯的 workflow、commit、資料庫回滾測試與限制見 [本次驗收紀錄](deployment-verification-2026-10-13.md)。後續 DP-144／145 未包含在這次部署；DP-034 的實帳號／真機等未測項仍保留。
 
 ---
@@ -807,3 +809,5 @@ lint／typecheck／1,312 單元＋7 Node／build／check:build、相關家庭分
 0.4.4「家庭日曆一起用」新增六條短公告並由 generator 更新 App／PWA 版號，七份歷史公告不變。1,402 單元＋29 Node、lint／typecheck／Pages base build／資產與線上公告檢查，相關 Chromium 42 passed／2 skipped＋WebKit 8、本機 production 登入入口與公告檢查均過。本項最新四 CI／完成審查後才合併；尚未 dispatch，合併不代表已發布。發布沿 §3.4 選合併後 main，保留全部品質閘門。
 
 完整 preflight、驗證範圍與尚未完成項見 [發布紀錄](calendar-release-readiness-2026-10-26.md)。發布後讓 A／B 依 [開始使用共用行事曆](shared-calendar-start.md) 驗證真實保存、邀請、edit／private／view／撤權；目前不把固定假資料 e2e 或公開 Auth 設定當成真實帳號／Google OAuth／真機通過，也不因此標記 DP-034 正式放行。
+
+**2026-10-26 完成更新：** 擁有者已授權本次 0.4.4 發布，既有工作流六 jobs 全成功、線上版本與分享前端已更新，無須再推 migration。原舊 client 的更新／資料保存及新 client 的手機桌面入口都已核對，六項公開成品與本次 Pages artifact 一致。完整結果、失敗的驗證等待步驟及修正後證據見 [本次發布驗證](deployment-verification-2026-10-26.md)／[公開 postflight JSON](deployment-postflight-2026-10-26.json)。**0.4.4 公告自此不可回寫；不以這次授權自動批准未來發布。**
