@@ -31,3 +31,11 @@ Browser plugin 未提供，沿官方 Playwright CLI 檢查本機 **production** 
 本項中文 PR 的最新四 CI／完成審查通過後才合併；PR／run 證據後續補記。合併不等於部署完成。既有 [deployment §3.4](deployment.md#34-觸發部署) 仍由擁有者決定發布時機；目前沒有 dispatch。發布時選本項合併後的 main，工作流會重跑四項品質閘門、公開設定與公告檢查後上傳 Pages。
 
 發布後必須再核對線上 0.4.4、公開 bundle 含分享功能、Auth UI 與 PWA 更新；兩個真實帳號依 [操作指引](shared-calendar-start.md) 驗證自己的保存及 edit／private／view／撤權。真實帳號／Google OAuth／真機結果尚未宣稱通過，DP-034 正式放行仍保留原有界線。這次不需要新 migration，也不需重推已套用的第 18 檔。
+
+### 合併、明確發布授權與進度
+
+上兩段為候選準備時的狀態。PR [#199](https://github.com/yoyoCadence/DayPop/pull/199) 最新 head `01f9afd6dae0ea0959fe5c0d8e78aeef3ea9559b` 的 [CI `40244805954`](https://github.com/yoyoCadence/DayPop/actions/runs/40244805954) 四項成功；Chromium 285 passed／13 skipped（21.7 分鐘）、WebKit 8 passed，9 檔 376 pgTAP、權限負控制／兩種競態／generated types 均過。相同 head 的 Codex review completed、沒有發現或未解決討論、review threads 為空後，合併為 `0629821148b7fb33219cde5e778ddecdfb6150f2`。
+
+2026-10-26 擁有者針對「從 main 執行既有 Deploy staging，發布 0.4.4」明確答覆「可以 繼續吧」，本次發布已獲授權，不需再次確認。已觸發 [Deploy staging #16／`40253002837`](https://github.com/yoyoCadence/DayPop/actions/runs/40253002837)，頁面與 commit 連結確認來源 `0629821`／main。全程沿既有四項品質閘門 → Build for Pages → Deploy to Pages，沒有變更 workflow／repository 設定、密鑰、資料庫或使用者資料。此授權只記錄本次 0.4.4，不自動變為未來任意發布授權。
+
+發布仍在跑原有品質閘門，完成狀態與線上 postflight 待以下補記。為檢查真正線上舊 client 更新，已先開隔離 Playwright CLI 遊客 context，透過 0.4.3 UI 儲存「發布更新保存驗證」（2026-10-26 10:00–11:00）；`daypop.user-data` 為 v4／revision 1／990 bytes，SHA-256 `cb2208df17fcf31649364e1dc15c47e8c08c9c178c5b02c4f35c1d5039257b93`，快取只有 `daypop-app-shell-0.4.3`。這筆只在新建本機遊客 profile，不曾登入或寫入雲端。
