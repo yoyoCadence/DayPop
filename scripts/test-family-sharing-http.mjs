@@ -5,11 +5,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { createServer } from 'vite';
 import { localSupabaseHttpConfig, localSupabaseFetch } from './local-supabase-http.mjs';
-import packageJson from '../package.json' with { type: 'json' };
+const packageJson = JSON.parse(readFileSync(resolve('package.json'), 'utf8'));
 
 const workdir = process.env.DAYPOP_HTTP_WORKDIR;
 const status = spawnSync(process.execPath, [resolve('node_modules/supabase/dist/supabase.js'), 'status', '--output', 'json', ...(workdir ? ['--workdir', workdir] : [])], {
