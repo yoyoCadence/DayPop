@@ -186,11 +186,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 只啟動 Postgres 容器，其餘服務與這些測試無關。
-      # 2026-09-29 以同一版 CLI 在本機比對：這個組合與完整 stack 在 db reset
+      # DP-208：除了 Postgres，啟動真實 Auth／PostgREST／Kong，讓正式
+      # family service／repository 的雙帳號 HTTP 鏈也受這個 gate 保護。
+      # 只用 runner 本機產生的隨機假帳號；不 link、沒有外部 secret。
+      # 2026-09-29 以同一版 CLI 在本機比對：原本 Postgres-only 與完整 stack 在 db reset
       # 之後，auth／storage 的欄位、trigger、function、policy、index、RLS
       # 開關，以及 extension 與 schema 清單都逐行相同，pgTAP 兩邊都是 150/150。
-      # 若日後的測試需要 gotrue 或 storage-api 的 HTTP API，才從這份清單移除。
+      # 現在移除 gotrue／postgrest／kong 排除項；Storage binary HTTP 尚未加入。
       #
       # 「只啟動」不等於「只下載」：CI log 顯示 CLI 初始化 schema 時仍會拉
       # gotrue、realtime、storage-api 的映像來跑它們各自的 migration（這也是
@@ -201,11 +203,16 @@ jobs:
       # job 仍紅在拉映像，先確認是 registry 的問題再重跑，不要當成 migration
       # 壞了。
       #
-      # 輸出只列出資料庫連線網址，不會在 log 印出本機 stack 的 API key。
-      - name: Start local Postgres
-        run: >-
-          npm run supabase:start --
-          --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      # 完整啟動摘要可能含本機 key，連同錯誤一律留 runner 的暫存檔，
+      # 不上傳或印出。失敗只回報明確 gate 錯誤；不能靜默略過 HTTP。
+      - name: Start local database and HTTP APIs
+        run: |
+          if ! npm run supabase:start -- \
+            --exclude realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor \
+            > "$RUNNER_TEMP/daypop-supabase-start.log" 2>&1; then
+            echo "::error::Local Supabase HTTP services failed to start; startup output withheld because it may contain local keys."
+            exit 1
+          fi
 
       # start 已經套用過一次 migration。這裡仍照 AGENTS.md 的驗收條件
       # 「可由 db reset 重建」實際跑一次，而不是用「start 成功所以 reset 也會
@@ -224,6 +231,9 @@ jobs:
 
       - name: Shared item version concurrency (two local connections)
         run: npm run supabase:test:sharing-concurrency
+
+      - name: Real local Auth and HTTP sharing (two accounts)
+        run: npm run supabase:test:http
 
       # DP-085：型別檔必須就是從 migration 重建的資料庫產生出來的結果。
       # 以本機產生為準：--linked 需要 access token，而 CI 不使用 secret。

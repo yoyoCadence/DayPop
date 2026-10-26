@@ -8,29 +8,21 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { createServer } from 'vite';
+import { localSupabaseHttpConfig, localSupabaseFetch } from './local-supabase-http.mjs';
+import packageJson from '../package.json' with { type: 'json' };
 
 const workdir = process.env.DAYPOP_HTTP_WORKDIR;
 const status = spawnSync(process.execPath, [resolve('node_modules/supabase/dist/supabase.js'), 'status', '--output', 'json', ...(workdir ? ['--workdir', workdir] : [])], {
   encoding: 'utf8', windowsHide: true, timeout: 30_000,
 });
 assert.equal(status.status, 0, 'Start the local Supabase HTTP services before this test');
-let config;
-try { config = JSON.parse(status.stdout); } catch { throw Error('Local CLI status must return JSON'); }
-const api = new URL(config.API_URL);
-assert.equal(api.protocol, 'http:', 'Only the local HTTP test stack is allowed');
-assert.equal(api.hostname, '127.0.0.1', 'Remote/linked Supabase is forbidden');
-assert.ok(api.username + api.password + api.search + api.hash === '', 'No credential or query is allowed in the API URL');
-assert.equal(api.pathname, '/', 'Use the local API root');
-assert.ok(config.ANON_KEY && config.SERVICE_ROLE_KEY, 'Local test keys must come from CLI status, never the environment');
+const config = localSupabaseHttpConfig(status.stdout);
+const api = config.url;
 const options = {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  global: { fetch(input, init) {
-    const target = new URL(input instanceof Request ? input.url : input);
-    assert.equal(target.origin, api.origin, 'Test requests must stay on this local origin');
-    return fetch(input, { ...init, redirect: 'error', signal: AbortSignal.timeout(15_000) });
-  } },
+  global: { fetch: localSupabaseFetch(api) },
 };
-const admin = createClient(api.href, config.SERVICE_ROLE_KEY, options);
+const admin = createClient(api.href, config.adminKey, options);
 const actors = [];
 let vite;
 let stage = 'setup';
@@ -48,7 +40,7 @@ async function actor(label) {
   // Auth JWT issuance, RPCs and row access below all cross the real HTTP API.
   const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   assert.ok(!created.error && created.data.user, 'Create a fresh local synthetic identity');
-  const value = { label, id: created.data.user.id, email, password, client: createClient(api.href, config.ANON_KEY, options) };
+  const value = { label, id: created.data.user.id, email, password, client: createClient(api.href, config.publicKey, options) };
   actors.push(value); // Track immediately so even a failed sign-in is cleaned.
   const signed = await value.client.auth.signInWithPassword({ email, password });
   assert.ok(!signed.error && signed.data.session && signed.data.user?.id === value.id, 'Password sign-in must issue this account a real session');
@@ -60,7 +52,7 @@ try {
   // loading .env. No alternate copy of the repository or family logic.
   vite = await createServer({ configFile: false, envFile: false, logLevel: 'error', server: { middlewareMode: true, watch: null },
     ssr: { noExternal: ['rrule'] },
-    define: { __APP_VERSION__: JSON.stringify('http-test'), __DATA_SCHEMA_VERSION__: '4' } });
+    define: { __APP_VERSION__: JSON.stringify(packageJson.version), __DATA_SCHEMA_VERSION__: '4' } });
   const { SupabaseDayPopRepository } = await vite.ssrLoadModule('/src/data/supabaseRepository.ts');
   const { SupabaseFamilyService, FamilyError } = await vite.ssrLoadModule('/src/family/familyService.ts');
   const a = await actor('A'), b = await actor('B');
@@ -139,7 +131,7 @@ try {
   await check('real logout and fresh password session preserve personal rows', async () => {
     const signedOut = await b.client.auth.signOut();
     assert.ok(!signedOut.error, 'Local Auth logout must succeed');
-    const fresh = createClient(api.href, config.ANON_KEY, options);
+    const fresh = createClient(api.href, config.publicKey, options);
     const signed = await fresh.auth.signInWithPassword({ email: b.email, password: b.password });
     assert.ok(!signed.error && signed.data.user?.id === b.id, 'Fresh session must resolve the same account');
     const repository = new SupabaseDayPopRepository(fresh, b.id);
@@ -157,9 +149,11 @@ try {
 } finally {
   let cleanupFailed = false;
   for (const value of actors) {
-    const removed = await admin.auth.admin.deleteUser(value.id);
-    const gone = await admin.auth.admin.getUserById(value.id);
-    if (removed.error || gone.data.user !== null) cleanupFailed = true;
+    try {
+      const removed = await admin.auth.admin.deleteUser(value.id);
+      const gone = await admin.auth.admin.getUserById(value.id);
+      if (removed.error || gone.data.user !== null) cleanupFailed = true;
+    } catch { cleanupFailed = true; }
   }
   if (vite) await vite.close();
   if (cleanupFailed) { console.error('Local HTTP fixture cleanup failed'); process.exitCode = 1; }

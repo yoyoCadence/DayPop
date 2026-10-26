@@ -22,7 +22,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
-    "posttest": "node --test scripts/build-performance-budget.test.mjs scripts/module-loading.test.mjs scripts/month-profile.test.mjs scripts/pet-assets-budget.test.mjs",
+    "posttest": "node --test scripts/build-performance-budget.test.mjs scripts/module-loading.test.mjs scripts/month-profile.test.mjs scripts/pet-assets-budget.test.mjs scripts/local-supabase-http.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
