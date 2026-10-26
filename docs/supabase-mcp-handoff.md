@@ -185,6 +185,26 @@ PR #167 已於 `7c795b9` 合併，最後 CI `39342697282` 三項全過、完整 
 
 security 仍只有既有 Auth leaked-password WARN；performance 仍有 §0.13 已說明的複合 FK covering-index INFO，unused-index INFO 在本次 rollback 後為 6，沒有新增項目或刪改索引。1,312 單元＋7 Node、lint／typecheck／build／check:build 與相關 e2e 17 passed／1 skipped 通過；最新 CI 通過後才依授權合併本項。**不需要擁有者再推 migration，前端尚未部署，真實帳號／OAuth／真機／staging 未驗；四項家庭範圍合併完成後，發布仍由擁有者另行決定。**
 
+## 0.15 DP-209 新增日曆 RETURNING 修正候選（2026-10-26）
+
+DP-208 的隔離本機 GoTrue／PostgREST／Kong／Postgres 真實 HTTP 驗證，在既有 18 檔 migration 上重現：正式 `SupabaseDayPopRepository.addCalendar()` 的 upsert RETURNING 回 `42501`。登入、本人行程保存已成功，失敗的是新日曆的回傳；不是以 fake client 推測的錯誤。既有 pgTAP 多先建立日曆再查詢，沒有覆蓋這個 statement。
+
+第 18 檔的 `calendars_read_authorized` 只呼叫 STABLE `calendar_access(id)`，其同 statement 快照看不到剛插入的日曆。第 19 檔 [`20261026044627_calendar_owner_insert_returning.sql`](../supabase/migrations/20261026044627_calendar_owner_insert_returning.sql) 只追加本人 `(select auth.uid()) = owner_id` 判斷；非本人仍經同一份 membership／明確分享 helper。依 [PostgreSQL 17 的快照契約](https://www.postgresql.org/docs/17/xfunc-volatility.html)，不需要改 helper volatility 或放寬其他帳號的存取。**不回寫已套用的第 18 檔。**
+
+本機專用 stack `DayPopHTTP208`（API 127.0.0.1:54331／DB 54332）由零重建 19 檔，10 檔 386 pgTAP 通過；新 10 項在舊 policy 先有 7 項失敗，再以 transaction 暫時還原舊 policy 同樣 7 項失敗，rollback 後新 owner predicate／固定假帳號零殘留已確認。generated public types 與已提交型別相同。保存於 `test/dp-208-sharing-http`／`9b9abfe` 的 HTTP 驗證器，以兩個真實本機 Auth session 走正式 family service／repository，8/8 通過：各自保存、新增日曆、受邀 Email、明確接受及分享、共同編輯／作者、private、衝突、view、撤權及重新登入。兩個隨機假帳號每次均 finally 清理；server key 僅留 Node 建立／清理 fixture，不傳前端或用於產品操作。這不是正式帳號／Email 寄達／Google OAuth／真機驗收。
+
+**遠端尚未套用，第 19 檔仍待擁有者 CLI。** 本輪 readonly linked migration list 已確認前 18 檔 local／remote 逐一相同，第 19 檔 remote 為空；沒有 MCP Supabase tools，未以其他專案 connector 代替，也沒有執行 remote DDL／reset／查改正式資料。依既有分工，自己的最新四 CI／完成審查後合併，再由擁有者執行：
+
+```powershell
+npx supabase migration list
+npx supabase db push --dry-run
+# 只應列出 20261026044627_calendar_owner_insert_returning.sql；若不同，先停止。
+npx supabase db push
+npx supabase migration list
+```
+
+套用後應為 19 檔對齊、14 張 public 表全 RLS、46 policies；只有 `calendars_read_authorized` 的 qual 改變，其他 policies／functions／constraints／public types 不變。需再記錄遠端 metadata／types 與安全 rollback 證據，不能把本機結果當遠端通過。這是純 policy 修正，**目前已發布的 0.4.4 不需重新部署即可受益**；v4、App 版號與不可回寫公告均不動。DP-208 的 HTTP CI 接線接著獨立完成，DP-206 實帳號／真機仍保留。
+
 ## 1. 交接當下已驗證的狀態
 
 **本機五項驗證全部通過**（`main`，工作目錄乾淨、build 無 drift）：

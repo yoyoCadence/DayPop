@@ -227,6 +227,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-209 — 修正本人新增日曆的 RETURNING 權限：** 2026-10-26 依持續開發授權，由 Backlog → Next → In Progress。正式 repository 在專用本機 18 migrations 的真實 Auth／HTTP 新增日曆回 42501。第 19 檔 `20261026044627_calendar_owner_insert_returning.sql` 只補 calendars SELECT 的本人 owner 判斷；非本人仍走既有分享 helper，第 18 檔不回寫。10 檔 386 pgTAP／舊 policy 7 項失敗負控制與 rollback／generated types 相同／本機 HTTP 8/8、lint／typecheck／1,402 單元＋29 Node／build／check:build 通過（後五項為準備基底 `066a9e1`，最新 head 仍須自己的完整四 CI）。readonly linked list 確認前 18 檔相同、只有第 19 檔待推；遠端仍需擁有者 CLI dry-run／push，再做 metadata／types postflight 才結案。PR #201 已四 CI／審查全過合併 `1fa1dfe`，本候選發 PR 前對齊該最新 main。詳 [handoff §0.15](docs/supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。不改 v4、App 0.4.4／公告或部署；DP-208 暫存 `test/dp-208-sharing-http`／`9b9abfe`，待本項合併後獨立完成 HTTP CI，DP-206 實帳號／真機仍待驗。
+
 
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
