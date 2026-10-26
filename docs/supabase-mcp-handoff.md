@@ -187,6 +187,8 @@ security 仍只有既有 Auth leaked-password WARN；performance 仍有 §0.13 �
 
 ## 0.15 DP-209 新增日曆 RETURNING 修正候選（2026-10-26）
 
+**候選已合併，遠端套用待擁有者：** [PR #202](https://github.com/yoyoCadence/DayPop/pull/202) head `25e3434` 的 CI `40271811926` 四項全過（1,404 單元＋29 Node、386 pgTAP、WebKit 8、Chromium 287 passed／13 skipped），相同 head 審查完成無發現、無未解決討論後，合併為 `c64292b`。擁有者已收到本節 CLI 步驟；尚未收到套用完成結果。DP-208 從此 main 接入 HTTP CI，自己的最新 CI 另驗；下方八組是本機證據。
+
 DP-208 的隔離本機 GoTrue／PostgREST／Kong／Postgres 真實 HTTP 驗證，在既有 18 檔 migration 上重現：正式 `SupabaseDayPopRepository.addCalendar()` 的 upsert RETURNING 回 `42501`。登入、本人行程保存已成功，失敗的是新日曆的回傳；不是以 fake client 推測的錯誤。既有 pgTAP 多先建立日曆再查詢，沒有覆蓋這個 statement。
 
 第 18 檔的 `calendars_read_authorized` 只呼叫 STABLE `calendar_access(id)`，其同 statement 快照看不到剛插入的日曆。第 19 檔 [`20261026044627_calendar_owner_insert_returning.sql`](../supabase/migrations/20261026044627_calendar_owner_insert_returning.sql) 只追加本人 `(select auth.uid()) = owner_id` 判斷；非本人仍經同一份 membership／明確分享 helper。依 [PostgreSQL 17 的快照契約](https://www.postgresql.org/docs/17/xfunc-volatility.html)，不需要改 helper volatility 或放寬其他帳號的存取。**不回寫已套用的第 18 檔。**

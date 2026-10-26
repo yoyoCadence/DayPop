@@ -2,6 +2,8 @@
 
 這條回歸用兩個獨立、真正登入的 Supabase client，經本機 GoTrue → Kong／PostgREST → migration 的 RPC／RLS，執行正式 `SupabaseFamilyService` 與 `SupabaseDayPopRepository`。它補足記憶體 UI harness 和直接 SQL pgTAP 間的連接；首次就重現第 18 檔新增日曆 RETURNING 被拒，修正見 [DP-209](supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。
 
+前置 [PR #202](https://github.com/yoyoCadence/DayPop/pull/202) 的 head `25e3434` 四 CI／完成審查無發現、無未解決討論後合併 `c64292b`；本段從該最新 main 接續，自己的 HTTP CI 結果需等本段最新 head，不能沿用前置 PR 的 pass。
+
 ## 執行與範圍
 
 ```powershell
