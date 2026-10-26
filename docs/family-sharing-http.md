@@ -50,3 +50,29 @@ PR #203 head `0e3f3a6` 的 CI `40274767378` 四項全過：1,404 單元＋39 Nod
 手機 A 為 390×844、桌面 B 為 1280×900，兩邊實際 `Etc/GMT-8` 已列印；頁名正確、內容非空、無 framework overlay／水平溢出，console 各 0 errors／warnings。兩張日詳情截圖已目視，保存在系統 TEMP，未提交圖片、credential、邀請 token 或臨時腳本。結束後兩個假帳號刪除並逐一確認不存在，專用本機 users／family_groups／calendars／events／todos 均 0；測試憑證／連結已刪除、CLI／驗證伺服器／stack 已停止。
 
 此輪只補驗登入／新增日曆／邀請／明確分享／共用編輯與 reload，沒有宣稱 UI private／view／撤權、實際 Email 寄達／Google OAuth／正式站台／實體手機通過；前者仍有既有 HTTP／pgTAP／harness 回歸，DP-206 擁有者實際帳號驗收仍進行中。本輪沒有產品修改、migration 或部署。
+
+## DP-206 線上專用雙帳號驗收（2026-10-26）
+
+擁有者回覆「你建立兩個測試帳號先測試」後，從 PR #204 已合併的 `75ad125` 接續，在 [正式站台](https://yoyocadence.github.io/DayPop/) 0.4.4 完成兩個真實帳號的操作。第 19 檔已由擁有者套用並逐檔對齊；本輪不重新部署前端、不再套用 migration。
+
+兩個新建的專用 QA 帳號使用隨機密碼及保留測試網域，不是既有使用者。透過擁有者已登入的 Supabase Dashboard 建立並勾選 Email 確認；沒有寄送驗證信、變更全域 Auth 設定、取得 server key 或預置 browser session。其後所有產品操作均從 App 的 Email／密碼表單登入，以各自真實 session 經正式 RPC／RLS 執行。沒有讀取或修改其他使用者的私人資料。
+
+Browser plugin 未提供，沿專案既有 Playwright 與官方 CLI；A 使用獨立 390×844 手機尺寸 session，B 使用另一個 1280×900 桌面 session。
+
+| 操作 | 線上 UI 結果 |
+| --- | --- |
+| A 新增日曆、建立家庭及 Email 綁定邀請 | 新日曆保存成功；第 19 檔的新增／回傳修正實際可用 |
+| B 從邀請連結登入、預覽並明確接受 | 加入家庭；A 再明確選 QA 日曆、共同編輯及確認才分享 |
+| A 建立共用及私人行程，B 重新確認分享 | B 看見共用行程，沒有 A 的私人行程 |
+| B 修改共用行程、建立共用待辦 | A reload 讀回同一修改及 B 建立的待辦 |
+| B 在自己的日曆新增行程 | B 可讀回，A 看不到；兩邊關閉瀏覽器後以新 session 密碼登入仍保存 |
+| A 改為只能查看，B 重新確認分享 | 收到日曆標示只能查看；行程欄位／保存及待辦完成、修改、刪除、優先度、日期操作停用 |
+| A 關閉分享，B 重新確認分享 | 收到的日曆、共用行程及待辦消失，B 本人行程仍存在；A 保留兩筆行程及待辦 |
+| B 真正登出，再從表單密碼登入 | 只讀回本人行程，撤權內容沒有恢復 |
+| A 恢復 QA 日曆共同編輯，B 重新確認 | 共用行程及待辦恢復，兩邊各自私人內容仍隔離 |
+
+最後保留一個 QA 家庭、A 的 QA 共用日曆、A 共用／私人行程、B 本人行程及 B 建立的共用待辦，供擁有者直接體驗；只有這份假資料日曆恢復 edit，沒有分享 A／B 的預設個人日曆。兩個線上 QA 帳號不刪除，與上節已清理的本機 fixture 不同。憑證只保存在本機 TEMP 的私人 JSON，由 agent 在交付訊息提供本機檔案連結；Git 追蹤檔與 PR 不含帳號 Email、密碼、JWT、user ID 或邀請 token。已使用的邀請暫存檔已清除，兩邊登出後 2026-10-26 均顯示 0 個行程，再關閉本輪兩個 CLI session。
+
+實際 `Intl.DateTimeFormat().resolvedOptions().timeZone` 兩邊均列印為 `Etc/GMT-8`；尺寸分別 390×844／1280×900，頁名正確、內容非空、無 framework overlay／水平溢出，console 各 0 errors／warnings。TEMP 的 A／B 最終日詳情、view 停用及 off 個人保留截圖均已目視；日詳情的「衝突」徽章是三筆測試行程使用同一時段所致，不是分享版本衝突失敗。
+
+本項完成擁有者委託的線上專用雙帳號核心驗收，DP-206 移至 Done。Email 確認是管理端 setup，不能當成驗證信寄達；本輪也沒有重驗 Google OAuth、實體手機、standalone 或兩人同時提交的版本競態，既有 HTTP／pgTAP 的競態證據不冒充此次線上 UI 結果。DP-032／077 真機及 DP-034 放行界線不變；DP-207 在 main 的取消登入修正尚未部署。沒有產品、schema、版號、已發布公告或部署變更，寵物後續仍暫緩。

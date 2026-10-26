@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+> **2026-10-26 線上雙帳號核心驗收完成：** DP-206 已依擁有者委託用兩個新建線上 QA 帳號完成共用／私人／view／撤權與重登，詳 Done 與既有驗證文件。帳號及假資料保留供使用，憑證只在本機 TEMP；本輪沒有部署，現有 0.4.4 搭配已套用第 19 檔即可使用。Email 寄達／Google OAuth／真機本輪未驗，DP-034 放行不變，寵物仍暫緩。下方仍寫「待 DP-206 實帳號」的段落為先前交接歷史。
+
 
 
 
@@ -226,7 +228,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-206 — 共用日曆雙帳號實用驗收：** Backlog → Next → In Progress。PR #203 已四 CI／相同 head 審查完成無發現及無未解決討論，由擁有者合併 e5db4c4；本機 main 已同步。agent 補驗正式 App 入口與專用本機 19 檔 stack 的兩個真實密碼 session：A 新增日曆／家庭邀請、B 明確接受、A 明確共享／新增行程、B 重新確認分享並編輯、A reload 讀回新標題均過。390×844／1280×900、實際 Etc/GMT-8、兩邊 console 0 errors／warnings、無 overlay／水平溢出、截圖目視；fixture 清理後五集合各 0，CLI／server／stack 已停止。詳 [本機畫面補驗](docs/family-sharing-http.md#dp-206-本機真實畫面補驗2026-10-26)。本機確認 Email 不等於實際驗證信；擁有者已收到 [正式站台操作指引](docs/shared-calendar-start.md)，仍待 A／B 實帳號各自保存、edit／private／view／撤權及重新確認分享的結果，失敗依原錯誤另 PR 修正。未驗 Google OAuth／真機、未代做 DP-034 放行；沒有產品或部署變更，寵物暫緩。
 
 
 
@@ -475,6 +476,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-206 — 共用日曆線上專用雙帳號驗收（2026-10-26）：** Backlog → Next → In Progress → Done。依擁有者「你建立兩個測試帳號先測試」的明確委託，從 PR #204 合併 75ad125 接續；兩個全新線上 QA 帳號由管理介面確認 Email，產品操作皆從正式 0.4.4 表單真實密碼登入。A 新增日曆／家庭邀請、B 明確接受、A 明確 edit 分享、B 改共用行程及新增待辦、A reload 讀回、雙向個人／private 隔離、view 停用編輯、off 移除分享保留本人事項、B logout／密碼重登均過；最後只恢復 QA 日曆 edit，帳號與假資料保留供擁有者使用。390×844／1280×900、實際 Etc/GMT-8、console 各 0 errors／warnings、無 overlay／水平溢出、四種畫面截圖目視；兩邊已登出、CLI 關閉，憑證僅本機 TEMP，邀請暫存清除，未提交或輸出。詳 [線上流程與驗證界線](docs/family-sharing-http.md#dp-206-線上專用雙帳號驗收2026-10-26)。第 19 檔既已套用，現有線上 0.4.4 可直接使用；本輪不修改產品／schema／v4／版號／公告或部署。管理端確認不等於 Email 寄達，Google OAuth／真機／standalone 本輪未驗，DP-032／077／034 界線不變，DP-207 取消登入修正尚未部署；寵物維持暫緩。
 
 - [x] **DP-209 — 本人新增日曆 RETURNING 權限修正（2026-10-26）：** 第 19 檔只補 calendars SELECT 的本人 owner 條件；舊 policy 的新 10 項回歸與反向 transaction 均 7 項失敗，還原後 10/10，本機共 386 pgTAP／HTTP 8/8／types 通過。PR #202 head 25e3434 四 CI／相同 head 完成審查無發現及無未解決討論後合併 c64292b。擁有者已 CLI 套用並回報 19 檔對齊；agent linked CLI 唯讀 postflight 確認逐檔相同、14 表全 RLS、46 policies／96 constraints／55 個 repo functions 與本機一致、public schema／RPC types 相同，security 僅既有 Auth WARN。遠端額外自動 RLS event trigger／產生器等價差異及此次未跑遠端 rollback 的界線見 [handoff §0.15](docs/supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。既有線上 0.4.4 不需重部署即可使用該 policy；未改 App runtime／v4／公告或查改正式帳號。DP-208 HTTP CI 另 #203，DP-206 真實雙帳號／OAuth／真機保留。
 
