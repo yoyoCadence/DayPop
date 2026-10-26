@@ -35,6 +35,7 @@
     "supabase:test": "supabase test db --local supabase/tests/database",
     "supabase:test:concurrency": "node scripts/test-family-concurrency.mjs",
     "supabase:test:sharing-concurrency": "node scripts/test-calendar-sharing-concurrency.mjs",
+    "supabase:test:http": "node scripts/test-family-sharing-http.mjs",
     "supabase:test:permissions": "node scripts/test-family-permissions-control.mjs",
     "supabase:test:linked": "supabase test db --linked supabase/tests/database",
     "supabase:types": "supabase gen types --lang typescript --local --schema public > src/lib/database.types.ts",
