@@ -69,6 +69,40 @@ test('家庭 owner 管理、失敗保留草稿、重發撤銷與解散，不改�
   clean();
 });
 
+test('取消登入會回到同一份家庭邀請，可再次登入後明確接受', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await openApp(page, `/e2e/auth.html#family-invite=${'c'.repeat(64)}`);
+  console.log('invitation return browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
+  const invitation = page.getByRole('dialog', { name: '家庭邀請', exact: true });
+  const authDialog = page.getByRole('dialog', { name: '保存你的日蹦資料', exact: true });
+  await expect(invitation).toBeVisible();
+  const before = await page.evaluate(() => ({ guest: localStorage.getItem('daypop.user-data'), pending: sessionStorage.getItem('daypop.pending-family-invitation') }));
+  expect(before.pending).not.toBeNull();
+  for (const close of ['button', 'escape'] as const) {
+    await invitation.getByRole('button', { name: '登入以查看邀請' }).click();
+    await expect(authDialog).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await authDialog.getByLabel('Email').fill(E2E_EMAIL);
+    if (close === 'button') await authDialog.getByRole('button', { name: '關閉登入視窗' }).click();
+    else await page.keyboard.press('Escape');
+    await expect(invitation).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    expect(await invitation.evaluate(element => element.contains(document.activeElement))).toBe(true);
+    expect(await page.evaluate(() => ({ guest: localStorage.getItem('daypop.user-data'), pending: sessionStorage.getItem('daypop.pending-family-invitation') }))).toEqual(before);
+    expect(await page.evaluate(() => (window as FamilyHarnessWindow).__daypopFamilyServices!.size)).toBe(0);
+  }
+  await invitation.getByRole('button', { name: '登入以查看邀請' }).click();
+  await login(page);
+  const confirmation = page.getByRole('dialog', { name: '確認家庭邀請', exact: true });
+  await expect(confirmation.getByRole('button', { name: '接受邀請' })).toBeVisible();
+  expect(await page.evaluate(userId => (window as FamilyHarnessWindow).__daypopFamilyServices!.get(userId)!.calls, USER)).toEqual([]);
+  await confirmation.getByRole('button', { name: '接受邀請' }).click();
+  await expect(page.getByRole('status')).toContainText('已加入「家人的家庭」');
+  expect(await page.evaluate(() => sessionStorage.getItem('daypop.pending-family-invitation'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before.guest);
+  clean();
+});
+
 test('邀請連結先登入再明確接受，成員只提供退出，不自動上傳遊客資料', async ({ page }) => {
   const clean = monitorBrowser(page);
   await openApp(page, `/e2e/auth.html#family-invite=${'c'.repeat(64)}`);

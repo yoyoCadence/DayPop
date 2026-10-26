@@ -7,25 +7,26 @@ import { useFamilyServiceFactory, type FamilyServiceFactory } from './familyCont
 import type { FamilyService, InvitationPreview } from './familyService';
 import { dismissInvitationIntent, useInvitationIntent } from './invitationStore';
 
-export function FamilyInvitationGate({ timezone, onOpenAuth }: { timezone: string; onOpenAuth(): void }) {
+export function FamilyInvitationGate({ timezone, authOpen, onOpenAuth }: { timezone: string; authOpen: boolean; onOpenAuth(): void }) {
   const intent = useInvitationIntent();
   const auth = useAuth();
   const factory = useFamilyServiceFactory();
   const dataContext=useContext(DataContext);
-  const [waitingToken, setWaitingToken] = useState<string | null>(null);
   const [completed, setCompleted] = useState<{ userId: string; message: string } | null>(null);
   function close() { setCompleted(null); dismissInvitationIntent(); }
+  // Keep the pending intent through Auth, but hand its modal back as soon as
+  // Auth closes. A remembered login click cannot tell us whether it was cancelled.
+  if (authOpen) return null;
   if (!intent) return completed && completed.userId === auth.user?.id ? <FamilyFrame title="家庭邀請" onClose={() => setCompleted(null)}>
     <p className="dialog-intro" role="status">{completed?.message}</p>
     <button className="button primary" type="button" onClick={() => setCompleted(null)}>完成</button>
   </FamilyFrame> : null;
   if (intent.kind === 'invalid') return <FamilyFrame title="家庭邀請" onClose={close}><p className="dialog-intro">邀請連結無效，請向家庭擁有者索取新連結。</p></FamilyFrame>;
   if (!auth.user) {
-    if (waitingToken === intent.token) return null;
     return <FamilyFrame title="家庭邀請" onClose={close}>
       <p className="dialog-intro">請先使用收到邀請的 Email 帳號登入；登入後仍需確認加入，不會自動分享或上傳遊客資料。</p>
       {!intent.persisted ? <p className="family-help">這個瀏覽器無法保留邀請；登入後請重新開啟原連結。</p> : null}
-      <button className="button primary" type="button" disabled={Boolean(auth.configurationError)} onClick={() => { setWaitingToken(intent.token); onOpenAuth(); }}>登入以查看邀請</button>
+      <button className="button primary" type="button" disabled={Boolean(auth.configurationError)} onClick={onOpenAuth}>登入以查看邀請</button>
     </FamilyFrame>;
   }
   if (auth.sessionUnconfirmed || auth.initializing) return <FamilyFrame title="家庭邀請" onClose={close}>

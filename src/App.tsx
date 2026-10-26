@@ -44,7 +44,7 @@ export default function App() {
   const [petGreeted, setPetGreeted] = useState(false);
   const updater = useAppUpdateState();
   const modalLayerOpen = useModalLayerOpen();
-  const { user } = useAuth();
+  const { user, isPasswordRecovery } = useAuth();
 
   const { state, refresh,personalData,confirmation,retainedSharingDrafts,discardSharingDraft } = useDayPopDataState();
 
@@ -115,7 +115,7 @@ export default function App() {
       dialogs={
         <>
           <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
-          <FamilyInvitationGate timezone={state.data.preferences.timezone} onOpenAuth={() => setAuthOpen(true)} />
+          <FamilyInvitationGate timezone={state.data.preferences.timezone} authOpen={authOpen || isPasswordRecovery} onOpenAuth={() => setAuthOpen(true)} />
           {confirmation ? <SharingConfirmationDialog request={confirmation}/> : null}
           {draftsOpen?<RetainedSharingDraftDialog drafts={retainedSharingDrafts ?? []} onDiscard={key=>discardSharingDraft?.(key)} onClose={()=>setDraftsOpen(false)}/>:null}
           {/* At most one release dialog at a time, most actionable first: an
