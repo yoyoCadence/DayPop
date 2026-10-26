@@ -27,13 +27,45 @@ function service(): FamilyService {
       { userId: OTHER, role: 'owner' as const, displayName: '家人', joinedAt: NOW }, { userId: USER, role: 'member' as const, displayName: '你', joinedAt: NOW },
     ], invitations: [] }, invitation: null })) };
 }
-async function render(factory: FamilyServiceFactory, onOpenAuth = vi.fn()) {
-  await act(async () => root.render(<FamilyServiceContext.Provider value={factory}><FamilyInvitationGate timezone="Asia/Taipei" onOpenAuth={onOpenAuth} /></FamilyServiceContext.Provider>));
+async function render(factory: FamilyServiceFactory, onOpenAuth = vi.fn(), authOpen = false) {
+  await act(async () => root.render(<FamilyServiceContext.Provider value={factory}><FamilyInvitationGate timezone="Asia/Taipei" authOpen={authOpen} onOpenAuth={onOpenAuth} /></FamilyServiceContext.Provider>));
   return onOpenAuth;
 }
 function button(text: string) { return [...container.querySelectorAll('button')].find(item => item.textContent === text)!; }
 
 describe('family invitation Auth boundary', () => {
+  it('waits behind an already open Auth dialog without reading or dismissing the invitation', async () => {
+    const factory = vi.fn(() => service());
+    const open = vi.fn();
+    await render(factory, open, true);
+    const pending = sessionStorage.getItem('daypop.pending-family-invitation');
+    expect(pending).not.toBeNull();
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(factory).not.toHaveBeenCalled();
+    await render(factory, open, false);
+    expect(button('登入以查看邀請')).toBeDefined();
+    expect(sessionStorage.getItem('daypop.pending-family-invitation')).toBe(pending);
+    expect(factory).not.toHaveBeenCalled();
+  });
+  it('returns to the same pending invitation after cancelling login, without constructing a service', async () => {
+    const factory = vi.fn(() => service());
+    const open = await render(factory);
+    const pending = sessionStorage.getItem('daypop.pending-family-invitation');
+    expect(pending).not.toBeNull();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await act(async () => button('登入以查看邀請').click());
+      await render(factory, open, true);
+      expect(container.querySelector('[role="dialog"]')).toBeNull();
+      await render(factory, open, false);
+      expect(button('登入以查看邀請')).toBeDefined();
+      expect(sessionStorage.getItem('daypop.pending-family-invitation')).toBe(pending);
+      expect(factory).not.toHaveBeenCalled();
+    }
+    expect(open).toHaveBeenCalledTimes(2);
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="關閉家庭視窗"]')!.click());
+    expect(sessionStorage.getItem('daypop.pending-family-invitation')).toBeNull();
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
   it('renders no modal for a guest with no invitation or completed action', async () => {
     window.history.replaceState(null, '', '/');
     const factory = vi.fn(() => service());

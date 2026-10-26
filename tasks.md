@@ -76,6 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+
 - [ ] **DP-206 — 共用日曆雙帳號實用驗收：** 承接 DP-205 已發布的 0.4.4，由 Backlog → Next。擁有者用 A／B 兩個實際帳號依 [使用指引](docs/shared-calendar-start.md) 確認登入／各自保存、家庭邀請明確接受、共享 edit／private／view／撤權及重新確認分享，記錄預期／實際結果；agent 依實際問題另開修正 PR。現在站台可開始操作，尚無這輪真實雙帳號／OAuth／真機通過證據，不等同 DP-034 正式放行。寵物後續素材暫緩。
 
 
@@ -226,6 +227,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
@@ -313,6 +315,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
 
 
 
@@ -469,6 +472,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-207 — 家庭邀請取消登入後可繼續（2026-10-26）：** 依持續開發／逐段 PR 與合併授權，由 Backlog → Next → In Progress → Done。從 main `066a9e1` 重現：邀請開啟登入後，關閉登入會永久隱藏本次邀請。`FamilyInvitationGate` 改讀 App 的實際 Auth 視窗狀態（含密碼重設），移除只記錄登入點擊的 `waitingToken`；關閉登入即回同一邀請，關閉邀請仍清除 intent，登入後仍須明確接受。兩項新單元反向舊元件皆失敗、finally 逐 byte 還原再 6/6；手機舊程式新整合先失敗，修正後 ×／Escape 兩輪取消、焦點、單一 modal、無 guest 寫入／家庭 service 呼叫，再登入與明確接受通過。完整 1,404 單元＋29 Node、lint／typecheck／build／check:build 通過；家庭／分享 Chromium 19 passed／1 既有 skipped、WebKit 8 passed。Browser plugin 未提供，沿專案 Playwright＋官方 CLI，390×844／1280×900 截圖已目視，測試 console 乾淨；CLI 僅既有 harness favicon 兩次 404，無應用錯誤，browser 實際 Etc/GMT-8、e2e Asia/Taipei。App 仍 0.4.4、v4／18 migrations／歷史公告不變，本段沒有部署或查改正式帳號；自己的最新四 CI／完成審查無發現與未解決討論才合併。下一步仍 DP-206 的真實雙帳號／OAuth／真機驗收。
 
 - [x] **DP-205 — 多帳號與共用行事曆 0.4.4 發布（2026-10-26）：** Backlog → Next → In Progress → Done。PR #199 head `01f9afd` 四 CI／相同 head 完成審查無發現、無未解決討論後合併 `0629821`；擁有者明確答覆「可以 繼續吧」授權發布，本次 Deploy staging #16／`40253002837` 六 jobs 成功，Chromium 285 passed／13 skipped、WebKit 8、1,402 單元＋29 Node、376 pgTAP／權限負控制／兩競態／types 全過。線上六公開成品與 artifact 逐 byte 一致、Auth flags 正常；真實線上 0.4.3 UI 更新自行 reload 至 0.4.4，原行程及 990 bytes／v4／revision 1／hash 連同後續 reload 均不變，只餘新版 cache。390×844／1280×900 公告／四分頁／家庭分享登入／console QA 過，時區與截圖已記錄，CLI 已清理。詳 [驗證與 hashes](docs/deployment-verification-2026-10-26.md)／[使用指引](docs/shared-calendar-start.md)。沒有新 migration 或正式帳號資料操作；歷史公告保持不變，0.4.4 已發布公告不可回寫。真實雙帳號／OAuth／真機留 DP-206，DP-034 正式放行未代做；寵物素材暫緩。此完成紀錄與交接文件另 PR，最新四 CI／完成審查通過才依既有授權合併，不再次發布。
 
