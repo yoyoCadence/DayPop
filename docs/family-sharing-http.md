@@ -35,4 +35,6 @@ Node 程序以本機 admin key **只建立及清理本次隨機、已驗證的�
 
 本機專用 `DayPopHTTP208`（API 54331／DB 54332）由零重建 19 檔、10 檔 386 pgTAP、public types 相同後，八組真實 HTTP 通過、兩個隨機假帳號已清理；Node 實際時區 `Etc/GMT-8`。這條 script 會在每次執行印出實際時區；CI 結果以自己的最新 head 為準，不能沿用另一 PR 的數字。
 
+PR #203 head `0e3f3a6` 的 CI `40274767378` 四項全過：1,404 單元＋39 Node、386 pgTAP／兩組權限負控制／兩競態／types、八組真實 HTTP（實際 UTC，兩個 fixture 清理成功）、WebKit 8、Chromium 287 passed／13 skipped（21.9 分鐘）。早一輪 `938e0e0` 的 JS import-attributes lint 解析失敗不算通過；改用既有 ecmaVersion 支援的 JSON 讀取後重跑。後續文件提交仍需自己的四 CI 與相同 head 完成審查才能合併。
+
 不驗證 Email 寄達、註冊／Google OAuth UI、正式站台、手機或 standalone。fixture 的 Email 由 Node admin 確認，不能冒充真實使用者完成驗證信；畫面與草稿／焦點另由 Playwright 覆蓋，權限／競態另由 pgTAP 和既有雙連線測試覆蓋。DP-206 實帳號驗收仍保留；本項不部署、不修改 migration、v4、版號或已發布公告。
