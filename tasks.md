@@ -77,7 +77,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## Next
 
 
-- [ ] **DP-206 — 共用日曆雙帳號實用驗收：** 承接 DP-205 已發布的 0.4.4，由 Backlog → Next。擁有者用 A／B 兩個實際帳號依 [使用指引](docs/shared-calendar-start.md) 確認登入／各自保存、家庭邀請明確接受、共享 edit／private／view／撤權及重新確認分享，記錄預期／實際結果；agent 依實際問題另開修正 PR。現在站台可開始操作，尚無這輪真實雙帳號／OAuth／真機通過證據，不等同 DP-034 正式放行。寵物後續素材暫緩。
 
 
 
@@ -226,6 +225,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+- [ ] **DP-206 — 共用日曆雙帳號實用驗收：** Backlog → Next → In Progress。PR #203 已四 CI／相同 head 審查完成無發現及無未解決討論，由擁有者合併 e5db4c4；本機 main 已同步。agent 補驗正式 App 入口與專用本機 19 檔 stack 的兩個真實密碼 session：A 新增日曆／家庭邀請、B 明確接受、A 明確共享／新增行程、B 重新確認分享並編輯、A reload 讀回新標題均過。390×844／1280×900、實際 Etc/GMT-8、兩邊 console 0 errors／warnings、無 overlay／水平溢出、截圖目視；fixture 清理後五集合各 0，CLI／server／stack 已停止。詳 [本機畫面補驗](docs/family-sharing-http.md#dp-206-本機真實畫面補驗2026-10-26)。本機確認 Email 不等於實際驗證信；擁有者已收到 [正式站台操作指引](docs/shared-calendar-start.md)，仍待 A／B 實帳號各自保存、edit／private／view／撤權及重新確認分享的結果，失敗依原錯誤另 PR 修正。未驗 Google OAuth／真機、未代做 DP-034 放行；沒有產品或部署變更，寵物暫緩。
 
 
 
@@ -477,7 +478,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [x] **DP-209 — 本人新增日曆 RETURNING 權限修正（2026-10-26）：** 第 19 檔只補 calendars SELECT 的本人 owner 條件；舊 policy 的新 10 項回歸與反向 transaction 均 7 項失敗，還原後 10/10，本機共 386 pgTAP／HTTP 8/8／types 通過。PR #202 head 25e3434 四 CI／相同 head 完成審查無發現及無未解決討論後合併 c64292b。擁有者已 CLI 套用並回報 19 檔對齊；agent linked CLI 唯讀 postflight 確認逐檔相同、14 表全 RLS、46 policies／96 constraints／55 個 repo functions 與本機一致、public schema／RPC types 相同，security 僅既有 Auth WARN。遠端額外自動 RLS event trigger／產生器等價差異及此次未跑遠端 rollback 的界線見 [handoff §0.15](docs/supabase-mcp-handoff.md#015-dp-209-新增日曆-returning-修正候選2026-10-26)。既有線上 0.4.4 不需重部署即可使用該 policy；未改 App runtime／v4／公告或查改正式帳號。DP-208 HTTP CI 另 #203，DP-206 真實雙帳號／OAuth／真機保留。
 
-- [x] **DP-208 — 本機 Auth／HTTP 雙帳號分享整合（2026-10-26）：** Backlog → Next → In Progress → Done。正式 family service／repository 經專用本機 GoTrue／Kong／PostgREST／Postgres，首次在 18 檔重現新增日曆 42501，修正另 DP-209／PR #202。19 檔本機 HTTP 八組全過：各自保存／新日曆、受邀 Email／明確接受與分享、edit／作者、private、衝突、view、撤權、真正 logout／新 client 密碼登入；兩個隨機已驗證假帳號由 Node admin 只作 setup／finally cleanup，產品路徑只用各自公開 client。正常 npm test 保持不用 Docker，完整 1,404 單元＋39 Node、lint／typecheck／build／check:build 過；十項 local-only／不輸出憑證／禁止跨來源及轉址防護過，Bash 啟動腳本語法過。本機 19 檔／386 pgTAP／types 由 DP-209 驗過，HTTP 後 users／family／calendars／events／todos 各 0；實際 Node Etc/GMT-8 已印。CI database job 只增 Auth／PostgREST／Kong 與同 npm script、保留四 gate／timeouts／pgTAP／負控制／競態／types；啟動含 key 摘要只留 runner TEMP，不上傳／印出。詳 [HTTP 回歸與限制](docs/family-sharing-http.md)。#202 等待期間獨立準備，其 head 25e3434 四 CI／完成審查無發現及無未解決討論後合併 c64292b，本段已對齊該最新 main，PR #203 head 0e3f3a6 的 CI 40274767378 四項全過（386 pgTAP、HTTP 8/8／UTC、Chromium 287 passed／13 skipped、WebKit 8），**後續文件提交仍需自己的最新四 CI／相同 head 完成審查無發現及未解決討論過才合併**；舊 head 938e0e0 審查不能代替。瀏覽器自動核准審查因額度拒絕 GitHub 重新整理，需擁有者手動要求最終 head 審查／合併，PR 尚未合併。沒有 migration／App runtime／v4／0.4.4／公告／部署變更；遠端第 19 檔已由擁有者套用並完成 DP-209 只讀 postflight；Email 寄達／OAuth UI／正式帳號／真機仍留 DP-206。
+- [x] **DP-208 — 本機 Auth／HTTP 雙帳號分享整合（2026-10-26）：** Backlog → Next → In Progress → Done。正式 family service／repository 經專用本機 GoTrue／Kong／PostgREST／Postgres，首次在 18 檔重現新增日曆 42501，修正另 DP-209／PR #202。19 檔本機 HTTP 八組全過：各自保存／新日曆、受邀 Email／明確接受與分享、edit／作者、private、衝突、view、撤權、真正 logout／新 client 密碼登入；兩個隨機已驗證假帳號由 Node admin 只作 setup／finally cleanup，產品路徑只用各自公開 client。正常 npm test 保持不用 Docker，完整 1,404 單元＋39 Node、lint／typecheck／build／check:build 過；十項 local-only／不輸出憑證／禁止跨來源及轉址防護過，Bash 啟動腳本語法過。本機 19 檔／386 pgTAP／types 由 DP-209 驗過，HTTP 後 users／family／calendars／events／todos 各 0；實際 Node Etc/GMT-8 已印。CI database job 只增 Auth／PostgREST／Kong 與同 npm script、保留四 gate／timeouts／pgTAP／負控制／競態／types；啟動含 key 摘要只留 runner TEMP，不上傳／印出。詳 [HTTP 回歸與限制](docs/family-sharing-http.md)。#202 等待期間獨立準備，其 head 25e3434 四 CI／完成審查無發現及無未解決討論後合併 c64292b，本段已對齊該最新 main，PR #203 head 0e3f3a6 的 CI 40274767378 四項全過（386 pgTAP、HTTP 8/8／UTC、Chromium 287 passed／13 skipped、WebKit 8），最終 head a3ad68e 的 CI 40288425887 重跑後四項全過，Chromium 287 passed／13 skipped（15.9 分鐘）；相同 head 完成審查無發現且無未解決討論，擁有者已合併 e5db4c4。首次套件下載延遲後取消的 attempt 不算通過，沒有調整門檻；早期瀏覽器額度限制已由手動操作完成。沒有 migration／App runtime／v4／0.4.4／公告／部署變更；遠端第 19 檔已由擁有者套用並完成 DP-209 只讀 postflight；Email 寄達／OAuth UI／正式帳號／真機仍留 DP-206。
 
 - [x] **DP-207 — 家庭邀請取消登入後可繼續（2026-10-26）：** 依持續開發／逐段 PR 與合併授權，由 Backlog → Next → In Progress → Done。從 main `066a9e1` 重現：邀請開啟登入後，關閉登入會永久隱藏本次邀請。`FamilyInvitationGate` 改讀 App 的實際 Auth 視窗狀態（含密碼重設），移除只記錄登入點擊的 `waitingToken`；關閉登入即回同一邀請，關閉邀請仍清除 intent，登入後仍須明確接受。兩項新單元反向舊元件皆失敗、finally 逐 byte 還原再 6/6；手機舊程式新整合先失敗，修正後 ×／Escape 兩輪取消、焦點、單一 modal、無 guest 寫入／家庭 service 呼叫，再登入與明確接受通過。完整 1,404 單元＋29 Node、lint／typecheck／build／check:build 通過；家庭／分享 Chromium 19 passed／1 既有 skipped、WebKit 8 passed。Browser plugin 未提供，沿專案 Playwright＋官方 CLI，390×844／1280×900 截圖已目視，測試 console 乾淨；CLI 僅既有 harness favicon 兩次 404，無應用錯誤，browser 實際 Etc/GMT-8、e2e Asia/Taipei。App 仍 0.4.4、v4／18 migrations／歷史公告不變，本段沒有部署或查改正式帳號；自己的最新四 CI／完成審查無發現與未解決討論才合併。下一步仍 DP-206 的真實雙帳號／OAuth／真機驗收。
 
