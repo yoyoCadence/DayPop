@@ -4,7 +4,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 
 ## 開始使用共用日曆
 
-0.4.4「家庭日曆一起用」發布候選已準備，部署成功後即可依 [兩帳號使用指引](docs/shared-calendar-start.md) 建立家庭、接受邀請並明確開啟日曆分享，選擇共同編輯或唯讀。先在「設定 → 關於」確認線上版本；合併不代表已部署。發布進度與驗證範圍見 [發布準備紀錄](docs/calendar-release-readiness-2026-10-26.md)。
+**0.4.4「家庭日曆一起用」已於 2026-10-26 發布。** 依 [兩帳號使用指引](docs/shared-calendar-start.md) 建立家庭、接受邀請並明確開啟日曆分享，選擇共同編輯或唯讀。先在「設定 → 關於」確認版本；舊視窗可按「檢查更新 → 立即更新」。發布與更新保存證據見 [驗證紀錄](docs/deployment-verification-2026-10-26.md)；真實雙帳號分享與真機結果仍待實際操作驗收。
 
 ![日蹦 DayPop — 把每一天排得剛剛好](showcase/hero.png)
 
@@ -41,7 +41,7 @@ DayPop 是以手機為主的個人日曆 PWA。目前正在把 Claude Design 匯
 - mobile-first PWA manifest、service worker 與基本 App shell 啟動快取
 - Email＋密碼註冊／登入、忘記／重設密碼、session restore 與遊客模式
 - 登入後以 Supabase 保存行程、待辦、貼圖、偏好與私人附件；遊客資料與帳號資料保持隔離
-- 家庭邀請與日曆分享：共同編輯／唯讀、日曆擁有者的私人事項、前景重新確認分享及衝突保留草稿（目前程式已完成，線上需更新至 0.4.4）
+- 家庭邀請與日曆分享：共同編輯／唯讀、日曆擁有者的私人事項、前景重新確認分享及衝突保留草稿（線上 0.4.4）
 - 舊 `calpet.v2` 資料可先預覽、確認後原子匯入，成功、失敗與重試都不刪除原始資料
 - 18 筆 Supabase migrations、14 張公開資料表全 RLS、46 policies、private Storage bucket 與產生的 TypeScript database types；分享權限依有效家庭成員與明確分享設定判斷
 
@@ -90,7 +90,7 @@ npm run build -- --base=/DayPop/
 
 Staging 網址：**https://yoyocadence.github.io/DayPop/**（2026-08-13 首次部署，驗收結果見 [`docs/deployment.md`](docs/deployment.md) §5.1）。
 
-DP-023／033 的真實 Email／Google 登入、保存、登出隔離與重登已由擁有者於 2026-08-22 驗收；0.4.4 的真實雙帳號分享與真機驗收仍待發布後執行。DP-032 剩餘項目與 DP-034 正式放行保留在任務板，沒有因自動化通過而代為放行。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
+DP-023／033 的真實 Email／Google 登入、保存、登出隔離與重登已由擁有者於 2026-08-22 驗收；0.4.4 已發布，真實雙帳號分享與真機驗收仍待依指引操作。DP-032 剩餘項目與 DP-034 正式放行保留在任務板，沒有因自動化通過而代為放行。完整部署流程、rollback 與驗收清單見 [`docs/deployment.md`](docs/deployment.md)。
 
 ## Supabase 開發
 

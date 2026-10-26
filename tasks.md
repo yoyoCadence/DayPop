@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-目前集中完成 DP-205 多帳號與共享日曆發布；寵物後續暫緩。
+- [ ] **DP-206 — 共用日曆雙帳號實用驗收：** 承接 DP-205 已發布的 0.4.4，由 Backlog → Next。擁有者用 A／B 兩個實際帳號依 [使用指引](docs/shared-calendar-start.md) 確認登入／各自保存、家庭邀請明確接受、共享 edit／private／view／撤權及重新確認分享，記錄預期／實際結果；agent 依實際問題另開修正 PR。現在站台可開始操作，尚無這輪真實雙帳號／OAuth／真機通過證據，不等同 DP-034 正式放行。寵物後續素材暫緩。
 
 
 
@@ -226,7 +226,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-205 — 多帳號與共用行事曆發布準備（2026-10-26優先）：** 由擁有者直接指定，Backlog → Next → In Progress。已核對線上0.4.3／最後部署10月18日、公開bundle無calendar_sharing_manifest；linked專案18檔migration與本機一致，Auth health/settings 200、Email／Google／註冊開啟、Email需驗證。準備獨立0.4.4候選且保留歷史公告，驗登入／session與帳號隔離、家庭邀請／分享edit與private／共同維護、撤權／衝突草稿、更新與離線，交兩帳號操作指引。自己的最新四CI／完成審查通過才合併，部署沿既有staging流程與授權界線，不新增migration或查改正式使用者資料。
+> **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
 
@@ -469,6 +469,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-205 — 多帳號與共用行事曆 0.4.4 發布（2026-10-26）：** Backlog → Next → In Progress → Done。PR #199 head `01f9afd` 四 CI／相同 head 完成審查無發現、無未解決討論後合併 `0629821`；擁有者明確答覆「可以 繼續吧」授權發布，本次 Deploy staging #16／`40253002837` 六 jobs 成功，Chromium 285 passed／13 skipped、WebKit 8、1,402 單元＋29 Node、376 pgTAP／權限負控制／兩競態／types 全過。線上六公開成品與 artifact 逐 byte 一致、Auth flags 正常；真實線上 0.4.3 UI 更新自行 reload 至 0.4.4，原行程及 990 bytes／v4／revision 1／hash 連同後續 reload 均不變，只餘新版 cache。390×844／1280×900 公告／四分頁／家庭分享登入／console QA 過，時區與截圖已記錄，CLI 已清理。詳 [驗證與 hashes](docs/deployment-verification-2026-10-26.md)／[使用指引](docs/shared-calendar-start.md)。沒有新 migration 或正式帳號資料操作；歷史公告保持不變，0.4.4 已發布公告不可回寫。真實雙帳號／OAuth／真機留 DP-206，DP-034 正式放行未代做；寵物素材暫緩。此完成紀錄與交接文件另 PR，最新四 CI／完成審查通過才依既有授權合併，不再次發布。
 
 - [x] **DP-203 — 原地踏爪與傾斜滑行可行性（2026-10-25）：** Backlog → Next → In Progress → Done。兩份原生 .blend／16 真實PNG、0.8秒八取樣及六編碼候選，原模型／材質／相機／base anchor保留；貓不是完整四肢行走。貓Q75full 18,078、假設包203,926超192KiB；held 6,572但MAE0.009209拒絕，沒有同時符合品質與總量的候選。飛碟首輪60px邊距3px被攔，修整路徑後8／4px過；Q75full 14,444、假設包174,813數值過，held MAE0.020034拒絕。十二圖片／metadata＋八native負控制全拒絕並finally精確還原，16實幀與兩閉環重渲染pixels一致。兩viewport淺深底28圖／六原生60px完整週期後循環／PNG暫停重播／reduce／鍵盤／拒絕文案／版面／連結／console過，實際時區列印、板與截圖目視，CLI／server核對清理；lint／typecheck／本機連結／diff過，產品相對前段零差異。詳 [試作與限制](docs/pet-concepts/2026-10-25/motion-feasibility/README.md)。沒有接App／採用候選／七態完成或擁有者品質驗收；192KiB／五態／0.4.3／v4／18migrations／公告／部署不變。依賴與自己的最新四CI／完成審查通過才合併；下一段DP-204先量保留坐姿、僅前爪動作的成本，並交模型／預算方案。
 
