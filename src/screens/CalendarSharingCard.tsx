@@ -27,7 +27,7 @@ export function CalendarSharingCard({onOpenAuth}:{onOpenAuth():void}) {
         <button className="button secondary" type="button" aria-pressed={calendar.isVisible}
           aria-label={`${calendar.isVisible?'隱藏':'顯示'}收到的日曆 ${calendar.name}`} onClick={()=>void updateCalendar(calendar.id,{isVisible:!calendar.isVisible})}>{calendar.isVisible?'隱藏':'顯示'}</button>
       </li>;})}</ul></div></section> : null}
-    {sharing?.available ? <button className="button secondary" type="button" onClick={revalidateShares}>重新確認分享</button> : null}
+    {auth.user ? <button className="button secondary" type="button" disabled={Boolean(auth.sessionUnconfirmed || auth.configurationError)} onClick={revalidateShares}>重新確認分享</button> : null}
     </div>
     {open && auth.user && sharing?.available ? <CalendarSharingDialog calendars={personalData.calendars} factory={factory} userId={auth.user.id} onClose={()=>setOpen(false)}/> : null}
   </>;

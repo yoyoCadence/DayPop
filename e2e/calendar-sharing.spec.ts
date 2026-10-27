@@ -118,8 +118,10 @@ test('重查撤權後儲存保留行程草稿，不把已消失的分享當成�
   expect(await page.evaluate(()=>JSON.stringify(localStorage))).not.toContain('撤權後不能丟掉的行程草稿');clean();
 });
 
-test('分享查詢故障仍顯示並快取剛載入的本人資料，收到的內容收起',async({page})=>{
+test('分享查詢故障保留本人資料，可在原畫面重試並恢復共用內容',async({page})=>{
   const clean=monitorBrowser(page);await login(page);await received(page,'edit');
+  await expect(page).toHaveTitle('DayPop Auth E2E');
+  await expect(page).toHaveURL(/\/e2e\/auth\.html$/);
   await page.evaluate(({SELF})=>{
     const db=(window as HarnessWindow).__daypopSharingHarness!;
     const calendar=db.rows('calendars').find(c=>c.owner_id===SELF && c.is_default)!;
@@ -128,6 +130,25 @@ test('分享查詢故障仍顯示並快取剛載入的本人資料，收到的�
   },{SELF});
   await expect(page.getByText(/自己的資料已同步/)).toBeVisible();
   await expect(page.getByText('收到的日曆',{exact:true})).toHaveCount(0);
+  const retry=page.getByRole('button',{name:'重新確認分享',exact:true});
+  await expect(retry).toBeVisible();
+  await page.evaluate(()=>{(window as HarnessWindow).__daypopSharingHarness!.rpcCalls.length=0;});
+  await retry.click();
+  await expect.poll(()=>page.evaluate(()=>(window as HarnessWindow).__daypopSharingHarness!.rpcCalls.filter(call=>call.name==='calendar_sharing_manifest').length)).toBe(1);
+  await expect(page.getByText(/自己的資料已同步/)).toBeVisible();
+  await expect(page.getByText('收到的日曆',{exact:true})).toHaveCount(0);
+  const cacheKey=`daypop.account-cache.${SELF}`;
+  const beforeRecovery=await page.evaluate(key=>localStorage.getItem(key),cacheKey);
+  await page.screenshot({path:`${process.env.TEMP ?? '/tmp'}/daypop-dp213-${test.info().project.name}-unavailable.png`});
+  await page.evaluate(()=>{(window as HarnessWindow).__daypopSharingHarness!.failures.delete('rpc:calendar_sharing_manifest');});
+  await retry.focus();await page.keyboard.press('Enter');
+  await expect(page.getByText('家人甲 · 可共同編輯',{exact:true})).toBeVisible();
+  await expect(page.getByText(/自己的資料已同步/)).toHaveCount(0);
+  expect(await page.evaluate(key=>localStorage.getItem(key),cacheKey)).toBe(beforeRecovery);
+  await expect(retry).toBeFocused();
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:`${process.env.TEMP ?? '/tmp'}/daypop-dp213-${test.info().project.name}-recovered.png`});
   await tabButton(page,'搜尋').click();await page.getByRole('textbox',{name:'搜尋',exact:true}).fill('雲端剛載入的本人行程');
   await expect(page.locator('.search-result')).toHaveCount(1);
   const cache=await page.evaluate(key=>localStorage.getItem(key),`daypop.account-cache.${SELF}`);
