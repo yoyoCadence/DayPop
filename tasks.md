@@ -76,6 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+
 > **2026-10-26 線上雙帳號核心驗收完成：** DP-206 已依擁有者委託用兩個新建線上 QA 帳號完成共用／私人／view／撤權與重登，詳 Done 與既有驗證文件。帳號及假資料保留供使用，憑證只在本機 TEMP；本輪沒有部署，現有 0.4.4 搭配已套用第 19 檔即可使用。Email 寄達／Google OAuth／真機本輪未驗，DP-034 放行不變，寵物仍暫緩。下方仍寫「待 DP-206 實帳號」的段落為先前交接歷史。
 
 
@@ -235,6 +236,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
@@ -322,6 +324,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
 
 
 
@@ -480,6 +483,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-213 — 分享查詢失敗可在原畫面重試（2026-10-27）：** Backlog → Next → In Progress → Done，基底 PR #208／0eaeb72。修正 `CalendarSharingCard` 只在分享 available 時才顯示重試的條件；改以已登入帳號顯示、未確認 session／設定錯誤停用，沿既有 revalidate queue，不新增 cache／listener／請求來源。新單元在舊元件一項失敗、手機也在找不到按鈕處失敗；修正後 4 新單元與完整 1,408＋39 Node、lint／typecheck／build／check:build 過。相關 Chromium 19 passed／1 skipped＋WebKit 8 passed；390×844／1280×900 的分享故障、同畫面再次失敗（確認真正 manifest 呼叫）、鍵盤恢復、焦點／本人 cache bytes／頁名路徑／無溢出／overlay／console 均過，實際 Asia/Taipei、TEMP 截圖目視。自己的最新四 CI／同 head 審查後才合併；無 migration、版號、公告或部署。後續見 [雙人完成矩陣](docs/two-person-readiness.md)，線上 QA 未操作、寵物暫緩。
 
 - [x] **DP-212 — 家庭成員變更的真實 HTTP 權限回收（2026-10-27）：** Backlog → Next → In Progress → Done。從 PR #207 合併 a878372 接續，原十一組先過，新增退出／owner 移除／解散三組：各自獨立舊 edit snapshot 的修改、完成及刪除由真實 RPC 拒絕，B 直接 HTTP 不能讀共用日曆／事項，A 全部日曆／行程／待辦 raw rows（含 B 實際作者內容）與 B 個人 projection 均不變。重新邀請的 preview／pending 不恢復資格，再明確接受後才讀到原有分享；解散後雙方家庭與分享移除、資料保留。三項 no-op 負控制各在新第 12／13／14 組獨立重讀斷言失敗，兩個假帳號均清理、finally 原檔逐 byte 還原後 14/14 過。1,404 單元＋39 Node、lint／typecheck／build／check:build／語法過，實際 Etc/GMT-8；專用本機 19 檔一致無 link，結束前五集合各 0、stack 已停止。詳 [補驗與限制](docs/family-sharing-http.md#dp-212-家庭成員變更-http-補驗2026-10-27)。只改回歸與交接，自己的最新四 CI／同 head 完成審查後才合併；產品／migration／CI 門檻／v4／版號／公告／部署不改，不操作線上 QA，不當新一輪線上／Email／OAuth／真機或 DP-034 放行。
 
