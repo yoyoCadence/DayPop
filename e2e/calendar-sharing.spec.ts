@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect,test,type Page } from '@playwright/test';
 import type { FakeSupabase } from '../src/test/fakeSupabase';
-import { E2E_EMAIL,E2E_PASSWORD,openApp,tabButton,monitorBrowser,calendarViewButton } from './support';
+import { E2E_EMAIL,E2E_PASSWORD,openApp,tabButton,monitorBrowser,calendarViewButton,agendaRow } from './support';
 
 const SELF='00000000-0000-4000-8000-000000000030';
 const OTHER='00000000-0000-4000-8000-00000000048b';
@@ -153,6 +153,35 @@ test('分享查詢故障保留本人資料，可在原畫面重試並恢復共�
   await expect(page.locator('.search-result')).toHaveCount(1);
   const cache=await page.evaluate(key=>localStorage.getItem(key),`daypop.account-cache.${SELF}`);
   expect(cache).toContain('雲端剛載入的本人行程');expect(cache).not.toContain('家人的共享行程');clean();
+});
+
+test('後端 offset 格式的指定時間取消與替換，不復活原次數或重複顯示',async({page},testInfo)=>{
+  const clean=monitorBrowser(page);await login(page);await received(page,'edit');
+  const replacement='20000000-0000-4000-8000-000000000215';
+  await page.evaluate(({EVENT,OTHER,NOW,replacement})=>{
+    const db=(window as HarnessWindow).__daypopSharingHarness!;
+    const source=db.rows('events').find(row=>row.id===EVENT)!;
+    db.seed('events',[{...source,recurrence_rule:'FREQ=DAILY;COUNT=4'},
+      {...source,id:replacement,title:'只改這次的共同會議',starts_at:'2026-10-20T01:00:00+00:00',ends_at:'2026-10-20T02:00:00+00:00'}]);
+    db.seed('event_exceptions',[
+      {id:'30000000-0000-4000-8000-000000000215',owner_id:OTHER,event_id:EVENT,occurrence_date:null,occurrence_starts_at:'2026-10-20T01:00:00+00:00',is_cancelled:false,replacement_event_id:replacement,created_at:NOW,updated_at:NOW},
+      {id:'30000000-0000-4000-8000-000000000216',owner_id:OTHER,event_id:EVENT,occurrence_date:null,occurrence_starts_at:'2026-10-21T01:00:00+00:00',is_cancelled:true,replacement_event_id:null,created_at:NOW,updated_at:NOW},
+    ]);
+  },{EVENT,OTHER,NOW,replacement});
+  await page.getByRole('button',{name:'重新確認分享',exact:true}).click();
+  await tabButton(page,'日曆').click();await calendarViewButton(page,'列表').click();
+  await expect(agendaRow(page,'家人的共享行程')).toHaveCount(2);
+  await expect(agendaRow(page,'只改這次的共同會議')).toHaveCount(1);
+  await expect(page).toHaveTitle('DayPop Auth E2E');
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:`${process.env.TEMP ?? '/tmp'}/daypop-dp215-${testInfo.project.name}-recurrence.png`});
+  await tabButton(page,'設定').click();await page.getByRole('button',{name:'重新確認分享',exact:true}).click();
+  await tabButton(page,'日曆').click();await calendarViewButton(page,'列表').click();
+  await expect(agendaRow(page,'家人的共享行程')).toHaveCount(2);
+  await expect(agendaRow(page,'只改這次的共同會議')).toHaveCount(1);
+  expect(await page.evaluate(()=>(window as HarnessWindow).__daypopSharingHarness!.rows('event_exceptions').map(row=>row.occurrence_starts_at))).toEqual(['2026-10-20T01:00:00+00:00','2026-10-21T01:00:00+00:00']);
+  clean();
 });
 
 test('擁有者明確確認歷史內容與 edit/view，新增私人事項保留既有 schema',async({page})=>{

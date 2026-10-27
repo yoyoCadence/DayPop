@@ -1,5 +1,6 @@
 import { RRule } from 'rrule';
 import { addDays, daysBetween, fromDateKey, toDateKey } from './date';
+import { eventOccurrenceKey as occurrenceKey } from './eventOccurrenceKey';
 import {
   createZonedPartsReader,
   instantDateInZone,
@@ -665,12 +666,6 @@ function groupExceptions(exceptions: EventException[]) {
     grouped.set(exception.eventId, byOccurrence);
   }
   return grouped;
-}
-
-function occurrenceKey(occurrence: EventOccurrence): string {
-  return occurrence.kind === 'all-day'
-    ? `all-day:${occurrence.date}`
-    : `timed:${occurrence.startsAt}`;
 }
 
 function toResolved(

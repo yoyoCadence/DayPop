@@ -10,6 +10,7 @@ import {
   wallTimeToInstant,
 } from './eventTime';
 import { resolveEventOccurrences } from './recurrence';
+import { eventOccurrenceKey } from './eventOccurrenceKey';
 import { DomainValidationError, isDateKey, isIsoInstant, isUuid } from './validation';
 import { TodoInputError } from './todos';
 import { assertTitleLength } from './titles';
@@ -721,10 +722,7 @@ function sameEventOccurrence(
 }
 
 function sameOccurrence(left: EventOccurrence, right: EventOccurrence): boolean {
-  if (left.kind !== right.kind) return false;
-  return left.kind === 'all-day'
-    ? left.date === (right as Extract<EventOccurrence, { kind: 'all-day' }>).date
-    : left.startsAt === (right as Extract<EventOccurrence, { kind: 'timed' }>).startsAt;
+  return eventOccurrenceKey(left) === eventOccurrenceKey(right);
 }
 
 function requireRecurringOccurrence(
