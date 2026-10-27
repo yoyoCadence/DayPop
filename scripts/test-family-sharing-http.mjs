@@ -28,7 +28,7 @@ const actors = [];
 let vite;
 let stage = 'setup';
 let checks = 0;
-const expectedChecks = 11;
+const expectedChecks = 14;
 async function check(name, operation) {
   stage = name;
   await operation();
@@ -233,6 +233,60 @@ try {
     assert.ok(!restored.calendars.some(row => row.id === sharedId), 'Old received sharing cannot return after login');
     await fresh.auth.signOut();
   });
+  for (const kind of ['leave', 'remove', 'dissolve']) {
+    await check(`family ${kind} revokes stale editors without deleting owned data`, async () => {
+      const signed = await b.client.auth.signInWithPassword({ email: b.email, password: b.password });
+      assert.ok(!signed.error && signed.data.user?.id === b.id, 'Membership checks use B actual password session');
+      const groupId = (await a.family.load()).group.id;
+      if ((await b.family.load()).group === null) {
+        const invitation = await a.family.command({ kind: 'invite', groupId, email: b.email });
+        await b.family.preview(invitation.invitation.token);
+        assert.equal((await b.family.load()).group, null, 'A new preview cannot silently restore membership');
+        assert.ok(!(await b.repository.load()).calendars.some(row => row.id === sharedId), 'Pending re-invitation cannot restore the existing calendar share');
+        await b.family.command({ kind: 'accept', token: invitation.invitation.token });
+      } else {
+        // Restore the explicit share disabled by the earlier revocation group.
+        await a.repository.setCalendarShare(sharedId, 'edit');
+      }
+      const received = await b.repository.load();
+      assert.ok(received.events.some(row => row.id === eventId) && received.todos.some(row => row.id === todoId), 'Accepted membership can read the owner explicitly shared items');
+      assert.equal(b.repository.sharingSession().shares.find(row => row.calendarId === sharedId).permission, 'edit');
+      const personalBefore = b.repository.personalData();
+      const [completer, deleter] = await Promise.all([memberSnapshot(), memberSnapshot()]);
+      const ownedRows = async () => {
+        const results = await Promise.all(['calendars', 'events', 'todos'].map(table => a.client.from(table).select('*').eq('owner_id', a.id).order('id')));
+        assert.ok(results.every(result => !result.error && Array.isArray(result.data)), 'Owner must read persisted personal and shared rows');
+        return results.map(result => result.data);
+      };
+      const ownerBefore = await ownedRows();
+      assert.ok(ownerBefore[2].some(row => row.id === todoId && row.owner_id === a.id && row.created_by === b.id), 'Fixture includes the departed member authored todo owned by A');
+      const caller = kind === 'leave' ? b.family : a.family;
+      await caller.command(kind === 'remove' ? { kind, groupId, memberId: b.id } : { kind, groupId });
+      assert.equal((await b.family.load()).group, null, 'Independent member family read confirms membership removal');
+      const ownerFamily = await a.family.load();
+      if (kind === 'dissolve') {
+        assert.equal(ownerFamily.group, null, 'Dissolution removes the group for its owner too');
+      } else {
+        assert.ok(ownerFamily.group?.id === groupId && ownerFamily.members.length === 1 && ownerFamily.members[0].userId === a.id, 'Owner family persists with only its owner');
+      }
+      // Each editor still has its own pre-removal edit/version snapshot.
+      await assert.rejects(completer.toggleTodo(todoId));
+      await assert.rejects(deleter.deleteTodo(todoId));
+      await assert.rejects(b.repository.updateEvent(eventId, { title: 'Forbidden departed member write' }));
+      assert.deepEqual(await ownedRows(), ownerBefore, 'Membership removal and rejected writes preserve every owner calendar, event and todo row');
+      const hidden = await Promise.all([
+        b.client.from('calendars').select('id').eq('id', sharedId),
+        b.client.from('events').select('id').eq('calendar_id', sharedId),
+        b.client.from('todos').select('id').eq('calendar_id', sharedId),
+      ]);
+      assert.ok(hidden.every(result => !result.error && result.data.length === 0), 'Departed member direct HTTP cannot read the shared calendar or its items');
+      const reloaded = await b.repository.load();
+      assert.ok(!reloaded.calendars.some(row => row.id === sharedId), 'Reload removes the received calendar');
+      assert.deepEqual(b.repository.personalData(), personalBefore, 'Departed member personal data remains unchanged');
+      await a.repository.load();
+      if (kind === 'dissolve') assert.ok(!a.repository.sharingSession().shares.some(row => row.calendarId === sharedId), 'Dissolution removes the share without deleting its calendar');
+    });
+  }
   assert.equal(checks, expectedChecks, 'Every planned HTTP sharing group must execute');
 } catch (cause) {
   console.error(`HTTP sharing failed at: ${stage} (${cause.name})`);
