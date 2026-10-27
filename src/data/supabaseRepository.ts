@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { eventOccurrenceKey } from '../domain/eventOccurrenceKey';
 import { parseSharingManifest, personalProjection, receivedCalendar, type CalendarShare, type SharingSession, type SharingVersions, type SharingWriteOptions } from './calendarSharing';
 import {
   calendarFromRow,
@@ -1065,13 +1066,7 @@ function withStoredException(
 }
 
 function sameOccurrenceRow(left: EventException, right: EventException): boolean {
-  if (left.eventId !== right.eventId) return false;
-  if (left.occurrence.kind !== right.occurrence.kind) return false;
-  return left.occurrence.kind === 'all-day' && right.occurrence.kind === 'all-day'
-    ? left.occurrence.date === right.occurrence.date
-    : left.occurrence.kind === 'timed' && right.occurrence.kind === 'timed'
-      ? left.occurrence.startsAt === right.occurrence.startsAt
-      : false;
+  return left.eventId === right.eventId && eventOccurrenceKey(left.occurrence) === eventOccurrenceKey(right.occurrence);
 }
 
 /** Maps canonical values to the exact snake_case allowlist accepted by the RPC. */

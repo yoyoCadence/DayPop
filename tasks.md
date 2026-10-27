@@ -77,6 +77,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## Next
 
 
+
 > **2026-10-26 線上雙帳號核心驗收完成：** DP-206 已依擁有者委託用兩個新建線上 QA 帳號完成共用／私人／view／撤權與重登，詳 Done 與既有驗證文件。帳號及假資料保留供使用，憑證只在本機 TEMP；本輪沒有部署，現有 0.4.4 搭配已套用第 19 檔即可使用。Email 寄達／Google OAuth／真機本輪未驗，DP-034 放行不變，寵物仍暫緩。下方仍寫「待 DP-206 實帳號」的段落為先前交接歷史。
 
 
@@ -229,6 +230,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-215 — 指定時間重複事項以同一瞬間識別：** Backlog → Next → In Progress，基底 PR #209／71a9d25。共用 occurrence key 修正取消復活／替換重複、重新編輯與 RPC 合併，保留微秒及 stored／CAS 原值。舊程式 10 新單元及手機畫面均失敗、finally 精確還原；修正後完整 1,418＋39 Node、lint／typecheck／build／check:build、相關 Chromium 21 passed／1 skipped＋WebKit 8 passed，截圖目視／console／版面過、實際 Asia/Taipei。暫用 DP-214 真實 HTTP 四 fixture 17/17，假帳號清理、script 還原、實際 Etc/GMT-8。詳 [驗證及接手點](docs/timed-occurrence-identity.md)；待自己的最新四 CI／同 head 完成審查才合併及結案。之後返回 test/dp-214-bilateral-http／ab9f2da 完成獨立 PR，雙人收尾未提前結案，專用 stack 暫保留。
+
 
 
 
@@ -324,6 +327,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
 
 
 
