@@ -233,6 +233,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
@@ -477,6 +478,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-211 — 共用待辦真實 HTTP 生命週期（2026-10-27）：** Backlog → Next → In Progress → Done。從 PR #206 已合併 7467667 接續，八組基線先過，新增完成／取消完成與子項標題、優先度、獨立日期、階層重讀；不同作者子項的舊版本整樹拒絕且逐欄不變、重讀後整批刪除；private 子項及 private 父項下 inherit 子項連 B 直接 HTTP 都隱藏、成員不能連帶刪、owner 可刪。view／off 完成及刪除各用獨立舊 edit repository snapshot，真正 RPC 拒絕後 owner 列不變；總組數護欄為十一。兩個產品 no-op 負控制抓到第 5／6 組斷言失敗，fixture 都清理、finally 原檔逐 byte 還原後 11/11 過。1,404 單元＋39 Node、lint／typecheck／build／check:build／語法過，實際 Etc/GMT-8；專用本機 19 檔內容對齊無 link，結束前五集合各 0、stack 已停止。詳 [補驗與限制](docs/family-sharing-http.md#dp-211-共用待辦-http-補驗2026-10-27)。只改回歸與交接，自己的最新四 CI／同 head 完成審查後才合併；不改產品／migration／CI 門檻／v4／版號／公告／部署，不操作保留線上 QA，不當 Email／OAuth／真機或 DP-034 放行。
 
 - [x] **DP-210 — 瀏覽器 CI 的 Ubuntu 下載鏡像（2026-10-26）：** Backlog → Next → In Progress → Done。從 DP-206 PR #205 已合併 04e4a85 接續；該 head 3a78dcb 最終四 CI／完成審查無發現與未解決討論，WebKit 先有兩次 10 分鐘 Azure 套件下載逾時、同 head 第三次 140 MB 10 秒並 8 passed／24.1 秒。只加 Chromium／WebKit 兩個相同的 APT 前置，先核對 HTTPS archive 存在，再只移除 Azure HTTP 那列；官方 archive／security fallback 與原 sources／簽章不變。Bash 語法、隔離 fixture 保留官方來源與冪等、缺 archive／仿冒 host／缺檔拒絕且不修改通過；移除新增前置及註解後，workflow 與 main 逐字相同，四 jobs／原命令／25及10分鐘上限／workers／retries／測試未變。自己的最新四 CI／相同 head 完成審查後才合併；實際 Linux 安裝及全 gate 不能沿用 #205 的數字。沒有新 action／依賴／secret、產品／schema／版號／已發布公告或部署變更；真實雙帳號核心已完成，Email 寄達／OAuth／真機與 DP-034 放行界線保留，寵物暫緩。
 

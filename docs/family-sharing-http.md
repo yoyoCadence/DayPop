@@ -16,7 +16,7 @@ npm run supabase:test:http
 
 Node 程序以本機 admin key **只建立及清理本次隨機、已驗證的兩個假帳號**；產品操作全部以各自 public key＋獨立密碼登入的 session 執行，不使用 admin 繞過 RLS。不把 key、密碼、JWT 或 CLI status 寫進前端、repo、測試 artifact 或 log。CI 啟動摘要可能含 local key，完整 stdout／stderr 只留 runner TEMP、不上傳；啟動失敗會讓 gate 失敗，不略過 HTTP。
 
-## 八組檢查
+## 十一組檢查
 
 | 流程 | 驗證 |
 | --- | --- |
@@ -24,12 +24,17 @@ Node 程序以本機 admin key **只建立及清理本次隨機、已驗證的�
 | 邀請與接受 | 不符受邀 Email 被拒、preview 不接受、明確接受後兩位成員；加入仍不自動分享 |
 | 開啟共同編輯 | 舊事項可見、private 連直接 HTTP 查詢都不可見、收到日曆不成 default 或 personal projection |
 | 成員共同維護 | B 改行程及新增待辦，A 讀回；DB owner 為 A、實際作者為 B |
+| 待辦完成與子項保存 | B 勾選父／子項，A 可取消父項完成；重新建立 B repository 讀回子項標題、優先度、獨立日期與完成，收到內容仍不進個人 projection |
+| 子樹版本與整批刪除 | A 改其中一個子項後，B 舊版本整批拒絕且三列逐欄不變；重讀後可刪父項與兩個不同作者的子項，其他待辦保留 |
+| 私人待辦後代 | private 子項與 private 父項下的 inherit 子項連直接 HTTP 都不可見；成員不能連帶刪除隱藏子項，擁有者仍可明確刪整棵 |
 | 衝突 | A 先保存，B 的舊版本寫入被拒，A 新內容不被覆蓋 |
-| 改為只能查看 | B 尚持有舊 edit snapshot 仍被伺服器拒絕寫入；重查仍可讀、原列不變 |
-| 撤權 | B 未重查前的舊寫入即被拒；重查移除收到內容，A 原資料保留 |
+| 改為只能查看 | B 各自持有舊 edit snapshot 的完成、刪除與修改都被拒；重查仍可讀、原列逐欄不變 |
+| 撤權 | B 各自未重查的完成、刪除及行程寫入都被拒；重查移除收到內容，A 原資料保留 |
 | 登出再登入 | 真正 Auth logout 後，以全新 client 密碼登入，讀回 B 本人事項而不恢復撤權日曆 |
 
 每次 finally 只刪本次成功建立且立即追蹤的 user IDs，再以 Auth admin 按同 IDs 確認不存在；失敗也繼續清理另一個 fixture。清理失敗會令 script exit 非零。不要為了測試通過而刪既有帳號或放寬 policy。失敗 log 只含檢查名稱、錯誤種類及可用的 operation／code，沒有 SDK response。
+
+DP-211 起有十一組；下方 DP-208 的八組與當時 CI 數字保留為歷史。降權／撤權的每個舊操作使用獨立 repository snapshot、共用 B 的真實登入 client；一個操作被拒後自動重查，只更新自己的 snapshot。各個完成／刪除都會帶著尚未重查的 edit 權限送到 RPC，由伺服器核對當前權限。結束前另核對所有十一組都有執行。
 
 ## 證據與限制
 
@@ -76,3 +81,13 @@ Browser plugin 未提供，沿專案既有 Playwright 與官方 CLI；A 使用�
 實際 `Intl.DateTimeFormat().resolvedOptions().timeZone` 兩邊均列印為 `Etc/GMT-8`；尺寸分別 390×844／1280×900，頁名正確、內容非空、無 framework overlay／水平溢出，console 各 0 errors／warnings。TEMP 的 A／B 最終日詳情、view 停用及 off 個人保留截圖均已目視；日詳情的「衝突」徽章是三筆測試行程使用同一時段所致，不是分享版本衝突失敗。
 
 本項完成擁有者委託的線上專用雙帳號核心驗收，DP-206 移至 Done。Email 確認是管理端 setup，不能當成驗證信寄達；本輪也沒有重驗 Google OAuth、實體手機、standalone 或兩人同時提交的版本競態，既有 HTTP／pgTAP 的競態證據不冒充此次線上 UI 結果。DP-032／077 真機及 DP-034 放行界線不變；DP-207 在 main 的取消登入修正尚未部署。沒有產品、schema、版號、已發布公告或部署變更，寵物後續仍暫緩。
+
+## DP-211 共用待辦 HTTP 補驗（2026-10-27）
+
+從 PR #206 合併 `7467667` 接續，補足原八組中待辦只有新增、單筆改名拒絕的缺口。專用 `DayPopHTTP208` 本機 stack 的 19 份 migration 內容與 repo 一致、沒有 project link；先跑原八組通過，再加入上表三組與降權／撤權的完成及刪除檢查。父子項均依既有的一層產品契約建立，不新增多層子項能力。
+
+本機最終十一組通過，實際 Node 時區 `Etc/GMT-8`。完成及取消完成直接核對 owner 的 persisted rows；子項重讀核對標題、優先度、日期、階層與完成。子樹含 A／B 不同作者，舊子項版本拒絕後逐欄比對全樹不變，更新後才成功整批刪除。私人後代同時核對 repository 及 B 直接 HTTP 不可見，拒絕成員連帶刪除後 owner 全列不變，owner 自己可刪完整子樹。
+
+兩項本機負控制分別把 shared `toggleTodo` 與 `deleteTodo` 改為不執行：新完成持久化斷言在第 5 組失敗、子樹舊版本斷言在第 6 組失敗；兩次都清掉兩個假帳號。每次 finally 核對沒有外部編輯後逐 byte 還原產品來源，再跑最終十一組恢復通過。完整 1,404 單元＋39 Node、lint／typecheck／build／check:build、Node 語法與差異檢查通過；沒有新增單元案例或 browser case，CI 沿同一個 HTTP npm script 執行十一組，結果需以本段最新 head 為準。
+
+結束前唯讀確認專用本機 users／families／calendars／events／todos 各 0；本輪 stack 已停止。保留的線上 QA 帳號與內容未操作。本輪只有回歸及交接，沒有產品、migration、CI 門檻、v4、版號、公告或部署變更；沒有把本機 HTTP 當成新一輪正式站台／Email／OAuth／真機驗收。
