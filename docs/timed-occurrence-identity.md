@@ -1,5 +1,7 @@
 # 指定時間重複事項的同一瞬間識別（DP-215）
 
+> 完成更新（2026-10-28）：[PR #210](https://github.com/yoyoCadence/DayPop/pull/210) head `ce3064e` 的 CI `40603682150` 四項成功，Chromium 289 passed／13 skipped（15.6 分鐘）、WebKit 8；同 head 審查完成無發現且無未解決討論，已合併 `ec53398`。DP-214 已返回並對齊該最新 main，以下「待 CI／返回」為修正準備時的紀錄。尚未部署。
+
 DP-214 的真正本機 Auth／PostgREST 雙帳號驗收發現：`2026-10-27T13:00:00+00:00` 與 `2026-10-27T13:00:00.000Z` 是同一瞬間，原本卻以字串作為 occurrence identity。因此重新載入後，指定時間的取消會復活，單次替換會同時顯示原次數及替換列；再次操作也可能新增第二份 exception。這個問題同時影響本人與收到的日曆。
 
 `src/domain/eventOccurrenceKey.ts` 統一 resolver、domain mutation 與 repository RPC 合併的識別。只把時間的整秒換算為 UTC，將小數尾零正規化；小數仍以文字保存，不能用 JavaScript Date 的毫秒精度把不同微秒合併。全天仍依日期。只比較 identity，不改寫 stored startsAt／endsAt／exception、updatedAt、CAS token、快取或 schema；一般 `.000Z` 的既有畫面 key 格式保留。
