@@ -234,6 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 
 
+
 > **DP-205 已完成發布（2026-10-26）：** 候選 PR #199／`0629821`、已授權的 Deploy staging #16／`40253002837`、線上成品／更新保存／入口 QA 均完成，任務已移至 Done。剩餘真實雙帳號操作列 DP-206；下方歷史發布基底不代表目前尚未部署。
 
 > **最新優先級與素材接手點：** 擁有者要求先讓不同帳號實際使用日曆及共用事項。DP-204已完成本機素材／21負控制／原檔重渲染／預覽QA／lint／typecheck，保存在遠端分支 `feat/dp-204-pet-local-step`、提交 `3d344f2`，未自己的PR／CI；後續素材暫緩。DP-203 PR #198 head `aab6561` 的 run `40241707381` 四 CI／完成審查無發現、無未解決討論後合併 `ad7a540`（Chromium 285 passed／13 skipped、WebKit 8 passed），本項由此最新 main 接續。
@@ -321,6 +322,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
 
 
 
@@ -478,6 +480,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-212 — 家庭成員變更的真實 HTTP 權限回收（2026-10-27）：** Backlog → Next → In Progress → Done。從 PR #207 合併 a878372 接續，原十一組先過，新增退出／owner 移除／解散三組：各自獨立舊 edit snapshot 的修改、完成及刪除由真實 RPC 拒絕，B 直接 HTTP 不能讀共用日曆／事項，A 全部日曆／行程／待辦 raw rows（含 B 實際作者內容）與 B 個人 projection 均不變。重新邀請的 preview／pending 不恢復資格，再明確接受後才讀到原有分享；解散後雙方家庭與分享移除、資料保留。三項 no-op 負控制各在新第 12／13／14 組獨立重讀斷言失敗，兩個假帳號均清理、finally 原檔逐 byte 還原後 14/14 過。1,404 單元＋39 Node、lint／typecheck／build／check:build／語法過，實際 Etc/GMT-8；專用本機 19 檔一致無 link，結束前五集合各 0、stack 已停止。詳 [補驗與限制](docs/family-sharing-http.md#dp-212-家庭成員變更-http-補驗2026-10-27)。只改回歸與交接，自己的最新四 CI／同 head 完成審查後才合併；產品／migration／CI 門檻／v4／版號／公告／部署不改，不操作線上 QA，不當新一輪線上／Email／OAuth／真機或 DP-034 放行。
 
 - [x] **DP-211 — 共用待辦真實 HTTP 生命週期（2026-10-27）：** Backlog → Next → In Progress → Done。從 PR #206 已合併 7467667 接續，八組基線先過，新增完成／取消完成與子項標題、優先度、獨立日期、階層重讀；不同作者子項的舊版本整樹拒絕且逐欄不變、重讀後整批刪除；private 子項及 private 父項下 inherit 子項連 B 直接 HTTP 都隱藏、成員不能連帶刪、owner 可刪。view／off 完成及刪除各用獨立舊 edit repository snapshot，真正 RPC 拒絕後 owner 列不變；總組數護欄為十一。兩個產品 no-op 負控制抓到第 5／6 組斷言失敗，fixture 都清理、finally 原檔逐 byte 還原後 11/11 過。1,404 單元＋39 Node、lint／typecheck／build／check:build／語法過，實際 Etc/GMT-8；專用本機 19 檔內容對齊無 link，結束前五集合各 0、stack 已停止。詳 [補驗與限制](docs/family-sharing-http.md#dp-211-共用待辦-http-補驗2026-10-27)。只改回歸與交接，自己的最新四 CI／同 head 完成審查後才合併；不改產品／migration／CI 門檻／v4／版號／公告／部署，不操作保留線上 QA，不當 Email／OAuth／真機或 DP-034 放行。
 
