@@ -77,6 +77,8 @@ try {
   };
   let sharedId, eventId, todoId, reverseId;
   const seriesFixtures = [];
+  const comparableOccurrence = reference => reference?.kind === 'timed'
+    ? { kind: 'timed', startsAt: new Date(reference.startsAt).toISOString() } : reference;
   const event = (title, calendarId, sharingScope = 'inherit') => ({ title, calendarId, sharingScope, date: '2026-10-26', allDay: true, start: '09:00', end: '10:00' });
   await check('independent bootstrap and personal rows', async () => {
     const [ownA, ownB] = await Promise.all([a.repository.load(), b.repository.load()]);
@@ -160,34 +162,42 @@ try {
     assert.ok(!hidden.error && hidden.data.length === 0, 'Family owner direct HTTP cannot read B private events');
   });
   await check('bidirectional recurring replacements and cancellations persist without duplicating a series', async () => {
-    for (const [owner, editor, calendarId] of [[a, b, sharedId], [b, a, reverseId]]) {
+    for (const [owner, editor, calendarId, allDay] of [[a, b, sharedId, true], [b, a, reverseId, true], [a, b, sharedId, false], [b, a, reverseId, false]]) {
       await owner.repository.load();
-      const title = `${owner.label} recurring shared`;
-      const created = await owner.repository.addEvent({ ...event(title, calendarId), recurrenceRule: 'FREQ=DAILY;COUNT=4' });
+      const shape = allDay ? 'all-day' : 'timed';
+      const title = `${owner.label} ${shape} recurring shared`;
+      const occurrence = date => allDay ? { kind: 'all-day', date } : { kind: 'timed', startsAt: `${date}T13:00:00.000Z` };
+      const created = await owner.repository.addEvent({ ...event(title, calendarId), allDay, timezone: 'America/New_York', recurrenceRule: 'FREQ=DAILY;COUNT=4' });
       const series = created.events.find(row => row.title === title);
+      if (!allDay) assert.equal(Date.parse(series.startsAt), Date.parse('2026-10-26T13:00:00.000Z'), 'Timed fixture is 09:00 in New York, not the default viewer timezone');
       await editor.repository.load();
-      const replacementTitle = `${editor.label} single replacement`;
-      await editor.repository.replaceEventOccurrence(series.id, { kind: 'all-day', date: '2026-10-27' }, { title: replacementTitle });
-      await editor.repository.cancelEventOccurrence(series.id, { kind: 'all-day', date: '2026-10-28' });
+      const replacementTitle = `${editor.label} ${shape} single replacement`;
+      await editor.repository.replaceEventOccurrence(series.id, occurrence('2026-10-27'), { title: replacementTitle });
+      await editor.repository.cancelEventOccurrence(series.id, occurrence('2026-10-28'));
       const stored = await owner.repository.load();
       const storedSeries = stored.events.find(row => row.id === series.id);
       assert.deepEqual({ ...storedSeries, updatedAt: series.updatedAt }, series, 'Single-occurrence edits preserve series content while advancing its version');
       assert.notEqual(storedSeries.updatedAt, series.updatedAt, 'Occurrence writes advance the shared series CAS version');
       const replacement = stored.events.find(row => row.title === replacementTitle);
-      assert.ok(replacement && replacement.startDate === '2026-10-27' && replacement.recurrence === null, 'A separate non-recurring replacement persists');
+      assert.ok(replacement && replacement.recurrence === null && (allDay ? replacement.startDate === '2026-10-27' : Date.parse(replacement.startsAt) === Date.parse('2026-10-27T13:00:00.000Z') && replacement.timezone === 'America/New_York'), 'A separate non-recurring replacement preserves its date or instant and timezone');
       const exceptions = stored.eventExceptions.filter(row => row.eventId === series.id);
-      assert.ok(exceptions.length === 2 && exceptions.some(row => row.occurrence.date === '2026-10-27' && row.replacementEventId === replacement.id && !row.isCancelled)
-        && exceptions.some(row => row.occurrence.date === '2026-10-28' && row.isCancelled && row.replacementEventId === null), 'Both occurrence exceptions survive an independent owner reload');
+      assert.equal(exceptions.length, 2, 'Both occurrence exceptions survive an independent owner reload');
+      assert.deepEqual(comparableOccurrence(exceptions.find(row => !row.isCancelled)?.occurrence), occurrence('2026-10-27'));
+      assert.equal(exceptions.find(row => !row.isCancelled)?.replacementEventId, replacement.id);
+      assert.deepEqual(comparableOccurrence(exceptions.find(row => row.isCancelled)?.occurrence), occurrence('2026-10-28'));
+      assert.equal(exceptions.find(row => row.isCancelled)?.replacementEventId, null);
       const raw = await owner.client.from('events').select('owner_id,created_by').eq('id', replacement.id).single();
       assert.ok(!raw.error && raw.data.owner_id === owner.id && raw.data.created_by === editor.id, 'Replacement preserves calendar ownership and records its actual editor');
       const resolved = resolveEventOccurrences(stored, { startDate: '2026-10-26', endDate: '2026-10-29' }).filter(row => row.sourceEventId === series.id);
-      assert.deepEqual(resolved.map(row => row.occurrence.date).sort(), ['2026-10-26', '2026-10-27', '2026-10-29'], 'Cancelled occurrence stays absent and replacement is rendered once');
+      if (!allDay) console.log('Timed recurrence diagnostic:', JSON.stringify(resolved.map(row => comparableOccurrence(row.occurrence))));
+      assert.deepEqual(resolved.map(row => comparableOccurrence(row.occurrence)).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))), ['2026-10-26', '2026-10-27', '2026-10-29'].map(occurrence), 'Cancelled occurrence stays absent and replacement is rendered once');
       assert.ok(resolved.some(row => row.event.title === replacementTitle && row.replacementEventId === replacement.id));
-      seriesFixtures.push({ owner, editor, seriesId: series.id, replacementId: replacement.id });
+      seriesFixtures.push({ owner, editor, seriesId: series.id, replacementId: replacement.id, occurrence });
     }
+    assert.equal(seriesFixtures.length, 4, 'Both sharing directions cover all-day and timed series');
   });
   await check('recurring stale edits and private graphs are enforced in both directions', async () => {
-    for (const { owner, editor, seriesId, replacementId } of seriesFixtures) {
+    for (const { owner, editor, seriesId, replacementId, occurrence } of seriesFixtures) {
       const stale = new SupabaseDayPopRepository(editor.client, editor.id);
       await stale.load();
       await owner.repository.load();
@@ -201,7 +211,7 @@ try {
         return rows.map(result => result.data);
       };
       const before = await graphRows();
-      await assert.rejects(stale.replaceEventOccurrence(seriesId, { kind: 'all-day', date: '2026-10-29' }, { title: 'Forbidden stale replacement' }), { message: /內容已被修改/ });
+      await assert.rejects(stale.replaceEventOccurrence(seriesId, occurrence('2026-10-29'), { title: 'Forbidden stale replacement' }), { message: /內容已被修改/ });
       assert.deepEqual(await graphRows(), before, 'Stale occurrence write leaves the series, replacement and all exceptions untouched');
       await owner.repository.updateEvent(seriesId, { sharingScope: 'private' });
       const hidden = await editor.repository.load();
@@ -214,7 +224,7 @@ try {
       await owner.repository.updateEvent(seriesId, { sharingScope: 'inherit' });
       const restored = await editor.repository.load();
       const resolved = resolveEventOccurrences(restored, { startDate: '2026-10-26', endDate: '2026-10-29' }).filter(row => row.sourceEventId === seriesId);
-      assert.deepEqual(resolved.map(row => row.occurrence.date).sort(), ['2026-10-26', '2026-10-27', '2026-10-29'], 'Owner re-sharing preserves the replacement and cancellation without resurrecting an occurrence');
+      assert.deepEqual(resolved.map(row => comparableOccurrence(row.occurrence)).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))), ['2026-10-26', '2026-10-27', '2026-10-29'].map(occurrence), 'Owner re-sharing preserves the replacement and cancellation without resurrecting an occurrence');
     }
   });
   await check('shared todo completion and child fields survive independent reloads', async () => {

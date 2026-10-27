@@ -16,14 +16,17 @@ npm run supabase:test:http
 
 Node 程序以本機 admin key **只建立及清理本次隨機、已驗證的兩個假帳號**；產品操作全部以各自 public key＋獨立密碼登入的 session 執行，不使用 admin 繞過 RLS。不把 key、密碼、JWT 或 CLI status 寫進前端、repo、測試 artifact 或 log。CI 啟動摘要可能含 local key，完整 stdout／stderr 只留 runner TEMP、不上傳；啟動失敗會讓 gate 失敗，不略過 HTTP。
 
-## 十四組檢查
+## 十七組檢查
 
 | 流程 | 驗證 |
 | --- | --- |
 | 各自初始化與保存 | 日曆不同、本人行程互不可見；另新建獨立共用日曆 |
-| 邀請與接受 | 不符受邀 Email 被拒、preview 不接受、明確接受後兩位成員；加入仍不自動分享 |
+| 邀請與接受 | 不符受邀 Email 被拒、preview 不接受；重發輪替同一邀請不加名額、舊連結失效，撤銷／拒絕不入群、接受後不能重用；加入仍不自動分享 |
 | 開啟共同編輯 | 舊事項可見、private 連直接 HTTP 查詢都不可見、收到日曆不成 default 或 personal projection |
 | 成員共同維護 | B 改行程及新增待辦，A 讀回；DB owner 為 A、實際作者為 B |
+| 雙向分享與角色邊界 | B 另分享自己的日曆，A 建立內容歸 B、作者為 A；A 身為家庭 owner 仍不能讀 B 私人事項或用正確版本改 B 的分享，雙方 default／個人 projection 各自保留 |
+| 雙向重複單次維護 | A／B 各作 calendar owner 及 editor，各測全天與紐約 09:00 指定時間；單次替換與取消獨立保存，系列內容保持且 CAS 版本前進，作者正確、取消不復活、替換不重複 |
+| 重複衝突與私人 graph | 雙向舊版本單次修改皆以明確衝突拒絕，整個 graph raw rows 不變；root 切私人時 base／replacement／exception 連直接 HTTP 都隱藏，重開仍保留單次結果 |
 | 待辦完成與子項保存 | B 勾選父／子項，A 可取消父項完成；重新建立 B repository 讀回子項標題、優先度、獨立日期與完成，收到內容仍不進個人 projection |
 | 子樹版本與整批刪除 | A 改其中一個子項後，B 舊版本整批拒絕且三列逐欄不變；重讀後可刪父項與兩個不同作者的子項，其他待辦保留 |
 | 私人待辦後代 | private 子項與 private 父項下的 inherit 子項連直接 HTTP 都不可見；成員不能連帶刪除隱藏子項，擁有者仍可明確刪整棵 |
@@ -37,7 +40,7 @@ Node 程序以本機 admin key **只建立及清理本次隨機、已驗證的�
 
 每次 finally 只刪本次成功建立且立即追蹤的 user IDs，再以 Auth admin 按同 IDs 確認不存在；失敗也繼續清理另一個 fixture。清理失敗會令 script exit 非零。不要為了測試通過而刪既有帳號或放寬 policy。失敗 log 只含檢查名稱、錯誤種類及可用的 operation／code，沒有 SDK response。
 
-DP-212 起有十四組；下方 DP-208 的八組與 DP-211 的十一組及當時 CI 數字保留為歷史。降權／撤權及成員變更的每個舊操作使用獨立 repository snapshot、共用 B 的真實登入 client；一個操作被拒後自動重查，只更新自己的 snapshot。各個完成／刪除都會帶著尚未重查的 edit 權限送到 RPC，由伺服器核對當前權限。結束前另核對所有十四組都有執行。
+DP-214 起有十七組；下方 DP-208 的八組、DP-211 的十一組、DP-212 的十四組及當時 CI 數字保留為歷史。降權／撤權及成員變更的每個舊操作使用獨立 repository snapshot、共用 B 的真實登入 client；一個操作被拒後自動重查，只更新自己的 snapshot。各個完成／刪除都會帶著尚未重查的 edit 權限送到 RPC，由伺服器核對當前權限。結束前另核對所有十七組都有執行。
 
 ## 證據與限制
 
@@ -106,3 +109,15 @@ Browser plugin 未提供，沿專案既有 Playwright 與官方 CLI；A 使用�
 完整 1,404 單元＋39 Node、lint／typecheck／build／check:build、Node 語法及差異檢查通過。最初測試／build 在沙箱因 Vite 子程序 `spawn EPERM` 無法啟動，以相同命令提升執行權限後通過，沒有修改測試或門檻；自己的最新 head 四 CI／同 head 完成審查仍須另行通過。
 
 本輪未發現需修正的產品問題；只補同一 HTTP script 及交接，沒有新增 UI 案例或改動 CI 四 gate／門檻、migration、v4、版號、公告或部署。保留線上 QA 帳號與內容未操作，不將本機結果當成新一輪線上／Email／OAuth／真機驗收或 DP-034 放行；寵物仍暫緩。
+
+## DP-214 雙向分享與重複事項收尾（2026-10-27）
+
+承接擁有者要求完成雙人功能，PR #209 等待期間從當時最新 main `0eaeb72` 獨立準備，原十四組先通過後補成十七組。#209 head `5cb2b01` 的 CI `40507098561` 四項成功、同 head 完成審查無發現與無未解決討論後合併 `71a9d25`；本段再重放到該最新 main。這次沒有產品來源或 schema 變更，HTTP 正式 service／repository 與 domain 來源在重放前後相同。
+
+邀請先驗證重發輪替同一邀請且不增加保留名額、舊 token 失效；撤銷及拒絕後不建立 membership，最後另產新邀請、預覽、明確接受，已接受的 token 也不能重用。雙向流程中 B 分享自己的新日曆，A 雖為家庭 owner，仍不能讀 B 私人行程或改 B 分享；直接 RPC 使用真正的當前 grant 版本，必須回 `sharing_calendar_owner_required`，不是靠錯版本造成拒絕。A 在 B 日曆建立的行程由 B 擁有、作者為 A；兩邊收到的日曆不成 default、不進個人 projection。
+
+兩邊輪流作日曆擁有者及共同編輯者，每個方向各測全天與紐約 09:00 指定時間（當日為 13:00Z），共四個 fixture，均建四次每日系列，另一方替換 10/27、取消 10/28。擁有者重新載入後核對 base、replacement、兩個 exception 的日期／瞬間與真實作者，再用正式 resolver 確認只出現 10/26、10/27、10/29，替換只顯示一次，指定時間及原時區保留。首輪誤把更新版本戳當成不可變欄位，已按既有 CAS 契約拆成「系列業務內容不變」及「版本必須前進」兩個斷言，沒有修改產品。雙向舊 editor 在 owner 先更新後再改單次，必須回明確內容衝突，base／replacement／exception raw rows 逐欄不變。owner 切 root 私人後，另一邊連直接 HTTP 都讀不到整個 graph；恢復 inherit 後仍保留替換／取消，不使 occurrence 復活。
+
+原成員變更三組另核對 B 對外分享在離群後消失，再明確接受也不自動恢復 B 舊 outgoing grant；A 的既有分享則依其仍有效的明確授權呈現。三項負控制分別停用 replace、cancel 與切私人，第 6／6／7 組均被新的持久化／graph 斷言抓到；finally 核對沒有外部編輯並逐 byte 還原 repository（SHA-256 前綴 `0b5f4dcb2ef8`），每次都清理兩個假帳號，最終正常 **17/17** 通過。
+
+專用本機 19 份 migration 名稱／內容一致、沒有 project link，實際 Node `Etc/GMT-8` 已列印。結束前唯讀確認 users／families／calendars／events／todos 各 0，stack 已停止。此輪沒有操作保留線上 QA，也沒有部署、遠端 migration、版號、公告、v4 或 CI 門檻變更；不把 HTTP 當 Email／OAuth／真機驗收。已定案雙人 v1 的完成範圍與公開版本界線見 [完成矩陣](two-person-readiness.md)。
