@@ -110,14 +110,16 @@ Browser plugin 未提供，沿專案既有 Playwright 與官方 CLI；A 使用�
 
 本輪未發現需修正的產品問題；只補同一 HTTP script 及交接，沒有新增 UI 案例或改動 CI 四 gate／門檻、migration、v4、版號、公告或部署。保留線上 QA 帳號與內容未操作，不將本機結果當成新一輪線上／Email／OAuth／真機驗收或 DP-034 放行；寵物仍暫緩。
 
-## DP-214 雙向分享與重複事項收尾（2026-10-27）
+## DP-214 雙向分享與重複事項收尾（2026-10-28）
 
-承接擁有者要求完成雙人功能，PR #209 等待期間從當時最新 main `0eaeb72` 獨立準備，原十四組先通過後補成十七組。#209 head `5cb2b01` 的 CI `40507098561` 四項成功、同 head 完成審查無發現與無未解決討論後合併 `71a9d25`；本段再重放到該最新 main。這次沒有產品來源或 schema 變更，HTTP 正式 service／repository 與 domain 來源在重放前後相同。
+承接擁有者要求完成雙人功能，PR #209 等待期間從當時最新 main `0eaeb72` 獨立準備，原十四組先通過後補成十七組；#209 四 CI／同 head 審查通過後合併 `71a9d25`。全天雙向先過，擴充指定時間後真正抓到取消復活／替換重複，因而暫存原準備 `ab9f2da`，拆成 [DP-215／PR #210](https://github.com/yoyoCadence/DayPop/pull/210) 的產品修正，詳 [同一瞬間識別](timed-occurrence-identity.md)。本段接上修正重新跑全部四份 fixture；產品改動屬 DP-215，本段只送 HTTP 回歸及交接，沒有 schema 變更。發自己的 PR 前仍須對齊 DP-215 已合併的最新 main。
 
 邀請先驗證重發輪替同一邀請且不增加保留名額、舊 token 失效；撤銷及拒絕後不建立 membership，最後另產新邀請、預覽、明確接受，已接受的 token 也不能重用。雙向流程中 B 分享自己的新日曆，A 雖為家庭 owner，仍不能讀 B 私人行程或改 B 分享；直接 RPC 使用真正的當前 grant 版本，必須回 `sharing_calendar_owner_required`，不是靠錯版本造成拒絕。A 在 B 日曆建立的行程由 B 擁有、作者為 A；兩邊收到的日曆不成 default、不進個人 projection。
 
 兩邊輪流作日曆擁有者及共同編輯者，每個方向各測全天與紐約 09:00 指定時間（當日為 13:00Z），共四個 fixture，均建四次每日系列，另一方替換 10/27、取消 10/28。擁有者重新載入後核對 base、replacement、兩個 exception 的日期／瞬間與真實作者，再用正式 resolver 確認只出現 10/26、10/27、10/29，替換只顯示一次，指定時間及原時區保留。首輪誤把更新版本戳當成不可變欄位，已按既有 CAS 契約拆成「系列業務內容不變」及「版本必須前進」兩個斷言，沒有修改產品。雙向舊 editor 在 owner 先更新後再改單次，必須回明確內容衝突，base／replacement／exception raw rows 逐欄不變。owner 切 root 私人後，另一邊連直接 HTTP 都讀不到整個 graph；恢復 inherit 後仍保留替換／取消，不使 occurrence 復活。
 
-原成員變更三組另核對 B 對外分享在離群後消失，再明確接受也不自動恢復 B 舊 outgoing grant；A 的既有分享則依其仍有效的明確授權呈現。三項負控制分別停用 replace、cancel 與切私人，第 6／6／7 組均被新的持久化／graph 斷言抓到；finally 核對沒有外部編輯並逐 byte 還原 repository（SHA-256 前綴 `0b5f4dcb2ef8`），每次都清理兩個假帳號，最終正常 **17/17** 通過。
+原成員變更三組另核對 B 對外分享在離群後消失，再明確接受也不自動恢復 B 舊 outgoing grant；A 的既有分享則依其仍有效的明確授權呈現。三項負控制分別停用 replace、cancel 與切私人，第 6／6／7 組均被新的持久化／graph 斷言抓到；finally 核對沒有外部編輯並逐 byte 還原 repository（SHA-256 前綴 `9583675609e7`），每次都清理兩個假帳號。修正後全部四份 fixture 的正常 **17/17** 通過，負控制後再跑十七組亦過，暫時診斷輸出已移除。
 
-專用本機 19 份 migration 名稱／內容一致、沒有 project link，實際 Node `Etc/GMT-8` 已列印。結束前唯讀確認 users／families／calendars／events／todos 各 0，stack 已停止。此輪沒有操作保留線上 QA，也沒有部署、遠端 migration、版號、公告、v4 或 CI 門檻變更；不把 HTTP 當 Email／OAuth／真機驗收。已定案雙人 v1 的完成範圍與公開版本界線見 [完成矩陣](two-person-readiness.md)。
+專用本機 19 份 migration 名稱／內容一致、沒有 project link，實際 Node `Etc/GMT-8` 已列印。唯讀確認 users／families／calendars／events／todos 各 0，stack 暫留待最新 main 最後重跑後停止。DP-215 完整 1,418 單元＋39 Node、lint／typecheck／build／check:build 及相關 Chromium 21 passed／1 skipped＋WebKit 8 passed 已過；另在明確列印生效的 America/New_York／UTC 各跑 35 項 occurrence／recurrence 回歸通過。本段沿用同一產品 bytes，不因只有回歸變更重新宣稱畫面已改；自己的最新 head 四 CI／同 head 完成審查仍須獨立通過。
+
+此輪沒有操作保留線上 QA，也沒有部署、遠端 migration、版號、公告、v4 或 CI 門檻變更；不把 HTTP 當 Email／OAuth／真機驗收。已定案雙人 v1 的完成範圍與公開版本界線見 [完成矩陣](two-person-readiness.md)。

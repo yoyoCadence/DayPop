@@ -231,7 +231,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## In Progress
 
 - [ ] **DP-215 — 指定時間重複事項以同一瞬間識別：** Backlog → Next → In Progress，基底 PR #209／71a9d25。共用 occurrence key 修正取消復活／替換重複、重新編輯與 RPC 合併，保留微秒及 stored／CAS 原值。舊程式 10 新單元及手機畫面均失敗、finally 精確還原；修正後完整 1,418＋39 Node、lint／typecheck／build／check:build、相關 Chromium 21 passed／1 skipped＋WebKit 8 passed，截圖目視／console／版面過、實際 Asia/Taipei。暫用 DP-214 真實 HTTP 四 fixture 17/17，假帳號清理、script 還原、實際 Etc/GMT-8。詳 [驗證及接手點](docs/timed-occurrence-identity.md)；待自己的最新四 CI／同 head 完成審查才合併及結案。之後返回 test/dp-214-bilateral-http／ab9f2da 完成獨立 PR，雙人收尾未提前結案，專用 stack 暫保留。
-- [ ] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾：** Backlog → Next → In Progress。沿雙人 v1 已定案契約，補兩人各自持有／分享日曆、實際 owner／author、家庭 owner 不越權、雙向單次替換／取消／衝突及整系列私人；補邀請重發／撤銷／拒絕 HTTP。PR #209 等待期間從最新 main 0eaeb72 獨立準備，發自己的 PR 前對齊 #209 合併後 main，不部署或操作保留線上 QA。
+- [ ] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾：** Backlog → Next → In Progress。原準備 ab9f2da 保存在 archive/dp214-before215；指定時間缺口已拆 DP-215／PR #210，本機暫接其 ce3064e 再整理永久驗收。四份雙向全天／紐約時間 fixture 的 HTTP 17/17、三項 replace／cancel／私人 no-op 控制及還原後 17/17 均過，來源 SHA 前綴 9583675609e7；十九份 migration 一致、無 link、五集合各 0，實際 Etc/GMT-8。暫時診斷已移除，產品相對 DP-215 零差異；待 #210 四 CI／同 head 審查通過合併後，先 rebase 對齊最新 main，再開自己的 PR，避免重送 DP-215。詳 [收尾紀錄](docs/family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)，不部署或操作保留線上 QA。
 
 
 

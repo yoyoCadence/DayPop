@@ -189,7 +189,6 @@ try {
       const raw = await owner.client.from('events').select('owner_id,created_by').eq('id', replacement.id).single();
       assert.ok(!raw.error && raw.data.owner_id === owner.id && raw.data.created_by === editor.id, 'Replacement preserves calendar ownership and records its actual editor');
       const resolved = resolveEventOccurrences(stored, { startDate: '2026-10-26', endDate: '2026-10-29' }).filter(row => row.sourceEventId === series.id);
-      if (!allDay) console.log('Timed recurrence diagnostic:', JSON.stringify(resolved.map(row => comparableOccurrence(row.occurrence))));
       assert.deepEqual(resolved.map(row => comparableOccurrence(row.occurrence)).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))), ['2026-10-26', '2026-10-27', '2026-10-29'].map(occurrence), 'Cancelled occurrence stays absent and replacement is rendered once');
       assert.ok(resolved.some(row => row.event.title === replacementTitle && row.replacementEventId === replacement.id));
       seriesFixtures.push({ owner, editor, seriesId: series.id, replacementId: replacement.id, occurrence });
