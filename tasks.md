@@ -233,6 +233,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## In Progress
 
 - [ ] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾：** Backlog → Next → In Progress。已從 DP-215／PR #210 合併 ec53398 重放；四份雙向全天／紐約時間 fixture 的 HTTP 17/17、三項 replace／cancel／私人 no-op 控制及還原後 17/17 均過，來源 SHA 前綴 9583675609e7；最新 main 最後十七組亦過。十九份 migration 一致、無 link、五集合各 0，實際 Etc/GMT-8。產品相對最新 main 零差異，等待自己的最新四 CI／同 head 完成審查才合併及結案。詳 [收尾紀錄](docs/family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)，不部署或操作保留線上 QA。
+- [ ] **DP-216 — 雙人共用修正 0.4.5 發布候選：** Backlog → Next → In Progress。由 DP-215／PR #210 已合併的最新 main ec53398 獨立開分支，在 DP-214／PR #211 等待 CI 期間準備；發 PR 前對齊 #211 已合併 main，不重送其驗收。只新增三項修正短公告、App／PWA release assets 與發布驗證；歷史公告、v4、十九份 migration、產品授權及線上 QA 保留不變。檢查 production 更新保存／手機桌面入口，自己的 PR／CI／同 head 審查後合併；不 dispatch，候選完成後才請擁有者決定發布。
+
 
 
 
