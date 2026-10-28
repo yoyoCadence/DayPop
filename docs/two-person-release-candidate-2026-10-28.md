@@ -4,7 +4,7 @@
 
 ## 來源與候選內容
 
-從 DP-215／PR #210 合併 `ec53398` 的最新 main 獨立準備；DP-214／PR #211 等待期間完成本機驗證，發自己的 PR 前再對齊 #211 合併後 main。#210 的四 CI／同 head 審查已通過，#211 的永久 HTTP 十七組見 [雙人矩陣](two-person-readiness.md) 及 [驗收紀錄](family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)。
+從 DP-215／PR #210 合併 `ec53398` 的最新 main 獨立準備；DP-214／PR #211 等待期間完成本機驗證。#211 head `44b4626` 的 CI `40605937563` 四項成功：Chromium 289 passed／13 skipped（16.4 分鐘）、WebKit 8、386 pgTAP／HTTP 17/17（實際 UTC）；同 head 審查完成無發現且無未解決討論，已合併 `fd3aec5`。本段已重放至該最新 main，沒有重送 #210／211，產品及候選 release 內容與本機驗證時相同。完整雙人證據見 [矩陣](two-person-readiness.md) 及 [驗收紀錄](family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)。
 
 只新增三條短公告、package／lock 的 App 版號與 generator 輸出 `public/version.json`／`public/sw.js`。全部八份歷史 release entry 與準備基底逐欄相同；沒有改 worker template、快取清理規則、使用者文件、依賴版本或既有 0.4.4 公告。
 

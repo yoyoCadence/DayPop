@@ -76,7 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-216 — 雙人共用修正 0.4.5 發布候選：** Backlog → Next。DP-215 已合併；可在 DP-214 等待 CI 期間從最新 main 獨立準備，發自己的 PR 前再對齊兩者均已合併的 main。準備短公告與 App／PWA 版號，涵蓋取消邀請登入後返回、分享故障可重試、指定時間重複事項取消／替換修正；驗證歷史公告不變、Pages base build、production 更新保存及手機桌面入口，獨立 PR／合併。只準備可審核成品，沿既有部署界線不 dispatch、不套遠端 migration；發布需擁有者針對本版明確授權。
+- [ ] **DP-217 — 0.4.5 授權發布與線上 postflight：** Backlog → Next。等 DP-216 自己四 CI／同 head 審查通過合併且擁有者明確授權本版後，從 main 執行既有 Deploy staging；不改 workflow／repository 設定、不推 migration。確認六 jobs、公開版本／artifact、真正舊 client 更新及資料保存、兩 viewport 入口／console。未授權不 dispatch；既有 QA 帳號保留，Email／OAuth／真機及 DP-034 界線不變。具體動作見 [候選](docs/two-person-release-candidate-2026-10-28.md)。
+
 
 
 
@@ -232,8 +233,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾：** Backlog → Next → In Progress。已從 DP-215／PR #210 合併 ec53398 重放；四份雙向全天／紐約時間 fixture 的 HTTP 17/17、三項 replace／cancel／私人 no-op 控制及還原後 17/17 均過，來源 SHA 前綴 9583675609e7；最新 main 最後十七組亦過。十九份 migration 一致、無 link、五集合各 0，實際 Etc/GMT-8。產品相對最新 main 零差異，等待自己的最新四 CI／同 head 完成審查才合併及結案。詳 [收尾紀錄](docs/family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)，不部署或操作保留線上 QA。
-- [ ] **DP-216 — 雙人共用修正 0.4.5 發布候選：** Backlog → Next → In Progress。由 DP-215／PR #210 已合併的最新 main ec53398 獨立開分支，在 DP-214／PR #211 等待 CI 期間準備；發 PR 前對齊 #211 已合併 main，不重送其驗收。只新增三項修正短公告、App／PWA release assets 與發布驗證；歷史公告、v4、十九份 migration、產品授權及線上 QA 保留不變。檢查 production 更新保存／手機桌面入口，自己的 PR／CI／同 head 審查後合併；不 dispatch，候選完成後才請擁有者決定發布。
 
 
 
@@ -491,6 +490,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-216 — 雙人共用修正 0.4.5 發布候選（2026-10-28）：** Backlog → Next → In Progress → Done。候選本機準備完成；從 DP-215 已合併 main 獨立準備，再重放至 DP-214／PR #211 合併 fd3aec5，不重送前段產品／驗收。三條修正短公告、八份歷史 entry 不變、App／PWA assets 由 generator 產生，v4／十九份 migration 不變。完整 1,418＋39 Node、lint／typecheck／Pages build／check:build／公告守門、相關 Chromium 45 passed／3 skipped＋WebKit 8 過；production 兩 viewport 公告／四分頁／登入入口／焦點／reload／console 過，實際 Asia/Taipei、四圖目視，servers 已核對停止。詳 [候選證據](docs/two-person-release-candidate-2026-10-28.md)；本 PR 最新四 CI／同 head 完成審查無發現及無未解決討論才合併交付。公開仍 0.4.4、未 dispatch，發布另列 DP-217 等擁有者明確授權，線上 QA 未操作。
+
+- [x] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾（2026-10-28）：** Backlog → Next → In Progress → Done。PR #211 head 44b4626 的 CI 40605937563 四項成功，Chromium 289 passed／13 skipped（16.4 分鐘）、WebKit 8、386 pgTAP／HTTP 17/17（實際 UTC）；同 head 審查完成無發現且無未解決討論後合併 fd3aec5。四份雙向全天／紐約時間 fixture、owner／author、不越權、邀請輪替／撤銷／拒絕、單次替換／取消／衝突及私人 graph 全過；三種 no-op 第 6／6／7 組失敗，finally 精確還原後 17/17，最新 main 最後十七組亦過。本機十九份 migration 一致、無 link、五集合各 0、stack 已停，線上 QA 未操作。產品相對 DP-215 零差異，雙人 v1 開發與永久回歸已齊，發布候選另 DP-216。詳 [收尾紀錄](docs/family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)。
 
 - [x] **DP-215 — 指定時間重複事項以同一瞬間識別（2026-10-28）：** Backlog → Next → In Progress → Done。PR #210 head ce3064e 的 CI 40603682150 四項成功，Chromium 289 passed／13 skipped（15.6 分鐘）、WebKit 8、1,418 單元＋39 Node；同 head 審查完成無發現且無未解決討論後合併 ec53398。共用 identity 修正取消復活／替換重複、再編輯與 RPC 合併，保留微秒與 stored／CAS 原值；舊三產品檔的 10 新單元與手機回歸均失敗、finally 精確還原。手機／桌面截圖、console／版面與 Asia/Taipei 過；America/New_York／UTC 各 35 項亦過。真正雙帳號四份 fixture HTTP 17/17 由 DP-214 永久接線，沒有 migration／版號／公告／部署，線上 QA 未操作。詳 [證據](docs/timed-occurrence-identity.md)。
 

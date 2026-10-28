@@ -112,6 +112,8 @@ Browser plugin 未提供，沿專案既有 Playwright 與官方 CLI；A 使用�
 
 ## DP-214 雙向分享與重複事項收尾（2026-10-28）
 
+> 完成更新：[PR #211](https://github.com/yoyoCadence/DayPop/pull/211) head `44b4626` 的 CI `40605937563` 四項成功，Chromium 289 passed／13 skipped（16.4 分鐘）、WebKit 8、386 pgTAP，真正 HTTP 17/17 且實際 UTC；同 head 審查完成無發現、無未解決討論後，已合併 `fd3aec5`。以下「待自己的 CI」為準備時的紀錄。雙人 v1 開發與永久驗收已齊；0.4.5 候選及部署界線另見 [DP-216](two-person-release-candidate-2026-10-28.md)。
+
 承接擁有者要求完成雙人功能，PR #209 等待期間從當時最新 main `0eaeb72` 獨立準備，原十四組先通過後補成十七組；#209 四 CI／同 head 審查通過後合併 `71a9d25`。全天雙向先過，擴充指定時間後真正抓到取消復活／替換重複，因而暫存原準備 `ab9f2da`，拆成 [DP-215／PR #210](https://github.com/yoyoCadence/DayPop/pull/210) 的產品修正，詳 [同一瞬間識別](timed-occurrence-identity.md)。#210 head `ce3064e` 的 CI `40603682150` 四項成功（Chromium 289／13 skipped、WebKit 8），同 head 完成審查無發現且無未解決討論後合併 `ec53398`。本段已重放到該最新 main；產品改動屬 DP-215，本段只送 HTTP 回歸及交接，沒有 schema 變更。
 
 邀請先驗證重發輪替同一邀請且不增加保留名額、舊 token 失效；撤銷及拒絕後不建立 membership，最後另產新邀請、預覽、明確接受，已接受的 token 也不能重用。雙向流程中 B 分享自己的新日曆，A 雖為家庭 owner，仍不能讀 B 私人行程或改 B 分享；直接 RPC 使用真正的當前 grant 版本，必須回 `sharing_calendar_owner_required`，不是靠錯版本造成拒絕。A 在 B 日曆建立的行程由 B 擁有、作者為 A；兩邊收到的日曆不成 default、不進個人 projection。
