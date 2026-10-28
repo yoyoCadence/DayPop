@@ -1,0 +1,161 @@
+{
+  "httpCheckedAt": "2026-10-28T13:12:41.098Z",
+  "actualTimezone": "Etc/GMT-8",
+  "workflow": {
+    "runId": 40690824780,
+    "runNumber": 17,
+    "url": "https://github.com/yoyoCadence/DayPop/actions/runs/40690824780",
+    "sourceCommit": "2bdd7e4c7e406daec7383f0c164c6ca2d848323a",
+    "status": "success",
+    "artifactId": 12819115505,
+    "artifactSha256": "49b952c20092c07c5ec234df4844102c7da637770c15f961873ebcc1f4660d26"
+  },
+  "release": {
+    "version": "0.4.5",
+    "releasedAt": "2026-10-28",
+    "title": "共用日曆修正",
+    "changes": [
+      "取消邀請登入後，可回到同一份邀請並再次登入",
+      "分享暫時無法載入時，可在原畫面重新確認",
+      "修正指定時間重複行程取消後重現或單次修改重複顯示"
+    ]
+  },
+  "checks": {
+    "hasSharing": true,
+    "hasFamily": true,
+    "hasExpectedProject": true,
+    "csp": true,
+    "manifestScope": "./",
+    "publishedArtifactMatches": true
+  },
+  "assets": [
+    {
+      "path": "/DayPop/",
+      "status": 200,
+      "bytes": 1801,
+      "sha256": "dc49cafb9ac0ef0456273723e46e88d30576cb5fcc8434695d4da439a168ef5f",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/assets/index-MpigNYhS.js",
+      "status": 200,
+      "bytes": 745268,
+      "sha256": "c4945d5f45110907d16bce3d4267d53387fc4ac362b8faea383293bfe2292b7c",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/assets/index-BFWLpSJ8.css",
+      "status": 200,
+      "bytes": 113935,
+      "sha256": "fde2613b3c1232ad492b5362e0b582d5c21bf459e17e6fab555ac3977477609a",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/sw.js",
+      "status": 200,
+      "bytes": 1795,
+      "sha256": "e96f78227ef93f446b776f18bd434246695f32899f82e704ad3dffba1daa0e96",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/version.json",
+      "status": 200,
+      "bytes": 323,
+      "sha256": "2d3e0211fdaa82f71c1dc360a3c3ac91d80e99df1e8bb6e381636a197e4457ee",
+      "matchesPublishedArtifact": true
+    },
+    {
+      "path": "/DayPop/manifest.webmanifest",
+      "status": 200,
+      "bytes": 955,
+      "sha256": "a024cdf896c9d3ad63e338ecb565ee13020e2af5a889a65c5e4ae6ea5a497acb",
+      "matchesPublishedArtifact": true
+    }
+  ],
+  "publicAuth": {
+    "healthStatus": 200,
+    "settingsStatus": 200,
+    "emailEnabled": true,
+    "googleEnabled": true,
+    "signupDisabled": false,
+    "emailAutoConfirm": false,
+    "accountLoginTest": "not-run"
+  },
+  "guestUpdate": {
+    "beforeVersion": "0.4.4",
+    "afterVersion": "0.4.5",
+    "beforeCheckedAt": "2026-10-28T12:47:39.851Z",
+    "automaticUpdateCheckedAt": "2026-10-28T13:14:08.762Z",
+    "automaticNavigationType": "reload",
+    "schemaVersion": 4,
+    "revision": 1,
+    "bytes": 990,
+    "sha256Before": "c5a9c77318741bd82fea8cfaf0ecb48e62af2f4b53b50fd78ceb28c03c5015de",
+    "sha256After": "c5a9c77318741bd82fea8cfaf0ecb48e62af2f4b53b50fd78ceb28c03c5015de",
+    "sha256AfterManualReload": "c5a9c77318741bd82fea8cfaf0ecb48e62af2f4b53b50fd78ceb28c03c5015de",
+    "cachesBefore": [
+      "daypop-app-shell-0.4.4"
+    ],
+    "cachesAfter": [
+      "daypop-app-shell-0.4.5"
+    ],
+    "oldScript": "index-1b5KXnN6.js",
+    "newScript": "index-MpigNYhS.js",
+    "waitingWorkerAfter": false,
+    "eventVisibleAfterUpdateAndReload": true,
+    "profile": "isolated guest; no cloud writes"
+  },
+  "browser": {
+    "url": "https://yoyocadence.github.io/DayPop/",
+    "title": "日蹦 DayPop",
+    "actualTimezone": "Etc/GMT-8",
+    "viewports": [
+      {
+        "width": 390,
+        "height": 844,
+        "noticeBox": {
+          "x": 15,
+          "y": 264.921875,
+          "width": 360,
+          "height": 314.140625
+        },
+        "authBox": {
+          "x": 15,
+          "y": 124.890625,
+          "width": 360,
+          "height": 594.21875
+        }
+      },
+      {
+        "width": 1280,
+        "height": 900,
+        "noticeBox": {
+          "x": 463,
+          "y": 282.921875,
+          "width": 354,
+          "height": 314.140625
+        },
+        "authBox": {
+          "x": 463,
+          "y": 142.890625,
+          "width": 354,
+          "height": 594.21875
+        }
+      }
+    ],
+    "fourTabsResponsive": true,
+    "noticeFits": true,
+    "noFrameworkOverlay": true,
+    "noHorizontalOverflow": true,
+    "focusRestoredToSharingEntry": true,
+    "noRepeatedNoticeAfterReload": true,
+    "emailAndGoogleLoginEnabled": true,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "oldGuestConsoleErrors": 0,
+    "oldGuestConsoleWarnings": 0,
+    "realTwoAccountSharingTest": "not-rerun; prior DP-206 dedicated online QA retained",
+    "physicalPhoneTest": "not-run",
+    "qaSessionsClosed": 3
+  }
+}

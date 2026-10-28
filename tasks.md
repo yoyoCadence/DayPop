@@ -76,7 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-217 — 0.4.5 授權發布與線上 postflight：** Backlog → Next。等 DP-216 自己四 CI／同 head 審查通過合併且擁有者明確授權本版後，從 main 執行既有 Deploy staging；不改 workflow／repository 設定、不推 migration。確認六 jobs、公開版本／artifact、真正舊 client 更新及資料保存、兩 viewport 入口／console。未授權不 dispatch；既有 QA 帳號保留，Email／OAuth／真機及 DP-034 界線不變。具體動作見 [候選](docs/two-person-release-candidate-2026-10-28.md)。
 
 
 
@@ -232,6 +231,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
 
 
 
@@ -490,6 +490,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-217 — 0.4.5 授權發布與線上 postflight（2026-10-28）：** Backlog → Next → In Progress → Done。PR #212 四 CI／同 head 完成審查後合併 `2bdd7e4`；擁有者答覆「發布 0.4.5」，既有 Deploy staging #17／`40690824780` 從該 main 六 jobs 全成功（23 分 22 秒），Chromium 289 passed／13 skipped、WebKit 8、1,418 單元＋39 Node、386 pgTAP／HTTP 17/17（實際 UTC）。公開六成品與本次 artifact `12819115505` 逐 byte 相同、Auth flags 正常；真正線上 0.4.4 UI 自動 reload 至 0.4.5，990 bytes／v4／revision 1／hash 與原行程連同手動 reload 不變，只餘新 cache。390×844／1280×900 公告／四分頁／登入入口／焦點／reload／console 過、實際 Etc/GMT-8、五圖目視，三 CLI sessions 已關閉。詳 [發布驗證](docs/deployment-verification-2026-10-28.md)／[postflight JSON](docs/deployment-postflight-2026-10-28.json)。本交接自己的四 CI／同 head 審查無發現及無未解決討論才合併，不再次部署；沒有產品／workflow／migration 變更，十九份 schema 不需重推。0.4.5 公告不可回寫，線上 QA 保留未操作，Email／OAuth／真機及 DP-034 放行界線與寵物暫緩不變。下方候選未發布是當時歷史。
 
 - [x] **DP-216 — 雙人共用修正 0.4.5 發布候選（2026-10-28）：** Backlog → Next → In Progress → Done。候選本機準備完成；從 DP-215 已合併 main 獨立準備，再重放至 DP-214／PR #211 合併 fd3aec5，不重送前段產品／驗收。三條修正短公告、八份歷史 entry 不變、App／PWA assets 由 generator 產生，v4／十九份 migration 不變。完整 1,418＋39 Node、lint／typecheck／Pages build／check:build／公告守門、相關 Chromium 45 passed／3 skipped＋WebKit 8 過；production 兩 viewport 公告／四分頁／登入入口／焦點／reload／console 過，實際 Asia/Taipei、四圖目視，servers 已核對停止。詳 [候選證據](docs/two-person-release-candidate-2026-10-28.md)；本 PR 最新四 CI／同 head 完成審查無發現及無未解決討論才合併交付。公開仍 0.4.4、未 dispatch，發布另列 DP-217 等擁有者明確授權，線上 QA 未操作。
 

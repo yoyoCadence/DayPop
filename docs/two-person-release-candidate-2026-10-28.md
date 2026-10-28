@@ -1,6 +1,6 @@
 # 0.4.5 共用日曆修正候選（DP-216）
 
-**候選尚未發布，公開仍是 0.4.4。** 本段把雙人功能收尾後的三項前端修正包成可審核的 0.4.5：取消邀請登入後返回同一邀請、分享載入失敗保留手動重試、指定時間重複事項取消／替換的同瞬間識別。不新增產品能力、migration 或 Auth／分享權限；user-data 仍 v4，遠端十九份 migration 不需重推。線上 QA 帳號與假資料沒有操作。
+**後續狀態：0.4.5 已獲擁有者明確授權並發布，詳 [DP-217 線上驗證](deployment-verification-2026-10-28.md)。** 以下保留 DP-216 準備候選時的證據與界線。三項前端修正為取消邀請登入後返回同一邀請、分享載入失敗保留手動重試、指定時間重複事項取消／替換的同瞬間識別。不新增產品能力、migration 或 Auth／分享權限；user-data 仍 v4，遠端十九份 migration 不需重推。線上 QA 帳號與假資料沒有操作。
 
 ## 來源與候選內容
 
@@ -28,6 +28,8 @@ Browser plugin 未提供，使用 repo Playwright。相關 specs 為 `family-gro
 驗證設定曾有兩個等待／前置問題：公告守門第一次在新 build 尚未完成時讀到舊 dist，後來在 0.4.5 build 完成後重跑，明確回覆替代 0.4.4；本機 preview 首次漏 `/DayPop/` 啟動前綴造成資產找不到，補成與建置相同的 base 後兩 viewport 重跑成功。均沒有改產品或放寬斷言。候選 `dist/version.json` SHA-256 為 `2d3e0211fdaa82f71c1dc360a3c3ac91d80e99df1e8bb6e381636a197e4457ee`；這是本機成品，發布後仍須以該次 GitHub artifact 與公開回應做 postflight。
 
 ## 發布動作與保留界線
+
+PR #212 head `9696d74` 的 CI `40608268652` 四項成功（Chromium 289 passed／13 skipped、WebKit 8、386 pgTAP、HTTP 17/17），同 head 完成審查無發現及無未解決討論後合併 `2bdd7e4`。之後擁有者答覆「發布 0.4.5」，DP-217 從該 main 完成 Deploy staging #17／`40690824780` 與線上 postflight；0.4.5 公告自此不可回寫。下列「沒有 dispatch」描述本候選段落當時，不代表尚未發布。
 
 本段自己的最新 head 四 CI／同 head 完成審查無發現、無未解決討論後，依既有授權合併。擁有者若明確同意發布，再從合併後 main 執行既有 **Actions → Deploy staging → Run workflow**；保留四品質 gate、Build for Pages、Publish to Pages 與公告守門，目標是既有 `https://yoyocadence.github.io/DayPop/` 的 0.4.5，不改工作流、repository 設定或資料庫。
 
