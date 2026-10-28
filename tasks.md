@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-216 — 雙人共用修正 0.4.5 發布候選：** Backlog → Next。DP-215 已合併；可在 DP-214 等待 CI 期間從最新 main 獨立準備，發自己的 PR 前再對齊兩者均已合併的 main。準備短公告與 App／PWA 版號，涵蓋取消邀請登入後返回、分享故障可重試、指定時間重複事項取消／替換修正；驗證歷史公告不變、Pages base build、production 更新保存及手機桌面入口，獨立 PR／合併。只準備可審核成品，沿既有部署界線不 dispatch、不套遠端 migration；發布需擁有者針對本版明確授權。
+
 
 
 > **2026-10-26 線上雙帳號核心驗收完成：** DP-206 已依擁有者委託用兩個新建線上 QA 帳號完成共用／私人／view／撤權與重登，詳 Done 與既有驗證文件。帳號及假資料保留供使用，憑證只在本機 TEMP；本輪沒有部署，現有 0.4.4 搭配已套用第 19 檔即可使用。Email 寄達／Google OAuth／真機本輪未驗，DP-034 放行不變，寵物仍暫緩。下方仍寫「待 DP-206 實帳號」的段落為先前交接歷史。
@@ -230,7 +232,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-215 — 指定時間重複事項以同一瞬間識別：** Backlog → Next → In Progress，基底 PR #209／71a9d25。共用 occurrence key 修正取消復活／替換重複、重新編輯與 RPC 合併，保留微秒及 stored／CAS 原值。舊程式 10 新單元及手機畫面均失敗、finally 精確還原；修正後完整 1,418＋39 Node、lint／typecheck／build／check:build、相關 Chromium 21 passed／1 skipped＋WebKit 8 passed，截圖目視／console／版面過、實際 Asia/Taipei。暫用 DP-214 真實 HTTP 四 fixture 17/17，假帳號清理、script 還原、實際 Etc/GMT-8。詳 [驗證及接手點](docs/timed-occurrence-identity.md)；待自己的最新四 CI／同 head 完成審查才合併及結案。之後返回 test/dp-214-bilateral-http／ab9f2da 完成獨立 PR，雙人收尾未提前結案，專用 stack 暫保留。
+- [ ] **DP-214 — 雙向分享與重複事項真實 HTTP 收尾：** Backlog → Next → In Progress。已從 DP-215／PR #210 合併 ec53398 重放；四份雙向全天／紐約時間 fixture 的 HTTP 17/17、三項 replace／cancel／私人 no-op 控制及還原後 17/17 均過，來源 SHA 前綴 9583675609e7；最新 main 最後十七組亦過。十九份 migration 一致、無 link、五集合各 0，實際 Etc/GMT-8。產品相對最新 main 零差異，等待自己的最新四 CI／同 head 完成審查才合併及結案。詳 [收尾紀錄](docs/family-sharing-http.md#dp-214-雙向分享與重複事項收尾2026-10-28)，不部署或操作保留線上 QA。
 
 
 
@@ -487,6 +489,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-215 — 指定時間重複事項以同一瞬間識別（2026-10-28）：** Backlog → Next → In Progress → Done。PR #210 head ce3064e 的 CI 40603682150 四項成功，Chromium 289 passed／13 skipped（15.6 分鐘）、WebKit 8、1,418 單元＋39 Node；同 head 審查完成無發現且無未解決討論後合併 ec53398。共用 identity 修正取消復活／替換重複、再編輯與 RPC 合併，保留微秒與 stored／CAS 原值；舊三產品檔的 10 新單元與手機回歸均失敗、finally 精確還原。手機／桌面截圖、console／版面與 Asia/Taipei 過；America/New_York／UTC 各 35 項亦過。真正雙帳號四份 fixture HTTP 17/17 由 DP-214 永久接線，沒有 migration／版號／公告／部署，線上 QA 未操作。詳 [證據](docs/timed-occurrence-identity.md)。
 
 - [x] **DP-213 — 分享查詢失敗可在原畫面重試（2026-10-27）：** Backlog → Next → In Progress → Done，基底 PR #208／0eaeb72。修正 `CalendarSharingCard` 只在分享 available 時才顯示重試的條件；改以已登入帳號顯示、未確認 session／設定錯誤停用，沿既有 revalidate queue，不新增 cache／listener／請求來源。新單元在舊元件一項失敗、手機也在找不到按鈕處失敗；修正後 4 新單元與完整 1,408＋39 Node、lint／typecheck／build／check:build 過。相關 Chromium 19 passed／1 skipped＋WebKit 8 passed；390×844／1280×900 的分享故障、同畫面再次失敗（確認真正 manifest 呼叫）、鍵盤恢復、焦點／本人 cache bytes／頁名路徑／無溢出／overlay／console 均過，實際 Asia/Taipei、TEMP 截圖目視。自己的最新四 CI／同 head 審查後才合併；無 migration、版號、公告或部署。後續見 [雙人完成矩陣](docs/two-person-readiness.md)，線上 QA 未操作、寵物暫緩。
 
