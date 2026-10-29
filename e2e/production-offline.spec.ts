@@ -19,6 +19,65 @@ const seenKey = 'daypop.release-notes-seen';
 const fixedInstant = '2026-09-30T04:00:00.000Z';
 const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
 
+test('漫畫素材尚未快取時離線切換，仍能儲存行程並重新載入', async ({ page, context, site }) => {
+  await page.clock.setFixedTime(new Date(fixedInstant));
+  const data = createEmptyUserData({ now: fixedInstant });
+  data.preferences.themeId = 'minimal';
+  data.preferences.petEnabled = false;
+  const art = [...site.builds.get(site.currentVersion)!.keys()].filter(path =>
+    /^\/assets\/(?:desk(?:-dark)?|header|navigation|page-edges)-.*\.webp$/.test(path),
+  ).map(path => `${site.origin}/DayPop${path}`);
+  expect(art).toHaveLength(5); // Small paper is inlined into the cached CSS.
+  const versionUrl = `${site.origin}/DayPop/version.json`;
+  // A previously unused theme's heading font can also be uncached. Native
+  // font fallback is expected; do not hide other fonts or arbitrary failures.
+  const headingFonts = [...site.builds.get(site.currentVersion)!.keys()].filter(path =>
+    /^\/assets\/bangers-latin-400-normal-.*\.woff2?$/.test(path),
+  ).map(path => `${site.origin}/DayPop${path}`);
+  expect(headingFonts).toHaveLength(2);
+  const expectedFailures = [...art, ...headingFonts, versionUrl, `${versionUrl}?ts=${Date.parse(fixedInstant)}`];
+  const problems: string[] = [], failed: string[] = [];
+  page.on('pageerror', error => problems.push(error.message));
+  page.on('console', message => {
+    if (!['error', 'warning'].includes(message.type())) return;
+    if (message.type() === 'error' && expectedFailures.includes(message.location().url) && message.text().startsWith('Failed to load resource:')) return;
+    problems.push(`${message.type()}: ${message.text()}`);
+  });
+  page.on('requestfailed', request => {
+    if (expectedFailures.includes(request.url())) failed.push(request.url());
+    else problems.push(`requestfailed: ${request.url()}`);
+  });
+  await page.goto(`${site.origin}/setup.html`);
+  await page.evaluate(({ data, version, now }) => {
+    localStorage.setItem('daypop.release-notes-seen', version);
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: now, data }));
+  }, { data, version: site.currentVersion, now: fixedInstant });
+  await page.goto(`${site.origin}/DayPop/`);
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
+  await page.reload();
+  const cachedArt = await page.evaluate(async urls =>
+    Promise.all(urls.map(async url => Boolean(await caches.match(url)))), art);
+  expect(cachedArt).toEqual(art.map(() => false));
+  await context.setOffline(true);
+  await tabButton(page, '設定').click();
+  await page.locator('.dp-theme-card', { hasText: '漫畫' }).click();
+  await tabButton(page, '日曆').click();
+  await expect(page.locator('.dp-preview')).toHaveAttribute('data-theme', 'manga');
+  await expect.poll(() => failed.some(url => art.includes(url))).toBe(true);
+  await page.getByRole('button', { name: '新增', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '新增行程' });
+  await dialog.getByLabel('標題', { exact: true }).fill('首次離線缺圖仍可使用');
+  await dialog.getByRole('button', { name: '儲存', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const saved = await page.evaluate(key => localStorage.getItem(key), guestKey);
+  await page.reload();
+  await calendarViewButton(page, '列表').click();
+  await expect(page.locator('.cal-agenda-item')).toContainText('首次離線缺圖仍可使用');
+  expect(await page.evaluate(key => localStorage.getItem(key), guestKey)).toBe(saved);
+  console.log('DP-218 production offline timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
+  expect(problems).toEqual([]);
+});
+
 test('首次離線完成待辦缺 jump 圖片仍保存完成，回快取 idle 並在 reload 後不補播', async ({ page, context, site }) => {
   const now = '2026-10-25T04:00:00.000Z';
   const data = createEmptyUserData({ now });

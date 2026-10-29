@@ -1,0 +1,121 @@
+{
+  "generation": "built-in image_gen; resize and WebP encoding only, alpha retained",
+  "assets": [
+    {
+      "id": "desk",
+      "file": "src/assets/themes/manga-journal/desk.webp",
+      "width": 1280,
+      "height": 854,
+      "bytes": 90564,
+      "sha256": "3c3a07a065464bc18855c0698d56e27c2b1286c4a109290238bc3f43c86e006a",
+      "sourceSha256": "1828b6e2740aadca010aa80386e8e898267bbc02dbbb020ec3fc0b5fa2a1bef4",
+      "sourceFile": "exec-0a534bae-0dce-41c9-ac8b-a6c56d9858ca.png",
+      "alphaExtrema": null,
+      "sourceSize": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "id": "page-edges",
+      "file": "src/assets/themes/manga-journal/page-edges.webp",
+      "width": 320,
+      "height": 640,
+      "bytes": 17932,
+      "sha256": "d2c506ffa1ecd692c52a739eeaf006b68dee0d0e5412c23f02adfb70c88c9344",
+      "sourceSha256": "baa1bc313ff8c8449106e9217d4787fdc0e5dafc06aa9867b9def6c2dd6dfb01",
+      "sourceFile": "exec-fc689968-5066-4f55-bba0-ec52f70fc54f.png",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sourceSize": [
+        887,
+        1774
+      ],
+      "transparentPixelFraction": 0.89703125
+    },
+    {
+      "id": "header",
+      "file": "src/assets/themes/manga-journal/header.webp",
+      "width": 1086,
+      "height": 362,
+      "bytes": 31210,
+      "sha256": "dbfc4889ab248d84d7a9763a14b3118809193abeb5a9dd8e5afa25ebabe6d5b3",
+      "sourceSha256": "d9cd2b24b4b22e183a37bc8d25e06df31d7c5497afc4984b233cd4c271b8248e",
+      "sourceFile": "exec-8e01aa46-0712-4487-86a1-9cdedc9a2683.png",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "transparentPixelFraction": 0.9119837611794511
+    },
+    {
+      "id": "paper",
+      "file": "src/assets/themes/manga-journal/paper.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 1106,
+      "sha256": "897d22648f613a3d153d785116e2ea00c4698bfcbfea89626d1848d9a2e065c7",
+      "sourceSha256": "3c3e8aacb0c635182c0a3f6a4d108d6c1503fa113bc792691433dab39a63827a",
+      "sourceFile": "exec-b1924fe9-9dcf-41cf-aa4b-41070249a4d5.png",
+      "alphaExtrema": null,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "rgbExtrema": [
+        [
+          228,
+          255
+        ],
+        [
+          228,
+          255
+        ],
+        [
+          228,
+          255
+        ]
+      ]
+    },
+    {
+      "id": "navigation",
+      "file": "src/assets/themes/manga-journal/navigation.webp",
+      "width": 1086,
+      "height": 362,
+      "bytes": 9464,
+      "sha256": "8b861091cb48849920139a5f1ad51ce9388bfe6b1f83e2233b2147a259edc7a0",
+      "sourceSha256": "c2fc19c2e0c939f415b20a3c2412bd8c88e1812232bb51ebc9be347b459db4c0",
+      "sourceFile": "exec-13ee3856-fcb5-4b26-935d-dd9bc3d89ff4.png",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "transparentPixelFraction": 0.9808206912690903
+    },
+    {
+      "id": "desk-dark",
+      "file": "src/assets/themes/manga-journal/desk-dark.webp",
+      "width": 1280,
+      "height": 854,
+      "bytes": 66512,
+      "sha256": "f069569fe4ad65f22d69576e860a637ecfe75a215fc5de3afc4084c52e50f15a",
+      "sourceSha256": "4ef2a2a5d5b5a8269259a22162849af960f94acb2f4cbc737f7cfb3b647f4fd8",
+      "sourceFile": "exec-af32c41a-c2f0-4112-808d-b17fb3de5712.png",
+      "alphaExtrema": null,
+      "sourceSize": [
+        1536,
+        1024
+      ]
+    }
+  ]
+}
