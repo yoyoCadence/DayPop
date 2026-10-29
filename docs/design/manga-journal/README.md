@@ -2,6 +2,8 @@
 
 擁有者在 2026-10-28 明確委託整頁融合式主題、素材製作、程式整合、驗證及依既有流程發布。未指定風格，由 agent 依 DayPop 的手機日曆用途選擇深化既有「漫畫」，保留六套主題切換、已存偏好、四分頁、文字、使用者圖片及原月光貓。此為有意的視覺擴充，不宣稱是原稿復刻或擁有者另行目視驗收。
 
+**0.4.6 已發布至 [DayPop](https://yoyocadence.github.io/DayPop/)。** 既有使用者可從「設定 → 漫畫」切換，已存的其他主題不會被改寫。PR #214 最終 head `5730f54` 四 CI／同 head 審查無發現後合併 `22a0dfb`；Deploy staging #18 六 jobs 成功，公開十一成品與本次 artifact 逐 byte 相同，真正 0.4.5 自動更新保留原行程與暖陽深色偏好。完整結果見 [發布驗證](../../deployment-verification-2026-10-29.md)；下方本機驗證及初次 CI 補正保留為來源紀錄。
+
 ## 區域 → 素材 → 呈現方式
 
 | 區域 | 素材 | 呈現方式 |
@@ -47,6 +49,14 @@ Chromium 實際介面已在 390×844 與 1280×900 檢查空／有行程、深�
 PR #214 初次 CI `40797616595` 的三個 gate 成功，Chromium 完整結算為 291 passed／6 failed／13 skipped；六項家庭／分享短對話框因背景材質使 axe 可量文字不足而失敗，不能算通過。補上對話框標題、說明、清單及標籤的局部實底，保留周圍紙面，原六項在兩 viewport 重新通過；登入／公告配色及焦點另 14 passed／2 既有 skipped，本機假帳號分享確認的深淺畫面已目視。沒有降低最小量測數或排除背景。最終以修正後同 head 的四 CI 及完成審查為合併依據。
 
 ## 實際畫面
+
+正式站台 0.4.6：
+
+- [桌面淺色](screenshots/published-desktop-light.png)／[桌面深色](screenshots/published-desktop-dark.png)
+- [手機深色](screenshots/published-mobile-dark.png)／[長設定頁](screenshots/published-settings.png)
+- [原生表單](screenshots/published-form.png)／[表單下方](screenshots/published-form-bottom.png)
+
+本機整合畫面：
 
 - [桌面淺色日曆](screenshots/desktop-light.png)
 - [手機深色日曆](screenshots/mobile-dark.png)

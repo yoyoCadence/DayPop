@@ -1,0 +1,686 @@
+{
+    "checkedAt":  "2026-10-29T10:53:16.869Z",
+    "actualTimezone":  "Etc/GMT-8",
+    "release":  {
+                    "version":  "0.4.6",
+                    "releasedAt":  "2026-10-29",
+                    "title":  "漫畫手帳新風格",
+                    "changes":  [
+                                    "漫畫主題加入紙頁、墨線與紅色膠帶，串連日曆、搜尋、綜覽與設定",
+                                    "桌面使用獨立的淺深色工作桌，手機保留輕量紙面與清楚操作區",
+                                    "沿用六種主題切換與已存偏好，原有行程、待辦與分享功能不變"
+                                ]
+                },
+    "hasSharing":  true,
+    "hasFamily":  true,
+    "hasExpectedProject":  true,
+    "csp":  true,
+    "manifestScope":  "./",
+    "publicAuth":  {
+                       "healthStatus":  200,
+                       "settingsStatus":  200,
+                       "emailEnabled":  true,
+                       "googleEnabled":  true,
+                       "signupDisabled":  false,
+                       "emailAutoConfirm":  false,
+                       "accountLoginTest":  "not-run"
+                   },
+    "assets":  [
+                   {
+                       "path":  "/DayPop/",
+                       "status":  200,
+                       "bytes":  1801,
+                       "sha256":  "4e7b3ec8ab75636f6a7bd28f0e4c67c221cd82bf70a0eb8e6841c0ee1ec6e772",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/index-CWPkTEkR.js",
+                       "status":  200,
+                       "bytes":  745346,
+                       "sha256":  "3ca4becb0ebeb777902a127ca5f0a0171548920d69f67d372c33e1396ece58b8",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/index-DXOL5YPU.css",
+                       "status":  200,
+                       "bytes":  119236,
+                       "sha256":  "6a3e33dcee31c80ccf3c203612079e41385a8d37fc9594da5744857e03035b6d",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/sw.js",
+                       "status":  200,
+                       "bytes":  1795,
+                       "sha256":  "9856d9d7f9f87be009d950d79dcfb00a634e0da977e7b32b22fd3c9e8fb1f78f",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/version.json",
+                       "status":  200,
+                       "bytes":  392,
+                       "sha256":  "3914c61f7691ba2f94e31f75c1a14ac8f53cac41e9fdc95851826665a3bafa40",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/manifest.webmanifest",
+                       "status":  200,
+                       "bytes":  955,
+                       "sha256":  "a024cdf896c9d3ad63e338ecb565ee13020e2af5a889a65c5e4ae6ea5a497acb",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/desk-BG0LEVk1.webp",
+                       "status":  200,
+                       "bytes":  90564,
+                       "sha256":  "3c3a07a065464bc18855c0698d56e27c2b1286c4a109290238bc3f43c86e006a",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/page-edges-J3lamw2P.webp",
+                       "status":  200,
+                       "bytes":  17932,
+                       "sha256":  "d2c506ffa1ecd692c52a739eeaf006b68dee0d0e5412c23f02adfb70c88c9344",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/header-B7EdgrIN.webp",
+                       "status":  200,
+                       "bytes":  31210,
+                       "sha256":  "dbfc4889ab248d84d7a9763a14b3118809193abeb5a9dd8e5afa25ebabe6d5b3",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/navigation-XLqiz-BZ.webp",
+                       "status":  200,
+                       "bytes":  9464,
+                       "sha256":  "8b861091cb48849920139a5f1ad51ce9388bfe6b1f83e2233b2147a259edc7a0",
+                       "matchesPublishedArtifact":  true
+                   },
+                   {
+                       "path":  "/DayPop/assets/desk-dark-kpRBmB9A.webp",
+                       "status":  200,
+                       "bytes":  66512,
+                       "sha256":  "f069569fe4ad65f22d69576e860a637ecfe75a215fc5de3afc4084c52e50f15a",
+                       "matchesPublishedArtifact":  true
+                   }
+               ],
+    "publishedArtifactMatches":  true,
+    "artifactSha256":  "7d704a6fe2deb97b6c142444c1e44270b4f8dfb3e72bb9d2aaff5833ccfb424d",
+    "publishWorkflow":  {
+                            "javascriptGzipBytes":  220244,
+                            "node":  39,
+                            "webkit":  "8 passed",
+                            "javascriptRawBytes":  747141,
+                            "runNumber":  18,
+                            "allSixJobs":  "success",
+                            "http":  "17/17",
+                            "unit":  1418,
+                            "duration":  "18m 14s",
+                            "runId":  40858598356,
+                            "pgTAP":  386,
+                            "chromium":  "297 passed / 13 skipped (16.8m)",
+                            "commit":  "22a0dfb45525ca09beaefa0f883d0e080a4ff978",
+                            "cssRawBytes":  119236,
+                            "cssGzipBytes":  29242,
+                            "artifactId":  12891576874
+                        },
+    "inlinePaperSha256MatchesManifest":  true,
+    "old-client":  {
+                       "checkedAt":  "2026-10-29T10:35:28.619Z",
+                       "bytes":  994,
+                       "sha256":  "08db7a232512b921882a3ff4f6f2d59139e81df1a78f67544a22f3ff5c0d8853",
+                       "schemaVersion":  4,
+                       "revision":  3,
+                       "preferences":  {
+                                           "timezone":  "Asia/Taipei",
+                                           "weekStartsOn":  0,
+                                           "theme":  "dark",
+                                           "themeId":  "warm",
+                                           "calendarGridMode":  "adaptive",
+                                           "defaultReminderMinutes":  [
+
+                                                                      ],
+                                           "petName":  "摩卡",
+                                           "petEnabled":  true
+                                       },
+                       "title":  "漫畫手帳更新保存驗證",
+                       "seen":  "0.4.5",
+                       "caches":  [
+                                      "daypop-app-shell-0.4.5"
+                                  ],
+                       "scripts":  [
+                                       "https://yoyocadence.github.io/DayPop/assets/index-MpigNYhS.js"
+                                   ],
+                       "worker":  [
+                                      {
+                                          "scope":  "https://yoyocadence.github.io/DayPop/",
+                                          "active":  "activated",
+                                          "waiting":  false
+                                      }
+                                  ],
+                       "timezone":  "Etc/GMT-8"
+                   },
+    "after-auto":  {
+                       "checkedAt":  "2026-10-29T10:55:01.342Z",
+                       "bytes":  994,
+                       "sha256":  "08db7a232512b921882a3ff4f6f2d59139e81df1a78f67544a22f3ff5c0d8853",
+                       "schemaVersion":  4,
+                       "revision":  3,
+                       "preferences":  {
+                                           "timezone":  "Asia/Taipei",
+                                           "weekStartsOn":  0,
+                                           "theme":  "dark",
+                                           "themeId":  "warm",
+                                           "calendarGridMode":  "adaptive",
+                                           "defaultReminderMinutes":  [
+
+                                                                      ],
+                                           "petName":  "摩卡",
+                                           "petEnabled":  true
+                                       },
+                       "title":  "漫畫手帳更新保存驗證",
+                       "seen":  "0.4.6",
+                       "scripts":  [
+                                       "https://yoyocadence.github.io/DayPop/assets/index-CWPkTEkR.js"
+                                   ],
+                       "caches":  [
+                                      "daypop-app-shell-0.4.6"
+                                  ],
+                       "worker":  [
+                                      {
+                                          "scope":  "https://yoyocadence.github.io/DayPop/",
+                                          "active":  "activated",
+                                          "waiting":  false
+                                      }
+                                  ],
+                       "navigationType":  "reload",
+                       "theme":  "warm",
+                       "colorMode":  "dark",
+                       "journalImageRequests":  [
+
+                                                ],
+                       "horizontalOverflow":  false,
+                       "timezone":  "Etc/GMT-8"
+                   },
+    "after-manual":  {
+                         "checkedAt":  "2026-10-29T10:55:38.883Z",
+                         "bytes":  994,
+                         "sha256":  "08db7a232512b921882a3ff4f6f2d59139e81df1a78f67544a22f3ff5c0d8853",
+                         "schemaVersion":  4,
+                         "revision":  3,
+                         "preferences":  {
+                                             "timezone":  "Asia/Taipei",
+                                             "weekStartsOn":  0,
+                                             "theme":  "dark",
+                                             "themeId":  "warm",
+                                             "calendarGridMode":  "adaptive",
+                                             "defaultReminderMinutes":  [
+
+                                                                        ],
+                                             "petName":  "摩卡",
+                                             "petEnabled":  true
+                                         },
+                         "title":  "漫畫手帳更新保存驗證",
+                         "seen":  "0.4.6",
+                         "scripts":  [
+                                         "https://yoyocadence.github.io/DayPop/assets/index-CWPkTEkR.js"
+                                     ],
+                         "caches":  [
+                                        "daypop-app-shell-0.4.6"
+                                    ],
+                         "worker":  [
+                                        {
+                                            "scope":  "https://yoyocadence.github.io/DayPop/",
+                                            "active":  "activated",
+                                            "waiting":  false
+                                        }
+                                    ],
+                         "navigationType":  "reload",
+                         "theme":  "warm",
+                         "colorMode":  "dark",
+                         "journalImageRequests":  [
+
+                                                  ],
+                         "horizontalOverflow":  false,
+                         "timezone":  "Etc/GMT-8"
+                     },
+    "desktop-ui":  {
+                       "checkedAt":  "2026-10-29T10:56:27.048Z",
+                       "viewport":  {
+                                        "width":  1280,
+                                        "height":  900
+                                    },
+                       "theme":  "manga",
+                       "mode":  "light",
+                       "phone":  {
+                                     "width":  404,
+                                     "height":  824
+                                 },
+                       "horizontalOverflow":  false,
+                       "art":  [
+                                   {
+                                       "selector":  ".dp-preview",
+                                       "images":  [
+                                                      {
+                                                          "file":  "desk-BG0LEVk1.webp",
+                                                          "width":  1280,
+                                                          "height":  854
+                                                      }
+                                                  ],
+                                       "box":  {
+                                                   "x":  0,
+                                                   "y":  0,
+                                                   "width":  1280,
+                                                   "height":  923
+                                               }
+                                   },
+                                   {
+                                       "selector":  ".cal-header",
+                                       "images":  [
+                                                      {
+                                                          "file":  "header-B7EdgrIN.webp",
+                                                          "width":  1086,
+                                                          "height":  362
+                                                      },
+                                                      {
+                                                          "file":  "inline-paper",
+                                                          "width":  256,
+                                                          "height":  256
+                                                      }
+                                                  ],
+                                       "box":  {
+                                                   "x":  448,
+                                                   "y":  82,
+                                                   "width":  384,
+                                                   "height":  180.59375
+                                               }
+                                   },
+                                   {
+                                       "selector":  ".cal-month-scroll",
+                                       "images":  [
+                                                      {
+                                                          "file":  "page-edges-J3lamw2P.webp",
+                                                          "width":  320,
+                                                          "height":  640
+                                                      },
+                                                      {
+                                                          "file":  "inline-paper",
+                                                          "width":  256,
+                                                          "height":  256
+                                                      }
+                                                  ],
+                                       "box":  {
+                                                   "x":  448,
+                                                   "y":  291.59375,
+                                                   "width":  384,
+                                                   "height":  486.40625
+                                               }
+                                   },
+                                   {
+                                       "selector":  ".dp-tabbar",
+                                       "images":  [
+                                                      {
+                                                          "file":  "navigation-XLqiz-BZ.webp",
+                                                          "width":  1086,
+                                                          "height":  362
+                                                      },
+                                                      {
+                                                          "file":  "inline-paper",
+                                                          "width":  256,
+                                                          "height":  256
+                                                      }
+                                                  ],
+                                       "box":  {
+                                                   "x":  448,
+                                                   "y":  778,
+                                                   "width":  384,
+                                                   "height":  64
+                                               }
+                                   }
+                               ],
+                       "pet":  {
+                                   "file":  "moon-cat-idle-Nw79dLw2.webp",
+                                   "naturalWidth":  120,
+                                   "filter":  "none",
+                                   "opacity":  "1",
+                                   "blend":  "normal"
+                               },
+                       "timezone":  "Etc/GMT-8",
+                       "console":  [
+
+                                   ]
+                   },
+    "desktop-dark-ui":  {
+                            "checkedAt":  "2026-10-29T10:59:49.497Z",
+                            "viewport":  {
+                                             "width":  1280,
+                                             "height":  900
+                                         },
+                            "theme":  "manga",
+                            "mode":  "dark",
+                            "phone":  {
+                                          "width":  404,
+                                          "height":  824
+                                      },
+                            "horizontalOverflow":  false,
+                            "art":  [
+                                        {
+                                            "selector":  ".dp-preview",
+                                            "images":  [
+                                                           {
+                                                               "file":  "desk-dark-kpRBmB9A.webp",
+                                                               "width":  1280,
+                                                               "height":  854
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  0,
+                                                        "y":  0,
+                                                        "width":  1280,
+                                                        "height":  923
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".cal-header",
+                                            "images":  [
+                                                           {
+                                                               "file":  "header-B7EdgrIN.webp",
+                                                               "width":  1086,
+                                                               "height":  362
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  448,
+                                                        "y":  82,
+                                                        "width":  384,
+                                                        "height":  180.59375
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".cal-month-scroll",
+                                            "images":  [
+                                                           {
+                                                               "file":  "page-edges-J3lamw2P.webp",
+                                                               "width":  320,
+                                                               "height":  640
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  448,
+                                                        "y":  291.59375,
+                                                        "width":  384,
+                                                        "height":  486.40625
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".dp-tabbar",
+                                            "images":  [
+                                                           {
+                                                               "file":  "navigation-XLqiz-BZ.webp",
+                                                               "width":  1086,
+                                                               "height":  362
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  448,
+                                                        "y":  778,
+                                                        "width":  384,
+                                                        "height":  64
+                                                    }
+                                        }
+                                    ],
+                            "pet":  {
+                                        "file":  "moon-cat-idle-Nw79dLw2.webp",
+                                        "naturalWidth":  120,
+                                        "filter":  "none",
+                                        "opacity":  "1",
+                                        "blend":  "normal"
+                                    },
+                            "timezone":  "Etc/GMT-8",
+                            "console":  [
+
+                                        ]
+                        },
+    "mobile-light-ui":  {
+                            "checkedAt":  "2026-10-29T10:57:51.330Z",
+                            "viewport":  {
+                                             "width":  390,
+                                             "height":  844
+                                         },
+                            "theme":  "manga",
+                            "mode":  "light",
+                            "phone":  {
+                                          "width":  0,
+                                          "height":  0
+                                      },
+                            "horizontalOverflow":  false,
+                            "art":  [
+                                        {
+                                            "selector":  ".dp-preview",
+                                            "images":  [
+
+                                                       ],
+                                            "box":  {
+                                                        "x":  0,
+                                                        "y":  0,
+                                                        "width":  390,
+                                                        "height":  844
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".cal-header",
+                                            "images":  [
+                                                           {
+                                                               "file":  "header-B7EdgrIN.webp",
+                                                               "width":  1086,
+                                                               "height":  362
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  0,
+                                                        "y":  0,
+                                                        "width":  390,
+                                                        "height":  180.59375
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".cal-month-scroll",
+                                            "images":  [
+                                                           {
+                                                               "file":  "page-edges-J3lamw2P.webp",
+                                                               "width":  320,
+                                                               "height":  640
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  0,
+                                                        "y":  209.59375,
+                                                        "width":  390,
+                                                        "height":  570.40625
+                                                    }
+                                        },
+                                        {
+                                            "selector":  ".dp-tabbar",
+                                            "images":  [
+                                                           {
+                                                               "file":  "navigation-XLqiz-BZ.webp",
+                                                               "width":  1086,
+                                                               "height":  362
+                                                           },
+                                                           {
+                                                               "file":  "inline-paper",
+                                                               "width":  256,
+                                                               "height":  256
+                                                           }
+                                                       ],
+                                            "box":  {
+                                                        "x":  0,
+                                                        "y":  780,
+                                                        "width":  390,
+                                                        "height":  64
+                                                    }
+                                        }
+                                    ],
+                            "pet":  {
+                                        "file":  "moon-cat-idle-Nw79dLw2.webp",
+                                        "naturalWidth":  120,
+                                        "filter":  "none",
+                                        "opacity":  "1",
+                                        "blend":  "normal"
+                                    },
+                            "timezone":  "Etc/GMT-8",
+                            "console":  [
+
+                                        ]
+                        },
+    "mobile-dark-ui":  {
+                           "checkedAt":  "2026-10-29T10:58:27.547Z",
+                           "viewport":  {
+                                            "width":  390,
+                                            "height":  844
+                                        },
+                           "theme":  "manga",
+                           "mode":  "dark",
+                           "phone":  {
+                                         "width":  0,
+                                         "height":  0
+                                     },
+                           "horizontalOverflow":  false,
+                           "art":  [
+                                       {
+                                           "selector":  ".dp-preview",
+                                           "images":  [
+
+                                                      ],
+                                           "box":  {
+                                                       "x":  0,
+                                                       "y":  0,
+                                                       "width":  390,
+                                                       "height":  844
+                                                   }
+                                       },
+                                       {
+                                           "selector":  ".cal-header",
+                                           "images":  [
+                                                          {
+                                                              "file":  "header-B7EdgrIN.webp",
+                                                              "width":  1086,
+                                                              "height":  362
+                                                          },
+                                                          {
+                                                              "file":  "inline-paper",
+                                                              "width":  256,
+                                                              "height":  256
+                                                          }
+                                                      ],
+                                           "box":  {
+                                                       "x":  0,
+                                                       "y":  0,
+                                                       "width":  390,
+                                                       "height":  180.59375
+                                                   }
+                                       },
+                                       {
+                                           "selector":  ".cal-month-scroll",
+                                           "images":  [
+                                                          {
+                                                              "file":  "page-edges-J3lamw2P.webp",
+                                                              "width":  320,
+                                                              "height":  640
+                                                          },
+                                                          {
+                                                              "file":  "inline-paper",
+                                                              "width":  256,
+                                                              "height":  256
+                                                          }
+                                                      ],
+                                           "box":  {
+                                                       "x":  0,
+                                                       "y":  209.59375,
+                                                       "width":  390,
+                                                       "height":  570.40625
+                                                   }
+                                       },
+                                       {
+                                           "selector":  ".dp-tabbar",
+                                           "images":  [
+                                                          {
+                                                              "file":  "navigation-XLqiz-BZ.webp",
+                                                              "width":  1086,
+                                                              "height":  362
+                                                          },
+                                                          {
+                                                              "file":  "inline-paper",
+                                                              "width":  256,
+                                                              "height":  256
+                                                          }
+                                                      ],
+                                           "box":  {
+                                                       "x":  0,
+                                                       "y":  780,
+                                                       "width":  390,
+                                                       "height":  64
+                                                   }
+                                       }
+                                   ],
+                           "pet":  {
+                                       "file":  "moon-cat-idle-Nw79dLw2.webp",
+                                       "naturalWidth":  120,
+                                       "filter":  "none",
+                                       "opacity":  "1",
+                                       "blend":  "normal"
+                                   },
+                           "timezone":  "Etc/GMT-8",
+                           "console":  [
+
+                                       ]
+                       },
+    "public-flow":  {
+                        "authBox":  {
+                                        "x":  15,
+                                        "y":  124.890625,
+                                        "width":  360,
+                                        "height":  594.21875
+                                    },
+                        "authText":  "×\nDAYPOP ACCOUNT\n保存你的日蹦資料\n\n登入不會刪除或自動上傳目前的遊客資料；資料匯入會在後續由你確認。\n\n登入\n註冊\n使用 Google 帳號繼續\nEmail\n密碼\n登入\n忘記密碼？\n繼續使用遊客模式",
+                        "focusRestored":  true,
+                        "persistedTitle":  "一起安排生活：週末採買與散步，長標題仍可清楚編輯",
+                        "weekOverflow":  false,
+                        "list":  "09:00\n一起安排生活：週末採買與散步，長標題仍可清楚編輯",
+                        "console":  [
+
+                                    ]
+                    },
+    "mobileDeskImageRequests":  [
+
+                                ],
+    "limits":  [
+                   "Phone viewport simulation; no physical phone or standalone test",
+                   "No account login, Email delivery or Google OAuth in this release smoke test"
+               ]
+}

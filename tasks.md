@@ -232,12 +232,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-218 — 漫畫手帳整頁融合主題（2026-10-28）：** 依擁有者新委託 Backlog → Next → In Progress。沿既有漫畫主題與六主題／淺深色切換，製作桌面環境、手機紙頁、頁首墨線、工作面紙材質與分頁透明裝飾；保留四分頁、既有文案、原始圖片、控制位置與資料模型。先生成完整介面概念，再獨立產出可重用素材、整合共享樣式，驗證空／有資料、長頁／表單、兩 viewport、對比、主題切換、離線與預算。每段依既有授權開 PR，自己的四 CI／同 head 完成審查後合併；本次「完成發布並提供網址」請求另依既有流程準備可審核發布，不推 migration、不操作正式資料。素材與提示詞記錄於本段文件。
-
-  **2026-10-29 候選完成：** 六張真實生成 WebP 與共享 CSS 已整合，偏好 ready 才下載；六項新回歸含延遲載入幾何／解碼／原生保存搜尋／損圖回退／其他主題零請求／原圖不變，真撤樣式失敗並精確還原。1,418 單元＋39 Node、lint／typecheck／Pages build／check:build／歷史公告過；兩 viewport production 首次離線回退、WebKit 8、手機 axe 5（十二配色矩陣在本機以既有 360 秒方式完成）、桌面 axe 4 過，CI timeout／workers／retry 不改。390×844／1280×900 空／有資料、長設定／原生表單、淺深截圖目視，乾淨重載 console 0 errors／warnings、無水平溢出，實際時區列印。最低農曆材質對比 4.785／5.832；資產／程式預算與概念對照見 [完整紀錄](docs/design/manga-journal/README.md)。0.4.6 公告另加，既有 0.4.5 等歷史逐項不變，v4／19 migrations／後端不改；尚待自己的四 CI／同 head 審查合併及既有流程發布，未宣稱真機或擁有者額外品質驗收。
-
-  **完整 CI 補正：** #214 初次 head `99d08f5`／run `40797616595`，三 gate 成功但 Chromium 為 291 passed／6 failed／13 skipped（23.7 分鐘），不是 timeout 或全過。六個失敗是家庭邀請／分享／刪除確認的可量文字不足（原門檻 4／5）；標題、說明、清單、標籤補局部實底後原六項兩 viewport 全過，保留材質邊緣與量測門檻。真正 `--base=/DayPop/` 重建及預算過，完整結果與後續同 head CI 以本段最新紀錄為準。
-
 
 
 
@@ -496,6 +490,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-218 — 漫畫手帳整頁融合主題與 0.4.6 發布（2026-10-29）：** Backlog → Next → In Progress → Done。三畫面概念後獨立生成六張 WebP，整合桌面淺深環境、手機／長頁紙邊、四頁頁首、日期／卡片／原生 sheet 紙面與分頁膠帶；保留六主題偏好、四分頁、文字、原圖及功能。六項新整合、production 首次離線缺圖、真撤樣式負控制、axe 十二配色矩陣與 WebKit 全過；初次六項短確認文字量測失敗已以局部實底修正，原門檻不變。詳 [素材／提示詞／對照](docs/design/manga-journal/README.md)。PR #214 head `5730f54` 四 CI／同 head 審查無發現及無未解決討論後合併 `22a0dfb`，既有 Deploy staging #18／`40858598356` 六 jobs 成功（18 分 14 秒），297 Chromium／13 skipped、WebKit 8、1,418 單元＋39 Node、386 pgTAP／HTTP 17/17。公開十一成品與本次 artifact 逐 byte 相同，原 0.4.5 自動及手動 reload 後 994 bytes／v4／revision 3／hash／原行程與暖陽深色偏好不變。正式 390×844／1280×900 淺深、長表單／設定、搜尋／綜覽／週／列表與登入入口／焦點、console 全過，六圖目視，實際 Etc/GMT-8；兩 CLI sessions 已關閉。詳 [發布證據](docs/deployment-verification-2026-10-29.md)／[JSON](docs/deployment-postflight-2026-10-29.json)。本交接自己的四 CI／同 head 完成審查才合併，不再部署；沒有後端／migration／正式帳號操作，十九份 schema 不需重推，QA 保留，真機／OAuth／DP-034 界線不變。0.4.6 公告已不可回寫。
 
 - [x] **DP-217 — 0.4.5 授權發布與線上 postflight（2026-10-28）：** Backlog → Next → In Progress → Done。PR #212 四 CI／同 head 完成審查後合併 `2bdd7e4`；擁有者答覆「發布 0.4.5」，既有 Deploy staging #17／`40690824780` 從該 main 六 jobs 全成功（23 分 22 秒），Chromium 289 passed／13 skipped、WebKit 8、1,418 單元＋39 Node、386 pgTAP／HTTP 17/17（實際 UTC）。公開六成品與本次 artifact `12819115505` 逐 byte 相同、Auth flags 正常；真正線上 0.4.4 UI 自動 reload 至 0.4.5，990 bytes／v4／revision 1／hash 與原行程連同手動 reload 不變，只餘新 cache。390×844／1280×900 公告／四分頁／登入入口／焦點／reload／console 過、實際 Etc/GMT-8、五圖目視，三 CLI sessions 已關閉。詳 [發布驗證](docs/deployment-verification-2026-10-28.md)／[postflight JSON](docs/deployment-postflight-2026-10-28.json)。本交接自己的四 CI／同 head 審查無發現及無未解決討論才合併，不再次部署；沒有產品／workflow／migration 變更，十九份 schema 不需重推。0.4.5 公告不可回寫，線上 QA 保留未操作，Email／OAuth／真機及 DP-034 放行界線與寵物暫緩不變。下方候選未發布是當時歷史。
 
