@@ -38,11 +38,13 @@ Chromium 實際介面已在 390×844 與 1280×900 檢查空／有行程、深�
 
 最淡農曆字 `#646464` 在紙材質最低 RGB 228、35% 白色遮罩、6% 灰色斑馬底疊加後，保守底色 RGB 231.003，WCAG 相對亮度對比 **4.785:1**。深色 `#989898` 在最亮 RGB 255 紙材質、98% `#121212` 遮罩及同一斑馬底疊加後為 RGB 29.1756，對比 **5.832:1**。今天／選取日期仍用原不透明狀態底色；axe 沿原規則與最低可量文字門檻，沒有為本主題關掉背景或降低門檻。
 
-六張 WebP 合計 **216,788 bytes**；手機四張合計 **59,712 bytes**（含會 inline 到 CSS 的 1,106 bytes 紙面），桌面僅另載當前模式的 90,564／66,512 bytes。Pillow 12.2.0 LANCZOS 縮放、WebP quality=82／method=6；透明素材 exact=True。Pages 建置 CSS **117,539 raw／29,175 gzip bytes**、JS＋worker **747,463 raw／220,268 gzip bytes**，均在既有預算，未放寬守門。
+六張 WebP 合計 **216,788 bytes**；手機四張合計 **59,712 bytes**（含會 inline 到共享 CSS 的 1,106 bytes 紙面），桌面僅另載當前模式的 90,564／66,512 bytes。Pillow 12.2.0 LANCZOS 縮放、WebP quality=82／method=6；透明素材 exact=True。最終本機 `npm run build -- --base=/DayPop/` 的 Pages 建置 CSS **119,236 raw／29,242 gzip bytes**、JS＋worker **747,193 raw／220,244 gzip bytes**，均在既有預算，未放寬守門；初版 117,539／29,175 的 CSS 數字屬於 root base，並非 Pages。發布 artifact 另逐 byte 核對，不用本機成品冒充公開成品。
 
 新增整合回歸涵蓋延遲載入不移動、深淺色解碼、原生新增／搜尋／編輯／reload、損壞圖片仍保存、非漫畫重載不請求素材與原貓圖片保留。首次離線切換尚未快取的漫畫素材，會保留原生底色及字體 fallback，仍可保存、reload 讀回；只將精確的未快取素材／標題字體與離線版本檢查列為預期失敗。程式品質、完整單元及最終瀏覽器結果另見 tasks.md 的 DP-218；發布狀態以發布驗證文件為準。
 
 素材載入只在使用者偏好就緒後啟用，避免 Auth 載入中的預設漫畫畫面讓其他主題多下載圖片。沒有改使用者 schema、偏好值、Auth、RLS、migration 或 service worker 快取權限。
+
+PR #214 初次 CI `40797616595` 的三個 gate 成功，Chromium 完整結算為 291 passed／6 failed／13 skipped；六項家庭／分享短對話框因背景材質使 axe 可量文字不足而失敗，不能算通過。補上對話框標題、說明、清單及標籤的局部實底，保留周圍紙面，原六項在兩 viewport 重新通過；登入／公告配色及焦點另 14 passed／2 既有 skipped，本機假帳號分享確認的深淺畫面已目視。沒有降低最小量測數或排除背景。最終以修正後同 head 的四 CI 及完成審查為合併依據。
 
 ## 實際畫面
 
@@ -50,3 +52,4 @@ Chromium 實際介面已在 390×844 與 1280×900 檢查空／有行程、深�
 - [手機深色日曆](screenshots/mobile-dark.png)
 - [手機長設定頁](screenshots/settings.png)
 - [原生新增行程](screenshots/form.png)
+- 本機假帳號分享確認：[淺色](screenshots/confirmation-light.png)／[深色](screenshots/confirmation-dark.png)；不是正式帳號操作

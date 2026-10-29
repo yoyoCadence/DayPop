@@ -104,6 +104,13 @@
   background-color: var(--surface);
 }
 
+/* Short confirmations may contain only a title, description and two actions.
+ * Give every reading block solid paper while leaving the dialog's margins
+ * textured, so all meaningful consent text has measurable contrast. */
+.dp-preview[data-theme='manga'] :is(.auth-dialog, .update-dialog) :is(h2, h3, p, li, label) {
+  background-color: var(--surface);
+}
+
 .dp-preview[data-theme='manga'] .dp-tab[aria-current='page']::after {
   position: absolute;
   bottom: 5px;
