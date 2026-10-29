@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { useTheme } from '../theme/themeContext';
+import { useDayPopDataState } from '../data/dataContext';
 import { TabBar } from './TabBar';
 import type { ShellTab } from './tabs';
 import { AppViewportContext } from './viewportContext';
 import './shell.css';
 import './accountAndDialogs.css';
+import '../theme/mangaJournal.css';
 
 export interface AppShellProps {
   tab: ShellTab;
@@ -54,12 +56,13 @@ export function AppShell({
   hideTabBar = false,
 }: AppShellProps) {
   const { cssVariables, theme, mode, resolvedMode } = useTheme();
+  const { state } = useDayPopDataState();
   // Published so sheets and dialogs can portal into the viewport instead of
   // escaping the preview frame — see `ViewportLayer`.
   const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="dp-preview" style={cssVariables}>
+    <div className="dp-preview" data-theme={state.status === 'ready' ? theme.id : undefined} data-color-mode={resolvedMode} style={cssVariables}>
       <div className="dp-phone">
         <div className="dp-viewport" ref={setViewport}>
           <div className="dp-texture" aria-hidden="true" />

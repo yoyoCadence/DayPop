@@ -1,0 +1,144 @@
+/* DP-218: manga journal art layers. No new layout, focus targets or data.
+ * Local image fallbacks are the existing opaque theme surfaces. Other themes
+ * do not consume these variables, so their browsers do not request this art.
+ * See docs/design/manga-journal for prompts, source hashes and crop rules. */
+.dp-preview[data-theme='manga'] {
+  --journal-paper: url('../assets/themes/manga-journal/paper.webp');
+  --journal-header: url('../assets/themes/manga-journal/header.webp');
+  --journal-edges: url('../assets/themes/manga-journal/page-edges.webp');
+  --journal-nav: url('../assets/themes/manga-journal/navigation.webp');
+  --journal-wash: rgb(255 255 255 / 35%);
+  --journal-shadow-ink: #111111;
+}
+
+.dp-preview[data-theme='manga'][data-color-mode='dark'] {
+  --journal-wash: rgb(18 18 18 / 98%);
+  --journal-shadow-ink: #000000;
+}
+
+/* The mask is a background layer, never opacity on a text/control/image.
+ * White paper extrema plus this wash keep the ordinary and zebra lunar labels
+ * above AA; opaque selected/today fills and user calendar colours stay intact. */
+.dp-preview[data-theme='manga'] :is(
+  .dp-screen, .cal-month-scroll, .cal-agenda, .cal-sheet, .cal-day-sheet,
+  .set-pref-card, .set-pref-rows, .family-card, .overview-group,
+  .overview-undated, .search-result, .cal-agenda-item,
+  .storage-scope-banner, .release-panel, .data-privacy-card,
+  .auth-dialog, .update-dialog
+) {
+  background-image: linear-gradient(var(--journal-wash), var(--journal-wash)), var(--journal-paper);
+  background-size: auto, 256px 256px;
+}
+
+/* The first column has room for a paper spine. The right-hand date labels
+ * have an opaque backing instead of sitting on an illustrated paper edge. */
+.dp-preview[data-theme='manga'] .cal-month-scroll {
+  background-image:
+    linear-gradient(var(--bg), var(--bg)), var(--journal-edges),
+    linear-gradient(var(--journal-wash), var(--journal-wash)), var(--journal-paper);
+  background-size: 14px 100%, calc(100% + 28px) auto, auto, 256px 256px;
+  background-position: right top, center top, left top, left top;
+  background-repeat: no-repeat, repeat-y, repeat, repeat;
+}
+
+/* A portrait asset designed for narrow gutters, not a desktop scene crop.
+ * The extra width crops the original edge to <12px at a 390px viewport,
+ * outside the existing 14/16px content padding. Long pages repeat vertically. */
+.dp-preview[data-theme='manga'] :is(.dp-screen-body, .search-results, .overview-body, .cal-agenda) {
+  background-image: var(--journal-edges);
+  background-position: center top;
+  background-repeat: repeat-y;
+  background-size: calc(100% + 28px) auto;
+}
+
+/* Title/date text has an opaque local backing; artwork stays at the outer
+ * top corners. Existing buttons retain their opaque surfaces and dimensions. */
+.dp-preview[data-theme='manga'] :is(.cal-header, .dp-screen-header, .overview-header, .search-header) {
+  background-image:
+    linear-gradient(90deg, transparent 8px, var(--surface) 14px, var(--surface) 62%, transparent 78%),
+    var(--journal-header),
+    linear-gradient(var(--journal-wash), var(--journal-wash)), var(--journal-paper);
+  background-repeat: no-repeat, no-repeat, repeat, repeat;
+  background-position: left top, center 20px, left top, left top;
+  background-size: 100% 74px, 100% 100px, auto, 256px 256px;
+}
+
+.dp-preview[data-theme='manga'] :is(.dp-screen-title, .dp-settings-group-title) {
+  font-weight: 800;
+}
+
+.dp-preview[data-theme='manga'] .dp-settings-group-title {
+  background-image: linear-gradient(transparent 78%, var(--surface-2) 78%);
+  background-repeat: no-repeat;
+  background-size: 5.5em 100%;
+}
+
+.dp-preview[data-theme='manga'] :is(.cal-chip-button, .cal-icon-button, .cal-step-button) {
+  box-shadow: 2px 2px 0 var(--journal-shadow-ink);
+}
+
+/* Reusable ink-and-paper edge; preserves each component's own border,
+ * radius, spacing and semantic background rather than replacing its anatomy. */
+.dp-preview[data-theme='manga'] :is(
+  .set-pref-card, .set-pref-rows, .family-card, .overview-group,
+  .overview-undated, .search-result, .cal-agenda-item,
+  .storage-scope-banner, .release-panel, .data-privacy-card
+) {
+  box-shadow: var(--shadow), inset 2px 0 0 var(--surface-2);
+}
+
+.dp-preview[data-theme='manga'] .dp-tabbar {
+  background-image: var(--journal-nav), linear-gradient(var(--journal-wash), var(--journal-wash)), var(--journal-paper);
+  background-repeat: no-repeat, repeat, repeat;
+  background-position: center top;
+  background-size: 100% auto, auto, 256px 256px;
+}
+
+.dp-preview[data-theme='manga'] .dp-tab {
+  position: relative;
+}
+
+/* Solid paper immediately behind small navigation/count text protects it
+ * from corner ink and lets automated contrast checks measure the real UI. */
+.dp-preview[data-theme='manga'] :is(.dp-tab-label, .overview-total) {
+  background-color: var(--surface);
+}
+
+.dp-preview[data-theme='manga'] .dp-tab[aria-current='page']::after {
+  position: absolute;
+  bottom: 5px;
+  width: 28px;
+  height: 3px;
+  border-radius: 1px;
+  background: currentcolor;
+  content: '';
+  pointer-events: none;
+}
+
+/* Same gate as the canonical desktop preview: never load the large desk
+ * background on phones, touch-only tablets or installed PWA windows. */
+@media (display-mode: browser) and (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .dp-preview[data-theme='manga'] {
+    background-color: #ffffff;
+    background-image: url('../assets/themes/manga-journal/desk.webp');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .dp-preview[data-theme='manga'][data-color-mode='dark'] {
+    background-color: #171719;
+    background-image: url('../assets/themes/manga-journal/desk-dark.webp');
+  }
+
+  .dp-preview[data-theme='manga'] .dp-preview-caption {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .dp-preview[data-theme='manga'] .dp-preview-caption b {
+    color: var(--fg);
+  }
+}
