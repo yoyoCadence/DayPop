@@ -252,6 +252,17 @@ jobs:
       - name: Real local Auth and HTTP sharing (two accounts)
         run: npm run supabase:test:http
 
+      # DP-220: notification capabilities and sender authorization use the
+      # same local-only Auth/PostgREST stack. No push request leaves the runner.
+      - name: Reminder Auth and HTTP (two accounts, no push delivery)
+        run: npm run supabase:test:reminders
+
+      - name: Reminder lease, settings CAS and lock-wait expiry
+        run: npm run supabase:test:reminder-concurrency
+
+      - name: Reminder authorization and version negative controls
+        run: npm run supabase:test:reminder-controls
+
       # DP-085：型別檔必須就是從 migration 重建的資料庫產生出來的結果。
       # 以本機產生為準：--linked 需要 access token，而 CI 不使用 secret。
       # 本機產生不含 linked 才有的 __InternalSupabase 段落，所以 linked 或

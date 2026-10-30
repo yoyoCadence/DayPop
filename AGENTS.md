@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **提醒訂閱與投遞資料候選（DP-220，2026-10-31）：** DP-219 PR #216 最終 head `ae684a6` 的四 CI（`41063994328`）／同 head 審查 completed 無發現且無未解決討論後合併 `de39957`。本段由此 main 接續第 20 份 migration，四表全 RLS／預設 disabled，本人日曆規則與裝置能力分離、服務快照沿既有授權保留完整跨日曆圖、五分鐘有效窗與版本／啟用界線、唯一 lease／有界重試／gone 清理；不改 v4。獨立本機 reset、通知 59／全部 445 pgTAP、11 組真正 Auth／HTTP、三組多連線競態與兩個精確還原負控制過；既有家庭 HTTP 17/17、1,451 單元＋39 Node、lint／typecheck／Pages build／check:build 過。自己的四 CI／同 head 完成審查後才合併；詳 [資料邊界與限制](docs/reminder-backend.md)。沒有 remote migration／秘密／cron／sender／App 接線或部署，公開仍 0.4.6、DP-042 尚未完成；下一段 DP-221 受保護 sender，再接 App／worker，寵物暫緩。
+
 - **提醒排程審查修正（DP-219，2026-10-30）：** PR #216 原 head `342e288` 四 CI 過，但同 head 審查有跨日曆 replacement 造成目的日曆整批略過的 P2，尚未合併。已改為保留相連 exception 圖／完整來源查找、展開後按有效日曆選取，仍隔離不相連故障日曆；三項新回歸在舊 planner 全失敗並 finally 精確還原，最終 33/33，UTC／America/New_York／Etc/GMT-8 實際列印。完整 1,451 單元＋39 Node、lint／typecheck／build／check:build 過；最新 head 的四 CI／完成審查仍須通過。DP-220 未提交草稿已保留於原分支及本機 TEMP；先完成本 PR 再接訂閱／投遞資料層。沒有 UI／正式 schema／秘密／排程／部署，公開仍 0.4.6。詳 [提醒交接](docs/reminders.md)。
 
 - **背景提醒排程核心（DP-219／DP-042，2026-10-29）：** 擁有者指定先做提醒，父項 DP-042 已移至 In Progress。第一段 `src/reminders/schedule.ts` 共用 canonical recurrence／exception／時區，採每人明確開啟的日曆規則、五分鐘有效窗、穩定去重、全天／可選待辦及無私人文字的工作資料；詳 [ADR §10](docs/architecture-decisions.md#10-可靠背景提醒第一版dp-0422026-10-29)／[分段與界線](docs/reminders.md)。三十項新回歸、UTC／America/New_York／Etc/GMT-8 實際列印、停用排程與移除 DST guard 的負控制／精確還原，完整 1,448 單元＋39 Node、lint／typecheck／build／check:build 過。自己的四 CI／同 head 完成審查才合併。**此段沒有 UI／sender／訂閱／migration／遠端操作或發布，公開仍 0.4.6 且尚無提醒能力。** 下一段接具 RLS 的通知資料與受保護投遞，再接 App／worker；正式設定、排程、發布與真機收信仍需後續驗證及放行，DP-042 尚未完成。

@@ -33,7 +33,8 @@
 
 - **DP-219 審查修正（2026-10-30）：** PR #216 的同 head 審查指出跨日曆單次修改會丟掉來源系列，讓目的日曆整批提醒消失。planner 現在保留與該日曆相連的完整 exception 圖及來源查找，canonical resolver 展開後才依有效事項日曆選取；不展開不相連的故障日曆。新增 timed／全天雙向選取、來源未啟用、移入時間窗及獨立事項／待辦保留共三項回歸；原隔離案例另修正重複 fixture id。舊 planner 的三項新案例全部失敗，finally 精確還原；最終 33/33 並實際印出 UTC／America/New_York／Etc/GMT-8。完整 1,451 單元＋39 Node、lint／typecheck／build／check:build 過。最終 source SHA-256 `3dba5c1d037fc70f7fe442a096bb96557d529827c6294c9fb02864e180128905`；仍須最新 head 四 CI 及完成審查後才合併，公開提醒尚未接線。
 - **DP-219：排程核心完成。** 新模組及三十項單元回歸，實作了時間窗、啟用界線、去重、時區／DST、取消／替換、最大 offset、全天／待辦、容量與資料最小化。測試實際印出 UTC／America/New_York／Etc/GMT-8；停用計算及拿掉 DST 不存在時刻防護均被測試抓到，finally 逐 byte 還原，最終 source SHA-256 `9431ae591f2171c2b0cfea353cbaffcd4911c8f4775bae149d575688c5bd68c7`。完整 1,448 單元／92 檔＋39 Node、lint／typecheck／build／check:build 過；原 budget 不變。尚未有 sender、UI、訂閱、migration 或真實推播。
-- **下一段：後端。** 新增通知表及服務 RPC、受保護 worker、去重／重試／失效訂閱清理與實際本機 Auth／HTTP／並行驗證，再獨立 PR。
+- **DP-220：訂閱與投遞資料邊界。** 第 20 份 migration 預設停用，四表全 RLS；本人日曆規則與裝置能力分開，服務 RPC 沿既有分享／私人例外圖授權，包含跨日曆來源；五分鐘有效窗、版本／啟用界線、唯一 lease、重試／gone 清理及分頁。通知 59 項／完整 445 pgTAP、11 組真正本機 Auth／HTTP、三組多連線競態與兩個 finally 精確還原的負控制通過，既有家庭 HTTP 17/17。詳 [資料邊界、驗證與限制](reminder-backend.md)。自己的四 CI／同 head 完成審查後才合併，未套遠端 migration 或發通知。
+- **下一段：受保護 sender（DP-221）。** 沿此資料邊界接 Web Push transport、服務驗證、去重／重試與失效訂閱清理；不把資料 RPC 當成已發出通知。
 - **後續：App 與 service worker。** 裝置權限與訂閱、日曆提醒卡片、登出撤銷、固定通知／安全點擊及真正瀏覽器回歸。之後才準備正式設定、migration、cron、部署與真機收信驗收。
 
 DP-219 不連線改正式帳號、不發通知、不放金鑰、不改資料庫或 0.4.6 公告。每段依擁有者既有授權開 PR，自己的四 CI／同 head 審查完成無發現及無未解決討論後合併。正式 migration／伺服器秘密／排程及前端發布仍需依既有界線，先完成可審核實作才請擁有者放行。
