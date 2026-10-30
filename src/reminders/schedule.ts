@@ -75,6 +75,18 @@ export function planReminders(
     endDate: new Date(Math.min(MAX_DATE, clock + 9 * DAY_MS)).toISOString().slice(0, 10),
   };
   const result: ReminderPlan = { jobs: [], issues: [] };
+  const byId = new Map(snapshot.events.map(event => [event.id, event]));
+  // A replacement can live on a different calendar from its source. Keep each
+  // connected exception graph intact, without expanding unrelated calendars.
+  const neighbours = new Map<string, string[]>();
+  for (const exception of snapshot.eventExceptions) {
+    if (exception.replacementEventId === null) continue;
+    for (const [from, to] of [[exception.eventId, exception.replacementEventId], [exception.replacementEventId, exception.eventId]] as const) {
+      const linked = neighbours.get(from) ?? [];
+      linked.push(to);
+      neighbours.set(from, linked);
+    }
+  }
 
   for (const rule of rules) {
     const calendarId = rule.calendarId;
@@ -111,12 +123,18 @@ export function planReminders(
     }
 
     try {
-      const events = snapshot.events.filter(event => event.calendarId === rule.calendarId);
-      const byId = new Map(events.map(event => [event.id, event]));
-      // Keep the complete visible exception graph. The canonical resolver also
-      // includes replacements moved in from source occurrences outside window.
-      const occurrences = resolveEventOccurrences({ events, eventExceptions: snapshot.eventExceptions }, window);
+      const pending = snapshot.events.filter(event => event.calendarId === rule.calendarId).map(event => event.id);
+      const relevant = new Set(pending);
+      while (pending.length > 0) {
+        for (const id of neighbours.get(pending.pop()!) ?? []) {
+          if (!relevant.has(id)) { relevant.add(id); pending.push(id); }
+        }
+      }
+      const events = snapshot.events.filter(event => relevant.has(event.id));
+      const eventExceptions = snapshot.eventExceptions.filter(exception => relevant.has(exception.eventId));
+      const occurrences = resolveEventOccurrences({ events, eventExceptions }, window);
       for (const resolved of occurrences) {
+        if (resolved.event.calendarId !== rule.calendarId) continue;
         const source = byId.get(resolved.sourceEventId);
         if (!source) throw new RangeError('missing reminder series');
         const event = resolved.event;

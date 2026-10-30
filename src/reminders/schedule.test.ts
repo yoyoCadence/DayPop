@@ -115,6 +115,49 @@ describe('background reminder schedule (authorization must precede this pure pla
     expect(plan(undefined, [{ ...rule, minutesBefore: [0, 15, 60] }]).jobs).toHaveLength(1);
   });
 
+  it.each([false, true])('resolves cross-calendar replacements before choosing the effective calendar (all-day=%s)', allDayEvent => {
+    const source = { ...(allDayEvent ? allDay() : timed()), recurrence: { rule: 'FREQ=DAILY' } };
+    const replacement = { ...(allDayEvent ? allDay() : timed()), id: 'replacement', calendarId: 'destination' };
+    const occurrence = allDayEvent
+      ? { kind: 'all-day' as const, date: '2026-10-29' }
+      : { kind: 'timed' as const, startsAt: '2026-10-29T01:15:00.000Z' };
+    const exception: EventException = { id: 'move', eventId: source.id, occurrence,
+      replacementEventId: replacement.id, isCancelled: false, createdAt: NOW, updatedAt: NOW };
+    const now = allDayEvent ? '2026-10-29T00:45:00.000Z' : NOW;
+    const destinationRule = { ...rule, calendarId: 'destination', includeTodos: true };
+    const unrelated = { ...replacement, id: 'independent' };
+    const todos = [todo({ calendarId: 'destination' })];
+    // The source calendar need not have opted in. An unrelated malformed book
+    // must remain isolated from the destination's complete exception graph.
+    const broken = { ...timed(), id: 'broken', calendarId: 'broken', recurrence: { rule: 'FREQ=SECONDLY' } };
+    const snapshot = [source, replacement, unrelated, broken];
+    const result = plan(snapshot, [destinationRule, rule], now, [exception], todos);
+    expect(result.issues).toEqual([]);
+    expect(result.jobs.filter(job => job.effectiveEventId === replacement.id)).toHaveLength(1);
+    expect(result.jobs.find(job => job.effectiveEventId === replacement.id)).toMatchObject({
+      sourceId: source.id, calendarId: 'destination', occurrence,
+    });
+    expect(result.jobs.some(job => job.calendarId === 'calendar')).toBe(false);
+    expect(result.jobs.some(job => job.effectiveEventId === unrelated.id)).toBe(true);
+    expect(plan(snapshot, [destinationRule], now, [exception], todos)).toEqual(result);
+    if (allDayEvent) expect(result.jobs.some(job => job.sourceKind === 'todo')).toBe(true);
+    expect(plan(snapshot, [rule], now, [exception]).jobs).toEqual([]);
+  });
+
+  it('keeps a cross-calendar move into the window attached to its original occurrence', () => {
+    const source = timed('2025-01-01', '09:15', 'Asia/Taipei', 'FREQ=YEARLY');
+    const replacement = { ...timed(), id: 'replacement', calendarId: 'destination' };
+    const exception: EventException = { id: 'move', eventId: source.id,
+      occurrence: { kind: 'timed', startsAt: '2025-01-01T01:15:00.000Z' },
+      replacementEventId: replacement.id, isCancelled: false, createdAt: NOW, updatedAt: NOW };
+    const result = plan([source, replacement], [{ ...rule, calendarId: 'destination' }], NOW, [exception]);
+    expect(result.issues).toEqual([]);
+    expect(result.jobs).toHaveLength(1);
+    expect(result.jobs[0]).toMatchObject({ sourceId: source.id, effectiveEventId: replacement.id, occurrence: exception.occurrence });
+    expect(plan([source], [{ ...rule, calendarId: 'destination' }], NOW,
+      [{ ...exception, isCancelled: true, replacementEventId: null }]).jobs).toEqual([]);
+  });
+
   it('todos are optional, dated and incomplete; child completion is independent', () => {
     const todos = [todo(), todo({ id: 'done', completedAt: NOW }), todo({ id: 'undated', dueDate: null }), todo({ id: 'child', parentId: 'done' })];
     expect(plan([], undefined, '2026-10-29T00:45:00.000Z', [], todos).jobs).toEqual([]);
@@ -133,7 +176,7 @@ describe('background reminder schedule (authorization must precede this pure pla
   });
 
   it('an unexpandable series does not silently suppress another calendar', () => {
-    const runaway = { ...timed(), calendarId: 'bad', recurrence: { rule: 'FREQ=SECONDLY' } };
+    const runaway = { ...timed(), id: 'runaway', calendarId: 'bad', recurrence: { rule: 'FREQ=SECONDLY' } };
     const result = plan([timed(), runaway], [rule, { ...rule, calendarId: 'bad' }]);
     expect(result.jobs).toHaveLength(1);
     expect(result.issues).toEqual([{ calendarId: 'bad', code: 'schedule-unavailable' }]);
