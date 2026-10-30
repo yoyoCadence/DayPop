@@ -75,6 +75,47 @@ export type Database = {
           },
         ]
       }
+      calendar_reminder_settings: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          date_time: string
+          include_todos: boolean
+          minutes_before: number[]
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          date_time?: string
+          include_todos?: boolean
+          minutes_before?: number[]
+          timezone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          date_time?: string
+          include_todos?: boolean
+          minutes_before?: number[]
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_reminder_settings_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendars: {
         Row: {
           color: string
@@ -454,6 +495,39 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_push_devices: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          public_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          public_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          public_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stickers: {
         Row: {
           asset_key: string | null
@@ -619,6 +693,16 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_reminder_delivery: {
+        Args: {
+          p_calendar_id: string
+          p_device_id: string
+          p_fire_at: string
+          p_job_hash: string
+          p_version: string
+        }
+        Returns: Json
+      }
       delete_calendar_with_reassignment: {
         Args: { p_calendar_id: string }
         Returns: boolean
@@ -664,10 +748,38 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      finish_reminder_delivery: {
+        Args: {
+          p_device_id: string
+          p_job_hash: string
+          p_lease_id: string
+          p_result: string
+        }
+        Returns: undefined
+      }
       import_legacy_daypop: {
         Args: { p_fingerprint: string; p_payload: Json }
         Returns: Json
       }
+      register_reminder_device: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_p256dh: string
+          p_public_key: string
+        }
+        Returns: string
+      }
+      reminder_capabilities: { Args: never; Returns: Json }
+      reminder_sender_context: {
+        Args: { p_calendar_id: string; p_device_id: string }
+        Returns: Json
+      }
+      reminder_sender_heartbeat: {
+        Args: { p_error?: string }
+        Returns: undefined
+      }
+      reminder_sender_page: { Args: { p_after?: string }; Returns: Json }
       replace_daypop_data: { Args: { p_payload: Json }; Returns: undefined }
       replace_event_occurrence: {
         Args: {
@@ -686,6 +798,21 @@ export type Database = {
           p_permission: string
         }
         Returns: Json
+      }
+      set_calendar_reminder: {
+        Args: {
+          p_calendar_id: string
+          p_date_time: string
+          p_expected_updated_at?: string
+          p_include_todos: boolean
+          p_minutes_before: number[]
+          p_timezone: string
+        }
+        Returns: Json
+      }
+      unregister_reminder_device: {
+        Args: { p_device_id: string }
+        Returns: undefined
       }
       write_shared_calendar_item: {
         Args: { p_action: string; p_payload: Json; p_versions?: Json }

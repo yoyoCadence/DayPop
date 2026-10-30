@@ -11,6 +11,8 @@
 
 基準 commit：`ac5f564`（PR #28 合併後的 `main`）。
 
+> **2026-10-31／DP-220 本機提醒資料候選：** repo 新增第 20 份 `20261029123000_reminder_delivery.sql`，四張通知表／本人規則與裝置 RPC／服務端授權及 lease，預設 disabled；本機從零重建、445 pgTAP、11 組通知 HTTP／17 組既有家庭 HTTP、三組競態與負控制通過。public types 由獨立本機 stack 產生。**尚未套用遠端**，本輪未查改遠端 schema 或正式資料；既有十九份對齊是先前證據，不是本輪新檢查。sender、秘密／cron、App 訂閱及部署另段，合併不代表已有提醒能力。詳 [資料邊界與正式啟用界線](reminder-backend.md)。
+
 > **2026-10-18／DP-044 家庭階段交接：** 產品規則已由擁有者確認，完整定案見 [`architecture-decisions.md` §9](architecture-decisions.md#9-家庭群組與分享dp-0442026-10-18-定案)，本文件其餘 numbered 段落仍保留各階段歷史。DP-044 不使用 MCP、只改文件；repo 基準 `429dcb5` 仍為 16 檔 migration、6 檔 pgTAP、schema v4，最近一次遠端驗證見 `deployment-verification-2026-10-13.md`。DP-047 開工先檢查遠端 drift／advisor，不把舊紀錄當成當日檢查。擁有者本次授權 DP-044 → DP-047 → DP-048 → DP-049 各自 PR、驗證及 CI 通過後自主合併再繼續，**不改變由擁有者 CLI dry-run／push migration、先 migration 再部署前端的界線**。不得經 MCP DDL／remote reset／查改正式資料；RPC 以最後一次定義為準，本機 reset／pgTAP／types 必跑，remote types 只比對。0.4.3 已於本日部署（run `39093740111`），公告不可回寫。
 
 ---
