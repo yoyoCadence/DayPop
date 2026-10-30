@@ -232,6 +232,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-042 — 可靠背景提醒／推播（2026-10-29 重啟）：** 擁有者指定「你先做提醒吧」，Backlog → Next → In Progress。第一版採每人、每本日曆明確開啟，自有／有效分享皆可選；帳號端每分鐘排程與 Web Push，全天及可選待辦使用明確時區／時刻，預設關閉。通知不帶事項標題、地點、家庭或帳號內容。依 DP-219 排程契約 → 後端訂閱／投遞 → App／worker 接線分段 PR，四 CI／同 head 完成審查後合併；本機測試不冒充正式推播或真機。遠端 migration、伺服器密鑰、cron 與正式發布須依既有界線另行具體放行。
+
 
 
 
@@ -467,7 +469,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - [ ] **DP-041 — App 內建寵物進階互動與成長：** 定義 XP 是否可逆、解鎖規則、資料一致性與資產版本，再擴充提醒、建議與互動；寵物始終是 App 內功能，不建立獨立桌面程式。
   > **2026-10-24 DP-189 前置完成：** `toggleTodo` 已回傳 queue 的保存確認；忽略結果仍安全。這只完成下方第 (1) 點，不代表實作回饋或成長。不存在 id 的 no-op、取消完成、匯入、重試及帳號切換都不能僅以 Promise resolve 當成可給獎的完成，後續仍須另定轉換身分與規則。
   > **2026-10-13 審查補充（動工前要先有答案）**：(1) 回饋與獎勵只能在「待辦已確認保存為完成」之後發生。`toggleTodo` 目前對 UI 回傳 `void`（`dataContext.ts:74`），第一步是比照 DP-133／134／141 讓它回傳既有 queue 的確認結果。(2) 先定規則：重複勾選與取消完成、父子待辦、匯入的資料、重試（DP-142）與帳號切換，同一來源不得重複給獎勵。(3) 成長資料走既有 repository；如果需要 ledger 或新表，獨立 migration 加 RLS 測試，不與動畫 PR 混在一起。(4) 優先解鎖表情、配件與日常互動，不用斷連續天數或扣生命值來懲罰。上方 Proposed data architecture 寫的是「寵物 XP 優先由已完成待辦推導」，若改成 ledger 要同步那一句。
-- [ ] **DP-042 — 可靠背景提醒／推播：** 另行設計 Web Push subscription、排程、撤銷、時區與權限；目前頁面開啟時的 Notification timer 不視為可靠提醒。
+- [ ] **DP-042 — 2026-10-29 已由擁有者指定移至 In Progress，見上方。** 頁面開啟時的 Notification timer 不視為可靠背景提醒。
 - [ ] **DP-043 — 安全 AI 助理：** 若產品決定保留 AI，改由 Supabase Edge Function／受控 server endpoint 管理 provider secret、rate limit、輸入最小化與稽核；禁止在 browser localStorage 保存 secret。
 - [ ] **DP-044、DP-047、DP-048、DP-049 — 2026-10-17 已移到 Next（專案擁有者指定優先處理，由 Codex 實作），見 Next。**
 - [ ] **DP-045 — 外部日曆整合：** Google／Apple／Outlook 雙向同步另列專案，先維持經驗證的 ICS 匯入匯出。
@@ -490,6 +492,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-219 — 背景提醒排程契約（2026-10-29）：** Next → In Progress → Done。共用 canonical resolver／exception／occurrence identity／時區，三十項新回歸涵蓋有效窗、啟用後才提醒、去重／重排、全天／待辦、DST、單次取消／替換及容量整本拒絕；工作不帶標題／地點／備註。UTC／America/New_York／Etc/GMT-8 實際列印，停用排程與移除 DST guard 均失敗，finally 精確還原後通過。完整 1,448 單元＋39 Node、lint／typecheck／build／check:build 過，原 budget 不變；詳 [提醒設計與分段](docs/reminders.md)。自己的四 CI／同 head 審查無發現及無未解決討論後才合併。此段沒有 UI／sender／訂閱／migration／遠端操作／發布，v4／十九份 schema／0.4.6 公告不變，父項 DP-042 維持 In Progress。
 
 - [x] **DP-218 — 漫畫手帳整頁融合主題與 0.4.6 發布（2026-10-29）：** Backlog → Next → In Progress → Done。三畫面概念後獨立生成六張 WebP，整合桌面淺深環境、手機／長頁紙邊、四頁頁首、日期／卡片／原生 sheet 紙面與分頁膠帶；保留六主題偏好、四分頁、文字、原圖及功能。六項新整合、production 首次離線缺圖、真撤樣式負控制、axe 十二配色矩陣與 WebKit 全過；初次六項短確認文字量測失敗已以局部實底修正，原門檻不變。詳 [素材／提示詞／對照](docs/design/manga-journal/README.md)。PR #214 head `5730f54` 四 CI／同 head 審查無發現及無未解決討論後合併 `22a0dfb`，既有 Deploy staging #18／`40858598356` 六 jobs 成功（18 分 14 秒），297 Chromium／13 skipped、WebKit 8、1,418 單元＋39 Node、386 pgTAP／HTTP 17/17。公開十一成品與本次 artifact 逐 byte 相同，原 0.4.5 自動及手動 reload 後 994 bytes／v4／revision 3／hash／原行程與暖陽深色偏好不變。正式 390×844／1280×900 淺深、長表單／設定、搜尋／綜覽／週／列表與登入入口／焦點、console 全過，六圖目視，實際 Etc/GMT-8；兩 CLI sessions 已關閉。詳 [發布證據](docs/deployment-verification-2026-10-29.md)／[JSON](docs/deployment-postflight-2026-10-29.json)。本交接自己的四 CI／同 head 完成審查才合併，不再部署；沒有後端／migration／正式帳號操作，十九份 schema 不需重推，QA 保留，真機／OAuth／DP-034 界線不變。0.4.6 公告已不可回寫。
 
