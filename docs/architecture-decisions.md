@@ -1174,3 +1174,5 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 依擁有者「你先做提醒吧」委託，採每人／每裝置／每本日曆明確開啟的伺服器排程 Web Push，支援本人及有效分享；全天和可選待辦有明確時刻與時區。預設關閉，通知不帶私人內容；加入家庭、分享或舊 reminder 欄位不自動開啟。五分鐘有效窗、canonical recurrence／例外、去重／重試、投遞前權限重查與登出撤銷的契約見 [提醒設計與分段](reminders.md)。
 
 通知偏好／訂閱／投遞紀錄另用具 RLS 的帳號資料，不進 v4 個人文件或 JSON 備份。先分段完成排程核心、後端、App／worker 與本機驗證，各自 PR／四 CI／同 head 審查後合併；遠端 migration、秘密設定、cron、發布及真機收信仍須另有具體結果與放行，不能把純計算或模擬通知稱為已上線提醒。
+
+DP-222（2026-10-31）將 runtime key 納入啟用邊界：服務端先確認 DB 的 enabled／public key 與實際 VAPID pair 一致；heartbeat 必須帶相同 public key，配置停用或換 key 即清除舊 heartbeat，舊 runtime 不得替新配置宣告 ready。此 API 擴充以新增 migration 管理，保留既有二十份原檔。Edge 以專用 token 驗證後才建立服務 client，使用版本固定／lock 的 Web Push library 產生加密請求，實際送出經有界、禁止 redirect 的 fetch；canonical 排程與投遞核心由可重建 bundle 共用，不另複製 recurrence 實作。

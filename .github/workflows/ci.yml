@@ -62,6 +62,18 @@ jobs:
       - name: Reminder caller and TTL negative controls
         run: npm run test:reminder-controls
 
+      # Fixed Deno/npm versions and frozen lock. Encryption tests deny network;
+      # native fetch tests permit only a short-lived 127.0.0.1 fixture server.
+      - name: Reminder canonical Edge bundle and runtime
+        run: |
+          npm run reminders:check-bundle
+          npm run reminders:check-edge
+          for zone in UTC America/New_York Etc/GMT-8; do
+            TZ="$zone" npm run reminders:test-edge
+          done
+          npm run reminders:test-network
+          npm run reminders:test-controls
+
       # prebuild 會產生 public/version.json 與版本化的 public/sw.js。
       - name: Build
         run: npm run build
@@ -265,6 +277,9 @@ jobs:
 
       - name: Reminder authorization and version negative controls
         run: npm run supabase:test:reminder-controls
+
+      - name: Actual local Edge cold start (no push devices)
+        run: npm run supabase:test:reminder-edge
 
       # DP-085：型別檔必須就是從 migration 重建的資料庫產生出來的結果。
       # 以本機產生為準：--linked 需要 access token，而 CI 不使用 secret。

@@ -11,7 +11,7 @@ export default tseslint.config(
   // errors until this line existed.
   // Playwright production builds and reports are generated under
   // `output/playwright`; keep the actual `e2e` sources covered by lint.
-  { ignores: ['dist', 'coverage', 'public/sw.js', 'supabase/.temp', 'output/playwright'] },
+  { ignores: ['dist', 'coverage', 'public/sw.js', 'supabase/.temp', 'output/playwright', 'supabase/functions/reminder-sender/core.generated.js'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

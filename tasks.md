@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。
+
 
 
 
@@ -492,6 +494,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-222 — Edge 提醒與受限 Push adapter（2026-10-31）：** Backlog → Next → In Progress → Done。從 PR #218 最終 `efced11` 四 CI／同 head 完成審查後合併 `c18cafb` 接續。canonical bundle 可精確重建、Deno／SDK／加密套件與 lock 固定，專用 token 後才建 client，VAPID pair／DB key、匿名加密、TTL／abort／禁止 redirect；第 21 份 migration 綁定 heartbeat，換 key 撤健康，原二十份不變。9 離線＋2 原生網路、三 runtime 負控制精確還原、真正 Edge 容器冷啟動／RPC／換 key 拒絕、461 pgTAP／12 檔、HTTP 15/15／競態／原負控制、1,527 單元＋39 Node、lint／typecheck／Pages build／check:build 過，App bytes 不變。Node 三時區已印；Windows Deno TZ 未生效被斷言抓到，Linux 三時區看自己的 CI。自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併；詳 [證據與限制](docs/reminder-edge.md)。沒有遠端／秘密／cron／真 Push／部署，v4／0.4.6／歷史公告不變；下一段 DP-223 接 App／worker，父項 DP-042 未完成。
 
 - [x] **DP-221 — 受保護提醒投遞核心（2026-10-31）：** Backlog → Next → In Progress → Done。從 DP-220 PR #217 最終 `e77f336` 四 CI／同 head 完成審查無發現後合併的 `3fa93e6` 接續。新增專用 token 驗證先於 runtime factory、服務 RPC adapter、canonical planner／claim 串接、剩餘 TTL／deadline、固定匿名 payload／tag、重試／gone／未確認結果與容量回報。PR #218 的 deadline 審查已修正：原單元及新 HTTP 先失敗，仍有效工作現存 retry，真正 retry:1→下一輪同 tag sent:2。76 新單元與真實 HTTP 15/15 在三個實際列印時區通過，雙 tick 只一筆 durable lease，user JWT／user client 拒絕；三個 source／原兩個 DB 負控制均抓到並精確還原。完整 1,527 單元＋39 Node、lint／typecheck／Pages build／check:build 過；自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併，詳 [核心交接](docs/reminder-delivery-core.md)。二十份 schema／types／v4／0.4.6 公告不變，沒有遠端操作、秘密、cron、實際 Push 或部署；DP-222 接 Edge／VAPID／受限 fetch adapter，再接 App／worker，父項 DP-042 尚未完成。
 

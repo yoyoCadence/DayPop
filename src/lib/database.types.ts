@@ -771,12 +771,13 @@ export type Database = {
         Returns: string
       }
       reminder_capabilities: { Args: never; Returns: Json }
+      reminder_sender_configuration: { Args: never; Returns: Json }
       reminder_sender_context: {
         Args: { p_calendar_id: string; p_device_id: string }
         Returns: Json
       }
       reminder_sender_heartbeat: {
-        Args: { p_error?: string }
+        Args: { p_error?: string; p_public_key: string }
         Returns: undefined
       }
       reminder_sender_page: { Args: { p_after?: string }; Returns: Json }

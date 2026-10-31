@@ -81,7 +81,7 @@ select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000902'
 select is(public.reminder_capabilities()->>'enabled','false','enabled configuration without heartbeat still reports unavailable');
 reset role;
 set local role service_role;
-select public.reminder_sender_heartbeat();
+select public.reminder_sender_heartbeat('B'||repeat('A',86));
 reset role;
 set local role authenticated;
 select is(public.reminder_capabilities()->>'enabled','true','live heartbeat permits device opt-in');
@@ -166,6 +166,9 @@ select is(public.reminder_sender_context((select (value#>>'{}')::uuid from remin
  '50000000-0000-4000-8000-000000000902'),null::jsonb,'key rotation rejects old application subscription');
 reset role;
 update daypop_reminders.configuration set public_key='B'||repeat('A',86);
+set local role service_role;
+select public.reminder_sender_heartbeat('B'||repeat('A',86));
+reset role;
 update public.events set sharing_scope='private' where id='10000000-0000-4000-8000-000000000902';
 set local role service_role;
 select is(jsonb_array_length(public.reminder_sender_context((select (value#>>'{}')::uuid from reminder_test where key='device'),

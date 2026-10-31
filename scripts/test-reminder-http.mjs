@@ -77,7 +77,7 @@ try {
     sent.push({ subscription, message }); return 202;
   } };
   const handler = createReminderTickHandler(senderToken, () => {
-    factoryCalls++; return { store: createReminderStore(admin), transport };
+    factoryCalls++; return { store: createReminderStore(admin, publicKey), transport };
   });
   const request = (token = senderToken, body = '{}') => new Request('https://local.test/reminder-tick', {
     method: 'POST', headers: { Authorization: 'Bearer ' + token }, body,
@@ -119,7 +119,7 @@ try {
   await check('fresh heartbeat, idempotent devices and secret column denial', async () => {
     sql(`update daypop_reminders.configuration set enabled=true,public_key='${publicKey}';`); touchedConfig = true;
     assert.equal((await rpc(b.client, 'reminder_capabilities')).enabled, false, 'Configuration alone cannot claim readiness');
-    await rpc(admin, 'reminder_sender_heartbeat');
+    await rpc(admin, 'reminder_sender_heartbeat', { p_public_key: publicKey });
     assert.equal((await rpc(b.client, 'reminder_capabilities')).enabled, true, 'Heartbeat confirms local readiness');
     assert.ok((await b.client.rpc('register_reminder_device', { ...subscription, p_endpoint: 'https://fcm.googleapis.com.evil.test/push' })).error, 'Unapproved push host is rejected');
     device = await rpc(b.client, 'register_reminder_device', subscription);
@@ -205,7 +205,7 @@ try {
     assert.equal(sent.length, 1, 'Sent work is not delivered again');
   });
   await check('using a user client cannot grant the sender service authority', async () => {
-    const userHandler = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(b.client), transport }));
+    const userHandler = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(b.client, publicKey), transport }));
     const response = await userHandler(request());
     assert.equal(response.status, 503, 'Real DB rejects user client despite endpoint token');
     assert.equal((await response.json()).sent, 0, 'User client cannot report accepted sends');
@@ -214,7 +214,7 @@ try {
   await check('tick budget expiry preserves an unsent job for a later real DB retry', async () => {
     // Reactivate the existing backdated todo; no new/imported item is backfilled.
     await repository.toggleTodo(visibleTodo);
-    const real = createReminderStore(admin);
+    const real = createReminderStore(admin, publicKey);
     let tickNow = Date.now(), deferredHash;
     const delayed = { ...real, claim: async (...args) => {
       const value = await real.claim(...args);
