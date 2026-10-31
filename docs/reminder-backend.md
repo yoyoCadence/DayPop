@@ -48,6 +48,8 @@ npm run supabase:types
 
 ## 接續與正式啟用界線
 
+2026-10-31 更新：DP-220 PR #217 的最終 head `e77f336` 四 CI（`41137809578`）與同 head 審查 completed 無發現、無未解決討論後合併 `3fa93e6`。DP-221 已將受保護入口與投遞核心接到這些 RPC，HTTP 增至 15 組；實際 Edge／VAPID／網路 adapter 另列 DP-222，詳 [核心交接](reminder-delivery-core.md)。下方是本段原交接界線，正式操作仍未執行。
+
 DP-220 自己的四項 CI、同 head 完成審查無發現且沒有未解決討論後才合併。接續 DP-221 是受保護 sender：受限網路、VAPID／服務驗證、剩餘 TTL、穩定 tag／hash、重試分類、容量與不含敏感資料的錯誤，再接 App／worker。
 
 本段沒有套用遠端 migration、設定秘密、cron 或 deploy。公開仍為 0.4.6／遠端仍沿既有十九份對齊證據，未做新的 remote drift 或帳號查改。正式啟用前需另準備 migration workflow、必要秘密與排程、前端訂閱／登出撤銷、真實瀏覽器及真機收信驗收，再依既有界線具體放行；DP-042／DP-034 尚未完成。
