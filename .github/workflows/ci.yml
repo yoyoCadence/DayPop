@@ -59,6 +59,9 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Reminder caller and TTL negative controls
+        run: npm run test:reminder-controls
+
       # prebuild 會產生 public/version.json 與版本化的 public/sw.js。
       - name: Build
         run: npm run build

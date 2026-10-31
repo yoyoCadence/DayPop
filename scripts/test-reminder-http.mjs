@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 11;
+const expectedChecks = 14;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -56,6 +56,7 @@ try {
   const { SupabaseDayPopRepository } = await vite.ssrLoadModule('/src/data/supabaseRepository.ts');
   const { SupabaseFamilyService } = await vite.ssrLoadModule('/src/family/familyService.ts');
   const { planReminders } = await vite.ssrLoadModule('/src/reminders/schedule.ts');
+  const { createReminderStore, createReminderTickHandler } = await vite.ssrLoadModule('/src/reminders/delivery.ts');
   const a = await actor(), b = await actor();
   const repository = new SupabaseDayPopRepository(a.client, a.id);
   const familyA = new SupabaseFamilyService(a.client, a.id), familyB = new SupabaseFamilyService(b.client, b.id);
@@ -68,6 +69,19 @@ try {
   const claim = (version, hash, fireAt) => rpc(admin, 'claim_reminder_delivery', { p_device_id: device, p_calendar_id: destination, p_version: version, p_job_hash: hash, p_fire_at: fireAt });
   const hash = job => createHash('sha256').update(job.key).digest('hex');
   let now, planned, initial;
+  const senderToken = randomUUID() + randomUUID();
+  const sent = [];
+  let factoryCalls = 0;
+  const transport = { send: async (subscription, message) => {
+    // Deliberately in-process: no request to any real push service.
+    sent.push({ subscription, message }); return 202;
+  } };
+  const handler = createReminderTickHandler(senderToken, () => {
+    factoryCalls++; return { store: createReminderStore(admin), transport };
+  });
+  const request = (token = senderToken, body = '{}') => new Request('https://local.test/reminder-tick', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + token }, body,
+  });
 
   await check('disabled defaults and unshared recipient rejection', async () => {
     assert.equal((await rpc(b.client, 'reminder_capabilities')).enabled, false, 'Backend starts unavailable');
@@ -162,6 +176,40 @@ try {
     const completed = await context();
     assert.equal(planReminders(completed.snapshot, [completed.rule], now).jobs.length, 2, 'Completed todo no longer planned');
     assert.equal(await claim(renamed.version, hash(todoJob), todoJob.fireAt), null, 'Completed todo cannot use older snapshot');
+  });
+  await check('protected sender rejects real user JWT and caller-selected recipients', async () => {
+    const session = await b.client.auth.getSession();
+    assert.equal((await handler(request(session.data.session.access_token))).status, 401, 'User JWT cannot authorize privileged sender');
+    assert.equal((await handler(request(config.publicKey))).status, 401, 'Public API key cannot authorize privileged sender');
+    assert.equal((await handler(request('X'.repeat(43)))).status, 401, 'A correctly shaped wrong service token cannot authorize sender');
+    assert.equal((await handler(request(senderToken, JSON.stringify({ userId: b.id })))).status, 400, 'Caller cannot select a recipient');
+    assert.equal(factoryCalls, 0, 'Unauthorized or invalid requests cannot construct server runtime');
+    assert.equal(sent.length, 0, 'Unauthorized requests do not reach transport');
+  });
+  await check('two protected ticks share one durable claim and keep completed todos silent', async () => {
+    const responses = await Promise.all([handler(request()), handler(request())]);
+    assert.ok(responses.every(response => response.status === 200), 'Both authorized ticks complete through real service RPC');
+    const summaries = await Promise.all(responses.map(response => response.json()));
+    assert.equal(summaries.reduce((sum, summary) => sum + summary.sent, 0), 1, 'Only the undelivered independent event is accepted once');
+    assert.equal(sent.length, 1, 'Concurrent protected ticks invoke transport exactly once');
+    const delivery = sent[0];
+    assert.equal(delivery.subscription.endpoint, endpoint, 'Only the opted-in recipient capability reaches transport');
+    assert.deepEqual(JSON.parse(delivery.message.payload), { v: 1, tag: delivery.message.tag }, 'Push payload contains only version and opaque tag');
+    assert.match(delivery.message.tag, /^[a-f0-9]{64}$/, 'Notification tag is a stable work hash');
+    assert.ok(delivery.message.ttl > 0 && delivery.message.ttl < 300, 'TTL uses remaining lifetime rather than a new five-minute window');
+    assert.ok(!JSON.stringify(summaries).includes('SECRET') && !JSON.stringify(summaries).includes(endpoint), 'Endpoint, private text and keys never enter HTTP response');
+    assert.equal(sql(`select status||':'||attempts from daypop_reminders.deliveries where device_id='${device}' and job_hash='${delivery.message.tag}';`), 'sent:1', 'Actual Postgres ledger confirms one accepted attempt');
+    const repeated = await handler(request());
+    assert.equal(repeated.status, 200, 'Repeated tick remains successful');
+    assert.equal((await repeated.json()).sent, 0, 'Repeated tick confirms no new delivery');
+    assert.equal(sent.length, 1, 'Sent work is not delivered again');
+  });
+  await check('using a user client cannot grant the sender service authority', async () => {
+    const userHandler = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(b.client), transport }));
+    const response = await userHandler(request());
+    assert.equal(response.status, 503, 'Real DB rejects user client despite endpoint token');
+    assert.equal((await response.json()).sent, 0, 'User client cannot report accepted sends');
+    assert.equal(sent.length, 1, 'Denied sender RPC never reaches transport');
   });
   await check('private replacement and revoked source share hide complete graph', async () => {
     await repository.updateEvent(replacement, { sharingScope: 'private' });
