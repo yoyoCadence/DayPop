@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetJump } from './fixtures/petJump';
+import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import {
   agendaRow,
   calendarViewButton,
@@ -15,6 +16,12 @@ import {
 // iOS device claim. Every test uses a fresh guest context and the real adapter.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('自動列數滑動／旋轉與停穩後不回跳', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await checkAdaptiveScroll(page);
+  clean();
 });
 test('待辦完成單次 jump，取消／重載不補播並保留焦點與幾何', async ({ page }) => {
   await checkPetJump(page);
