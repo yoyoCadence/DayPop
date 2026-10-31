@@ -1,0 +1,2 @@
+# The deterministic Vite server bundle must also compare identically on Windows.
+supabase/functions/reminder-sender/core.generated.js text eol=lf

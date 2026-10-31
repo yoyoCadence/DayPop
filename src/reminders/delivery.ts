@@ -46,7 +46,8 @@ export async function reminderJobHash(key: string): Promise<string> {
 }
 
 /** Server-only adapter. This module creates no client and reads no credentials. */
-export function createReminderStore(client: Pick<SupabaseClient<Database>, 'rpc'>): ReminderStore {
+export function createReminderStore(client: Pick<SupabaseClient<Database>, 'rpc'>, publicKey: string): ReminderStore {
+  if (publicKey.length !== 87 || !KEY.test(publicKey)) throw new Error('reminder_invalid_public_key');
   async function checked(result: PromiseLike<{ data: unknown; error: unknown }>): Promise<unknown> {
     const response = await result;
     if (response.error) throw new Error('reminder_store_unavailable');
@@ -57,12 +58,12 @@ export function createReminderStore(client: Pick<SupabaseClient<Database>, 'rpc'
     page: after => checked(client.rpc('reminder_sender_page', after === null ? {} : { p_after: after }).abortSignal(signal())),
     context: (deviceId, calendarId) => checked(client.rpc('reminder_sender_context', { p_device_id: deviceId, p_calendar_id: calendarId }).abortSignal(signal())),
     claim: (deviceId, calendarId, version, hash, fireAt) => checked(client.rpc('claim_reminder_delivery', {
-      p_device_id: deviceId, p_calendar_id: calendarId, p_version: version, p_job_hash: hash, p_fire_at: fireAt,
+      p_public_key: publicKey, p_device_id: deviceId, p_calendar_id: calendarId, p_version: version, p_job_hash: hash, p_fire_at: fireAt,
     }).abortSignal(signal())),
     finish: async (deviceId, hash, leaseId, result) => { await checked(client.rpc('finish_reminder_delivery', {
       p_device_id: deviceId, p_job_hash: hash, p_lease_id: leaseId, p_result: result,
     }).abortSignal(signal())); },
-    heartbeat: async error => { await checked(client.rpc('reminder_sender_heartbeat', error === null ? {} : { p_error: error }).abortSignal(signal())); },
+    heartbeat: async error => { await checked(client.rpc('reminder_sender_heartbeat', error === null ? { p_public_key: publicKey } : { p_public_key: publicKey, p_error: error }).abortSignal(signal())); },
   };
 }
 

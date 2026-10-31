@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 15;
+const expectedChecks = 16;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -66,7 +66,7 @@ try {
   const date = alarmInstant.slice(0, 10), alarm = alarmInstant.slice(11, 16);
   const event = (title, calendarId, extra = {}) => ({ title, calendarId, date, allDay: true, start: '09:00', end: '10:00', ...extra });
   const context = () => rpc(admin, 'reminder_sender_context', { p_device_id: device, p_calendar_id: destination });
-  const claim = (version, hash, fireAt) => rpc(admin, 'claim_reminder_delivery', { p_device_id: device, p_calendar_id: destination, p_version: version, p_job_hash: hash, p_fire_at: fireAt });
+  const claim = (version, hash, fireAt) => rpc(admin, 'claim_reminder_delivery', { p_public_key: publicKey, p_device_id: device, p_calendar_id: destination, p_version: version, p_job_hash: hash, p_fire_at: fireAt });
   const hash = job => createHash('sha256').update(job.key).digest('hex');
   let now, planned, initial;
   const senderToken = randomUUID() + randomUUID();
@@ -77,7 +77,7 @@ try {
     sent.push({ subscription, message }); return 202;
   } };
   const handler = createReminderTickHandler(senderToken, () => {
-    factoryCalls++; return { store: createReminderStore(admin), transport };
+    factoryCalls++; return { store: createReminderStore(admin, publicKey), transport };
   });
   const request = (token = senderToken, body = '{}') => new Request('https://local.test/reminder-tick', {
     method: 'POST', headers: { Authorization: 'Bearer ' + token }, body,
@@ -119,7 +119,7 @@ try {
   await check('fresh heartbeat, idempotent devices and secret column denial', async () => {
     sql(`update daypop_reminders.configuration set enabled=true,public_key='${publicKey}';`); touchedConfig = true;
     assert.equal((await rpc(b.client, 'reminder_capabilities')).enabled, false, 'Configuration alone cannot claim readiness');
-    await rpc(admin, 'reminder_sender_heartbeat');
+    await rpc(admin, 'reminder_sender_heartbeat', { p_public_key: publicKey });
     assert.equal((await rpc(b.client, 'reminder_capabilities')).enabled, true, 'Heartbeat confirms local readiness');
     assert.ok((await b.client.rpc('register_reminder_device', { ...subscription, p_endpoint: 'https://fcm.googleapis.com.evil.test/push' })).error, 'Unapproved push host is rejected');
     device = await rpc(b.client, 'register_reminder_device', subscription);
@@ -205,7 +205,7 @@ try {
     assert.equal(sent.length, 1, 'Sent work is not delivered again');
   });
   await check('using a user client cannot grant the sender service authority', async () => {
-    const userHandler = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(b.client), transport }));
+    const userHandler = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(b.client, publicKey), transport }));
     const response = await userHandler(request());
     assert.equal(response.status, 503, 'Real DB rejects user client despite endpoint token');
     assert.equal((await response.json()).sent, 0, 'User client cannot report accepted sends');
@@ -214,7 +214,7 @@ try {
   await check('tick budget expiry preserves an unsent job for a later real DB retry', async () => {
     // Reactivate the existing backdated todo; no new/imported item is backfilled.
     await repository.toggleTodo(visibleTodo);
-    const real = createReminderStore(admin);
+    const real = createReminderStore(admin, publicKey);
     let tickNow = Date.now(), deferredHash;
     const delayed = { ...real, claim: async (...args) => {
       const value = await real.claim(...args);
@@ -278,6 +278,41 @@ try {
     sql("update daypop_reminders.configuration set last_tick=now()-interval '6 minutes';");
     assert.equal((await rpc(a.client, 'reminder_capabilities')).enabled, false, 'Stopped backend cannot advertise readiness');
     assert.ok((await b.client.rpc('register_reminder_device', subscription)).error, 'Stale heartbeat refuses new registration');
+  });
+  await check('overlapping old runtime cannot consume a rotated-key delivery', async () => {
+    const nextKey = 'B' + 'E'.repeat(86);
+    const owner = new SupabaseDayPopRepository(b.client, b.id);
+    await owner.load();
+    const data = await owner.addCalendar({ name: 'Key rotation', color: '#336699' });
+    const target = data.calendars.find(row => row.name === 'Key rotation').id;
+    await owner.addEvent(event('SECRET rotated key fixture', target));
+    await rpc(b.client, 'set_calendar_reminder', { p_calendar_id: target, p_minutes_before: [0], p_timezone: 'UTC', p_date_time: alarm, p_include_todos: false });
+    let wrongKeySends = 0;
+    // Represents a key-A runtime validated BEFORE the concurrent rotation.
+    const oldRuntime = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(admin, publicKey),
+      transport: { send: async () => { wrongKeySends++; return 403; } } }));
+    sql(`update daypop_reminders.configuration set public_key='${nextKey}';`);
+    await rpc(admin, 'reminder_sender_heartbeat', { p_public_key: nextKey });
+    const nextDevice = await rpc(b.client, 'register_reminder_device', { ...subscription, p_endpoint: endpoint + '-rotated', p_public_key: nextKey });
+    sql(`begin;
+      alter table public.events disable trigger events_set_updated_at;
+      update public.events set created_at=now()-interval '1 hour' where calendar_id='${target}';
+      alter table public.events enable trigger events_set_updated_at;
+      alter table public.calendar_reminder_settings disable trigger reminder_settings_timestamp;
+      update public.calendar_reminder_settings set updated_at=now()-interval '1 hour' where calendar_id='${target}';
+      alter table public.calendar_reminder_settings enable trigger reminder_settings_timestamp;
+      update public.reminder_push_devices set created_at=now()-interval '1 hour' where id='${nextDevice}'; commit;`);
+    const staleResponse = await oldRuntime(request());
+    assert.equal(staleResponse.status, 503, 'Old key cannot mark new configuration healthy');
+    const stale = await staleResponse.json();
+    assert.equal(wrongKeySends, 0, 'Old runtime must never send with the wrong VAPID key');
+    assert.equal(stale.failed, 0, 'A wrong-key runtime must not terminally fail new-key work');
+    assert.equal(sql(`select count(*) from daypop_reminders.deliveries where device_id='${nextDevice}';`), '0', 'Mismatch creates no lease or attempt');
+    const current = createReminderTickHandler(senderToken, () => ({ store: createReminderStore(admin, nextKey), transport }));
+    const recovered = await current(request());
+    assert.equal(recovered.status, 200); assert.equal((await recovered.json()).sent, 1, 'Correct key can still deliver the same work');
+    assert.equal(sql(`select status||':'||attempts from daypop_reminders.deliveries where device_id='${nextDevice}';`), 'sent:1', 'Correct runtime owns the first durable attempt');
+    await rpc(b.client, 'unregister_reminder_device', { p_device_id: nextDevice });
   });
   assert.equal(checks, expectedChecks, 'All HTTP groups must execute');
 } catch (cause) {
