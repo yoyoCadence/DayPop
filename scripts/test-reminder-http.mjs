@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 14;
+const expectedChecks = 15;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -210,6 +210,34 @@ try {
     assert.equal(response.status, 503, 'Real DB rejects user client despite endpoint token');
     assert.equal((await response.json()).sent, 0, 'User client cannot report accepted sends');
     assert.equal(sent.length, 1, 'Denied sender RPC never reaches transport');
+  });
+  await check('tick budget expiry preserves an unsent job for a later real DB retry', async () => {
+    // Reactivate the existing backdated todo; no new/imported item is backfilled.
+    await repository.toggleTodo(visibleTodo);
+    const real = createReminderStore(admin);
+    let tickNow = Date.now(), deferredHash;
+    const delayed = { ...real, claim: async (...args) => {
+      const value = await real.claim(...args);
+      if (value !== null) { deferredHash = args[3]; tickNow += 50_000; }
+      return value;
+    } };
+    const delayedHandler = createReminderTickHandler(senderToken, () => ({ store: delayed, transport, clock: () => tickNow }));
+    const response = await delayedHandler(request());
+    assert.equal(response.status, 503, 'Incomplete tick reports capacity rather than complete success');
+    const summary = await response.json();
+    assert.ok(summary.retry === 1 && summary.failed === 0 && summary.issues.includes('capacity'), 'Still-valid unsent claim must remain retryable');
+    assert.equal(sent.length, 1, 'Exhausted tick must not invoke transport');
+    assert.match(deferredHash, /^[a-f0-9]{64}$/, 'Deferred job retains stable work identity');
+    assert.equal(sql(`select status||':'||attempts from daypop_reminders.deliveries where device_id='${device}' and job_hash='${deferredHash}';`), 'retry:1', 'Actual ledger persists retry rather than terminal failure');
+    // Local-only time travel on this lease, avoiding a 30-second blocking wait.
+    sql(`update daypop_reminders.deliveries set lease_until=now()-interval '1 second' where device_id='${device}' and job_hash='${deferredHash}';`);
+    const recovered = await handler(request());
+    assert.equal(recovered.status, 200, 'Next protected tick can reclaim the still-valid job');
+    assert.equal((await recovered.json()).sent, 1, 'Next tick confirms exactly one accepted retry');
+    assert.equal(sent.length, 2, 'Only the recovered todo adds one transport call');
+    assert.equal(sent[1].message.tag, deferredHash, 'Recovered job uses the same notification tag');
+    assert.equal(sql(`select status||':'||attempts from daypop_reminders.deliveries where device_id='${device}' and job_hash='${deferredHash}';`), 'sent:2', 'Actual ledger confirms recovery on second claim');
+    await repository.toggleTodo(visibleTodo);
   });
   await check('private replacement and revoked source share hide complete graph', async () => {
     await repository.updateEvent(replacement, { sharingScope: 'private' });

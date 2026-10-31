@@ -166,7 +166,13 @@ export async function runReminderTick(options: ReminderTickOptions): Promise<Rem
             const remaining = Date.parse(job.expiresAt) - time();
             const budgetRemaining = started + budgetMs - time();
             let result: DeliveryResult = 'failed';
-            if (remaining < 1000 || budgetRemaining < 1) { summary.skipped++; if (budgetRemaining < 1) issues.add('capacity'); }
+            if (remaining < 1000 || budgetRemaining < 1) {
+              summary.skipped++;
+              // A tick deadline says nothing about the job's own lifetime.
+              // Preserve a valid unsent job for a later DB-controlled retry.
+              result = remaining < 1000 ? 'failed' : 'retry';
+              if (budgetRemaining < 1) issues.add('capacity');
+            }
             else {
               try {
                 const status = await transport.send(lease.subscription, { payload: JSON.stringify({ v: 1, tag: hash }), tag: hash,

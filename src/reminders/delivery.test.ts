@@ -108,8 +108,8 @@ describe('server reminder delivery core', () => {
   });
   it('does not deliver when claim exhausts the invocation budget', async () => {
     const f = fixture(); f.store.claim.mockImplementation(async () => { f.advance(50_000); return lease(); });
-    expect(await f.run()).toMatchObject({ skipped: 1, issues: ['capacity'] });
-    expect(f.transport.send).not.toHaveBeenCalled(); expect(f.store.finish).toHaveBeenCalled();
+    expect(await f.run()).toMatchObject({ skipped: 1, retry: 1, failed: 0, issues: ['capacity'] });
+    expect(f.transport.send).not.toHaveBeenCalled(); expect(f.store.finish.mock.calls[0]?.[3]).toBe('retry');
   });
   it('never backfills before this device registered', async () => {
     const f = fixture(); f.store.context.mockResolvedValue({ ...context(), deviceCreatedAt: '2026-10-31T01:00:01.000Z' });

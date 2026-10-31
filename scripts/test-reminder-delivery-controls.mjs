@@ -12,6 +12,7 @@ const controls = [
   { name: 'caller verification', before: "if (difference !== 0) return json({ error: 'unauthorized' }, 401);",
     after: "if (false) return json({ error: 'unauthorized' }, 401);", expected: 'rejects public or wrong caller before creating a privileged client' },
   { name: 'remaining TTL', before: 'ttl: Math.floor(remaining / 1000)', after: 'ttl: 300', expected: 're-reads time after claim' },
+  { name: 'retry after tick deadline', before: "result = remaining < 1000 ? 'failed' : 'retry';", after: "result = 'failed';", expected: 'does not deliver when claim exhausts the invocation budget' },
 ];
 for (const control of controls) {
   assert.equal(original.split(control.before).length, 2, 'Mutation target must occur exactly once');
