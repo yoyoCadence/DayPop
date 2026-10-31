@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -50,6 +51,7 @@ import {
 // DP-180: retain the original continuous grid, with a bounded rolling window.
 const MIN_ROW_HEIGHT = 58;
 const INITIAL_ROW_HEIGHT = 96;
+const SCROLL_SETTLE_MS = 150;
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
@@ -112,6 +114,33 @@ export function MonthView({
   const pendingAnchor = useRef<{ date: Date; fraction: number } | null>(null);
   const measured = useRef(false);
   const initialised = useRef(false);
+  const scrolling = useRef(false);
+  const touching = useRef(false);
+  const settleTimer = useRef<number | null>(null);
+  const measureRef = useRef<(() => void) | null>(null);
+  const compensatedTop = useRef<number | null>(null);
+
+  const settleAfterScroll = useCallback(() => {
+    if (settleTimer.current !== null) window.clearTimeout(settleTimer.current);
+    settleTimer.current = null;
+    if (touching.current) return;
+    settleTimer.current = window.setTimeout(() => {
+      settleTimer.current = null;
+      scrolling.current = false;
+      measureRef.current?.();
+    }, SCROLL_SETTLE_MS);
+  }, []);
+
+  const markScrolling = useCallback(() => {
+    compensatedTop.current = null;
+    if (calendarGridMode !== 'adaptive') return;
+    scrolling.current = true;
+    settleAfterScroll();
+  }, [calendarGridMode, settleAfterScroll]);
+
+  useEffect(() => () => {
+    if (settleTimer.current !== null) window.clearTimeout(settleTimer.current);
+  }, []);
 
   const gridStart = useMemo(
     () => clampMonthWindowStart(bufferStart, weekStartsOn),
@@ -187,10 +216,11 @@ export function MonthView({
         moveWindow(centredMonthWindow(date, weekStartsOn), { date, fraction: 0 });
       } else {
         const index = weeksBetween(gridStart, date);
+        if (smooth) markScrolling();
         element.scrollTo({ top: Math.max(0, index * rowHeight), behavior: smooth ? smoothScrollBehavior() : 'auto' });
       }
     },
-    [gridStart, inBuffer, moveWindow, rowHeight, todayKey, weekStartsOn],
+    [gridStart, inBuffer, markScrolling, moveWindow, rowHeight, todayKey, weekStartsOn],
   );
 
   useImperativeHandle(
@@ -198,13 +228,15 @@ export function MonthView({
     () => ({
       scrollToToday: (smooth: boolean) => scrollToToday(smooth),
       page: (direction: 1 | -1) => {
-        scrollRef.current?.scrollBy({
-          top: direction * rowHeight * weeksShown,
+        const element = scrollRef.current;
+        markScrolling();
+        element?.scrollBy({
+          top: direction * (element.clientHeight || rowHeight * weeksShown),
           behavior: smoothScrollBehavior(),
         });
       },
     }),
-    [rowHeight, scrollToToday, weeksShown],
+    [markScrolling, rowHeight, scrollToToday, weeksShown],
   );
 
   // Fixed mode shows six rows. Adaptive mode follows the 4-6 rows required by
@@ -215,6 +247,9 @@ export function MonthView({
     if (!element) return;
 
     const measure = () => {
+      // Changing every row's height during a pan/fling changes its pixel
+      // trajectory. Keep geometry steady until input and momentum have ended.
+      if (calendarGridMode === 'adaptive' && scrolling.current) return;
       if (element.clientHeight <= 0) return;
       const next = Math.max(MIN_ROW_HEIGHT, Math.floor(element.clientHeight / weeksShown));
       measured.current = true;
@@ -224,11 +259,15 @@ export function MonthView({
       setRowHeight(next);
     };
 
+    measureRef.current = measure;
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    return () => observer.disconnect();
-  }, [readAnchor, weeksShown]);
+    return () => {
+      observer.disconnect();
+      if (measureRef.current === measure) measureRef.current = null;
+    };
+  }, [calendarGridMode, readAnchor, weeksShown]);
 
   // Land on today once the real row height is known.
   useLayoutEffect(() => {
@@ -236,13 +275,17 @@ export function MonthView({
     // Wait for the DOM height to match the measurement; writing before that
     // commit can clamp scrollTop against the old (shorter) scrollHeight.
     if (!element || rowHeight !== rowHeightRef.current) return;
-    if (!initialised.current && measured.current) {
+    const firstPosition = !initialised.current && measured.current;
+    if (firstPosition) {
       initialised.current = true;
       pendingAnchor.current = { date: startOfWeek(fromDateKey(initialDateKey), weekStartsOn), fraction: 0 };
     }
     const anchor = pendingAnchor.current;
     if (anchor) {
       element.scrollTop = Math.max(0, (weeksBetween(gridStart, anchor.date) + anchor.fraction) * rowHeight);
+      // A native pixel-rounded compensation is not fresh navigation. Near a
+      // half-row month boundary, treating it as input can flip 4/5/6 forever.
+      if (!firstPosition) compensatedTop.current = element.scrollTop;
       pendingAnchor.current = null;
     }
   });
@@ -250,6 +293,12 @@ export function MonthView({
   const handleScroll = useCallback(() => {
     const element = scrollRef.current;
     if (!element || pendingAnchor.current) return;
+    if (compensatedTop.current !== null) {
+      const expected = compensatedTop.current;
+      if (Math.abs(element.scrollTop - expected) <= 1) return;
+      compensatedTop.current = null;
+    }
+    markScrolling();
 
     const index = Math.round(element.scrollTop / rowHeight);
     // The原檔 labels the buffer by its middle day, so a row straddling two
@@ -272,7 +321,7 @@ export function MonthView({
     } else if (index > MONTH_WINDOW_WEEKS - 8) {
       moveWindow(addDays(gridStart, MONTH_SHIFT_WEEKS * 7));
     }
-  }, [gridStart, moveWindow, onPeriodLabelChange, rowHeight]);
+  }, [gridStart, markScrolling, moveWindow, onPeriodLabelChange, rowHeight]);
 
   const weekdayHead = useMemo(
     () =>
@@ -416,6 +465,19 @@ export function MonthView({
         className="cal-month-scroll"
         ref={scrollRef}
         onScroll={handleScroll}
+        onWheel={markScrolling}
+        onTouchStart={() => {
+          touching.current = true;
+          markScrolling();
+        }}
+        onTouchEnd={(event) => {
+          touching.current = event.touches.length > 0;
+          if (scrolling.current) settleAfterScroll();
+        }}
+        onTouchCancel={() => {
+          touching.current = false;
+          if (scrolling.current) settleAfterScroll();
+        }}
         onKeyDown={handleKeyDown}
       >
         {weeks.map((cells) => (

@@ -695,18 +695,90 @@ describe('MonthView bounded window (DP-180)', () => {
   });
 
   it('compensates a trim and an adaptive four-to-five-row height change in the same commit', () => {
+    vi.useFakeTimers();
     const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
     try {
       const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15' });
       expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
       const visible = keys()[46 * 7];
       scroll(element, 46);
+      act(() => vi.advanceTimersByTime(150));
       const height = parseFloat(container.querySelector<HTMLElement>('.cal-week-row')!.style.height);
       expect(height).toBe(108);
       expect(keys()[Math.floor(element.scrollTop / height) * 7]).toBe(visible);
       expect(element.scrollTop / height).toBeCloseTo(34.25);
       expect(keys()).toHaveLength(371);
-    } finally { size.mockRestore(); }
+    } finally { size.mockRestore(); vi.useRealTimers(); }
+  });
+
+  it('DP-224 keeps adaptive rows stable through wheel input and resize, then preserves the logical week', () => {
+    vi.useFakeTimers();
+    let viewportHeight = 540;
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => viewportHeight);
+    let resize: (() => void) | undefined;
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { resize = callback; }
+      observe() {} disconnect() {}
+    });
+    try {
+      const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15' });
+      act(() => { element.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 60 })); });
+      scroll(element, 28);
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
+      viewportHeight = 600;
+      act(() => resize!());
+      act(() => vi.advanceTimersByTime(100));
+      scroll(element, 29, 0.4);
+      act(() => vi.advanceTimersByTime(149));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
+      const anchor = keys()[29 * 7];
+      act(() => vi.advanceTimersByTime(1));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('120px');
+      expect(element.scrollTop / 120).toBeCloseTo(29.4);
+      expect(keys()[Math.floor(element.scrollTop / 120) * 7]).toBe(anchor);
+    } finally { size.mockRestore(); vi.unstubAllGlobals(); vi.useRealTimers(); }
+  });
+
+  it('DP-224 does not resize underneath a held touch, including a long pause before release', () => {
+    vi.useFakeTimers();
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
+    const touch = (element: HTMLElement, type: string, count: number) => {
+      const event = new Event(type, { bubbles: true });
+      Object.defineProperty(event, 'touches', { value: Array.from({ length: count }, () => ({})) });
+      act(() => { element.dispatchEvent(event); });
+    };
+    try {
+      const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15' });
+      touch(element, 'touchstart', 1);
+      scroll(element, 30);
+      act(() => vi.advanceTimersByTime(2000));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
+      touch(element, 'touchend', 0);
+      act(() => vi.advanceTimersByTime(150));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('108px');
+      expect(element.scrollTop / 108).toBeCloseTo(30.25);
+    } finally { size.mockRestore(); vi.useRealTimers(); }
+  });
+
+  it('DP-224 ignores its own pixel-rounded compensation instead of flipping the month back', () => {
+    vi.useFakeTimers();
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(546);
+    const label = vi.fn();
+    try {
+      const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15', onPeriodLabelChange: label });
+      act(() => { element.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 60 })); });
+      scroll(element, 27, 0.5);
+      act(() => vi.advanceTimersByTime(150));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('109px');
+      act(() => {
+        element.scrollTop = Math.floor(element.scrollTop);
+        element.dispatchEvent(new Event('scroll'));
+        element.dispatchEvent(new Event('scroll'));
+      });
+      act(() => vi.advanceTimersByTime(1000));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('109px');
+      expect(label).toHaveBeenLastCalledWith('2026年 3月');
+    } finally { size.mockRestore(); vi.useRealTimers(); }
   });
 });
 

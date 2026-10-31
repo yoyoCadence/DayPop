@@ -76,6 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。先完成 DP-224 自動列數穩定修正，再獨立 PR；不改帳號資料、版號或部署。
+
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。
 
 
@@ -233,6 +235,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 > **2026-10-05 後續一致性委託**：專案擁有者要求繼續。PR #113–#115 已完成截圖三項 backlog 並通過 CI 合併；核對日常查看路徑時發現 DP-114 的多日全天列尚未延伸到其他檢視，登記 **DP-126** 並由 Backlog 經 Next 移入 In Progress。先重現日詳情續日消失，再補齊五處共用日期邊界與既有 occurrence 操作；不觸發部署，DP-034 與真機限制仍保留。
 
 ## In Progress
+
+- [ ] **DP-224 — 自動列數滑動穩定（2026-11-01）：** Backlog → Next → In Progress。承接 PR #219 最終 `772a7f9` 四 CI／同 head 完成審查無發現且無未解決討論後合併 `9ed6b50`。滑動／觸控按住期間固定列高，停穩 150ms 再依月／viewport 重算；邏輯週／比例補償不當成新輸入，含像素取整／重複事件。三新單元舊程式全失敗，手機負控制失敗並 finally 精確還原；1,530 單元＋39 Node、Chromium 8／WebKit 9、三時區實際列印、lint／typecheck／Pages build／check:build 過，production 四圖目視、資料 bytes／revision／console／版面正常。自己的最新四 CI／同 head 完成審查後才合併，詳 [驗證與真機界線](docs/adaptive-month-scroll.md)。不改 user data／schema／版號／公告／部署；下一段 DP-225 連續／單月翻頁，DP-223 提醒保留 Next。
 
 - [ ] **DP-042 — 可靠背景提醒／推播（2026-10-29 重啟）：** 擁有者指定「你先做提醒吧」，Backlog → Next → In Progress。第一版採每人、每本日曆明確開啟，自有／有效分享皆可選；帳號端每分鐘排程與 Web Push，全天及可選待辦使用明確時區／時刻，預設關閉。通知不帶事項標題、地點、家庭或帳號內容。依 DP-219 排程契約 → 後端訂閱／投遞 → App／worker 接線分段 PR，四 CI／同 head 完成審查後合併；本機測試不冒充正式推播或真機。遠端 migration、伺服器密鑰、cron 與正式發布須依既有界線另行具體放行。
 
