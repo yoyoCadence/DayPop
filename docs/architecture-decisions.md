@@ -1176,3 +1176,5 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 通知偏好／訂閱／投遞紀錄另用具 RLS 的帳號資料，不進 v4 個人文件或 JSON 備份。先分段完成排程核心、後端、App／worker 與本機驗證，各自 PR／四 CI／同 head 審查後合併；遠端 migration、秘密設定、cron、發布及真機收信仍須另有具體結果與放行，不能把純計算或模擬通知稱為已上線提醒。
 
 DP-222（2026-10-31）將 runtime key 納入啟用邊界：服務端先確認 DB 的 enabled／public key 與實際 VAPID pair 一致；heartbeat 必須帶相同 public key，配置停用或換 key 即清除舊 heartbeat，舊 runtime 不得替新配置宣告 ready。此 API 擴充以新增 migration 管理，保留既有二十份原檔。Edge 以專用 token 驗證後才建立服務 client，使用版本固定／lock 的 Web Push library 產生加密請求，實際送出經有界、禁止 redirect 的 fetch；canonical 排程與投遞核心由可重建 bundle 共用，不另複製 recurrence 實作。
+
+DP-222 的同 head 審查補強：每次 claim 也必須帶 runtime public key，取得 device row lock 後比對，拒絕 key 不符而不建立 ledger；移除舊無 key RPC。否則啟動檢查後的 rotation 會讓舊 runtime 消耗新 key 的工作。原 device→ledger 鎖順序、權限／資料版本與啟用界線保留，並驗證真正 HTTP 交錯 tick／等待鎖換 key／撤比較的負控制。

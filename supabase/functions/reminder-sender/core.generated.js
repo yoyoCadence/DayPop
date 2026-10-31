@@ -3568,6 +3568,7 @@ function createReminderStore(client, publicKey) {
 			p_calendar_id: calendarId
 		}).abortSignal(signal())),
 		claim: (deviceId, calendarId, version, hash, fireAt) => checked(client.rpc("claim_reminder_delivery", {
+			p_public_key: publicKey,
 			p_device_id: deviceId,
 			p_calendar_id: calendarId,
 			p_version: version,

@@ -26,9 +26,11 @@ production 加密及 VAPID ES256 由固定的 web-push `generateRequestDetails` 
 
 ## 第 21 份 migration
 
-`20261031090000_reminder_runtime_key_binding.sql` 新增 service-only `reminder_sender_configuration()`，heartbeat 改為必帶 `p_public_key`；`createReminderStore` 也綁定同一把 public key。
+`20261031090000_reminder_runtime_key_binding.sql` 新增 service-only `reminder_sender_configuration()`，heartbeat 與每次 claim 都改為必帶 `p_public_key`；`createReminderStore` 綁定同一把 public key。舊的無 key claim RPC 移除。
 
 配置啟用狀態或 public key 改變時，trigger 清掉 last_tick／last_error。heartbeat 只更新目前 enabled 且 key 相同的配置，舊 in-flight runtime 無法讓新配置顯示 ready。原二十份 migration 保持原檔；目前遠端十九份尚未套用這兩份提醒 migration。types 由本機重建的 public schema 產生，沒有手改；個人 envelope 仍是 v4。
+
+PR #219 審查指出只在啟動及 heartbeat 綁 key 仍不足：舊 key-A runtime 可能讀到新 key-B 裝置，再把錯 key 投遞記成永久 failed。現在 claim 先鎖定裝置，再比對 runtime key 與該裝置 key，不符即回 null，不建立 lease／attempt；仍沿原版本／當下權限／到期檢查。真正 HTTP 模擬換 key 後的交錯 tick，舊 runtime 不碰 transport／不寫 ledger，正確 runtime 仍為 `sent:1`；獨立連線亦在等待 device lock 時換 key，確認比較發生在取得鎖後。移除這個比對的新第三個 DB 負控制在第 16 組 HTTP 失敗，finally 精確還原。
 
 ## 驗證與重跑
 
@@ -37,14 +39,16 @@ production 加密及 VAPID ES256 由固定的 web-push `generateRequestDetails` 
 | Deno 離線測試 | 9/9；獨立收件端 WebCrypto 依 RFC 8291／8188 解密，驗證 VAPID aud／sub／exp／簽章，改 ciphertext 必須失敗；key pair／DB key／授權／TTL／匿名 bytes／診斷模式。測試 deny-net。 |
 | 原生 fetch | 2/2；真正 127.0.0.1 server 的 307 不被跟隨，進行中請求遵守 abort。Deno 僅 allow-net=127.0.0.1；production 無 URL rewrite。 |
 | Edge 負控制 | 移除 DB key 比對、加入私人加密欄位、允許 follow，各由指定案例抓到；finally runtime 精確還原，SHA-256 `2f6339f9400cd9eeecb661d9b4e4b0a30d6063a9bec86a10bb3fe756cf131a45`。 |
-| 實際 Supabase Edge 容器 | 真正 functions serve 冷啟動、錯誤／公開／service token 拒絕、caller recipients 拒絕、停用 503、相符配置 200 並寫入真實 RPC heartbeat、換 key 清健康且舊 runtime 503。零裝置、零 delivery；短期 VAPID／token 僅 TEMP，finally 還原／清除／停止。 |
-| 本機 DB | 21 檔精確相同、沒有 link；從零 reset，全部 461 pgTAP／12 檔，含 16 項新 key 綁定測試；generated types 一致。 |
-| 既有行為 | 通知真正 Auth／HTTP 15/15、三組競態與原兩個 DB 負控制；核心 token／TTL／deadline 三項負控制還原後，109 核心測試在 UTC／America/New_York／Etc/GMT-8 通過並列印實際時區。 |
+| 實際 Supabase Edge 容器 | 真正 functions serve 冷啟動、錯誤／公開／service token 拒絕、caller recipients 拒絕、停用 503、相符配置 200 並寫入真實 RPC heartbeat、換 key 清健康且舊 runtime 503。另在同一容器以臨時 probe 攔截真正 library 加密結果，由 Node 獨立 HKDF／AES-GCM 解密及驗 VAPID 簽章／aud／sub／exp，仍無推播網路。probe 不被 production index 引用，僅測試時另建 function，finally 刪除。零裝置、零 delivery；短期 VAPID／token 僅 TEMP，finally 還原／清除／停止。 |
+| 本機 DB | 21 檔精確相同、沒有 link；從零 reset，全部 465 pgTAP／12 檔，含 16 項 heartbeat 與 4 項 claim key 回歸；generated types 一致。 |
+| 既有行為 | 通知真正 Auth／HTTP 16/16、四組競態與三個 DB 負控制；核心 token／TTL／deadline 三項負控制還原後，109 核心測試在 UTC／America/New_York／Etc/GMT-8 通過並列印實際時區。 |
 | App | 1,527 單元／93 檔＋39 Node、lint／typecheck／Pages build／check:build；JS 747,193 raw／220,244 gzip、CSS 119,236／29,242，與原版相同，門檻不變。沒有新 rendered UI。 |
 
 首次本機高並行完整單元有五個逾時及一個後續 UI 斷言失敗；以 `npm run test -- --maxWorkers=4` 重跑全數通過，沒有改測試或 timeout。Windows Deno 2.9.6 本輪即使 PowerShell 設 TZ=UTC，實際仍印 Etc/GMT-8 並被時區斷言抓到；因此不當成 Deno 跨時區通過。Node 的三時區證據如上；CI Linux 在 UTC／America/New_York／Etc/GMT-8 跑相同 Deno 測試並列印實際時區，以自己的最新 head 結果為準。
 
-Edge 本機測試曾在重用已停止容器時失敗，另一次真正冷啟動在 matching runtime 階段回 HTTP 502，原因未確認；最終相同程式連續兩次真正冷啟動通過。不把重用容器當成已證實的唯一原因，也沒有替 502 加重試或降低驗收。永久腳本要求 runtime 容器原本不存在，不重用／替換既有容器，finally 停止且移除本次容器；失敗只輸出固定類別計數，完整 log 僅 TEMP、秘密 env 仍刪除。Linux 的實際冷啟動仍須自己的 CI 通過。
+Edge 本機曾有重用及真正冷啟動的 502；保留後續診斷才抓到目錄 WRITE 通知觸發 CLI 的整個容器熱重載，請求期間容器正被移除，並非加密測試收到 503。這次 log 可支持該次原因，沒有 log 的早期失敗不推定全是同因。官方 [CLI watcher 實作](https://github.com/supabase/cli/blob/develop/apps/cli/src/shared/functions/serve.ts) 也會在檔案通知後重啟。本測試在真正冷啟動／取得 401 後停止自己啟動的 native CLI 監看程序，確認同一個真正 Edge 容器仍在執行，再跑所有授權／加密／RPC 斷言；不重試失敗請求。要求容器原本不存在，finally 停止且移除本次容器；失敗只輸出固定類別計數，完整 log 僅 TEMP、秘密 env 仍刪除。
+
+初次 head `e75e213` 的 CI `41213264629` verify／database 已通過：Linux Deno 的 UTC／America/New_York／Etc/GMT-8 三次各 9/9，原生網路 2/2、當時的真正 Edge 冷啟動也成功。這是修正前歷史；最終含 claim key 修正及容器加密的 head 必須重新完成自己的四 CI／審查。
 
 本機重跑：先啟動沒有 link 的測試 stack 並 reset；`reminders:check-bundle`、`reminders:check-edge`、`reminders:test-edge`、`reminders:test-network`、`reminders:test-controls`。DB 另跑 `supabase:test:reminders`、`supabase:test:reminder-concurrency`、`supabase:test:reminder-controls`、`supabase:test:reminder-edge`。專用本機可設 DAYPOP_HTTP_WORKDIR／DAYPOP_REMINDER_DB_CONTAINER；腳本拒絕不同 origin／非指定 stack／已安裝配置或既有裝置，從不印 CLI startup／runtime log／key。
 

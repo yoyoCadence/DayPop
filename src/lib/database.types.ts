@@ -699,6 +699,7 @@ export type Database = {
           p_device_id: string
           p_fire_at: string
           p_job_hash: string
+          p_public_key: string
           p_version: string
         }
         Returns: Json

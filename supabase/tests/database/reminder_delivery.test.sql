@@ -119,16 +119,24 @@ select is(jsonb_array_length((select value#>'{snapshot,todos}' from reminder_tes
 select ok((select value::text not like '%SECRET%' from reminder_test where key='context'),'snapshot strips all private titles');
 select is(current_setting('request.jwt.claim.sub'),'00000000-0000-4000-8000-000000000903','sender restores previous recipient context');
 select is(jsonb_array_length(public.reminder_sender_page()),1,'only opted-in devices are paged');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('E',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
+ '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()),null::jsonb,'wrong runtime key cannot obtain a lease');
+select is(public.claim_reminder_delivery(null,(select (value#>>'{}')::uuid from reminder_test where key='device'),
+ '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()),null::jsonb,'null runtime key cannot obtain a lease');
+reset role;
+select ok(to_regprocedure('public.claim_reminder_delivery(uuid,uuid,text,text,timestamptz)') is null,'old unbound claim RPC is removed');
+select is((select count(*) from daypop_reminders.deliveries),0::bigint,'wrong keys persist no delivery attempt');
+set local role service_role;
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902','wrong-version',repeat('a',64),now()),null::jsonb,'wrong data version cannot claim');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()+interval '1 minute'),null::jsonb,'future job cannot claim');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()-interval '5 minutes'),null::jsonb,'expired job cannot claim');
-insert into reminder_test select 'claim',public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+insert into reminder_test select 'claim',public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now());
 select ok((select value->>'leaseId' is not null from reminder_test where key='claim'),'current job obtains one lease');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()),null::jsonb,'active lease prevents duplicate sender');
 select public.finish_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),repeat('a',64),gen_random_uuid(),'sent');
 reset role;
@@ -139,16 +147,16 @@ select public.finish_reminder_delivery((select (value#>>'{}')::uuid from reminde
 reset role;
 update daypop_reminders.deliveries set lease_until=now()-interval '1 second';
 set local role service_role;
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('a',64),now()),null::jsonb,'sent delivery is never resent after lease expiry');
-insert into reminder_test select 'retry',public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+insert into reminder_test select 'retry',public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('b',64),now());
 select public.finish_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),repeat('b',64),
  (select (value->>'leaseId')::uuid from reminder_test where key='retry'),'retry');
 reset role;
 update daypop_reminders.deliveries set lease_until=now()-interval '1 second' where job_hash=repeat('b',64);
 set local role service_role;
-insert into reminder_test select 'retried',public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+insert into reminder_test select 'retried',public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('b',64),now());
 select ok((select value->>'leaseId' is not null from reminder_test where key='retried'),'expired retry can acquire new lease');
 select public.finish_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),repeat('b',64),
@@ -157,7 +165,7 @@ reset role;
 select is((select count(*) from public.reminder_push_devices),1::bigint,'stale worker cannot remove subscription owned by newer lease');
 update daypop_reminders.deliveries set attempts=4,lease_until=now()-interval '1 second' where job_hash=repeat('b',64);
 set local role service_role;
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('b',64),now()),null::jsonb,'retry budget is bounded');
 reset role;
 update daypop_reminders.configuration set public_key='B'||repeat('Z',86);
@@ -173,14 +181,14 @@ update public.events set sharing_scope='private' where id='10000000-0000-4000-80
 set local role service_role;
 select is(jsonb_array_length(public.reminder_sender_context((select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902')#>'{snapshot,events}'),1,'private replacement hides complete cross-calendar graph');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('c',64),now()),null::jsonb,'old snapshot cannot send after privacy change');
 reset role;
 delete from public.family_memberships where user_id='00000000-0000-4000-8000-000000000902';
 set local role service_role;
 select is(public.reminder_sender_context((select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902'),null::jsonb,'membership removal revokes sender context');
-select is(public.claim_reminder_delivery((select (value#>>'{}')::uuid from reminder_test where key='device'),
+select is(public.claim_reminder_delivery('B'||repeat('A',86),(select (value#>>'{}')::uuid from reminder_test where key='device'),
  '50000000-0000-4000-8000-000000000902',(select value->>'version' from reminder_test where key='context'),repeat('d',64),now()),null::jsonb,'membership removal rejects in-flight version');
 reset role;
 set local role authenticated;

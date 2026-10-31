@@ -27,7 +27,7 @@
     "test:reminder-controls": "node scripts/test-reminder-delivery-controls.mjs",
     "reminders:bundle": "node scripts/generate-reminder-core.mjs",
     "reminders:check-bundle": "node scripts/generate-reminder-core.mjs --check",
-    "reminders:check-edge": "npx --yes deno@2.9.6 check --frozen --config supabase/functions/reminder-sender/deno.json supabase/functions/reminder-sender/index.ts",
+    "reminders:check-edge": "npx --yes deno@2.9.6 check --frozen --config supabase/functions/reminder-sender/deno.json supabase/functions/reminder-sender/index.ts supabase/functions/reminder-sender/runtime-probe.fixture.ts",
     "reminders:test-edge": "npx --yes deno@2.9.6 test --frozen --allow-env --deny-net --config supabase/functions/reminder-sender/deno.json supabase/functions/reminder-sender/runtime.test.ts supabase/functions/reminder-sender/runtime-keylog.test.ts",
     "reminders:test-network": "npx --yes deno@2.9.6 test --frozen --allow-env --allow-net=127.0.0.1 --config supabase/functions/reminder-sender/deno.json supabase/functions/reminder-sender/runtime-network.test.ts",
     "reminders:test-controls": "node scripts/test-reminder-edge-controls.mjs",

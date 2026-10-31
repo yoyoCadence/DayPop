@@ -37,7 +37,7 @@ function worker(statement) {
 }
 const service = 'set role service_role;';
 const contextVersion = `${service} select public.reminder_sender_context('${device}','${calendar}')->>'version';`;
-const claim = (version, hash, fireAt) => `${service} select coalesce(public.claim_reminder_delivery('${device}','${calendar}','${version}','${hash}','${fireAt}')->>'leaseId','none');`;
+const claim = (version, hash, fireAt, key = 'B' + 'A'.repeat(86)) => `${service} select coalesce(public.claim_reminder_delivery('${key}','${device}','${calendar}','${version}','${hash}','${fireAt}')->>'leaseId','none');`;
 try {
   console.log(`Reminder concurrency timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
   assert.equal(await query(`select count(*) from auth.users where id='${user}';`), '0', 'Never replace an existing identity');
@@ -93,6 +93,22 @@ try {
   assert.equal(lateResult.stdout, 'none', 'Expiry is evaluated after acquiring device lock');
   assert.equal(await query(`select count(*) from daypop_reminders.deliveries where job_hash='${'b'.repeat(64)}';`), '0', 'Expired blocked sender persists no attempt');
   console.log('Reminder concurrency: lock-wait expiry rejects delivery passed.');
+
+  version = await query(contextVersion);
+  const rotatedHash = 'c'.repeat(64), rotatedFire = await query('select clock_timestamp();');
+  await hold(`select id from public.reminder_push_devices where id='${device}' for update`);
+  const staleRuntime = worker(claim(version, rotatedHash, rotatedFire));
+  await blocked(1);
+  coordinator.child.stdin.write(`update daypop_reminders.configuration set public_key='B'||repeat('E',86);
+    update public.reminder_push_devices set public_key='B'||repeat('E',86) where id='${device}';\n`);
+  await release();
+  const staleRuntimeResult = await staleRuntime.done;
+  assert.equal(staleRuntimeResult.code, 0); assert.equal(staleRuntimeResult.stdout, 'none', 'Key is checked after waiting for the device lock');
+  assert.equal(await query(`select count(*) from daypop_reminders.deliveries where job_hash='${rotatedHash}';`), '0', 'Old runtime creates no attempt under a new key');
+  const currentRuntime = await query(claim(await query(contextVersion), rotatedHash, rotatedFire, 'B' + 'E'.repeat(86)));
+  assert.match(currentRuntime, /^[a-f0-9-]{36}$/, 'Current runtime still acquires the same work');
+  assert.equal(await query(`select attempts from daypop_reminders.deliveries where job_hash='${rotatedHash}';`), '1');
+  console.log('Reminder concurrency: key rotation during device lock wait rejects old runtime; new runtime gets first attempt.');
 } finally {
   if (coordinator && !coordinator.child.stdin.destroyed) coordinator.child.stdin.end('rollback;\n\\q\n');
   if (coordinator) await coordinator.done;

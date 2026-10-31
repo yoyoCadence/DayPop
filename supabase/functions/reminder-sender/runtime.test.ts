@@ -117,6 +117,9 @@ Deno.test('disabled/mismatched DB key stays unavailable; matching runtime binds 
   const runtime = await createReminderRuntime(env, () => db.client);
   await runtime.store.heartbeat(null);
   assert.deepEqual(db.calls.at(-1), { name: 'reminder_sender_heartbeat', args: { p_public_key: f.vapid.publicKey } });
+  await runtime.store.claim('60000000-0000-4000-8000-000000000922', '50000000-0000-4000-8000-000000000922', 'a'.repeat(64), 'b'.repeat(64), new Date().toISOString());
+  assert.equal(db.calls.at(-1)!.name, 'claim_reminder_delivery');
+  assert.equal(db.calls.at(-1)!.args.p_public_key, f.vapid.publicKey, 'Each individual claim carries the actual runtime key');
   const token = crypto.randomUUID() + crypto.randomUUID(); let factories = 0;
   const handler = createReminderTickHandler(token, () => { factories++; return runtime; });
   assert.equal((await handler(new Request('https://fixture.test/tick', { method: 'POST' }))).status, 401);

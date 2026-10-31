@@ -58,7 +58,7 @@ export function createReminderStore(client: Pick<SupabaseClient<Database>, 'rpc'
     page: after => checked(client.rpc('reminder_sender_page', after === null ? {} : { p_after: after }).abortSignal(signal())),
     context: (deviceId, calendarId) => checked(client.rpc('reminder_sender_context', { p_device_id: deviceId, p_calendar_id: calendarId }).abortSignal(signal())),
     claim: (deviceId, calendarId, version, hash, fireAt) => checked(client.rpc('claim_reminder_delivery', {
-      p_device_id: deviceId, p_calendar_id: calendarId, p_version: version, p_job_hash: hash, p_fire_at: fireAt,
+      p_public_key: publicKey, p_device_id: deviceId, p_calendar_id: calendarId, p_version: version, p_job_hash: hash, p_fire_at: fireAt,
     }).abortSignal(signal())),
     finish: async (deviceId, hash, leaseId, result) => { await checked(client.rpc('finish_reminder_delivery', {
       p_device_id: deviceId, p_job_hash: hash, p_lease_id: leaseId, p_result: result,
