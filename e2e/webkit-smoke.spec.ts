@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
+import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
 import {
   agendaRow,
   calendarViewButton,
@@ -16,6 +17,15 @@ import {
 // iOS device claim. Every test uses a fresh guest context and the real adapter.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('單月切換、列數、鍵盤、重載與左右手勢', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await checkMonthPaging(page);
+  await swipeMonth(page, false);
+  await expect(page.locator('h1.cal-period')).toHaveText('2026年 12月');
+  await expect(page.locator('.cal-day-sheet')).toHaveCount(0);
+  clean();
 });
 
 test('自動列數滑動／旋轉與停穩後不回跳', async ({ page }) => {

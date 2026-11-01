@@ -76,8 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。先完成 DP-224 自動列數穩定修正，再獨立 PR；不改帳號資料、版號或部署。
-
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。
 
 
@@ -236,7 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-224 — 自動列數滑動穩定（2026-11-01）：** Backlog → Next → In Progress。承接 PR #219 最終 `772a7f9` 四 CI／同 head 完成審查無發現且無未解決討論後合併 `9ed6b50`。滑動／觸控按住期間固定列高，停穩 150ms 再依月／viewport 重算；邏輯週／比例補償不當成新輸入，含像素取整／重複事件。三新單元舊程式全失敗；PR #220 審查補上離窗 Today 明確更新月份，有／無 scroll 通知兩項與手機負控制抓到舊程式並 finally 精確還原；1,532 單元＋39 Node、Chromium 8／WebKit 9、三時區實際列印、lint／typecheck／Pages build／check:build 過，production 四圖目視、資料 bytes／revision／console／版面正常。自己的最新四 CI／同 head 完成審查後才合併，詳 [驗證與真機界線](docs/adaptive-month-scroll.md)。不改 user data／schema／版號／公告／部署；下一段 DP-225 連續／單月翻頁，DP-223 提醒保留 Next。
+- [ ] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next → In Progress。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。DP-224 已於 PR #220 最終 4c12b32 四 CI（41260244520，Chromium 299 passed／13 skipped、WebKit 9）與同 head 完成審查無發現後合併 70e8947，本項從最新 main 獨立接續。共用日格與日期鍵盤、裝置模式 key、月份交接、單月 4／5／6 或固定六列、原生水平觸控及短螢幕捲入；Safari 入口焦點與 320px 標題已修正。22 新單元三時區實際列印、1,554 單元＋39 Node、相關 Chromium 12／WebKit 10、兩個 runtime 負控制精確還原、lint／typecheck／Pages build／預算過；十圖目視、真離線模式重載與資料 bytes 不變，儲存失敗持續警告。詳 [行為與證據](docs/month-paging.md)，自己的最新四 CI／同 head 完成審查後才合併；不改帳號資料、版號或部署。
 
 - [ ] **DP-042 — 可靠背景提醒／推播（2026-10-29 重啟）：** 擁有者指定「你先做提醒吧」，Backlog → Next → In Progress。第一版採每人、每本日曆明確開啟，自有／有效分享皆可選；帳號端每分鐘排程與 Web Push，全天及可選待辦使用明確時區／時刻，預設關閉。通知不帶事項標題、地點、家庭或帳號內容。依 DP-219 排程契約 → 後端訂閱／投遞 → App／worker 接線分段 PR，四 CI／同 head 完成審查後合併；本機測試不冒充正式推播或真機。遠端 migration、伺服器密鑰、cron 與正式發布須依既有界線另行具體放行。
 
@@ -498,6 +496,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-224 — 自動列數滑動穩定（2026-11-01）：** Backlog → Next → In Progress → Done。承接 PR #219 最終 `772a7f9` 四 CI／同 head 完成審查無發現且無未解決討論後合併 `9ed6b50`。滑動／觸控按住期間固定列高，停穩 150ms 再依月／viewport 重算；邏輯週／比例補償不當成新輸入，含像素取整／重複事件。三新單元舊程式全失敗；PR #220 審查補上離窗 Today 明確更新月份，有／無 scroll 通知兩項與手機負控制抓到舊程式並 finally 精確還原；1,532 單元＋39 Node、Chromium 8／WebKit 9、三時區實際列印、lint／typecheck／Pages build／check:build 過，production 八圖目視、資料 bytes／revision／console／版面正常。PR #220 最終 4c12b32 四 CI（41260244520，Chromium 299 passed／13 skipped、WebKit 9）／同 head 完成審查無發現及無未解決討論後合併 70e8947，詳 [驗證與真機界線](docs/adaptive-month-scroll.md)。不改 user data／schema／版號／公告／部署；下一段 DP-225 連續／單月翻頁，DP-223 提醒保留 Next。
 
 - [x] **DP-222 — Edge 提醒與受限 Push adapter（2026-10-31）：** Backlog → Next → In Progress → Done。從 PR #218 最終 `efced11` 四 CI／同 head 完成審查後合併 `c18cafb` 接續。canonical bundle 可精確重建、Deno／SDK／加密套件與 lock 固定，專用 token 後才建 client，VAPID pair／DB key、匿名加密、TTL／abort／禁止 redirect；第 21 份 migration 綁定每次 claim 與 heartbeat，換 key 撤健康，原二十份不變。9 離線＋2 原生網路、三 runtime 負控制精確還原、真正 Edge 容器加密／獨立解密驗簽及冷啟動／RPC／換 key 拒絕、465 pgTAP／12 檔、HTTP 16/16／四組競態／三個 DB 負控制、1,527 單元＋39 Node、lint／typecheck／Pages build／check:build 過，App bytes 不變。PR #219 審查的跨 key claim 已補取得 device lock 後比對、HTTP／並行與負控制；Windows watcher 重啟已隔離。Node 三時區已印；Windows Deno TZ 未生效被斷言抓到，Linux 三時區看自己的 CI。自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併；詳 [證據與限制](docs/reminder-edge.md)。沒有遠端／秘密／cron／真 Push／部署，v4／0.4.6／歷史公告不變；下一段 DP-223 接 App／worker，父項 DP-042 未完成。
 
