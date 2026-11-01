@@ -1,5 +1,6 @@
 import type { ReminderCapabilities, ReminderDeviceInput } from './reminderService';
 import { isAllowedPushEndpoint } from './pushEndpoint';
+import { reminderDeviceFingerprint } from './deviceFingerprint';
 
 export interface ReminderRegistration {
   readonly scope: string;
@@ -93,6 +94,20 @@ export class BrowserReminderDevice {
   #pending: Promise<ReminderDeviceInput> | null = null;
   constructor(private readonly browser: ReminderBrowser = nativeBrowser()) {}
   invalidate() { this.#epoch++; this.#prepared = null; }
+  /** Safe identity for matching a local receipt; does not prompt, register or expose endpoint/keying material. */
+  async identity(): Promise<{ fingerprint: string; publicKey: string | null } | null> {
+    try {
+      if (!this.browser.secure) throw failure();
+      const registration = await this.browser.registration();
+      if (!registration) return null;
+      this.validRegistration(registration);
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) return null;
+      const key = subscription.options.applicationServerKey;
+      if (key && new Uint8Array(key)[0] !== 4) throw failure();
+      return { fingerprint: await reminderDeviceFingerprint(this.browser.scope, subscription.endpoint), publicKey: key ? base64url(key, 65) : null };
+    } catch (cause) { throw safe(cause); }
+  }
   private available() {
     if (!this.browser.secure) throw new BrowserReminderError('unsupported', '請使用安全連線開啟日蹦，再設定通知。');
     if (this.browser.ios && !this.browser.standalone) throw new BrowserReminderError('install', '請先將日蹦加入主畫面，並從主畫面開啟後設定通知。');

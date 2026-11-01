@@ -22,8 +22,9 @@ function remote(replies: Record<string, unknown> = {}) {
   const responses: Record<string, unknown> = { reminder_capabilities: enabled, calendar_reminder_settings: [row], reminder_push_devices: [device],
     set_calendar_reminder: rule, register_reminder_device: DEVICE, unregister_reminder_device: null, ...replies };
   const fetcher = vi.fn<typeof fetch>(async target => {
-    const name = new URL(String(target)).pathname.split('/').at(-1)!;
-    return new Response(JSON.stringify(responses[name]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const url = new URL(String(target)), name = url.pathname.split('/').at(-1)!;
+    const data = name === 'reminder_push_devices' && url.searchParams.has('id') ? Object.hasOwn(responses, 'removalCheck') ? responses.removalCheck : [] : responses[name];
+    return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
   });
   const client = createClient<Database>('https://reminder-test.example.invalid', 'synthetic-publishable-key', {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'reminder-fixture-' + ++clientSequence }, global: { fetch: fetcher },
@@ -36,7 +37,7 @@ function fail(h: ReturnType<typeof remote>, code: string, message: string) {
     status: 400, headers: { 'Content-Type': 'application/json' },
   }));
 }
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe('reminder client boundary (DP-227)', () => {
   it('loads exact safe projections with owner filters through the actual SDK, without persisting secrets', async () => {
@@ -119,7 +120,7 @@ describe('reminder client boundary (DP-227)', () => {
   it('unregisters only the requested id and requires a void acknowledgment', async () => {
     const h = remote(); await h.service.unregisterDevice(DEVICE);
     expect(JSON.parse(String(h.fetcher.mock.calls[0]![1]?.body))).toEqual({ p_device_id: DEVICE });
-    await expect(remote({ unregister_reminder_device: false }).service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'invalid' });
+    await expect(remote({ unregister_reminder_device: false }).service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE });
     const invalid = remote(); await expect(invalid.service.unregisterDevice('bad')).rejects.toMatchObject({ kind: 'invalid' }); expect(invalid.fetcher).not.toHaveBeenCalled();
   });
   it.each(['PGRST202', 'PGRST205', '42883', '42P01'])('reports missing schema %s as unavailable', async code => {
@@ -136,7 +137,7 @@ describe('reminder client boundary (DP-227)', () => {
     const error = await h.service.registerDevice(subscription).catch(error => error);
     expect(error).toBeInstanceOf(ReminderError); expect(error.message).not.toContain(subscription.endpoint); expect(error.message).not.toContain(AUTH); expect(error.cause).toBeUndefined();
     h.fetcher.mockRejectedValueOnce(new Error('PRIVATE ' + AUTH));
-    await expect(h.service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'failed', message: '暫時無法完成提醒操作，請檢查連線後再試。' });
+    await expect(h.service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE });
     expect(logs).not.toHaveBeenCalled();
   });
   it('rejects missing or changed sessions before any database request', async () => {
@@ -156,14 +157,58 @@ describe('reminder client boundary (DP-227)', () => {
     const h = remote(); h.auth.mockResolvedValue({ data: { session: session(B) }, error: null })
       .mockResolvedValueOnce({ data: { session: session() }, error: null });
     await expect(h.service.registerDevice(subscription)).rejects.toMatchObject({ kind: 'session' });
-    expect(h.fetcher).toHaveBeenCalledTimes(1);
-    expect(new Headers(h.fetcher.mock.calls[0]![1]?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
-    await expect(h.service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'session' }); expect(h.fetcher).toHaveBeenCalledTimes(1);
+    expect(h.fetcher).toHaveBeenCalledTimes(3);
+    for (const [, init] of h.fetcher.mock.calls) expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
+    expect(String(h.fetcher.mock.calls[1]![0])).toContain('/rpc/unregister_reminder_device');
+    await expect(h.service.unregisterDevice(DEVICE)).rejects.toMatchObject({ kind: 'session' }); expect(h.fetcher).toHaveBeenCalledTimes(3);
   });
   it('does not accept a late load under another account, while pinning all three requests to A', async () => {
     const h = remote(); h.auth.mockResolvedValue({ data: { session: session(B) }, error: null })
       .mockResolvedValueOnce({ data: { session: session() }, error: null });
     await expect(h.service.load()).rejects.toMatchObject({ kind: 'session' }); expect(h.fetcher).toHaveBeenCalledTimes(3);
     for (const [, init] of h.fetcher.mock.calls) expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
+  });
+  it('captures only fixed-id removal for A and can use it after switching to B', async () => {
+    const h = remote(), mutateAuth = vi.spyOn(h.client.auth, 'setSession');
+    const remove = await h.service.captureDeviceRemoval(DEVICE); expect(h.fetcher).not.toHaveBeenCalled();
+    h.auth.mockResolvedValue({ data: { session: session(B) }, error: null });
+    await remove(); expect(h.fetcher).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(h.fetcher.mock.calls[0]![1]?.body))).toEqual({ p_device_id: DEVICE });
+    const check = new URL(String(h.fetcher.mock.calls[1]![0]));
+    expect(check.searchParams.get('select')).toBe('id,user_id'); expect(check.searchParams.get('user_id')).toBe('eq.' + A);
+    expect(check.searchParams.get('id')).toBe('eq.' + DEVICE); expect(check.searchParams.get('limit')).toBe('1');
+    for (const [, init] of h.fetcher.mock.calls) expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
+    expect(mutateAuth).not.toHaveBeenCalled();
+    await expect(h.service.registerDevice(subscription)).rejects.toMatchObject({ kind: 'session' });
+    await remove(); expect(h.fetcher).toHaveBeenCalledTimes(4); // Explicit cleanup retry remains fixed to A/device.
+  });
+  it('refuses whitespace-extended cleanup identifiers before sending', async () => {
+    const h = remote(); await expect(h.service.captureDeviceRemoval(DEVICE + '\n')).rejects.toMatchObject({ kind: 'invalid' });
+    expect(h.fetcher).not.toHaveBeenCalled();
+  });
+  it.each([[device], null, {}].map(value => [value]))('does not confirm server removal without an independently empty projection %#', async remaining => {
+    const h = remote({ removalCheck: remaining });
+    const remove = await h.service.captureDeviceRemoval(DEVICE);
+    await expect(remove()).rejects.toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE });
+  });
+  it('preserves the known device id if a late registration cannot be compensated', async () => {
+    const h = remote({ removalCheck: [device] }); h.auth.mockResolvedValue({ data: { session: session(B) }, error: null })
+      .mockResolvedValueOnce({ data: { session: session() }, error: null });
+    const error = await h.service.registerDevice(subscription).catch(error => error);
+    expect(error).toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE }); expect(error.message).not.toContain(subscription.endpoint);
+    expect(error.message).not.toContain(AUTH); expect(error.cause).toBeUndefined();
+  });
+  it('bounds unconfirmed server removal and aborts its request without retry', async () => {
+    vi.useFakeTimers(); const h = remote(), remove = await h.service.captureDeviceRemoval(DEVICE);
+    h.fetcher.mockImplementationOnce(() => new Promise(() => {}));
+    const rejected = expect(remove()).rejects.toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE });
+    await vi.advanceTimersByTimeAsync(5001); await rejected;
+    expect(h.fetcher).toHaveBeenCalledTimes(1); expect(h.fetcher.mock.calls[0]![1]?.signal?.aborted).toBe(true); expect(vi.getTimerCount()).toBe(0);
+  });
+  it('bounds a shared client Auth read that stalls after capturing the old cleanup token', async () => {
+    vi.useFakeTimers(); const h = remote(), remove = await h.service.captureDeviceRemoval(DEVICE);
+    h.auth.mockImplementation(() => new Promise(() => {}));
+    const rejected = expect(remove()).rejects.toMatchObject({ kind: 'cleanup', pendingDeviceId: DEVICE });
+    await vi.advanceTimersByTimeAsync(5001); await rejected; expect(h.fetcher).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
   });
 });

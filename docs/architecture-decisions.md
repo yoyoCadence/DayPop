@@ -1196,3 +1196,5 @@ DP-226（2026-11-01）先獨立接 worker，保持 sender 兩欄 v1／hash wire�
 DP-227（2026-11-01）將提醒 client 做成獨立 session-only service，規則 CAS 原樣保留微秒版本，裝置僅取安全 metadata；能力 input 不進個人文件。每個操作確認本人的 session，將該次 token 固定在單一 request header，完成後再拒絕身分已變的回應，防止共用 client 在送出前換帳號。這是路由與競態防護，不取代伺服器 JWT／RLS 授權；沒有修改共用 Auth session／全域 header 或加入自動重試。實際雙帳號 HTTP 切換驗證新裝置仍屬原請求者；後續 provider 尚須確認 session 與丟棄過期結果。詳 [client 合約與驗證](reminder-client.md)。
 
 DP-228（2026-11-01）先獨立瀏覽器原語：App scope／active worker 必須回答公開提醒 v1，預備在 30 秒內才可由直接使用者動作請求通知權限；不在能力查詢時提示或建立訂閱。不同 VAPID key 不自動輪替，晚到取消須清理新訂閱，本機移除須重新讀到 null，不能靠 API 的 boolean 宣稱成功。握手不啟用 waiting worker，也不代替 App 更新或登入授權。伺服器撤銷、持久化 handle 與 Auth／UI 接線另段，詳 [瀏覽器 adapter](reminder-browser.md)。
+
+DP-229（2026-11-01）先補已知裝置 id 的晚到註冊補償與固定本人裝置的暫時撤銷能力，所有撤銷須以相同原 token 重新讀本人 metadata 為空；五秒未確認就保留安全 id，不回假成功。安全裝置收據各用 scope／operation UUID 獨立 key、版本／revision／future／quota write barrier，不進 v4；以 scope 分隔的 endpoint SHA-256 摘要匹配本機訂閱，不保存 capability／加密 key／JWT。revision 只拒絕已觀察的過期修改，不假裝有跨分頁原子 CAS；controller 尚須做 epoch／storage 事件與後端重確認。詳 [補償與安全資料](reminder-revocation.md)，沒有 App caller 或正式啟用。

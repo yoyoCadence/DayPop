@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { webcrypto } from 'node:crypto';
 import { BrowserReminderDevice, BrowserReminderError, type ReminderBrowser, type ReminderRegistration } from './browserPush';
 
 const publicBytes = new Uint8Array(65); publicBytes[0] = 4;
@@ -37,9 +38,15 @@ function harness(options: Partial<Pick<ReminderBrowser, 'secure' | 'supported' |
     setReply: (value: boolean, data: unknown = answer) => { reply = value; answer = data; },
   };
 }
-afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('browser reminder adapter (DP-228)', () => {
+  it('reads an opaque existing identity without prompting, writing or requiring a handshake (DP-229)', async () => {
+    vi.stubGlobal('crypto', webcrypto); const h = harness({ ios: true, standalone: false });
+    expect(await h.device.identity()).toBeNull(); h.setCurrent(h.created);
+    const identity = await h.device.identity(); expect(identity?.fingerprint).toMatch(/^[a-f0-9]{64}$/); expect(identity?.publicKey).toBe(KEY);
+    expect(JSON.stringify(identity)).not.toContain(ENDPOINT); expect(h.request).not.toHaveBeenCalled(); expect(h.subscribe).not.toHaveBeenCalled(); expect(h.worker.postMessage).not.toHaveBeenCalled();
+  });
   it('prepares a supported worker without requesting permission, subscribing or persisting', async () => {
     process.stdout.write('DP-228 actual timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '\n');
     const h = harness(), store = vi.spyOn(Storage.prototype, 'setItem');
