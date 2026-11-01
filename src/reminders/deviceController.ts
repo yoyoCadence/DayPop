@@ -124,7 +124,9 @@ export class ReminderDeviceController {
         this.publish({ phase: snapshot.capabilities.enabled && snapshot.capabilities.publicKey === active.publicKey ? 'active' : 'unavailable',
           snapshot, deviceId: active.deviceId, canEnable: false, error: snapshot.capabilities.enabled && snapshot.capabilities.publicKey === active.publicKey ? null : '背景提醒服務或裝置金鑰需要重新確認。' }); return;
       }
-      const retry = own.find(row => row.phase === 'unconfirmed' && row.deviceId === null && native && row.fingerprint === native.fingerprint && row.publicKey === native.publicKey) ?? null;
+      // A durable registering marker may outlive the App after the RPC committed but before active was saved.
+      // With no in-memory operation left, explicit retry can recover its id through the same subscription's idempotent RPC.
+      const retry = own.find(row => (row.phase === 'unconfirmed' || row.phase === 'registering') && row.deviceId === null && native && row.fingerprint === native.fingerprint && row.publicKey === native.publicKey) ?? null;
       if ((own.length && !retry) || (native && !retry)) {
         // An unowned native subscription must never be silently transferred to the current account.
         if (native && !own.some(row => row.fingerprint === native.fingerprint)) await bounded(this.unsubscribe());

@@ -234,7 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-230 — 提醒裝置 controller（2026-11-01）：** Backlog → Next → In Progress。PR #225 最終 384105c 的四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，由該最新 main 接續。整合 service／browser／安全收據，處理明確啟用、晚到註冊 lease、停用／帳號切換撤銷及未確認狀態；DP-231 再接 canonical UI／AuthProvider，本段沒有 App caller，正式啟用仍待驗收放行。
+- [ ] **DP-230 — 提醒裝置 controller（2026-11-01）：** Backlog → Next → In Progress。PR #225 最終 384105c 的四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，由該最新 main 接續。整合 service／browser／安全收據，處理明確啟用、晚到註冊 lease、停用／帳號切換撤銷及未確認狀態；PR #226 原 head 3dd843b 的 P2（中斷 registering 無法恢復）已補四項回歸、明確同帳號同訂閱重試及精確還原負控制；最終 1,758＋39 Node、相關 170 三時區、lint／typecheck／build／原預算過，須修正後 head 四 CI／完成審查才合併。DP-231 再接 canonical UI／AuthProvider，本段沒有 App caller，正式啟用仍待驗收放行。
 
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next → In Progress。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。 分段由 DP-226 先接匿名 worker，再接 client service／裝置生命週期與原稿設定 UI；各段獨立 PR。
 

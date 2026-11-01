@@ -169,6 +169,24 @@ describe('reminder device coordinator (DP-230)', () => {
     expect(await h.controller.enable()).toBe(true); expect(h.service.registerDeviceLease).toHaveBeenCalledTimes(2);
     expect(h.records.read().records).toHaveLength(1); expect(h.records.read().records[0]?.phase).toBe('active');
   });
+  it('recovers interrupted registering after a cold restart only by explicit same-account matching-subscription retry', async () => {
+    const h = setup(), marker = h.records.create(A, KEY);
+    h.records.update(marker, { fingerprint }); h.setNative(nativeIdentity);
+    h.snapshot.devices = [{ id: DEVICE, createdAt: NOW, updatedAt: NOW }]; // The RPC committed before the App closed.
+    await h.controller.setIdentity(h.account);
+    expect(h.controller.getSnapshot()).toMatchObject({ phase: 'unconfirmed', canEnable: true, deviceId: null });
+    expect(h.service.registerDeviceLease).not.toHaveBeenCalled(); expect(h.browser.unsubscribe).not.toHaveBeenCalled();
+    expect(await h.controller.enable()).toBe(true); expect(h.service.registerDeviceLease).toHaveBeenCalledTimes(1);
+    expect(h.records.read().records).toHaveLength(1);
+    expect(h.records.read().records[0]).toMatchObject({ operationId: marker.operationId, phase: 'active', deviceId: DEVICE, fingerprint });
+  });
+  it.each(['foreign', 'different', 'no-fingerprint'] as const)('does not retry interrupted registering with %s identity', async fault => {
+    const h = setup(), marker = h.records.create(fault === 'foreign' ? B : A, KEY);
+    if (fault !== 'no-fingerprint') h.records.update(marker, { fingerprint: fault === 'different' ? 'b'.repeat(64) : fingerprint });
+    h.setNative(nativeIdentity); await h.controller.setIdentity(h.account);
+    expect(h.controller.getSnapshot().canEnable).toBe(false); expect(await h.controller.enable()).toBe(false);
+    expect(h.service.registerDeviceLease).not.toHaveBeenCalled(); expect(h.records.read().records).toHaveLength(1);
+  });
   it('blocks overlapping enable, times out explicitly, and cleans a still-pending late registration', async () => {
     const h = setup(), pending = deferred<RegisteredReminderDevice>(); h.service.registerDeviceLease.mockReturnValue(pending.promise);
     await h.controller.setIdentity(h.account); vi.useFakeTimers(); const operation = h.controller.enable();

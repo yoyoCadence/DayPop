@@ -33,6 +33,14 @@ epoch／帳號檢查在原生同意、摘要、註冊及落盤後重查。八秒
 
 自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才可合併；此處不把本機測試當遠端 CI 證據。
 
+## PR #226 中斷恢復修正
+
+原 head `3dd843b` 的同 head 審查有一項 P2：App 若在 register RPC 提交後、active 收據落盤前關閉，只有摘要的 registering 收據沒有 device id，原 predicate 只允許 unconfirmed 重試，會永久卡住。新增 cold restart 案例在舊 controller 確實失敗（canEnable false）。
+
+在無本機進行中操作的前提下，同帳號、相同 native 摘要／public key 的 registering 也可由使用者明確重試，沿同一 RPC 取得既有 id；沒有自動註冊、猜 id 或轉移訂閱。新案例驗原 operationId／一筆 active，另三項拒絕 foreign、不同摘要及尚未保存摘要。相關四檔 170/170 在 UTC／America/New_York／Etc/GMT-8 實際列印全過。
+
+修正後完整 1,758 單元／100 檔（105.52 秒）＋39 Node、lint／typecheck／Pages build／check:build／canonical bundle 過，App JS／CSS／預算仍相同。另獨立撤回新 predicate，新恢復案例失敗；finally 精確還原 controller SHA-256 `fcbb2c83a2f9d56d1c1df7fd6695b4be4c1bc2124d4083f08f22a700a67d0545`，正常 registering 相關 6 項再過。最新 head 四 CI／完成審查仍須通過，不沿用原 head 的 gate 或審查，下方界線不變。
+
 後續 caller 必須在 Auth callback 外通知 controller，明確登出先呼叫 disable，外部身分變化再 setIdentity；不能在 callback 內等待 SDK Auth 方法。storage／visibility 事件需使未使用的 preflight 失效、重新讀 metadata，不能把 OS 權限提示造成的背景切換當登出。收據 revision 是已觀察到的衝突檢查，不是跨分頁原子鎖；跨分頁同時操作及重新確認由下一段 UI／Auth 整合驗證。
 
 沒有 UI、AuthProvider、user-data schema、migration、秘密、cron、正式訂閱、Push 投遞、版號、公告或部署變更；controller 測試使用 ports，不能當實體 iPhone 或 OS 通知驗收。DP-223／042 未完成，正式啟用仍需後續具體放行。
