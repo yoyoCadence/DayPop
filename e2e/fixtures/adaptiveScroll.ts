@@ -35,6 +35,8 @@ export async function checkAdaptiveScroll(page: Page) {
         const row = el.querySelector(`[data-date-key="${date}"]`)!.closest('.cal-week-row');
         el.scrollTop = (rows.indexOf(row!) + 0.25) * rows[0]!.getBoundingClientRect().height;
       }, date);
+      const [year, month] = date.split('-');
+      await expect(page.locator('h1.cal-period')).toHaveText(`${year}年 ${Number(month)}月`);
       await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
       expect(await scroll.locator('.cal-week-row').first().evaluate(el => el.getBoundingClientRect().height), 'held touch never changes row geometry').toBe(height);
     }
@@ -59,5 +61,31 @@ export async function checkAdaptiveScroll(page: Page) {
     expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (scenario.weekStartsOn === 0) {
+      for (let step = 0; step < 4; step++) {
+        const first = await scroll.locator('.cal-cell').first().getAttribute('data-date-key');
+        await scroll.evaluate(el => { el.scrollTop = 46.25 * el.querySelector('.cal-week-row')!.getBoundingClientRect().height; });
+        await expect(scroll.locator('.cal-cell').first()).not.toHaveAttribute('data-date-key', first!);
+      }
+      await expect(scroll.locator(`[data-date-key="${scenario.today}"]`)).toHaveCount(0);
+      await scroll.evaluate(el => {
+        const rows = [...el.querySelectorAll('.cal-week-row')];
+        const january = el.querySelector('[data-date-key="2027-01-17"]')!.closest('.cal-week-row');
+        // Match the destination's pixel offset: recentering need not emit scroll.
+        el.scrollTop = rows.indexOf(january!) * rows[0]!.getBoundingClientRect().height;
+      });
+      await expect(page.locator('h1.cal-period')).toHaveText('2027年 1月');
+      await page.waitForTimeout(200);
+      const today = page.getByRole('button', { name: '今天', exact: true });
+      await today.focus();
+      await page.keyboard.press('Enter');
+      await expect(scroll.locator(`[data-date-key="${scenario.today}"]`)).toHaveCount(1);
+      const fourRows = await scroll.evaluate(el => Math.floor(el.clientHeight / 4));
+      await expect.poll(() => scroll.locator('.cal-week-row').first().evaluate(el => el.getBoundingClientRect().height),
+        { message: 'Today uses its own adaptive row count after recenter' }).toBe(fourRows);
+      await expect(page.locator('h1.cal-period')).toHaveText('2026年 2月');
+      await expect(today).toBeFocused();
+      expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
+    }
   }
 }

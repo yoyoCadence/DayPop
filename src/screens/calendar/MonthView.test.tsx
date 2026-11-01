@@ -780,6 +780,31 @@ describe('MonthView bounded window (DP-180)', () => {
       expect(label).toHaveBeenLastCalledWith('2026年 3月');
     } finally { size.mockRestore(); vi.useRealTimers(); }
   });
+
+  it.each([false, true])('DP-224 refreshes adaptive rows when Today recenters, with scroll notification %s', (notifyScroll) => {
+    vi.useFakeTimers();
+    const size = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
+    const label = vi.fn();
+    try {
+      const element = mount({ calendarGridMode: 'adaptive', todayKey: '2026-02-15', selectedDate: '2026-02-15', onPeriodLabelChange: label });
+      for (let step = 0; step < 4; step++) {
+        scroll(element, 46);
+        act(() => vi.advanceTimersByTime(150));
+      }
+      expect(cell('2026-02-15')).toBeNull();
+      const january = keys().indexOf('2027-01-17') / 7;
+      scroll(element, january, 0);
+      act(() => vi.advanceTimersByTime(150));
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('90px');
+      act(() => { handle.current!.scrollToToday(false); });
+      if (notifyScroll) act(() => { element.dispatchEvent(new Event('scroll')); });
+      act(() => vi.advanceTimersByTime(150));
+      expect(cell('2026-02-15')).not.toBeNull();
+      expect(container.querySelector<HTMLElement>('.cal-week-row')!.style.height).toBe('135px');
+      expect(element.scrollTop / 135).toBe(26);
+      expect(label).toHaveBeenLastCalledWith('2026年 2月');
+    } finally { size.mockRestore(); vi.useRealTimers(); }
+  });
 });
 
 describe('MonthView 重複事件（DP-081）', () => {

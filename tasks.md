@@ -236,7 +236,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-224 — 自動列數滑動穩定（2026-11-01）：** Backlog → Next → In Progress。承接 PR #219 最終 `772a7f9` 四 CI／同 head 完成審查無發現且無未解決討論後合併 `9ed6b50`。滑動／觸控按住期間固定列高，停穩 150ms 再依月／viewport 重算；邏輯週／比例補償不當成新輸入，含像素取整／重複事件。三新單元舊程式全失敗，手機負控制失敗並 finally 精確還原；1,530 單元＋39 Node、Chromium 8／WebKit 9、三時區實際列印、lint／typecheck／Pages build／check:build 過，production 四圖目視、資料 bytes／revision／console／版面正常。自己的最新四 CI／同 head 完成審查後才合併，詳 [驗證與真機界線](docs/adaptive-month-scroll.md)。不改 user data／schema／版號／公告／部署；下一段 DP-225 連續／單月翻頁，DP-223 提醒保留 Next。
+- [ ] **DP-224 — 自動列數滑動穩定（2026-11-01）：** Backlog → Next → In Progress。承接 PR #219 最終 `772a7f9` 四 CI／同 head 完成審查無發現且無未解決討論後合併 `9ed6b50`。滑動／觸控按住期間固定列高，停穩 150ms 再依月／viewport 重算；邏輯週／比例補償不當成新輸入，含像素取整／重複事件。三新單元舊程式全失敗；PR #220 審查補上離窗 Today 明確更新月份，有／無 scroll 通知兩項與手機負控制抓到舊程式並 finally 精確還原；1,532 單元＋39 Node、Chromium 8／WebKit 9、三時區實際列印、lint／typecheck／Pages build／check:build 過，production 四圖目視、資料 bytes／revision／console／版面正常。自己的最新四 CI／同 head 完成審查後才合併，詳 [驗證與真機界線](docs/adaptive-month-scroll.md)。不改 user data／schema／版號／公告／部署；下一段 DP-225 連續／單月翻頁，DP-223 提醒保留 Next。
 
 - [ ] **DP-042 — 可靠背景提醒／推播（2026-10-29 重啟）：** 擁有者指定「你先做提醒吧」，Backlog → Next → In Progress。第一版採每人、每本日曆明確開啟，自有／有效分享皆可選；帳號端每分鐘排程與 Web Push，全天及可選待辦使用明確時區／時刻，預設關閉。通知不帶事項標題、地點、家庭或帳號內容。依 DP-219 排程契約 → 後端訂閱／投遞 → App／worker 接線分段 PR，四 CI／同 head 完成審查後合併；本機測試不冒充正式推播或真機。遠端 migration、伺服器密鑰、cron 與正式發布須依既有界線另行具體放行。
 

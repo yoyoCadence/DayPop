@@ -187,6 +187,18 @@ export function MonthView({
     return { date: addDays(gridStart, week * 7), fraction: position - week };
   }, [gridStart]);
 
+  const reportVisibleMonth = useCallback((middle: Date) => {
+    const label = `${middle.getFullYear()}年 ${middle.getMonth() + 1}月`;
+    if (label === labelRef.current) return;
+    labelRef.current = label;
+    setVisibleMonth((current) =>
+      current.getFullYear() === middle.getFullYear() && current.getMonth() === middle.getMonth()
+        ? current
+        : new Date(middle.getFullYear(), middle.getMonth(), 1),
+    );
+    onPeriodLabelChange(label);
+  }, [onPeriodLabelChange]);
+
   const moveWindow = useCallback((start: Date, anchor = readAnchor()) => {
     const next = clampMonthWindowStart(start, weekStartsOn);
     if (next.getTime() === gridStart.getTime()) return;
@@ -213,6 +225,9 @@ export function MonthView({
       // the grid had highlighted — DP-064.
       const date = startOfWeek(fromDateKey(todayKey), weekStartsOn);
       if (!inBuffer(todayKey)) {
+        // Recentring can land at the same pixel offset and emit no scroll.
+        // Publish its top-row month before applying compensation geometry.
+        reportVisibleMonth(clampMonthDate(addDays(date, 3)));
         moveWindow(centredMonthWindow(date, weekStartsOn), { date, fraction: 0 });
       } else {
         const index = weeksBetween(gridStart, date);
@@ -220,7 +235,7 @@ export function MonthView({
         element.scrollTo({ top: Math.max(0, index * rowHeight), behavior: smooth ? smoothScrollBehavior() : 'auto' });
       }
     },
-    [gridStart, inBuffer, markScrolling, moveWindow, rowHeight, todayKey, weekStartsOn],
+    [gridStart, inBuffer, markScrolling, moveWindow, reportVisibleMonth, rowHeight, todayKey, weekStartsOn],
   );
 
   useImperativeHandle(
@@ -304,24 +319,14 @@ export function MonthView({
     // The原檔 labels the buffer by its middle day, so a row straddling two
     // months reads as the month that owns most of it.
     const middle = clampMonthDate(addDays(gridStart, index * 7 + 3));
-    const label = `${middle.getFullYear()}年 ${middle.getMonth() + 1}月`;
-
-    if (label !== labelRef.current) {
-      labelRef.current = label;
-      setVisibleMonth((current) =>
-        current.getFullYear() === middle.getFullYear() && current.getMonth() === middle.getMonth()
-          ? current
-          : new Date(middle.getFullYear(), middle.getMonth(), 1),
-      );
-      onPeriodLabelChange(label);
-    }
+    reportVisibleMonth(middle);
 
     if (index < 4) {
       moveWindow(addDays(gridStart, -MONTH_SHIFT_WEEKS * 7));
     } else if (index > MONTH_WINDOW_WEEKS - 8) {
       moveWindow(addDays(gridStart, MONTH_SHIFT_WEEKS * 7));
     }
-  }, [gridStart, markScrolling, moveWindow, onPeriodLabelChange, rowHeight]);
+  }, [gridStart, markScrolling, moveWindow, reportVisibleMonth, rowHeight]);
 
   const weekdayHead = useMemo(
     () =>
