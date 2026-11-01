@@ -29,11 +29,13 @@ Browser plugin／browser skill 未提供，依 frontend-testing-debugging skill 
 | 瀏覽器 | Chromium 手機／桌面 12、WebKit smoke 10，共 22 過；包含新模式、原連續視窗／adaptive、旋轉、鍵盤／焦點、原生觸控與資料 bytes。320×568 淺深、選項與月格的 axe 八次掃描通過，667×375 的月內捲動／今天通過。 |
 | 儲存失敗 | 只對模式 key 注入 quota 失敗；既有持續記憶體警告顯示，畫面可用，磁碟模式仍是先前 paged、完整資料 bytes 不變。沒有靜默假裝已持久化。 |
 | 負控制 | 暫停模式 renderer 接線、暫停水平翻月，兩個新手機案例分別在預期可見行為失敗；finally source 精確還原，SHA-256 `76b1fa882fe3d80cecba40412c81437025339c7c225e3718a8fd2f9ea55a1a5b`。Safari 入口無焦點的單元也先失敗。 |
-| 品質與預算 | lint／typecheck／Pages build／check:build／canonical reminder bundle 通過；JS 754,436 raw／222,334 gzip，CSS 119,723／29,354，原預算不變。相對 DP-224 JS 增 1,828 gzip bytes。 |
+| 品質與預算 | lint／typecheck／Pages build／check:build／canonical reminder bundle 通過；JS 754,436 raw／222,334 gzip，CSS 119,746／29,361，原預算不變。相對 DP-224 JS 增 1,828 gzip bytes。 |
 | Production | `/DayPop/` 390×844／1280×900 淺深＋320×568 選項，十圖已目視；整月內容完整，320px 標題單行不重疊，標題／框架／內容正常、無水平溢出／overlay，線上 console 0，實際 America/New_York。revision 7／v4／完整 bytes 不變。 |
 | 真正離線 | production 手機淺色完成 SW ready／重載後斷網，切換兩模式再重載仍保留 paged 與原文件。該輪只出現既有 `/DayPop/version.json` 探測的一次預期 `ERR_INTERNET_DISCONNECTED`；先前補驗另見 Auth `/auth/v1/settings` 同型失敗，沒有將這些離線探測冒充線上 console 錯誤或改動更新／Auth 行為。 |
 
 axe 量測先等待既有彈出動畫完成，未放寬對比門檻。初次 320px 截圖月份換行後，只在新模式控制存在的窄版頁首調整至 23px／單行與日期字距；其餘檢視與一般尺寸不改。`daypop-dp225-production.mjs`、十張 `daypop-dp225-{mobile,desktop}-{light,dark}-{nov,dec}.png`／`daypop-dp225-320-{light,dark}-dialog.png` 與負控制紀錄只留 TEMP；瀏覽器與核對 PID 的 preview 已清理。
+
+最後主題核對補上新模式按鈕的漫畫陰影接線；渲染後與搜尋按鈕比較的新斷言在補正前失敗。補正後相關 22 項瀏覽器、lint／typecheck／Pages build／預算再過，JS bytes 不變，CSS 只增 7 gzip bytes。另兩張 `daypop-dp225-shadow-mobile-{light,dark}-nov.png` 已目視（合計十二圖），production 淺深／離線重載／資料 bytes 再驗，所有專用 preview 已核對清理。
 
 ## 重跑
 

@@ -73,7 +73,7 @@
   background-size: 5.5em 100%;
 }
 
-.dp-preview[data-theme='manga'] :is(.cal-chip-button, .cal-icon-button, .cal-step-button) {
+.dp-preview[data-theme='manga'] :is(.cal-chip-button, .cal-icon-button, .cal-month-mode-button, .cal-step-button) {
   box-shadow: 2px 2px 0 var(--journal-shadow-ink);
 }
 

@@ -234,7 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next → In Progress。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。DP-224 已於 PR #220 最終 4c12b32 四 CI（41260244520，Chromium 299 passed／13 skipped、WebKit 9）與同 head 完成審查無發現後合併 70e8947，本項從最新 main 獨立接續。共用日格與日期鍵盤、裝置模式 key、月份交接、單月 4／5／6 或固定六列、原生水平觸控及短螢幕捲入；Safari 入口焦點與 320px 標題已修正。22 新單元三時區實際列印、1,554 單元＋39 Node、相關 Chromium 12／WebKit 10、兩個 runtime 負控制精確還原、lint／typecheck／Pages build／預算過；十圖目視、真離線模式重載與資料 bytes 不變，儲存失敗持續警告。詳 [行為與證據](docs/month-paging.md)，自己的最新四 CI／同 head 完成審查後才合併；不改帳號資料、版號或部署。
+- [ ] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next → In Progress。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。DP-224 已於 PR #220 最終 4c12b32 四 CI（41260244520，Chromium 299 passed／13 skipped、WebKit 9）與同 head 完成審查無發現後合併 70e8947，本項從最新 main 獨立接續。共用日格與日期鍵盤、裝置模式 key、月份交接、單月 4／5／6 或固定六列、原生水平觸控及短螢幕捲入；Safari 入口焦點與 320px 標題已修正。22 新單元三時區實際列印、1,554 單元＋39 Node、相關 Chromium 12／WebKit 10、兩個 runtime 負控制精確還原、lint／typecheck／Pages build／預算過；十二圖目視、真離線模式重載與資料 bytes 不變，儲存失敗持續警告。詳 [行為與證據](docs/month-paging.md)，自己的最新四 CI／同 head 完成審查後才合併；不改帳號資料、版號或部署。
 
 - [ ] **DP-042 — 可靠背景提醒／推播（2026-10-29 重啟）：** 擁有者指定「你先做提醒吧」，Backlog → Next → In Progress。第一版採每人、每本日曆明確開啟，自有／有效分享皆可選；帳號端每分鐘排程與 Web Push，全天及可選待辦使用明確時區／時刻，預設關閉。通知不帶事項標題、地點、家庭或帳號內容。依 DP-219 排程契約 → 後端訂閱／投遞 → App／worker 接線分段 PR，四 CI／同 head 完成審查後合併；本機測試不冒充正式推播或真機。遠端 migration、伺服器密鑰、cron 與正式發布須依既有界線另行具體放行。
 

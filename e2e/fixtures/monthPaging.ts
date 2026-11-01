@@ -22,6 +22,10 @@ export async function seedMonthPaging(page: Page) {
   await openApp(page);
   await expect(page.locator('h1.cal-period')).toHaveText('2026年 11月');
   await expect.poll(() => page.locator('.cal-month-scroll').evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => {
+    const mode = document.querySelector('.cal-month-mode-button')!, search = document.querySelector('.cal-icon-button')!;
+    return getComputedStyle(mode).boxShadow === getComputedStyle(search).boxShadow;
+  }), 'Month mode control shares the canonical header shadow').toBe(true);
   console.log('DP-225 actual browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
 }
 
