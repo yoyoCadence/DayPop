@@ -15,12 +15,12 @@ const client = (url: string): Client => ({ url, focus: vi.fn(async () => undefin
 function harness(scope = 'https://app.example/DayPop/', windows: Client[] = []) {
   const listeners = new Map<string, (event: Record<string, unknown>) => void>();
   const show = vi.fn<(title: string, options: NotificationOptions) => Promise<void>>(async () => {});
-  const open = vi.fn(async () => undefined), match = vi.fn(async () => windows);
+  const open = vi.fn(async () => undefined), match = vi.fn(async () => windows), skip = vi.fn();
   const forbidden = vi.fn(() => { throw new Error('Worker accessed unrelated data or network'); });
   const logs = vi.fn();
   const context = { self: { addEventListener: (name: string, handler: (event: Record<string, unknown>) => void) => listeners.set(name, handler),
     registration: { scope, showNotification: show }, location: { origin: 'https://app.example' },
-    clients: { matchAll: match, openWindow: open } }, URL,
+    clients: { matchAll: match, openWindow: open }, skipWaiting: skip }, URL,
     caches: { open: forbidden, keys: forbidden, delete: forbidden, match: forbidden }, fetch: forbidden,
     console: { log: logs, warn: logs, error: logs } };
   for (const key of ['localStorage', 'indexedDB']) Object.defineProperty(context, key, { get: forbidden });
@@ -32,7 +32,7 @@ function harness(scope = 'https://app.example/DayPop/', windows: Client[] = []) 
     handler({ ...props, waitUntil: (promise: Promise<unknown>) => promises.push(promise) });
     return { pending: Promise.all(promises), waits: promises.length };
   }
-  return { show, open, match, forbidden, logs, dispatch,
+  return { show, open, match, skip, forbidden, logs, dispatch,
     push: (value: unknown) => dispatch('push', { data: { json: () => value } }),
     click: (extra: Record<string, unknown> = {}) => {
       const close = vi.fn();
@@ -46,6 +46,18 @@ function harness(scope = 'https://app.example/DayPop/', windows: Client[] = []) 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('actual reminder worker (DP-226)', () => {
+  it('reports only the supported reminder protocol without activating or touching data (DP-228)', async () => {
+    const h = harness(), reply = vi.fn();
+    await h.dispatch('message', { data: { type: 'GET_REMINDER_CAPABILITIES', v: 1 }, ports: [{ postMessage: reply }] }).pending;
+    expect(reply).toHaveBeenCalledExactlyOnceWith({ type: 'REMINDER_CAPABILITIES', v: 1 });
+    expect(h.skip).not.toHaveBeenCalled(); expect(h.show).not.toHaveBeenCalled(); h.expectPrivateDataUntouched();
+    reply.mockClear();
+    await h.dispatch('message', { data: { type: 'GET_REMINDER_CAPABILITIES', v: 2 }, ports: [{ postMessage: reply }] }).pending;
+    await h.dispatch('message', { data: { type: 'GET_REMINDER_CAPABILITIES', v: 1 }, ports: [] }).pending;
+    expect(reply).not.toHaveBeenCalled();
+    await h.dispatch('message', { data: { type: 'SKIP_WAITING' } }).pending;
+    expect(h.skip).toHaveBeenCalledOnce(); h.expectPrivateDataUntouched();
+  });
   it('executes the exact generated template and prints the effective timezone', () => {
     expect(generated).toBe(template.replaceAll('__DAYPOP_VERSION__', version));
     process.stdout.write('DP-226 actual timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '\n');

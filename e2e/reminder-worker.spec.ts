@@ -6,6 +6,34 @@ import { monitorBrowser } from './support';
 // Full Chromium's new headless mode exercises the real notification API.
 test.use({ channel: 'chromium' });
 
+test('worker 提供公開提醒協定，未知版本不回答且不改權限或訂閱', async ({ page }) => {
+  const site = await startWorkerSite(), clean = monitorBrowser(page);
+  try {
+    await page.goto(`${site.origin}/DayPop/`);
+    await page.evaluate(async () => { await navigator.serviceWorker.register('/DayPop/sw.js', { scope: '/DayPop/' }); await navigator.serviceWorker.ready; });
+    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready).active?.state)).toBe('activated');
+    const observed = await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready, worker = registration.active!;
+      const before = Notification.permission;
+      localStorage.setItem('daypop.user-data', 'protocol-check-unchanged');
+      const ask = (version: number) => new Promise<unknown>(resolve => {
+        const channel = new MessageChannel();
+        const finish = (value: unknown) => { clearTimeout(timer); channel.port1.close(); channel.port2.close(); resolve(value); };
+        const timer = setTimeout(() => finish(null), 1500);
+        channel.port1.onmessage = event => finish(event.data);
+        worker.postMessage({ type: 'GET_REMINDER_CAPABILITIES', v: version }, [channel.port2]);
+      });
+      return { supported: await ask(1), unknown: await ask(2), sameWorker: registration.active === worker,
+        waiting: registration.waiting === null, permissionUnchanged: Notification.permission === before,
+        noSubscription: await registration.pushManager.getSubscription() === null,
+        bytes: localStorage.getItem('daypop.user-data'), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+    });
+    expect(observed, 'Real worker advertises reminder v1').toEqual({ supported: { type: 'REMINDER_CAPABILITIES', v: 1 }, unknown: null, sameWorker: true,
+      waiting: true, permissionUnchanged: true, noSubscription: true, bytes: 'protocol-check-unchanged', timezone: 'Asia/Taipei' });
+    console.log('DP-228 actual browser timezone:', observed.timezone); clean();
+  } finally { await site.close(); }
+});
+
 test('真正 worker 的匿名通知、穩定 tag 與冷啟動，未建立推播訂閱', async ({ page, context }) => {
   const site = await startWorkerSite();
   const clean = monitorBrowser(page), external: string[] = [], workerErrors: string[] = [];
