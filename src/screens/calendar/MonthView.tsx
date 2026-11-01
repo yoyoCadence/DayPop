@@ -11,6 +11,7 @@ import {
 import {
   addDays,
   addMonths,
+  buildMonthGrid,
   fromDateKey,
   monthGridWeekCount,
   startOfWeek,
@@ -33,6 +34,7 @@ import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../d
 import { isDateKey } from '../../domain/validation';
 import { smoothScrollBehavior } from '../../shell/motion';
 import { cellChipBudget } from './monthCellLayout';
+import type { MonthNavigation } from './monthNavigation';
 import {
   centredMonthWindow, clampMonthDate, clampMonthWindowStart, monthWindowBounds,
   MONTH_SHIFT_WEEKS, MONTH_WINDOW_WEEKS,
@@ -44,8 +46,8 @@ import {
  *
  * The原檔 does not paginate month by month: it renders a rolling buffer of week
  * rows and extends it at either end while the user scrolls, deriving the header
- * label from whichever week sits at the top. That behaviour is the design, so it
- * is reproduced here rather than replaced with a 6×7 page.
+ * label from whichever week sits at the top. DP-225 preserves that default and
+ * adds the owner's optional single-month pages, sharing the same cell renderer.
  */
 
 // DP-180: retain the original continuous grid, with a bounded rolling window.
@@ -60,12 +62,14 @@ const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 export interface MonthViewHandle {
   scrollToToday(smooth: boolean): void;
-  /** One screenful of weeks, used by the header's ‹ › buttons in month view. */
+  /** One screenful of weeks, or exactly one month in paged mode. */
   page(direction: 1 | -1): void;
+  getVisibleDate(): string;
 }
 
 export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
+  navigation?: MonthNavigation;
   weekStartsOn: 0 | 1;
   /** The one timezone this grid is drawn in — DP-064. */
   displayTimezone: string;
@@ -87,7 +91,11 @@ export interface MonthViewProps {
   onPeriodLabelChange(label: string): void;
 }
 
-export function MonthView({
+export function MonthView(props: MonthViewProps) {
+  return props.navigation === 'paged' ? <PagedMonthView {...props} /> : <ContinuousMonthView {...props} />;
+}
+
+function ContinuousMonthView({
   ref,
   weekStartsOn,
   displayTimezone,
@@ -241,6 +249,10 @@ export function MonthView({
   useImperativeHandle(
     ref,
     () => ({
+      getVisibleDate: () => {
+        const index = Math.round((scrollRef.current?.scrollTop ?? 0) / rowHeightRef.current);
+        return toDateKey(clampMonthDate(addDays(gridStart, index * 7 + 3)));
+      },
       scrollToToday: (smooth: boolean) => scrollToToday(smooth),
       page: (direction: 1 | -1) => {
         const element = scrollRef.current;
@@ -251,7 +263,7 @@ export function MonthView({
         });
       },
     }),
-    [markScrolling, rowHeight, scrollToToday, weeksShown],
+    [gridStart, markScrolling, rowHeight, scrollToToday, weeksShown],
   );
 
   // Fixed mode shows six rows. Adaptive mode follows the 4-6 rows required by
@@ -387,40 +399,8 @@ export function MonthView({
       const from = (event.target as HTMLElement).dataset?.dateKey;
       if (!from || event.altKey || event.ctrlKey || event.metaKey) return;
 
-      const date = fromDateKey(from);
-      // Weekday offset within the row, so Home/End land on the row's own ends
-      // whether the week starts on Sunday or Monday.
-      const offset = (date.getDay() - weekStartsOn + 7) % 7;
-
-      let next: string;
-      switch (event.key) {
-        case 'ArrowLeft':
-          next = toDateKey(addDays(date, -1));
-          break;
-        case 'ArrowRight':
-          next = toDateKey(addDays(date, 1));
-          break;
-        case 'ArrowUp':
-          next = toDateKey(addDays(date, -7));
-          break;
-        case 'ArrowDown':
-          next = toDateKey(addDays(date, 7));
-          break;
-        case 'Home':
-          next = toDateKey(addDays(date, -offset));
-          break;
-        case 'End':
-          next = toDateKey(addDays(date, 6 - offset));
-          break;
-        case 'PageUp':
-          next = toDateKey(addMonths(date, -1));
-          break;
-        case 'PageDown':
-          next = toDateKey(addMonths(date, 1));
-          break;
-        default:
-          return;
-      }
+      const next = dateAfterKey(from, event.key, weekStartsOn);
+      if (next === null) return;
 
       // Arrow keys would otherwise scroll the buffer out from under the focus.
       event.preventDefault();
@@ -435,24 +415,7 @@ export function MonthView({
   const weeks = useMemo(
     () =>
     Array.from({ length: MONTH_WINDOW_WEEKS }, (_, week) =>
-      Array.from({ length: 7 }, (_, day) => {
-        const date = addDays(gridStart, week * 7 + day);
-        const key = toDateKey(date);
-        const dayEvents = eventsByDate.get(key) ?? [];
-        return {
-          key,
-          date,
-          dayEvents,
-          dayStickers: stickersByDate.get(key) ?? [],
-          isFirstOfMonth: date.getDate() === 1,
-          // Alternating month shading, so month boundaries stay readable while
-          // scrolling continuously.
-          isZebra: (date.getFullYear() * 12 + date.getMonth()) % 2 === 1,
-          supported: date.getFullYear() >= 100 && date.getFullYear() <= 9999,
-          lunar: date.getFullYear() >= 100 && date.getFullYear() <= 9999 ? lunarCell(date) : { text: '', isFestival: false },
-          hasConflict: hasOverlap(dayEvents),
-        };
-      }),
+      Array.from({ length: 7 }, (_, day) => makeMonthCell(addDays(gridStart, week * 7 + day), eventsByDate, stickersByDate)),
     ),
     [eventsByDate, gridStart, stickersByDate],
   );
@@ -485,7 +448,195 @@ export function MonthView({
         }}
         onKeyDown={handleKeyDown}
       >
-        {weeks.map((cells) => (
+        <MonthRows weeks={weeks} rowHeight={rowHeight} todayKey={todayKey} selectedDate={selectedDate}
+          calendars={calendars} flashToday={flashToday} onSelectDate={onSelectDate} setFocusKey={setFocusKey} activeKey={activeKey} />
+      </div>
+    </div>
+  );
+}
+
+/** A discrete month owns its geometry; scrolling inside it never changes month. */
+function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, resolveOccurrences, stickers, calendars,
+  selectedDate, todayKey, initialDateKey = todayKey, flashToday, onSelectDate, onPeriodLabelChange }: MonthViewProps) {
+  const [month, setMonth] = useState(() => monthOf(fromDateKey(initialDateKey)));
+  const [rowHeight, setRowHeight] = useState(INITIAL_ROW_HEIGHT);
+  const rowHeightRef = useRef(INITIAL_ROW_HEIGHT);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingFocus = useRef<string | null>(null);
+  const pendingToday = useRef<string | null>(null);
+  const gesture = useRef<{ id: number; x: number; y: number; vertical: boolean } | null>(null);
+  const suppressClickUntil = useRef(0);
+  const dates = useMemo(() => buildMonthGrid(month, weekStartsOn, calendarGridMode), [month, weekStartsOn, calendarGridMode]);
+  const rowCount = dates.length / 7;
+  const firstKey = toDateKey(clampMonthDate(dates[0]!));
+  const lastKey = toDateKey(clampMonthDate(dates[dates.length - 1]!));
+  const occurrences = useMemo(() => resolveOccurrences({ startDate: firstKey, endDate: lastKey }), [resolveOccurrences, firstKey, lastKey]);
+  const eventsByDate = useMemo(() => groupEventsByDate(occurrences, displayTimezone, { startDateKey: firstKey, endDateKey: lastKey }), [occurrences, displayTimezone, firstKey, lastKey]);
+  const stickersByDate = useMemo(() => groupStickersByDate(stickers), [stickers]);
+  const weeks = useMemo(() => Array.from({ length: rowCount }, (_, week) =>
+    dates.slice(week * 7, week * 7 + 7).map(date => makeMonthCell(date, eventsByDate, stickersByDate))),
+  [dates, rowCount, eventsByDate, stickersByDate]);
+
+  const showMonth = useCallback((date: Date, keyboardKey?: string) => {
+    const next = monthOf(clampMonthDate(date));
+    const changing = next.getTime() !== month.getTime();
+    const active = document.activeElement as HTMLElement | null;
+    const from = active && scrollRef.current?.contains(active) ? active.dataset.dateKey : undefined;
+    const fromDate = from ? fromDateKey(from) : null;
+    const key = keyboardKey ?? (changing && fromDate
+      ? toDateKey(clampMonthDate(addMonths(fromDate, (next.getFullYear() - fromDate.getFullYear()) * 12 + next.getMonth() - fromDate.getMonth())))
+      : null);
+    if (key) { pendingFocus.current = key; setFocusKey(key); }
+    else if (changing) setFocusKey(null);
+    if (changing) setMonth(next);
+  }, [month]);
+
+  useImperativeHandle(ref, () => ({
+    page: direction => showMonth(addMonths(month, direction)),
+    getVisibleDate: () => toDateKey(addDays(month, 3)),
+    scrollToToday: () => {
+      pendingToday.current = todayKey;
+      setFocusKey(null);
+      setMonth(monthOf(fromDateKey(todayKey)));
+    },
+  }), [month, showMonth, todayKey]);
+
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const measure = () => {
+      if (element.clientHeight <= 0) return;
+      const next = Math.max(MIN_ROW_HEIGHT, Math.floor(element.clientHeight / rowCount));
+      rowHeightRef.current = next;
+      setRowHeight(next);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [rowCount]);
+
+  useLayoutEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    onPeriodLabelChange(`${month.getFullYear()}年 ${month.getMonth() + 1}月`);
+  }, [month, onPeriodLabelChange]);
+
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element || rowHeight !== rowHeightRef.current) return;
+    const reveal = (key: string) => {
+      if (element.clientHeight <= 0) return;
+      const index = dates.findIndex(date => toDateKey(date) === key);
+      if (index < 0) return;
+      const top = Math.floor(index / 7) * rowHeight;
+      if (top < element.scrollTop) element.scrollTop = top;
+      else if (top + rowHeight > element.scrollTop + element.clientHeight) element.scrollTop = top + rowHeight - element.clientHeight;
+    };
+    if (pendingToday.current) {
+      reveal(pendingToday.current);
+      pendingToday.current = null;
+    }
+    if (pendingFocus.current) {
+      const cell = element.querySelector<HTMLButtonElement>(`[data-date-key="${pendingFocus.current}"]`);
+      if (cell) { cell.focus({ preventScroll: true }); reveal(pendingFocus.current); pendingFocus.current = null; }
+    }
+  });
+
+  const inMonth = (key: string) => key.slice(0, 7) === toDateKey(month).slice(0, 7);
+  const activeKey = focusKey && focusKey >= firstKey && focusKey <= lastKey ? focusKey
+    : inMonth(selectedDate) ? selectedDate : inMonth(todayKey) ? todayKey : toDateKey(month);
+
+  return (
+    <div className="cal-view-pane">
+      <div className="cal-weekhead">
+        {Array.from({ length: 7 }, (_, offset) => {
+          const day = (weekStartsOn + offset) % 7;
+          return <div key={day} style={{ color: day === 0 || day === 6 ? 'var(--accent-text)' : 'var(--muted)' }}>{WEEKDAY_LABELS[day]}</div>;
+        })}
+      </div>
+      <div className="cal-month-scroll cal-month-paged" ref={scrollRef}
+        onKeyDown={event => {
+          const from = (event.target as HTMLElement).dataset.dateKey;
+          if (!from || event.altKey || event.ctrlKey || event.metaKey) return;
+          const next = dateAfterKey(from, event.key, weekStartsOn);
+          if (next === null) return;
+          event.preventDefault();
+          if (isDateKey(next)) showMonth(fromDateKey(next), next);
+        }}
+        onPointerDown={event => {
+          suppressClickUntil.current = 0;
+          gesture.current = event.pointerType === 'touch' && event.isPrimary
+            ? { id: event.pointerId, x: event.clientX, y: event.clientY, vertical: false } : null;
+        }}
+        onPointerMove={event => {
+          const start = gesture.current;
+          if (!start || start.id !== event.pointerId) return;
+          const dx = Math.abs(event.clientX - start.x), dy = Math.abs(event.clientY - start.y);
+          if (dy > 12 && dy > dx) start.vertical = true;
+        }}
+        onPointerCancel={() => { gesture.current = null; }}
+        onPointerUp={event => {
+          const start = gesture.current;
+          gesture.current = null;
+          if (!start || start.id !== event.pointerId || start.vertical) return;
+          const dx = event.clientX - start.x, dy = Math.abs(event.clientY - start.y);
+          if (Math.abs(dx) <= 12 || Math.abs(dx) <= dy * 1.2) return;
+          suppressClickUntil.current = performance.now() + 500;
+          if (Math.abs(dx) >= 50) showMonth(addMonths(month, dx < 0 ? 1 : -1));
+        }}
+        onClickCapture={event => {
+          if (event.detail !== 0 && performance.now() < suppressClickUntil.current) {
+            event.preventDefault(); event.stopPropagation(); suppressClickUntil.current = 0;
+          }
+        }}>
+        <MonthRows weeks={weeks} rowHeight={rowHeight} todayKey={todayKey} selectedDate={selectedDate}
+          calendars={calendars} flashToday={flashToday} onSelectDate={onSelectDate} setFocusKey={setFocusKey} activeKey={activeKey} />
+      </div>
+    </div>
+  );
+}
+
+function monthOf(date: Date): Date { return new Date(date.getFullYear(), date.getMonth(), 1); }
+
+function dateAfterKey(from: string, key: string, weekStartsOn: 0 | 1): string | null {
+  const date = fromDateKey(from);
+  const offset = (date.getDay() - weekStartsOn + 7) % 7;
+  switch (key) {
+    case 'ArrowLeft': return toDateKey(addDays(date, -1));
+    case 'ArrowRight': return toDateKey(addDays(date, 1));
+    case 'ArrowUp': return toDateKey(addDays(date, -7));
+    case 'ArrowDown': return toDateKey(addDays(date, 7));
+    case 'Home': return toDateKey(addDays(date, -offset));
+    case 'End': return toDateKey(addDays(date, 6 - offset));
+    case 'PageUp': return toDateKey(addMonths(date, -1));
+    case 'PageDown': return toDateKey(addMonths(date, 1));
+    default: return null;
+  }
+}
+
+function makeMonthCell(date: Date, eventsByDate: Map<string, MonthCellEntry[]>, stickersByDate: Map<string, Sticker[]>) {
+  const key = toDateKey(date);
+  const dayEvents = eventsByDate.get(key) ?? [];
+  const supported = date.getFullYear() >= 100 && date.getFullYear() <= 9999;
+  return {
+    key, date, dayEvents, dayStickers: stickersByDate.get(key) ?? [],
+    isFirstOfMonth: date.getDate() === 1,
+    isZebra: (date.getFullYear() * 12 + date.getMonth()) % 2 === 1,
+    supported, lunar: supported ? lunarCell(date) : { text: '', isFestival: false },
+    hasConflict: hasOverlap(dayEvents),
+  };
+}
+
+interface MonthRowsProps {
+  weeks: ReturnType<typeof makeMonthCell>[][];
+  rowHeight: number; todayKey: string; selectedDate: string; calendars: Calendar[];
+  flashToday: boolean; onSelectDate(key: string): void; setFocusKey(key: string): void; activeKey: string;
+}
+
+/** Both navigation modes draw exactly the same canonical day content. */
+function MonthRows({ weeks, rowHeight, todayKey, selectedDate, calendars, flashToday, onSelectDate, setFocusKey, activeKey }: MonthRowsProps) {
+  return (<>{weeks.map((cells) => (
           <div className="cal-week-row" key={cells[0]!.key} style={{ height: `${rowHeight}px` }}>
             {cells.map((cell) => {
               const isToday = cell.key === todayKey;
@@ -569,10 +720,7 @@ export function MonthView({
               );
             })}
           </div>
-        ))}
-      </div>
-    </div>
-  );
+        ))}</>);
 }
 
 /**

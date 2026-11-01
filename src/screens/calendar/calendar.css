@@ -71,7 +71,8 @@
   font-weight: 700;
 }
 
-.cal-icon-button {
+.cal-icon-button,
+.cal-month-mode-button {
   display: flex;
   width: 36px;
   height: 36px;
@@ -212,6 +213,17 @@
   /* DP-180 compensates by logical week; native anchoring would do it twice. */
   overflow-anchor: none;
   -webkit-overflow-scrolling: touch;
+}
+
+.cal-month-paged { touch-action: pan-y pinch-zoom; }
+
+.cal-month-mode-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.cal-month-mode-choice span + span { font-size: 12px; font-weight: 500; }
+.cal-month-mode-choice[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+
+@media (max-width: 360px) {
+  .cal-screen[data-month-navigation] .cal-period { font-size: 23px; white-space: nowrap; }
+  .cal-screen[data-month-navigation] .cal-today-full { letter-spacing: 1px; }
 }
 
 .cal-week-row {

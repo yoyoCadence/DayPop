@@ -12,6 +12,8 @@ import { AgendaView } from './AgendaView';
 import { DayDetailSheet } from './DayDetailSheet';
 import { EventSheet, type EventDraft } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
+import { MonthNavigationDialog } from './MonthNavigationDialog';
+import { readMonthNavigation, saveMonthNavigation, type MonthNavigation } from './monthNavigation';
 import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
 import { ScopeDialog } from './ScopeDialog';
@@ -117,6 +119,9 @@ export function CalendarScreen({
   // An unusable focus is dropped here rather than propagated into the screen.
   const focusDay = focus?.kind === 'day' && isDateKey(focus.dateKey) ? focus.dateKey : null;
   const [view, setView] = useState<CalendarView>('month');
+  const [monthNavigation, setMonthNavigation] = useState(readMonthNavigation);
+  const [monthNavigationOpen, setMonthNavigationOpen] = useState(false);
+  const [monthSeed, setMonthSeed] = useState<string | null>(null);
   // DP-167. Interface state like `view`: not a preference, so it resets with
   // the screen and needs no preferences field or migration.
   const [weekDays, setWeekDays] = useState<3 | 7>(7);
@@ -270,6 +275,15 @@ export function CalendarScreen({
 
   const handlePeriodLabelChange = useCallback((label: string) => setMonthLabel(label), []);
 
+  function chooseMonthNavigation(mode: MonthNavigation) {
+    if (mode !== monthNavigation) {
+      setMonthSeed(monthRef.current?.getVisibleDate() ?? cursor);
+      setMonthNavigation(mode);
+      saveMonthNavigation(mode);
+    }
+    setMonthNavigationOpen(false);
+  }
+
   function step(direction: 1 | -1) {
     if (view === 'month') {
       monthRef.current?.page(direction);
@@ -286,6 +300,7 @@ export function CalendarScreen({
     flashTimer.current = window.setTimeout(() => setFlashToday(false), 1300);
     setSelected(key);
     setCursor(key);
+    setMonthSeed(null);
     if (view === 'month') {
       setMonthLabel(`${todayDate.getFullYear()}年 ${todayDate.getMonth() + 1}月`);
       monthRef.current?.scrollToToday(true);
@@ -329,14 +344,29 @@ export function CalendarScreen({
   }
 
   return (
-    <div className="dp-screen cal-screen">
+    <div className="dp-screen cal-screen" data-month-navigation={view === 'month' ? monthNavigation : undefined}>
       <div className="cal-header">
         <div className="cal-header-top">
           <div className="cal-header-titles">
             <div className="cal-today-full">{todayFull}</div>
-            <h1 className="cal-period">{periodLabel}</h1>
+            <h1 className="cal-period" aria-live={view === 'month' && monthNavigation === 'paged' ? 'polite' : undefined}>{periodLabel}</h1>
           </div>
           <div className="cal-header-actions">
+            {view === 'month' && (
+              <button className="cal-month-mode-button" type="button" onClick={event => {
+                // Safari taps do not necessarily focus a button. Keep the
+                // modal's opener explicit so Escape and choosing restore it.
+                event.currentTarget.focus({ preventScroll: true });
+                setMonthNavigationOpen(true);
+              }}
+                aria-label={`月曆顯示方式：${monthNavigation === 'paged' ? '單月翻頁' : '連續捲動'}`}
+                title="月曆顯示方式" aria-haspopup="dialog" aria-expanded={monthNavigationOpen}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 9h18M8 2v4m8-4v4M8 13h8m-8 4h8" />
+                </svg>
+              </button>
+            )}
             <button className="cal-chip-button" type="button" onClick={goToday}>
               今天
             </button>
@@ -359,10 +389,10 @@ export function CalendarScreen({
         </div>
 
         <div className="cal-nav">
-          <button className="cal-step-button" type="button" onClick={() => step(-1)} aria-label="上一頁">
+          <button className="cal-step-button" type="button" onClick={() => step(-1)} aria-label={view === 'month' && monthNavigation === 'paged' ? '上一個月' : '上一頁'}>
             ‹
           </button>
-          <button className="cal-step-button" type="button" onClick={() => step(1)} aria-label="下一頁">
+          <button className="cal-step-button" type="button" onClick={() => step(1)} aria-label={view === 'month' && monthNavigation === 'paged' ? '下一個月' : '下一頁'}>
             ›
           </button>
           <div className="cal-segmented" role="group" aria-label="檢視方式">
@@ -371,7 +401,7 @@ export function CalendarScreen({
                 key={option.view}
                 type="button"
                 aria-pressed={view === option.view}
-                onClick={() => setView(option.view)}
+                onClick={() => { setMonthSeed(null); setView(option.view); }}
               >
                 {option.label}
               </button>
@@ -404,6 +434,7 @@ export function CalendarScreen({
         {view === 'month' && (
           <MonthView
             ref={monthRef}
+            navigation={monthNavigation}
             weekStartsOn={weekStartsOn}
             displayTimezone={displayTimezone}
             calendarGridMode={data.preferences.calendarGridMode}
@@ -412,7 +443,7 @@ export function CalendarScreen({
             calendars={data.calendars}
             selectedDate={selected}
             todayKey={todayKey}
-            initialDateKey={cursor}
+            initialDateKey={monthSeed ?? cursor}
             flashToday={flashToday}
             onSelectDate={openDayDetail}
             onPeriodLabelChange={handlePeriodLabelChange}
@@ -540,6 +571,7 @@ export function CalendarScreen({
         onDeleteAttachment={deleteEventAttachment}
         onOpenAttachment={createEventAttachmentUrl}
       />
+      {monthNavigationOpen && <MonthNavigationDialog mode={monthNavigation} onChoose={chooseMonthNavigation} onClose={() => setMonthNavigationOpen(false)} />}
       <ScopeDialog
         mode={weekDrag ? 'save' : null}
         onThis={() => applyWeekDrag('this')}

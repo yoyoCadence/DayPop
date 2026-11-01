@@ -41,3 +41,7 @@ Browser plugin／browser skill 未提供，依 frontend-testing-debugging skill 
 - production 的 build／preview 都帶 `--base=/DayPop/`，先校驗實際 JS URL 的 MIME。手動 QA／trace／八圖僅 TEMP（`daypop-dp224-{mobile,desktop}-{light,dark}.png`、`daypop-dp224-today-{mobile,desktop}-{light,dark}.png`），兩次隱藏 preview 均已核對 PID 並停止。
 
 自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併。沒有 schema、Auth、正式帳號、release note 或部署變更，0.4.6 公告不回寫；下一段 DP-225 加兩種月檢視，保留本項穩定邊界。
+
+### 合併交接
+
+PR #220 最終 `4c12b32` 的四 CI `41260244520` 成功（Chromium 299 passed／13 skipped，22.6 分鐘；WebKit 9），同 head 審查完成無發現且無未解決討論後合併 `70e8947`。未部署。等待 CI 期間另以相同 production build、CDP `Input.dispatchTouchEvent` 完成五次真正 Chromium touch pan：每次移動超過 400px，二月四列→三月五列→五月六列→六月五列，按住列高不變，停穩後再觀察 400ms 無回饋跳動，53 週／資料 bytes／console 不變，實際 Asia/Taipei。這不是 iPhone OS 慣性證據；TEMP `daypop-dp224-native-touch.mjs`、專用 preview 已核對清理。DP-225 從此合併基底接續。
