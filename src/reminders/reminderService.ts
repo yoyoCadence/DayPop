@@ -10,16 +10,18 @@ export interface ReminderDevice { id: string; createdAt: string; updatedAt: stri
 export interface ReminderSnapshot { capabilities: ReminderCapabilities; rules: ReminderRule[]; devices: ReminderDevice[] }
 /** Capability data is transient, never part of snapshots, logs or backups. */
 export interface ReminderDeviceInput { endpoint: string; p256dh: string; auth: string; publicKey: string }
+export interface RegisteredReminderDevice { id: string; remove(): Promise<void> }
 export interface ReminderService {
   capabilities(): Promise<ReminderCapabilities>;
   load(): Promise<ReminderSnapshot>;
   setRule(input: ReminderRuleInput, expectedUpdatedAt: string | null): Promise<ReminderRule | null>;
   registerDevice(input: ReminderDeviceInput): Promise<string>;
+  registerDeviceLease(input: ReminderDeviceInput): Promise<RegisteredReminderDevice>;
   unregisterDevice(id: string): Promise<void>;
   captureDeviceRemoval(id: string): Promise<() => Promise<void>>;
 }
 export class ReminderError extends Error {
-  constructor(readonly kind: 'invalid' | 'unavailable' | 'conflict' | 'session' | 'failed' | 'cleanup', message: string, readonly pendingDeviceId?: string) {
+  constructor(readonly kind: 'invalid' | 'unavailable' | 'conflict' | 'session' | 'failed' | 'cleanup', message: string, readonly pendingDeviceId?: string, readonly removedDeviceId?: string) {
     super(message); this.name = 'ReminderError';
   }
 }
@@ -106,12 +108,15 @@ export class SupabaseReminderService implements ReminderService {
         !data.session.access_token.trim()) throw new ReminderError('session', SESSION);
     return data.session.access_token;
   }
-  private async run<T>(operation: (token: string) => Promise<T>, compensate?: (result: T, token: string) => Promise<void>): Promise<T> {
+  private async run<T>(operation: (token: string) => Promise<T>, compensate?: (result: T, token: string) => Promise<string>): Promise<T> {
     try {
       // Bind this operation to its account even if the shared client's Auth changes while sending.
       const token = await this.token(), result = await operation(token);
       try { await this.token(); } // Late responses must not be accepted after an account change.
-      catch (cause) { if (compensate) await compensate(result, token); throw cause; }
+      catch (cause) {
+        if (compensate) throw new ReminderError('session', SESSION, undefined, id(await compensate(result, token)));
+        throw cause;
+      }
       return result;
     } catch (cause) {
       if (cause instanceof ReminderError) throw cause;
@@ -150,15 +155,19 @@ export class SupabaseReminderService implements ReminderService {
       return saved;
     });
   }
-  registerDevice(input: ReminderDeviceInput) {
+  async registerDevice(input: ReminderDeviceInput): Promise<string> {
+    return (await this.registerDeviceLease(input)).id;
+  }
+  registerDeviceLease(input: ReminderDeviceInput): Promise<RegisteredReminderDevice> {
     return this.run(async token => {
       record(input);
       if (!isAllowedPushEndpoint(input.endpoint) || !validKey(input.p256dh) || !validKey(input.publicKey) ||
           typeof input.auth !== 'string' || input.auth.length !== 22 || !/^[A-Za-z0-9_-]{22}$/.test(input.auth)) invalid();
-      return id(await request(this.client.rpc('register_reminder_device', {
+      const deviceId = id(await request(this.client.rpc('register_reminder_device', {
         p_endpoint: input.endpoint, p_p256dh: input.p256dh, p_auth: input.auth, p_public_key: input.publicKey,
       }), token));
-    }, (deviceId, token) => this.removeWithToken(deviceId, token));
+      return { id: deviceId, remove: () => this.removeWithToken(deviceId, token) };
+    }, async (lease, token) => { await this.removeWithToken(lease.id, token); return lease.id; });
   }
   unregisterDevice(deviceId: string) {
     return this.run(token => this.removeWithToken(id(deviceId), token));

@@ -1183,6 +1183,8 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 
 ## 10. 可靠背景提醒第一版（DP-042，2026-10-29）
 
+DP-230（2026-11-01）以獨立 controller 整合明確裝置同意、持久化收據與帳號生命週期；成功註冊回傳固定本人裝置的暫時撤銷 lease，晚到回應、逾時與雙邊未確認清理不得顯示 active／off。App 關閉及暫時 waiting 不等於登出，原生停用尚未結束時不允許新 consent。詳 [裝置 controller](reminder-device-controller.md)；此段沒有 App caller，UI／Auth 接線另段。
+
 依擁有者「你先做提醒吧」委託，採每人／每裝置／每本日曆明確開啟的伺服器排程 Web Push，支援本人及有效分享；全天和可選待辦有明確時刻與時區。預設關閉，通知不帶私人內容；加入家庭、分享或舊 reminder 欄位不自動開啟。五分鐘有效窗、canonical recurrence／例外、去重／重試、投遞前權限重查與登出撤銷的契約見 [提醒設計與分段](reminders.md)。
 
 通知偏好／訂閱／投遞紀錄另用具 RLS 的帳號資料，不進 v4 個人文件或 JSON 備份。先分段完成排程核心、後端、App／worker 與本機驗證，各自 PR／四 CI／同 head 審查後合併；遠端 migration、秘密設定、cron、發布及真機收信仍須另有具體結果與放行，不能把純計算或模擬通知稱為已上線提醒。

@@ -1,5 +1,7 @@
 # 註冊補償與安全裝置收據（DP-229）
 
+合併後補記：PR #225 最終 `384105c` 四 CI `41301260472`（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 `d17eae5`。下一段 [DP-230 controller](reminder-device-controller.md) 從該 main 接續，下方候選與後續語句保留為當時紀錄。
+
 2026-11-01，從 DP-228／PR #224 最終 `ba199f7` 四 CI `41297188997`、同 head 完成審查無發現及無未解決討論後合併的 `5354543` 接續。先建立撤銷與資料原語，DP-230 再整合 controller，AuthProvider／canonical UI 另段；目前沒有 App caller，公開仍 0.4.6。
 
 ## 固定本人裝置的撤銷
