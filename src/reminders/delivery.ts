@@ -3,6 +3,8 @@ import type { Database } from '../lib/database.types';
 import { eventOccurrenceKey } from '../domain/eventOccurrenceKey';
 import { parseCalendarEvent, parseEventException, parseTodo, isIsoInstant, isUuid } from '../domain/validation';
 import { isCalendarReminderRule, planReminders, type ReminderJob } from './schedule';
+import { isAllowedPushEndpoint } from './pushEndpoint';
+export { isAllowedPushEndpoint } from './pushEndpoint';
 
 type Issue = 'configuration' | 'planning' | 'transport' | 'capacity';
 type DeliveryResult = 'sent' | 'retry' | 'failed' | 'gone';
@@ -33,12 +35,6 @@ const record = (value: unknown): value is Record<string, unknown> => typeof valu
 const HASH = /^[a-f0-9]{64}$/;
 const KEY = /^B[A-Za-z0-9_-]{86}$/;
 const AUTH = /^[A-Za-z0-9_-]{22}$/;
-
-export function isAllowedPushEndpoint(value: unknown): value is string {
-  return typeof value === 'string' && value.length >= 20 && value.length <= 2048 &&
-    value.trim() === value && Array.from(value).every(char => char.charCodeAt(0) > 31 && char.charCodeAt(0) !== 127) &&
-    /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\/[^#\s]+$/.test(value);
-}
 
 export async function reminderJobHash(key: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
