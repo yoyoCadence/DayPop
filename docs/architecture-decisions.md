@@ -1194,3 +1194,5 @@ DP-222 的同 head 審查補強：每次 claim 也必須帶 runtime public key�
 DP-226（2026-11-01）先獨立接 worker，保持 sender 兩欄 v1／hash wire，拒絕擴充欄位；原生通知只顯示固定匿名文字與穩定 tag。點擊只 focus 同 origin／scope 的現有 App、保留路由與未儲存表單，無可用 client 才開固定 scope；不使用 payload URL。既有 app-shell 更新／快取與個人儲存界線不改。真正 Chromium／CDP 驗證 Notification API 與冷啟動，不等同真實推播服務或 iPhone 真機投遞；裝置權限、註冊／撤銷與 App 設定另段接續，詳 [worker 紀錄](reminder-worker.md)。
 
 DP-227（2026-11-01）將提醒 client 做成獨立 session-only service，規則 CAS 原樣保留微秒版本，裝置僅取安全 metadata；能力 input 不進個人文件。每個操作確認本人的 session，將該次 token 固定在單一 request header，完成後再拒絕身分已變的回應，防止共用 client 在送出前換帳號。這是路由與競態防護，不取代伺服器 JWT／RLS 授權；沒有修改共用 Auth session／全域 header 或加入自動重試。實際雙帳號 HTTP 切換驗證新裝置仍屬原請求者；後續 provider 尚須確認 session 與丟棄過期結果。詳 [client 合約與驗證](reminder-client.md)。
+
+DP-228（2026-11-01）先獨立瀏覽器原語：App scope／active worker 必須回答公開提醒 v1，預備在 30 秒內才可由直接使用者動作請求通知權限；不在能力查詢時提示或建立訂閱。不同 VAPID key 不自動輪替，晚到取消須清理新訂閱，本機移除須重新讀到 null，不能靠 API 的 boolean 宣稱成功。握手不啟用 waiting worker，也不代替 App 更新或登入授權。伺服器撤銷、持久化 handle 與 Auth／UI 接線另段，詳 [瀏覽器 adapter](reminder-browser.md)。

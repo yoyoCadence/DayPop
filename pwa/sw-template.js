@@ -25,6 +25,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'GET_REMINDER_CAPABILITIES' && event.data.v === 1) {
+    event.ports?.[0]?.postMessage({ type: 'REMINDER_CAPABILITIES', v: 1 });
+  }
 });
 
 // DP-226: the sender's v1 wire contains only a stable hash, never private text.

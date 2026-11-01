@@ -6,6 +6,8 @@
 
 `pwa/sw-template.js` 是來源，`release:assets` 產生 `public/sw.js`。既有 install／activate／fetch／SKIP_WAITING 與只清理 `daypop-app-shell-` 的規則不變。
 
+後續 DP-228 增加無私人資料的公開 v1 能力握手，供 App 啟用前確認 active worker；不自行啟用 waiting worker。新段落／來源 hash 與驗證見 [瀏覽器 adapter](reminder-browser.md)，下方 DP-226 hash 保留為該段歷史證據。
+
 - 只接受 sender 既有的兩欄 JSON：`{v: 1, tag: <64 位小寫 hex>}`。空值、陣列、格式錯誤、其他版本、額外欄位與解析失敗都不顯示通知，也不記錄原始內容。
 - 通知固定為「日蹦 DayPop／有日曆提醒，開啟日蹦查看。」，圖示取本身 scope 的既有 SVG；不使用標題、地點、備註、事項／帳號識別或 payload URL。`daypop-reminder-` 加工作 hash 作為 tag，重送取代同 tag，`renotify: false`。通知 data 只留 type／版本。
 - `push` 的 `waitUntil` 等待真正 `showNotification`，權限失敗仍是失敗，不回報假成功。這段不申請權限、不建立訂閱、不讀取私人儲存或發送應用程式網路請求。

@@ -8,7 +8,7 @@
 
 - 每個操作先確認目前 session 的 user id 等於建構時的帳號，再把該次 access token 固定在每個 PostgREST request 的 Authorization header。未修改共用 client 的 header 或 session；token 只存在該次操作。
 - 操作完成再核對帳號，拒絕帳號切換後的延遲回應。若共用 client 在送出前換成 B，A 的既有請求仍由 A 的 token 授權，不能悄悄替 B 註冊或改設定。
-- 延遲寫入可能已在原帳號提交，拒絕其回應不代表回滾。這個 service 尚未負責撤銷生命週期；DP-228 必須處理進行中的註冊、登出前撤銷、外部帳號切換與無法確認撤銷的狀態，再接 App caller，不能只丟棄回應便宣稱裝置已停用。
+- 延遲寫入可能已在原帳號提交，拒絕其回應不代表回滾。這個 service 尚未負責撤銷生命週期；細分後由 DP-229 處理進行中的註冊、登出前撤銷、外部帳號切換與無法確認撤銷的狀態，再接 App caller，不能只丟棄回應便宣稱裝置已停用。
 - 這是前端身分路由防護；伺服器仍驗證 JWT，RLS／RPC 才是授權邊界。`getSession()` 不是伺服器端授權證據，後續 provider 只能為已確認 session 建立此服務，並丟棄卸載／換帳號的結果；不要在 Auth callback 內等待 Auth 方法。[Supabase getSession 說明](https://supabase.com/docs/reference/javascript/auth-getsession)。
 - 對照目前安裝的 SDK，`setHeader` 複製單一 request 的 headers，fetchWithAuth 保留已提供的 Authorization；實際 SDK 序列化與真 JWT 切換回歸都驗證此行為。[SDK PostgrestBuilder](https://github.com/supabase/supabase-js/blob/master/packages/core/postgrest-js/src/PostgrestBuilder.ts)。
 
@@ -40,4 +40,4 @@ lint／typecheck／Pages build／check:build 通過。App 成品維持 `index-Dc
 
 ## 後續
 
-自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併。DP-228 接裝置能力偵測與明確權限／訂閱／撤銷，再接 canonical 設定 UI；服務目前沒有 App caller，DP-223／042 未完成。沒有 AuthProvider 接線、UI、使用者權限／訂閱、schema／migration、秘密／cron、版號／公告、正式操作或部署，不將本機 HTTP 當成 iPhone 收信驗收。
+PR #223 最終 `10089f36f2f212cb7ab938c5b797fbb3409290f1` 的四 CI `41273545673` 全過：Chromium 305 passed／13 skipped（17.0 分鐘），465 pgTAP／12 檔、提醒 HTTP 20/20、真正 Edge 冷啟動通過。同 head 審查 completed 無發現及無未解決討論後合併 `cff0a15286f8990363887596aafbe0235c811234`。DP-228 先接瀏覽器 adapter，DP-229 接註冊／撤銷生命週期，再接 canonical UI；服務目前沒有 App caller，DP-223／042 未完成。沒有 AuthProvider 接線、UI、使用者權限／訂閱、schema／migration、秘密／cron、版號／公告、正式操作或部署，不將本機 HTTP 當成 iPhone 收信驗收。
