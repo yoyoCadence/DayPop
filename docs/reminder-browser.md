@@ -31,4 +31,6 @@ Browser plugin／browser skill 未提供，沿 frontend-testing-debugging 的 fa
 
 還原後 adapter SHA-256 `aa4c1385507b4d89c4e5a6986a250457157337724c64220672faf7ed7f6a4f31`，template `3ceb786eb8f228ad73752cc09045ad09a2036f15c108f2fd91ddeac6f1e2acca`，generated worker `3635d82d054fba3beebb1258c274164b0a74e59f5c6f6f7e46b5a6f62ae80b4c`。錯版負控制還原後原生四項再過。TEMP 保留控制腳本與紀錄；測試只用注入的 PushManager／權限 port，真正瀏覽器只驗證既有匿名通知與公開協定，不呼叫真正 PushManager.subscribe。
 
-自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併。DP-229 尚須處理本人 session、持久化安全 handle、quota／future 防護、註冊補償及登出／外部帳號切換的伺服器撤銷，完成前不能接入 App。沒有 AuthProvider／UI、正式訂閱、schema、秘密／cron、版號／公告或部署；這不代表 iPhone 真機收信已通過，DP-223／042 尚未完成。
+後續 DP-229 新增只回公開 key／不可投遞摘要的 identity 查詢，供安全收據匹配；不提示或新建訂閱。新來源與驗證見 [撤銷與安全資料](reminder-revocation.md)，上方 adapter hash 保留為 DP-228 歷史證據，worker bytes 未變。
+
+PR #224 最終 `ba199f76bbf156c181c18f16bbe5c65bdb14735f` 的四 CI `41297188997` 全過（Chromium 307 passed／13 skipped、22.9 分鐘），同 head 審查 completed 無發現及無未解決討論後合併 `535454331bbdd219730b4849c814323f09cee8a2`。DP-229 先做註冊補償／撤銷與安全資料，DP-230 再整合 controller；本人 session、quota／future 防護、登出／外部帳號切換與 UI 完成前不能接入 App。沒有 AuthProvider／UI、正式訂閱、schema、秘密／cron、版號／公告或部署；這不代表 iPhone 真機收信已通過，DP-223／042 尚未完成。

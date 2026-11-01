@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 20;
+const expectedChecks = 21;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -373,15 +373,30 @@ try {
         return value;
       };
       await assert.rejects(reminderA.registerDevice({ ...clientSubscription, endpoint: raceEndpoint }), error => error.kind === 'session', 'Late result cannot be accepted after switch');
-      assert.equal(sql(`select user_id from public.reminder_push_devices where endpoint='${raceEndpoint}';`), a.id, 'In-flight request stays authorized as A, never B');
+      assert.equal(sql(`select count(*) from public.reminder_push_devices where endpoint='${raceEndpoint}';`), '0', 'Late A registration is compensated, never left under A or B');
     } finally {
       a.client.auth.getSession = original;
       const restored = await a.client.auth.setSession(accountA);
       assert.ok(!restored.error, 'Restore original test session');
     }
-    const raceDevice = sql(`select id from public.reminder_push_devices where endpoint='${raceEndpoint}';`);
-    await reminderA.unregisterDevice(raceDevice);
     assert.deepEqual(await repository.load(), personalBefore, 'Account-switch control leaves personal data unchanged');
+  });
+  await check('captured fixed-device removal survives real account switch without affecting B', async () => {
+    const target = await reminderA.registerDevice({ ...clientSubscription, endpoint: endpoint + '-captured-a' });
+    const other = await reminderB.registerDevice({ ...clientSubscription, endpoint: endpoint + '-captured-b' });
+    const remove = await reminderA.captureDeviceRemoval(target);
+    const accountA = (await a.client.auth.getSession()).data.session, accountB = (await b.client.auth.getSession()).data.session;
+    try {
+      const switched = await a.client.auth.setSession(accountB); assert.ok(!switched.error, 'Switch shared client to real B');
+      await assert.rejects(reminderA.load(), error => error.kind === 'session', 'Normal old-A operations remain blocked');
+      await remove();
+      assert.equal(sql(`select count(*) from public.reminder_push_devices where id='${target}';`), '0', 'Captured cleanup removes A by independent SQL');
+      assert.ok((await reminderB.load()).devices.some(row => row.id === other), 'B device remains registered');
+    } finally {
+      const restored = await a.client.auth.setSession(accountA); assert.ok(!restored.error, 'Restore original A session');
+    }
+    await reminderB.unregisterDevice(other);
+    assert.deepEqual(await repository.load(), personalBefore, 'Captured cleanup preserves personal snapshot');
   });
   assert.equal(checks, expectedChecks, 'All HTTP groups must execute');
 } catch (cause) {

@@ -16,9 +16,10 @@ export interface ReminderService {
   setRule(input: ReminderRuleInput, expectedUpdatedAt: string | null): Promise<ReminderRule | null>;
   registerDevice(input: ReminderDeviceInput): Promise<string>;
   unregisterDevice(id: string): Promise<void>;
+  captureDeviceRemoval(id: string): Promise<() => Promise<void>>;
 }
 export class ReminderError extends Error {
-  constructor(readonly kind: 'invalid' | 'unavailable' | 'conflict' | 'session' | 'failed', message: string) {
+  constructor(readonly kind: 'invalid' | 'unavailable' | 'conflict' | 'session' | 'failed' | 'cleanup', message: string, readonly pendingDeviceId?: string) {
     super(message); this.name = 'ReminderError';
   }
 }
@@ -26,13 +27,14 @@ const INVALID = '提醒資訊不完整，請重新確認後再試。';
 const FAILED = '暫時無法完成提醒操作，請檢查連線後再試。';
 const SESSION = '登入狀態已變更，請重新確認帳號後再試。';
 const UNAVAILABLE = '背景提醒尚未啟用，請稍後再試。';
+const cleanupError = (deviceId: string) => new ReminderError('cleanup', '伺服器裝置的停用尚未確認，請保持連線後再試。', deviceId);
 const KEY = /^B[A-Za-z0-9_-]{86}$/;
 const validKey = (value: unknown): value is string => typeof value === 'string' && value.length === 87 && KEY.test(value);
 const invalid = (): never => { throw new ReminderError('invalid', INVALID); };
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : invalid();
 }
-function id(value: unknown): string { return isUuid(value) ? value : invalid(); }
+function id(value: unknown): string { return isUuid(value) && value.length === 36 ? value : invalid(); }
 function instant(value: unknown): string { return isIsoInstant(value) ? value : invalid(); }
 function list(value: unknown, max: number): unknown[] { return Array.isArray(value) && value.length <= max ? value : invalid(); }
 function unique(values: string[]) { if (new Set(values).size !== values.length) invalid(); }
@@ -104,11 +106,12 @@ export class SupabaseReminderService implements ReminderService {
         !data.session.access_token.trim()) throw new ReminderError('session', SESSION);
     return data.session.access_token;
   }
-  private async run<T>(operation: (token: string) => Promise<T>): Promise<T> {
+  private async run<T>(operation: (token: string) => Promise<T>, compensate?: (result: T, token: string) => Promise<void>): Promise<T> {
     try {
       // Bind this operation to its account even if the shared client's Auth changes while sending.
       const token = await this.token(), result = await operation(token);
-      await this.token(); // Late responses must not be accepted after an account change.
+      try { await this.token(); } // Late responses must not be accepted after an account change.
+      catch (cause) { if (compensate) await compensate(result, token); throw cause; }
       return result;
     } catch (cause) {
       if (cause instanceof ReminderError) throw cause;
@@ -155,12 +158,33 @@ export class SupabaseReminderService implements ReminderService {
       return id(await request(this.client.rpc('register_reminder_device', {
         p_endpoint: input.endpoint, p_p256dh: input.p256dh, p_auth: input.auth, p_public_key: input.publicKey,
       }), token));
-    });
+    }, (deviceId, token) => this.removeWithToken(deviceId, token));
   }
   unregisterDevice(deviceId: string) {
+    return this.run(token => this.removeWithToken(id(deviceId), token));
+  }
+  /** Fixed-id, memory-only cleanup capability; no Auth mutation or generic stale-session requests. */
+  captureDeviceRemoval(deviceId: string): Promise<() => Promise<void>> {
     return this.run(async token => {
-      const raw = await request(this.client.rpc('unregister_reminder_device', { p_device_id: id(deviceId) }), token);
-      if (raw !== null && raw !== undefined) invalid();
+      const target = id(deviceId);
+      return () => this.removeWithToken(target, token);
     });
+  }
+  private async removeWithToken(deviceId: string, token: string): Promise<void> {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const expired = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(cleanupError(deviceId)); }, 5000);
+    });
+    const remove = async () => {
+      const raw = await request(this.client.rpc('unregister_reminder_device', { p_device_id: deviceId }).abortSignal(controller.signal), token);
+      if (raw !== null && raw !== undefined) throw cleanupError(deviceId);
+      const remaining = await request(this.client.from('reminder_push_devices').select('id,user_id')
+        .eq('user_id', this.userId).eq('id', deviceId).limit(1).abortSignal(controller.signal), token);
+      if (!Array.isArray(remaining) || remaining.length !== 0) throw cleanupError(deviceId);
+    };
+    try { await Promise.race([remove(), expired]); }
+    catch { throw cleanupError(deviceId); }
+    finally { clearTimeout(timer); controller.abort(); }
   }
 }

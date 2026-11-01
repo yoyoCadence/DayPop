@@ -8,7 +8,7 @@
 
 - 每個操作先確認目前 session 的 user id 等於建構時的帳號，再把該次 access token 固定在每個 PostgREST request 的 Authorization header。未修改共用 client 的 header 或 session；token 只存在該次操作。
 - 操作完成再核對帳號，拒絕帳號切換後的延遲回應。若共用 client 在送出前換成 B，A 的既有請求仍由 A 的 token 授權，不能悄悄替 B 註冊或改設定。
-- 延遲寫入可能已在原帳號提交，拒絕其回應不代表回滾。這個 service 尚未負責撤銷生命週期；細分後由 DP-229 處理進行中的註冊、登出前撤銷、外部帳號切換與無法確認撤銷的狀態，再接 App caller，不能只丟棄回應便宣稱裝置已停用。
+- 延遲寫入可能已在原帳號提交，拒絕其回應本身不代表回滾。後續 DP-229 對已取得 id 的晚到註冊增加補償／獨立重讀、固定裝置的暫時撤銷 closure 與 cleanup／pendingDeviceId；未知 id 仍須報未確認。新合約／來源證據見 [撤銷與安全資料](reminder-revocation.md)，DP-230 再整合生命週期，不能只丟棄回應便宣稱裝置已停用。
 - 這是前端身分路由防護；伺服器仍驗證 JWT，RLS／RPC 才是授權邊界。`getSession()` 不是伺服器端授權證據，後續 provider 只能為已確認 session 建立此服務，並丟棄卸載／換帳號的結果；不要在 Auth callback 內等待 Auth 方法。[Supabase getSession 說明](https://supabase.com/docs/reference/javascript/auth-getsession)。
 - 對照目前安裝的 SDK，`setHeader` 複製單一 request 的 headers，fetchWithAuth 保留已提供的 Authorization；實際 SDK 序列化與真 JWT 切換回歸都驗證此行為。[SDK PostgrestBuilder](https://github.com/supabase/supabase-js/blob/master/packages/core/postgrest-js/src/PostgrestBuilder.ts)。
 
