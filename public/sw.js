@@ -27,6 +27,57 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+// DP-226: the sender's v1 wire contains only a stable hash, never private text.
+const REMINDER_TAG_PREFIX = 'daypop-reminder-';
+function reminderTag(data) {
+  try {
+    const value = data?.json();
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 ||
+        value.v !== 1 || typeof value.tag !== 'string' || value.tag.length !== 64 || !/^[a-f0-9]{64}$/.test(value.tag)) return null;
+    return REMINDER_TAG_PREFIX + value.tag;
+  } catch { return null; }
+}
+
+self.addEventListener('push', (event) => {
+  const tag = reminderTag(event.data);
+  if (!tag) return;
+  event.waitUntil(self.registration.showNotification('日蹦 DayPop', {
+    body: '有日曆提醒，開啟日蹦查看。',
+    icon: new URL('./icons/daypop.svg', self.registration.scope).href,
+    tag,
+    renotify: false,
+    data: { type: 'daypop-reminder', v: 1 },
+  }));
+});
+
+async function focusReminderApp() {
+  let scope;
+  try { scope = new URL(self.registration.scope); } catch { return; }
+  if (scope.origin !== self.location.origin || !scope.pathname.endsWith('/')) return;
+  let windows;
+  try { windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }); }
+  catch { windows = []; }
+  for (const client of windows) {
+    try {
+      const url = new URL(client.url);
+      if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) continue;
+      // Keep the current route and any unsaved form; focus without navigating.
+      await client.focus();
+      return;
+    } catch { /* A closing client must not prevent another client or a fresh window. */ }
+  }
+  await self.clients.openWindow(scope.href);
+}
+
+self.addEventListener('notificationclick', (event) => {
+  const note = event.notification;
+  if (note?.data?.type !== 'daypop-reminder' || note.data.v !== 1 || typeof note.tag !== 'string' ||
+      note.tag.length !== REMINDER_TAG_PREFIX.length + 64 || !note.tag.startsWith(REMINDER_TAG_PREFIX) ||
+      !/^[a-f0-9]{64}$/.test(note.tag.slice(REMINDER_TAG_PREFIX.length))) return;
+  note.close();
+  event.waitUntil(focusReminderApp());
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;

@@ -1190,3 +1190,5 @@ schema 只能先寫成新的 `supabase/migrations/` 檔，沿用 RPC 時以最�
 DP-222（2026-10-31）將 runtime key 納入啟用邊界：服務端先確認 DB 的 enabled／public key 與實際 VAPID pair 一致；heartbeat 必須帶相同 public key，配置停用或換 key 即清除舊 heartbeat，舊 runtime 不得替新配置宣告 ready。此 API 擴充以新增 migration 管理，保留既有二十份原檔。Edge 以專用 token 驗證後才建立服務 client，使用版本固定／lock 的 Web Push library 產生加密請求，實際送出經有界、禁止 redirect 的 fetch；canonical 排程與投遞核心由可重建 bundle 共用，不另複製 recurrence 實作。
 
 DP-222 的同 head 審查補強：每次 claim 也必須帶 runtime public key，取得 device row lock 後比對，拒絕 key 不符而不建立 ledger；移除舊無 key RPC。否則啟動檢查後的 rotation 會讓舊 runtime 消耗新 key 的工作。原 device→ledger 鎖順序、權限／資料版本與啟用界線保留，並驗證真正 HTTP 交錯 tick／等待鎖換 key／撤比較的負控制。
+
+DP-226（2026-11-01）先獨立接 worker，保持 sender 兩欄 v1／hash wire，拒絕擴充欄位；原生通知只顯示固定匿名文字與穩定 tag。點擊只 focus 同 origin／scope 的現有 App、保留路由與未儲存表單，無可用 client 才開固定 scope；不使用 payload URL。既有 app-shell 更新／快取與個人儲存界線不改。真正 Chromium／CDP 驗證 Notification API 與冷啟動，不等同真實推播服務或 iPhone 真機投遞；裝置權限、註冊／撤銷與 App 設定另段接續，詳 [worker 紀錄](reminder-worker.md)。

@@ -43,4 +43,4 @@ axe 量測先等待既有彈出動畫完成，未放寬對比門檻。初次 320
 - `npm run test:e2e -- e2e/month-paging.spec.ts --project=mobile-chrome --project=desktop-chrome`
 - `npm run test:e2e -- --project=webkit-smoke`
 
-自己的最新四 CI／同 head 完成審查無發現且無未解決討論後才合併。沒有 schema／Auth／版號／已發布公告／部署改動；DP-223 提醒 App／worker 仍保留 Next，父項 DP-042 尚未完成。
+PR #221 最終 `8d31ac0e215c194dfcc433e9b181910118b5f146` 的四 CI `41266688371` 全過，同 head 審查 completed 無發現且無未解決討論後合併 `3ae1adf52a54900b2c082d7861f0d86cb3784eca`。Chromium 首輪雖 303 passed／13 skipped，連同 setup 達 job 25 分鐘而取消，不算 pass；僅重跑該 job 後 303 passed／13 skipped（22.8 分鐘），未更改測試、worker／retry／timeout 或門檻。沒有 schema／Auth／版號／已發布公告／部署改動；DP-223 提醒 App／worker 由 DP-226 分段接續，父項 DP-042 尚未完成。
