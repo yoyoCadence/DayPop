@@ -1192,3 +1192,5 @@ DP-222（2026-10-31）將 runtime key 納入啟用邊界：服務端先確認 DB
 DP-222 的同 head 審查補強：每次 claim 也必須帶 runtime public key，取得 device row lock 後比對，拒絕 key 不符而不建立 ledger；移除舊無 key RPC。否則啟動檢查後的 rotation 會讓舊 runtime 消耗新 key 的工作。原 device→ledger 鎖順序、權限／資料版本與啟用界線保留，並驗證真正 HTTP 交錯 tick／等待鎖換 key／撤比較的負控制。
 
 DP-226（2026-11-01）先獨立接 worker，保持 sender 兩欄 v1／hash wire，拒絕擴充欄位；原生通知只顯示固定匿名文字與穩定 tag。點擊只 focus 同 origin／scope 的現有 App、保留路由與未儲存表單，無可用 client 才開固定 scope；不使用 payload URL。既有 app-shell 更新／快取與個人儲存界線不改。真正 Chromium／CDP 驗證 Notification API 與冷啟動，不等同真實推播服務或 iPhone 真機投遞；裝置權限、註冊／撤銷與 App 設定另段接續，詳 [worker 紀錄](reminder-worker.md)。
+
+DP-227（2026-11-01）將提醒 client 做成獨立 session-only service，規則 CAS 原樣保留微秒版本，裝置僅取安全 metadata；能力 input 不進個人文件。每個操作確認本人的 session，將該次 token 固定在單一 request header，完成後再拒絕身分已變的回應，防止共用 client 在送出前換帳號。這是路由與競態防護，不取代伺服器 JWT／RLS 授權；沒有修改共用 Auth session／全域 header 或加入自動重試。實際雙帳號 HTTP 切換驗證新裝置仍屬原請求者；後續 provider 尚須確認 session 與丟棄過期結果。詳 [client 合約與驗證](reminder-client.md)。

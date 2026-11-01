@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 16;
+const expectedChecks = 20;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -55,6 +55,7 @@ try {
     ssr: { noExternal: ['rrule'] }, define: { __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version), __DATA_SCHEMA_VERSION__: '4' } });
   const { SupabaseDayPopRepository } = await vite.ssrLoadModule('/src/data/supabaseRepository.ts');
   const { SupabaseFamilyService } = await vite.ssrLoadModule('/src/family/familyService.ts');
+  const { SupabaseReminderService } = await vite.ssrLoadModule('/src/reminders/reminderService.ts');
   const { planReminders } = await vite.ssrLoadModule('/src/reminders/schedule.ts');
   const { createReminderStore, createReminderTickHandler } = await vite.ssrLoadModule('/src/reminders/delivery.ts');
   const a = await actor(), b = await actor();
@@ -313,6 +314,74 @@ try {
     assert.equal(recovered.status, 200); assert.equal((await recovered.json()).sent, 1, 'Correct key can still deliver the same work');
     assert.equal(sql(`select status||':'||attempts from daypop_reminders.deliveries where device_id='${nextDevice}';`), 'sent:1', 'Correct runtime owns the first durable attempt');
     await rpc(b.client, 'unregister_reminder_device', { p_device_id: nextDevice });
+  });
+  const reminderA = new SupabaseReminderService(a.client, a.id), reminderB = new SupabaseReminderService(b.client, b.id);
+  let clientCalendar, clientRule, personalBefore;
+  const clientInput = () => ({ calendarId: clientCalendar, minutesBefore: [0, 10080], timezone: 'UTC', dateTime: '09:00', includeTodos: false });
+  const clientSubscription = { endpoint: endpoint + '-client', p256dh: encryptionKey, auth: authKey, publicKey };
+  await check('client capabilities preserve stale health and load only safe metadata', async () => {
+    sql(`update daypop_reminders.configuration set public_key='${publicKey}';`);
+    assert.equal((await reminderA.capabilities()).enabled, false, 'Rotation cannot advertise readiness before heartbeat');
+    await rpc(admin, 'reminder_sender_heartbeat', { p_public_key: publicKey });
+    assert.equal((await reminderA.capabilities()).enabled, true, 'Client receives real readiness');
+    for (const service of [reminderA, reminderB]) {
+      const loaded = await service.load();
+      for (const value of loaded.devices) assert.deepEqual(Object.keys(value).sort(), ['createdAt', 'id', 'updatedAt'], 'Client projects only safe metadata');
+      assert.ok(!JSON.stringify(loaded).includes(endpoint), 'Capability URLs never enter client snapshots');
+    }
+  });
+  await check('client rule CAS and explicit off preserve personal data', async () => {
+    await repository.load();
+    const data = await repository.addCalendar({ name: 'Client reminder rule', color: '#336699' });
+    clientCalendar = data.calendars.find(row => row.name === 'Client reminder rule').id;
+    personalBefore = await repository.load();
+    clientRule = await reminderA.setRule(clientInput(), null);
+    assert.deepEqual((await reminderA.load()).rules.find(row => row.calendarId === clientCalendar), clientRule, 'Saved rule rereads through client parser');
+    assert.ok(!(await reminderB.load()).rules.some(row => row.calendarId === clientCalendar), 'Other account cannot read reminder rule');
+    const changed = await reminderA.setRule({ ...clientInput(), minutesBefore: [15] }, clientRule.updatedAt);
+    await assert.rejects(reminderA.setRule(clientInput(), clientRule.updatedAt), error => error.kind === 'conflict', 'Stale CAS must fail safely');
+    assert.deepEqual((await reminderA.load()).rules.find(row => row.calendarId === clientCalendar), changed, 'Conflict preserves committed rule');
+    assert.equal(await reminderA.setRule({ ...clientInput(), minutesBefore: [] }, changed.updatedAt), null);
+    assert.ok(!(await reminderA.load()).rules.some(row => row.calendarId === clientCalendar), 'Off is confirmed by independent reread');
+    assert.deepEqual(await repository.load(), personalBefore, 'Reminder operations do not change personal snapshot');
+  });
+  await check('client device retry and owner-only removal use real RPCs', async () => {
+    const registered = await reminderA.registerDevice(clientSubscription);
+    assert.equal(await reminderA.registerDevice(clientSubscription), registered, 'Client retry preserves device id');
+    assert.ok((await reminderA.load()).devices.some(row => row.id === registered), 'Owner sees registered metadata');
+    assert.ok(!(await reminderB.load()).devices.some(row => row.id === registered), 'Other account sees no device metadata');
+    await reminderB.unregisterDevice(registered);
+    assert.ok((await reminderA.load()).devices.some(row => row.id === registered), 'Other account cannot remove owner device');
+    await reminderA.unregisterDevice(registered);
+    assert.ok(!(await reminderA.load()).devices.some(row => row.id === registered), 'Owner removal rereads absent');
+  });
+  await check('client account-switch race pins real JWT and discards late acknowledgment', async () => {
+    const stale = new SupabaseReminderService(b.client, a.id);
+    await assert.rejects(stale.registerDevice(clientSubscription), error => error.kind === 'session', 'Stale identity cannot register under new account');
+    const original = a.client.auth.getSession;
+    const accountA = (await original.call(a.client.auth)).data.session, accountB = (await b.client.auth.getSession()).data.session;
+    let switchOnce = true;
+    const raceEndpoint = endpoint + '-client-race';
+    try {
+      a.client.auth.getSession = async () => {
+        const value = await original.call(a.client.auth);
+        if (switchOnce) {
+          switchOnce = false;
+          const switched = await a.client.auth.setSession(accountB);
+          assert.ok(!switched.error, 'Switch to real B session before SDK constructs request');
+        }
+        return value;
+      };
+      await assert.rejects(reminderA.registerDevice({ ...clientSubscription, endpoint: raceEndpoint }), error => error.kind === 'session', 'Late result cannot be accepted after switch');
+      assert.equal(sql(`select user_id from public.reminder_push_devices where endpoint='${raceEndpoint}';`), a.id, 'In-flight request stays authorized as A, never B');
+    } finally {
+      a.client.auth.getSession = original;
+      const restored = await a.client.auth.setSession(accountA);
+      assert.ok(!restored.error, 'Restore original test session');
+    }
+    const raceDevice = sql(`select id from public.reminder_push_devices where endpoint='${raceEndpoint}';`);
+    await reminderA.unregisterDevice(raceDevice);
+    assert.deepEqual(await repository.load(), personalBefore, 'Account-switch control leaves personal data unchanged');
   });
   assert.equal(checks, expectedChecks, 'All HTTP groups must execute');
 } catch (cause) {

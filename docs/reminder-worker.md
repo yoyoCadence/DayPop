@@ -27,6 +27,6 @@ lint／typecheck／Pages build／check:build／canonical reminder bundle 通過�
 
 ## 接手與限制
 
-自己的最新四 CI／同 head 完成審查無發現及無未解決討論後才合併。下一段 DP-227 接本人提醒 client service，再接裝置生命週期與 canonical 設定 UI。DP-223／DP-042 尚未完成。
+PR #222 最終 `645e59c359d94a79856384736a69d2061dd0b09d` 的四 CI `41271057932` 全過：Chromium 305 passed／13 skipped（18.9 分鐘），465 pgTAP／12 檔、提醒 HTTP 16/16、真正 Edge 冷啟動與三時區 Deno 仍通過。同 head 審查 completed 無發現及無未解決討論後合併 `21ef5d33e20686c73f7bef5330f53eda8b491218`。下一段 DP-227 接本人提醒 client service，再接裝置生命週期與 canonical 設定 UI。DP-223／DP-042 尚未完成。
 
 這些是 worker runtime／Notification API 證據，沒有 OS 通知外觀、真實 Push service 投遞或 iPhone Home Screen 真機收信證據。沒有正式 migration、秘密、cron、前端發布、使用者通知授權／訂閱、Auth 或 v4／備份改動；正式啟用仍需後續具體驗收與放行。

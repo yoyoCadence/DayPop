@@ -3540,14 +3540,17 @@ function dateAlarm(date, rule) {
 	return instantDateInZone(instant, rule.timezone) === date && instantTimeInZone(instant, rule.timezone) === rule.dateTime ? instant : null;
 }
 //#endregion
+//#region src/reminders/pushEndpoint.ts
+/** Pure client/sender boundary; keep capability URLs out of diagnostics. */
+function isAllowedPushEndpoint(value) {
+	return typeof value === "string" && value.length >= 20 && value.length <= 2048 && value.trim() === value && Array.from(value).every((char) => char.charCodeAt(0) > 31 && char.charCodeAt(0) !== 127) && /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\/[^#\s]+$/.test(value);
+}
+//#endregion
 //#region src/reminders/delivery.ts
 var record = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var HASH = /^[a-f0-9]{64}$/;
 var KEY = /^B[A-Za-z0-9_-]{86}$/;
 var AUTH = /^[A-Za-z0-9_-]{22}$/;
-function isAllowedPushEndpoint(value) {
-	return typeof value === "string" && value.length >= 20 && value.length <= 2048 && value.trim() === value && Array.from(value).every((char) => char.charCodeAt(0) > 31 && char.charCodeAt(0) !== 127) && /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\/[^#\s]+$/.test(value);
-}
 async function reminderJobHash(key) {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");

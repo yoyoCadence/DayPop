@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-227 — 提醒 client 資料邊界（2026-11-01）：** Backlog → Next。DP-226 合併後接本人提醒 capabilities／規則 CAS／裝置 metadata 與受控 RPC adapter，獨立於 v4／備份與個人 snapshot；之後再接瀏覽器裝置生命週期與設定 UI，不越過正式啟用界線。
+- [ ] **DP-228 — 提醒裝置生命週期（2026-11-01）：** Backlog → Next。DP-227 合併後接能力偵測、明確動作後的通知權限／訂閱、裝置確認及停用／登出／帳號切換撤銷；canonical 設定 UI 另段接續，正式啟用仍另待驗收放行。
 
 
 
@@ -234,7 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-226 — 匿名提醒 worker（2026-11-01）：** Backlog → Next → In Progress。由 DP-225 已合併 main 3ae1adf 接續，屬 DP-223 第一段；只接固定 v1／hash 訊息、匿名通知、穩定 tag 與 App scope 點擊／草稿保留，沿既有 cache 邊界。33 新回歸三時區實際列印、完整 1,587 單元＋39 Node、真正 Chromium 通知／冷啟動與既有更新／離線共 24 項、三個負控制精確還原、lint／typecheck／Pages build／預算過，詳 [worker 交接](docs/reminder-worker.md)。自己的最新四 CI／同 head 完成審查後才合併；不申請使用者權限、不訂閱裝置、不改 UI／Auth／schema／版號／正式設定或部署。
+- [ ] **DP-227 — 提醒 client 資料邊界（2026-11-01）：** Backlog → Next → In Progress。DP-226 PR #222 最終 645e59c 的四 CI 41271057932／同 head 完成審查無發現且無未解決討論後合併 21ef5d3，本段由該最新 main 接續。本人 capabilities／規則精確 CAS／安全裝置 metadata／受控 RPC，固定單次 request 帳號並拒絕延遲回應，獨立於 v4／備份。60 新單元三時區實際列印、完整 1,647＋39 Node、真正本機 HTTP 20/20、六個負控制精確還原、Deno 9＋2、lint／typecheck／Pages build／預算過，App JS／CSS 不變，詳 [client 合約與界線](docs/reminder-client.md)。自己的最新四 CI／同 head 完成審查後才合併。尚無 App caller，下一段處理裝置與註冊競態／撤銷，再接設定 UI；不越過正式啟用界線。
 
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next → In Progress。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。 分段由 DP-226 先接匿名 worker，再接 client service／裝置生命週期與原稿設定 UI；各段獨立 PR。
 
@@ -498,6 +498,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-226 — 匿名提醒 worker（2026-11-01）：** Backlog → Next → In Progress → Done。由 DP-225 已合併 main 3ae1adf 接續，屬 DP-223 第一段；固定 v1／hash 訊息、匿名通知、穩定 tag 與 App scope 點擊／草稿保留，沿既有 cache 邊界。33 新回歸三時區實際列印、完整 1,587 單元＋39 Node、真正 Chromium 通知／冷啟動與既有更新／離線共 24 項、三個負控制精確還原、lint／typecheck／Pages build／預算過。PR #222 最終 645e59c 四 CI 41271057932 全過（Chromium 305 passed／13 skipped、18.9 分鐘），同 head 完成審查無發現且無未解決討論後合併 21ef5d3，詳 [worker 交接](docs/reminder-worker.md)。沒有使用者權限／訂閱、UI／Auth／schema／版號／正式設定或部署；下一段 DP-227。
 
 - [x] **DP-225 — 連續與單月翻頁切換（2026-10-31 擁有者指定）：** Backlog → Next → In Progress → Done。依三張參考圖保留連續捲動、新增單月完整頁與左右滑動／前後月導覽；切換保留可見月份，記住本機檢視選擇，沿 DayPop 介面與 canonical 日曆內容。DP-224 已於 PR #220 最終 4c12b32 四 CI（41260244520，Chromium 299 passed／13 skipped、WebKit 9）與同 head 完成審查無發現後合併 70e8947，本項從最新 main 獨立接續。共用日格與日期鍵盤、裝置模式 key、月份交接、單月 4／5／6 或固定六列、原生水平觸控及短螢幕捲入；Safari 入口焦點與 320px 標題已修正。22 新單元三時區實際列印、1,554 單元＋39 Node、相關 Chromium 12／WebKit 10、兩個 runtime 負控制精確還原、lint／typecheck／Pages build／預算過；十二圖目視、真離線模式重載與資料 bytes 不變，儲存失敗持續警告。詳 [行為與證據](docs/month-paging.md)，PR #221 最終 8d31ac0 的四 CI 41266688371／同 head 完成審查無發現且無未解決討論後合併 3ae1adf（Chromium 重跑 303 passed／13 skipped、22.8 分鐘；先前全測試過但 job 逾時取消不算 pass）；不改帳號資料、版號或部署。
 

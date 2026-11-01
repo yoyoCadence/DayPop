@@ -36,8 +36,9 @@
 - **DP-220：訂閱與投遞資料邊界。** 第 20 份 migration 預設停用，四表全 RLS；本人日曆規則與裝置能力分開，服務 RPC 沿既有分享／私人例外圖授權，包含跨日曆來源；五分鐘有效窗、版本／啟用界線、唯一 lease、重試／gone 清理及分頁。通知 59 項／完整 445 pgTAP、11 組真正本機 Auth／HTTP、三組多連線競態與兩個 finally 精確還原的負控制通過，既有家庭 HTTP 17/17。詳 [資料邊界、驗證與限制](reminder-backend.md)。自己的四 CI／同 head 完成審查後才合併，未套遠端 migration 或發通知。
 - **DP-221：受保護投遞核心。** 專用 token 在建立 runtime 前驗證；既有 planner／服務 RPC 串接、claim 後剩餘 TTL／匿名固定 payload／狀態分類／未確認回應／有界執行。76 項單元與 15 組真正本機 HTTP（含兩個同時 tick 只一筆送交本機 transport，以及本輪 deadline 後仍有效工作的 retry:1→下一輪同 tag sent:2）及 token／TTL／deadline 負控制通過；三個實際時區皆列印。詳 [核心流程、證據與限制](reminder-delivery-core.md)。本段尚未有 Edge Function／VAPID／真正網路 adapter；自己的四 CI／同 head 審查後才合併。
 - **DP-222：Edge Function 與受限 transport。** 固定依賴／lock、可重建 canonical 核心、VAPID／匿名加密、期限與 redirect 限制及 key 綁定健康狀態；本機真正 Edge 冷啟動與 RPC、獨立解密／簽章、原生網路與負控制，詳 [runtime、證據與限制](reminder-edge.md)。配置仍停用，未發真 Push；自己的四 CI／同 head 審查後才合併。
-- **DP-226：匿名 worker（DP-223 第一段）。** 只接既有 v1／hash wire、固定匿名通知、穩定 tag 與固定 App scope 點擊，保留已開表單；33 項實際 generated worker 回歸與真正 Chromium 通知／冷啟動均過，詳 [worker 證據與限制](reminder-worker.md)。沒有使用者權限／訂閱或正式啟用，自己的四 CI／同 head 審查後才合併。
-- **後續：App（DP-223／DP-227）。** 先接獨立 client service，再補權限、本人日曆規則、裝置與登出／帳號切換撤銷及 canonical 設定 UI；之後準備正式設定、migration、cron、部署與真機收信，不把本機 Notification API 當成正式收信。
+- **DP-226：匿名 worker（DP-223 第一段）。** 只接既有 v1／hash wire、固定匿名通知、穩定 tag 與固定 App scope 點擊，保留已開表單；33 項實際 generated worker 回歸與真正 Chromium 通知／冷啟動均過，PR #222 的四 CI／同 head 完成審查無發現後合併 21ef5d3，詳 [worker 證據與限制](reminder-worker.md)。沒有使用者權限／訂閱或正式啟用。
+- **DP-227：本人提醒 client service。** 獨立資料合約、精確 CAS、安全 metadata 與帳號切換 request 身分；60 新單元／三時區、真正本機 HTTP 20/20 與六個精確還原負控制過，詳 [合約與證據](reminder-client.md)。沒有 App caller，自己的四 CI／同 head 審查後才合併。
+- **後續：App（DP-223／DP-228）。** 補裝置能力、明確權限、本人日曆規則、裝置與登出／帳號切換撤銷及 canonical 設定 UI；之後準備正式設定、migration、cron、部署與真機收信，不把本機 Notification API／HTTP 當成正式收信。
 
 DP-219 不連線改正式帳號、不發通知、不放金鑰、不改資料庫或 0.4.6 公告。每段依擁有者既有授權開 PR，自己的四 CI／同 head 審查完成無發現及無未解決討論後合併。正式 migration／伺服器秘密／排程及前端發布仍需依既有界線，先完成可審核實作才請擁有者放行。
 
