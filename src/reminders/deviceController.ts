@@ -65,7 +65,7 @@ export class ReminderDeviceController {
   private mark(record: ReminderDeviceRecord, patch: Parameters<ReminderDeviceRecords['update']>[1]) {
     return this.records.update(this.latest(record), patch);
   }
-  private forget(record: ReminderDeviceRecord) { this.records.remove(this.latest(record)); }
+  private forget(record: ReminderDeviceRecord) { this.records.remove(record); }
   private remember(account: Account, lease: RegisteredReminderDevice) { this.#removers.set(account.userId + ':' + lease.id, lease.remove); }
   private refreshLater() {
     if (!this.#closed && !this.#enableTask && !this.#stopTask && !this.#registrations.size && !this.#localStops.size) void this.refresh();
@@ -165,7 +165,7 @@ export class ReminderDeviceController {
   private async cleanupLease(ticket: Ticket, record: ReminderDeviceRecord, lease: RegisteredReminderDevice): Promise<void> {
     this.remember(ticket.account, lease);
     try {
-      this.mark(record, { phase: 'unconfirmed', deviceId: lease.id });
+      record = this.mark(record, { phase: 'unconfirmed', deviceId: lease.id });
     } catch { /* An existing pre-registration marker still records uncertainty if persistence fails. */ }
     await bounded(Promise.all([lease.remove(), this.unsubscribe()]));
     this.forget(record); this.#removers.delete(ticket.account.userId + ':' + lease.id);
@@ -204,7 +204,8 @@ export class ReminderDeviceController {
   private async stop(account: Account | null): Promise<boolean> {
     if (this.#stopTask) { await this.#stopTask; return this.stop(account); }
     const run = async () => {
-      const state = this.records.read(), own = state.records.filter(row => account === null || row.userId === account.userId);
+      const state = this.records.read();
+      let own = state.records.filter(row => account === null || row.userId === account.userId);
       let confirmed = state.status === 'ready' && !this.#registrations.size;
       const results = await bounded(Promise.allSettled([this.unsubscribe(), ...own.map(async row => {
         if (!row.deviceId) throw new Error(PENDING);
@@ -214,6 +215,15 @@ export class ReminderDeviceController {
         await remove();
       })])).catch(() => null);
       if (!results || results.some(result => result.status === 'rejected')) confirmed = false;
+      if (!confirmed && state.status === 'ready' && results?.[0]?.status === 'fulfilled') {
+        // Registration is sent only after the fingerprint write is confirmed. A marker without either
+        // fingerprint or id never reached that RPC, so unrelated remote devices cannot block its cleanup.
+        own = own.filter(row => {
+          if (row.fingerprint !== null || row.deviceId !== null) return true;
+          try { this.forget(row); return false; } catch { return true; }
+        });
+        if (!own.length && !this.#registrations.size) confirmed = true;
+      }
       if (confirmed) {
         for (const row of own) { try { this.forget(row); } catch { confirmed = false; } }
       } else {

@@ -226,6 +226,42 @@ describe('reminder device coordinator (DP-230)', () => {
     const h = setup(); h.seed(A, null, 'unconfirmed'); await h.controller.setIdentity(h.account);
     expect(await h.controller.disable()).toBe(true); expect(h.records.read().records).toEqual([]);
   });
+  it.each([false, true])('clears an interrupted pre-registration receipt after local absence, preserving unrelated remote devices (native %s)', async native => {
+    const h = setup(); h.records.create(A, KEY);
+    h.snapshot.devices = [{ id: OTHER, createdAt: NOW, updatedAt: NOW }];
+    if (native) h.setNative(nativeIdentity);
+    await h.controller.setIdentity(h.account);
+    expect(h.controller.getSnapshot().canEnable).toBe(false); expect(h.service.registerDeviceLease).not.toHaveBeenCalled();
+    expect(await h.controller.disable()).toBe(true); expect(h.records.read().records).toEqual([]);
+    expect(h.snapshot.devices.map(row => row.id)).toEqual([OTHER]); expect(h.service.captureDeviceRemoval).not.toHaveBeenCalled();
+    expect(h.controller.getSnapshot().canEnable).toBe(true);
+  });
+  it('retains an interrupted pre-registration receipt when local removal is unconfirmed', async () => {
+    const h = setup(); h.records.create(A, KEY); await h.controller.setIdentity(h.account);
+    h.browser.unsubscribe.mockRejectedValue(new BrowserReminderError('cleanup', '尚未停用'));
+    expect(await h.controller.disable()).toBe(false); expect(h.records.read().records).toHaveLength(1);
+    expect(h.controller.getSnapshot().phase).toBe('unconfirmed');
+  });
+  it('clears only never-sent receipts while retaining an unknown sent operation and every unrelated remote device', async () => {
+    const h = setup(); h.records.create(A, KEY); const sent = h.seed(A, null, 'unconfirmed');
+    h.snapshot.devices = [{ id: OTHER, createdAt: NOW, updatedAt: NOW }]; await h.controller.setIdentity(h.account);
+    expect(await h.controller.disable()).toBe(false); expect(h.records.read().records).toHaveLength(1);
+    expect(h.records.read().records[0]?.operationId).toBe(sent.operationId); expect(h.snapshot.devices.map(row => row.id)).toEqual([OTHER]);
+    expect(h.service.captureDeviceRemoval).not.toHaveBeenCalled();
+  });
+  it('never clears an interrupted pre-registration receipt across a future-data barrier', async () => {
+    const h = setup(), marker = h.records.create(A, KEY), bytes = h.raw.getItem(h.records.prefix + marker.operationId);
+    const futureKey = h.records.prefix + '00000000-0000-4000-8000-000000000234'; h.raw.setItem(futureKey, '{"version":2}');
+    await h.controller.setIdentity(h.account); expect(await h.controller.disable()).toBe(false);
+    expect(h.raw.getItem(h.records.prefix + marker.operationId)).toBe(bytes); expect(h.raw.getItem(futureKey)).toBe('{"version":2}');
+  });
+  it('does not reuse a stale never-sent proof after another context has saved a fingerprint', async () => {
+    const h = setup(), marker = h.records.create(A, KEY); h.snapshot.devices = [{ id: OTHER, createdAt: NOW, updatedAt: NOW }];
+    await h.controller.setIdentity(h.account);
+    h.browser.unsubscribe.mockImplementationOnce(async () => { h.records.update(marker, { fingerprint, phase: 'unconfirmed' }); h.setNative(null); });
+    expect(await h.controller.disable()).toBe(false); expect(h.records.read().records).toHaveLength(1);
+    expect(h.records.read().records[0]?.fingerprint).toBe(fingerprint); expect(h.snapshot.devices.map(row => row.id)).toEqual([OTHER]);
+  });
   it('never silently adopts a foreign or untracked native subscription after cold-start login', async () => {
     const h = setup(); h.seed(B); h.snapshot.devices = []; await h.controller.setIdentity(h.account);
     expect(h.browser.unsubscribe).toHaveBeenCalledTimes(1); expect(h.service.registerDeviceLease).not.toHaveBeenCalled();

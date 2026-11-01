@@ -41,6 +41,14 @@ epoch／帳號檢查在原生同意、摘要、註冊及落盤後重查。八秒
 
 修正後完整 1,758 單元／100 檔（105.52 秒）＋39 Node、lint／typecheck／Pages build／check:build／canonical bundle 過，App JS／CSS／預算仍相同。另獨立撤回新 predicate，新恢復案例失敗；finally 精確還原 controller SHA-256 `fcbb2c83a2f9d56d1c1df7fd6695b4be4c1bc2124d4083f08f22a700a67d0545`，正常 registering 相關 6 項再過。最新 head 四 CI／完成審查仍須通過，不沿用原 head 的 gate 或審查，下方界線不變。
 
+## PR #226 未送出操作清理修正
+
+`1f4d76e` 的同 head 審查有另一項 P2：初始收據保存後、摘要確認前關閉 App，收據尚無摘要或 id，原停用規則卻要求本人所有遠端裝置都不存在。帳號另有其他裝置時會卡住，雖然這筆操作尚未送 register RPC。兩個 native 有／無的 cold restart 及混合 unknown 操作，在舊 controller 均先失敗。
+
+現在只在本機移除確認、收據集合可寫時，清掉沒有摘要且沒有 id 的未送出收據；其他遠端裝置保留，帶摘要的未知操作仍須原本的確認。新增本機停用失敗、future barrier 及混合操作隔離，並補上另一個先失敗的競態：讀取無摘要收據後，另一個 context 寫入摘要，不可再拿舊證明刪除。收據刪除使用精確 revision；lease 清理保存自己更新後的 revision。這仍不是跨分頁原子鎖。
+
+本次六項新回歸，controller 共 43、相關四檔 176/176 於 UTC／America/New_York／Etc/GMT-8 實際列印全過。撤掉未送出清理及改回無條件讀最新收據刪除，兩個獨立負控制皆被新案例抓到，finally 精確還原 controller SHA-256 `37add0db9b9b901e93c542fc0fed0faf84c1ef703d85ae9d9a829ecf2cfd2050`。最終完整 1,764 單元／100 檔（102.23 秒）＋39 Node、lint／typecheck／Pages build／check:build／canonical bundle 過，App 產物及原預算不變；最新 head 四 CI／完成審查仍須通過，沒有 App caller 或正式啟用。
+
 後續 caller 必須在 Auth callback 外通知 controller，明確登出先呼叫 disable，外部身分變化再 setIdentity；不能在 callback 內等待 SDK Auth 方法。storage／visibility 事件需使未使用的 preflight 失效、重新讀 metadata，不能把 OS 權限提示造成的背景切換當登出。收據 revision 是已觀察到的衝突檢查，不是跨分頁原子鎖；跨分頁同時操作及重新確認由下一段 UI／Auth 整合驗證。
 
 沒有 UI、AuthProvider、user-data schema、migration、秘密、cron、正式訂閱、Push 投遞、版號、公告或部署變更；controller 測試使用 ports，不能當實體 iPhone 或 OS 通知驗收。DP-223／042 未完成，正式啟用仍需後續具體放行。
