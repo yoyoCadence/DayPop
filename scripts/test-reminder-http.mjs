@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 21;
+const expectedChecks = 22;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -397,6 +397,22 @@ try {
     }
     await reminderB.unregisterDevice(other);
     assert.deepEqual(await repository.load(), personalBefore, 'Captured cleanup preserves personal snapshot');
+  });
+  await check('successful registration lease removes only A after a later real account switch', async () => {
+    const lease = await reminderA.registerDeviceLease({ ...clientSubscription, endpoint: endpoint + '-lease-a' });
+    const other = await reminderB.registerDevice({ ...clientSubscription, endpoint: endpoint + '-lease-b' });
+    const accountA = (await a.client.auth.getSession()).data.session, accountB = (await b.client.auth.getSession()).data.session;
+    try {
+      const switched = await a.client.auth.setSession(accountB); assert.ok(!switched.error, 'Switch after successful lease return');
+      await assert.rejects(reminderA.registerDeviceLease(clientSubscription), error => error.kind === 'session', 'Old A cannot register after switch');
+      await lease.remove();
+      assert.equal(sql(`select count(*) from public.reminder_push_devices where id='${lease.id}';`), '0', 'Lease cleanup is independently absent');
+      assert.ok((await reminderB.load()).devices.some(row => row.id === other), 'Lease never removes B device');
+    } finally {
+      const restored = await a.client.auth.setSession(accountA); assert.ok(!restored.error, 'Restore original A session');
+    }
+    await reminderB.unregisterDevice(other);
+    assert.deepEqual(await repository.load(), personalBefore, 'Lease preserves personal snapshot');
   });
   assert.equal(checks, expectedChecks, 'All HTTP groups must execute');
 } catch (cause) {

@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-230 — 提醒裝置 controller（2026-11-01）：** Backlog → Next。DP-229 合併後整合 service／browser／安全收據，處理明確啟用、進行中註冊、停用／登出前與外部帳號切換撤銷及未確認狀態；再另段接 canonical UI／AuthProvider，正式啟用仍待驗收放行。
+- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next。DP-230 合併後將 controller 接到已確認登入／登出與外部身分切換，依實際原稿渲染接 canonical 設定／日曆規則 UI；完整互動、焦點、quota、離線與裝置失敗狀態驗證後才準備正式候選，正式啟用另待放行。
 
 
 
@@ -234,7 +234,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-229 — 提醒註冊補償與撤銷資料（2026-11-01）：** Backlog → Next → In Progress。承接 PR #224 最終 ba199f7 四 CI 41297188997／同 head 完成審查無發現及無未解決討論後合併 5354543。晚到已知 id 註冊補償、限固定本人裝置的暫時撤銷 closure／重讀及五秒期限；scope 內獨立安全收據／裝置摘要，quota／corrupt／future fail closed，不放 capability 或 token。32 新回歸、相關 132 項三時區實際列印、完整 1,720＋39 Node、真正本機 HTTP 21/21、十個負控制精確還原、lint／typecheck／Pages build／原預算過，詳 [撤銷與收據](docs/reminder-revocation.md)。自己的最新四 CI／同 head 完成審查後才合併；DP-230 再整合 controller，UI／AuthProvider 另段，本段無 App caller 或正式啟用。
+- [ ] **DP-230 — 提醒裝置 controller（2026-11-01）：** Backlog → Next → In Progress。PR #225 最終 384105c 的四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，由該最新 main 接續。整合 service／browser／安全收據，處理明確啟用、晚到註冊 lease、停用／帳號切換撤銷及未確認狀態；PR #226 原 head 3dd843b 的 P2（中斷 registering 無法恢復）已補四項回歸、明確同帳號同訂閱重試及精確還原負控制；1f4d76e 的 P2 未送出收據另補局部清理／精確 revision、六項回歸及兩個負控制精確還原；最終 1,764＋39 Node、相關 176 三時區、lint／typecheck／build／原預算過，須修正後 head 四 CI／完成審查才合併。DP-231 再接 canonical UI／AuthProvider，本段沒有 App caller，正式啟用仍待驗收放行。
 
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next → In Progress。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。 分段由 DP-226 先接匿名 worker，再接 client service／裝置生命週期與原稿設定 UI；各段獨立 PR。
 
@@ -498,6 +498,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-229 — 提醒註冊補償與撤銷資料（2026-11-01）：** Backlog → Next → In Progress → Done。由 5354543 接晚到已知 id 註冊補償、固定本人裝置的暫時撤銷 closure／重讀與五秒期限；獨立安全收據／裝置摘要與 quota／corrupt／future barrier。32 新回歸、相關 132 項三時區實際列印、完整 1,720＋39 Node、真正本機 HTTP 21/21、十個負控制精確還原、lint／typecheck／Pages build／原預算過。PR #225 最終 384105c 四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，詳 [撤銷與收據](docs/reminder-revocation.md)。本機七集合各 0／配置清空／stack 已停；下一段 controller，再接 UI／AuthProvider。沒有 App caller 或正式啟用。
 
 - [x] **DP-228 — 瀏覽器提醒 adapter（2026-11-01）：** Backlog → Next → In Progress → Done。由 cff0a15 拆出能力／直接動作後權限、scope／active worker v1 握手、暫時能力與取消／本機移除。40 新 adapter＋1 worker、相關 74 項三時區實際列印、完整 1,688＋39 Node、真正 Chromium 握手／通知／更新 16 項與錯版負控制後四項再過、五個負控制精確還原、lint／typecheck／Pages build／原預算過。PR #224 最終 ba199f7 四 CI 41297188997 全過（Chromium 307 passed／13 skipped、22.9 分鐘），同 head 完成審查無發現及無未解決討論後合併 5354543，詳 [browser 交接](docs/reminder-browser.md)。下一段補償／撤銷資料與 controller，再接 UI／AuthProvider；沒有 App caller、真正 Push 訂閱、正式配置或發布。
 

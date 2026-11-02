@@ -156,7 +156,7 @@ describe('reminder client boundary (DP-227)', () => {
   it('pins a sending operation to A even when the shared client switches to B, then rejects the late result', async () => {
     const h = remote(); h.auth.mockResolvedValue({ data: { session: session(B) }, error: null })
       .mockResolvedValueOnce({ data: { session: session() }, error: null });
-    await expect(h.service.registerDevice(subscription)).rejects.toMatchObject({ kind: 'session' });
+    await expect(h.service.registerDevice(subscription)).rejects.toMatchObject({ kind: 'session', removedDeviceId: DEVICE });
     expect(h.fetcher).toHaveBeenCalledTimes(3);
     for (const [, init] of h.fetcher.mock.calls) expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
     expect(String(h.fetcher.mock.calls[1]![0])).toContain('/rpc/unregister_reminder_device');
@@ -181,6 +181,16 @@ describe('reminder client boundary (DP-227)', () => {
     expect(mutateAuth).not.toHaveBeenCalled();
     await expect(h.service.registerDevice(subscription)).rejects.toMatchObject({ kind: 'session' });
     await remove(); expect(h.fetcher).toHaveBeenCalledTimes(4); // Explicit cleanup retry remains fixed to A/device.
+  });
+  it('returns a fixed A-scoped cleanup lease even when Auth switches after successful registration', async () => {
+    const h = remote(), lease = await h.service.registerDeviceLease(subscription);
+    expect(lease.id).toBe(DEVICE); expect(Object.keys(lease).sort()).toEqual(['id', 'remove']);
+    h.auth.mockResolvedValue({ data: { session: session(B) }, error: null });
+    await lease.remove(); expect(h.fetcher).toHaveBeenCalledTimes(3);
+    expect(JSON.parse(String(h.fetcher.mock.calls[1]![1]?.body))).toEqual({ p_device_id: DEVICE });
+    for (const [, init] of h.fetcher.mock.calls) expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + session().access_token);
+    await expect(h.service.registerDeviceLease(subscription)).rejects.toMatchObject({ kind: 'session' });
+    expect(h.fetcher).toHaveBeenCalledTimes(3);
   });
   it('refuses whitespace-extended cleanup identifiers before sending', async () => {
     const h = remote(); await expect(h.service.captureDeviceRemoval(DEVICE + '\n')).rejects.toMatchObject({ kind: 'invalid' });
