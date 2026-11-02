@@ -52,7 +52,7 @@ export function ReminderSettings({ calendars, timezone, onOpenAuth, updater }: {
         {!auth.user ? <button className="button secondary" type="button" onClick={onOpenAuth} disabled={Boolean(auth.configurationError)}>登入後設定提醒</button> :
           <div className="reminder-actions">
             <button className="button secondary" type="button" disabled={!reminders || busy || !confirmed} onClick={() => { setActionError(null); void reminders!.refresh().catch(cause => setActionError(describe(cause))); }}>重新確認提醒</button>
-            {view?.pendingCount ? <button className="button secondary" type="button" disabled={busy || !reminders} onClick={() => { setActionError(null); void reminders!.disable().catch(cause => setActionError(describe(cause))); }}>停用這台裝置並確認</button> : null}
+            {view && (view.pendingCount > 0 || view.phase === 'unconfirmed') ? <button className="button secondary" type="button" disabled={busy || !reminders} onClick={() => { setActionError(null); void reminders!.disable().catch(cause => setActionError(describe(cause))); }}>停用這台裝置並確認</button> : null}
             {view?.error?.includes('完成 App 更新') ? <button className="button secondary" type="button" disabled={updater.preparing} onClick={() => void updater.updateNow()}>完成 App 更新</button> : null}
           </div>}
         {actionError ? <p className="auth-action-error" role="alert">{actionError}</p> : null}

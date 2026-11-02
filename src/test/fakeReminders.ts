@@ -32,6 +32,8 @@ export class FakeReminderHarness {
     this.ownDevices(userId).delete(deviceId);
   }
   releaseRegistrations() { this.holdRegistration = false; for (const release of this.#releases.splice(0)) release(); }
+  dropNativeSubscription() { this.#native = null; }
+  deleteServerDevices(userId: string) { this.ownDevices(userId).clear(); }
   changeRuleElsewhere(userId: string, calendarId: string, minutes: number[]) {
     const rows = this.ownRules(userId), current = rows.get(calendarId);
     if (!current) throw new Error('Seed a saved synthetic rule first');

@@ -235,7 +235,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next → In Progress。先於 PR #226 等待期間在獨立分支準備，現已對齊其最終 2ae943d 四 CI／完成審查後合併的 main bed614a；從此完成自己的 UI／Auth PR。DP-230 合併後將 controller 接到已確認登入／登出與外部身分切換，依實際原稿渲染接 canonical 設定／日曆規則 UI；目前已接正式 host／Auth／原稿設定 UI，37 新單元／完整 1,801＋39 Node、213 三時區、Chromium 16 passed／6 共用矩陣略過、WebKit 12、本機 production 真正兩帳號 Auth／HTTP及 SQL 個人資料不變、十負控制精確還原與六張目視；native／健康為明確替身，無實際 Push。正式啟用前置另段核對；自己的最新四 CI／同 head 完成審查才合併，詳 docs/reminder-settings.md。擁有者 2026-11-02 選擇提醒完成後與月曆修正聯合發布。
+- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next → In Progress。先於 PR #226 等待期間在獨立分支準備，現已對齊其最終 2ae943d 四 CI／完成審查後合併的 main bed614a；從此完成自己的 UI／Auth PR。DP-230 合併後將 controller 接到已確認登入／登出與外部身分切換，依實際原稿渲染接 canonical 設定／日曆規則 UI；目前已接正式 host／Auth／原稿設定 UI，38 新單元／完整 1,802＋39 Node、214 三時區、Chromium 18 passed／6 共用矩陣略過、WebKit 12、本機 production 真正兩帳號 Auth／HTTP及 SQL 個人資料不變、十一負控制精確還原與六張目視；native／健康為明確替身，無實際 Push。正式啟用前置另段核對；自己的最新四 CI／同 head 完成審查才合併，詳 docs/reminder-settings.md。擁有者 2026-11-02 選擇提醒完成後與月曆修正聯合發布。 PR #227 初次 a6c31b3 的 P2：active 收據失配但 pendingCount=0 時缺少恢復入口，已補明確停用、兩種遺失情境手機／桌面回歸與精確還原負控制；最新 head gate 尚待通過。
 
 
 

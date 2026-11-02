@@ -42,6 +42,26 @@ test('未知註冊可明確重試；登出後晚到 lease 仍清理原帳號', a
   await expect(reminderToggle(page)).toBeDisabled(); await expect(page.getByRole('button', { name: '通知設定', exact: true })).toBeHidden(); clean();
 });
 
+test('原生訂閱消失與伺服器移除裝置的 active 收據可明確停用再開啟', async ({ page }) => {
+  const clean = monitorBrowser(page); await reminderLogin(page); await enableReminder(page);
+  for (const missing of ['native', 'server']) {
+    await page.evaluate(({ missing, userId }) => {
+      const h = (window as ReminderHarnessWindow).__daypopReminderHarness!;
+      if (missing === 'native') h.dropNativeSubscription(); else h.deleteServerDevices(userId);
+    }, { missing, userId: REMINDER_ACCOUNT });
+    await page.getByRole('button', { name: '重新確認提醒', exact: true }).click();
+    await expect(reminderToggle(page)).toBeDisabled();
+    expect((await reminderReceipts(page)).map(row => row.phase)).toEqual(['active']);
+    await expect(page.getByText(/有 \d+ 筆裝置操作待確認/)).toHaveCount(0);
+    await page.getByRole('button', { name: '停用這台裝置並確認', exact: true }).click();
+    await expect.poll(() => reminderReceipts(page)).toEqual([]);
+    await expect(reminderToggle(page)).toBeEnabled();
+    expect(await page.evaluate(id => (window as ReminderHarnessWindow).__daypopReminderHarness!.devices.get(id)?.size, REMINDER_ACCOUNT)).toBe(0);
+    await enableReminder(page);
+  }
+  expect(await page.evaluate(() => (window as ReminderHarnessWindow).__daypopReminderHarness!.stats.consents)).toBe(3); clean();
+});
+
 test('後端、拒絕權限、主畫面與舊 worker 狀態不顯示假成功', async ({ page }) => {
   const clean = monitorBrowser(page); await reminderLogin(page);
   await page.evaluate(() => { (window as ReminderHarnessWindow).__daypopReminderHarness!.capabilities.enabled = false; });

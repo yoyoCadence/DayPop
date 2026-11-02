@@ -10,6 +10,8 @@ export interface ReminderHarnessState {
   stats: { consents: number; activation: boolean[]; registrations: number };
   devices: Map<string, Map<string, unknown>>;
   releaseRegistrations(): void;
+  dropNativeSubscription(): void;
+  deleteServerDevices(userId: string): void;
   changeRuleElsewhere(userId: string, calendarId: string, minutes: number[]): void;
 }
 export type ReminderHarnessWindow = Window & { __daypopReminderHarness?: ReminderHarnessState };

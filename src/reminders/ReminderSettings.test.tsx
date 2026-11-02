@@ -65,6 +65,12 @@ describe('calendar reminder settings (DP-231)', () => {
     await h.render(); expect(container.textContent).toContain('重新登入原帳號'); await click(button('通知設定')); expect(h.onOpenSettings).toHaveBeenCalledTimes(1);
     h.auth.user = { id: A } as Session['user']; await h.render(); await click(button('停用這台裝置並確認')); expect(h.reminders.disable).toHaveBeenCalledTimes(1);
   });
+  it('offers explicit cleanup for an unmatched active receipt even with zero pending count', async () => {
+    const h = fixture(); h.reminders.view.phase = 'unconfirmed'; h.reminders.view.canEnable = false; h.reminders.view.pendingCount = 0;
+    await h.render(); expect(container.querySelector<HTMLButtonElement>('.set-pref-toggle')!.disabled).toBe(true);
+    expect(button('停用這台裝置並確認')).toBeDefined(); await click(button('停用這台裝置並確認'));
+    expect(h.reminders.disable).toHaveBeenCalledTimes(1); expect(h.reminders.enable).not.toHaveBeenCalled();
+  });
   it('focuses and restores the calendar opener when Escape or backdrop cancels', async () => {
     const h = fixture(); await h.render(); const opener = container.querySelector<HTMLButtonElement>('.reminder-calendar-row')!;
     await click(opener); expect(dialog()).not.toBeNull(); expect(dialog()!.contains(document.activeElement)).toBe(true);
