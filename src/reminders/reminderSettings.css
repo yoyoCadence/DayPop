@@ -1,0 +1,17 @@
+.reminder-settings-detail { padding: 0 13px 13px; }
+.reminder-actions, .reminder-dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.reminder-calendar-list { border-top: 1px solid var(--line); }
+.reminder-calendar-row { display: flex; justify-content: space-between; gap: 12px; width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 12px 13px; background: transparent; color: var(--fg); text-align: start; font-size: 14px; }
+.reminder-calendar-row span { min-width: 0; overflow-wrap: anywhere; }
+.reminder-calendar-row span:last-child { color: var(--muted); font-size: 12px; flex-shrink: 0; max-width: 55%; }
+.reminder-calendar-row:disabled { opacity: 0.65; }
+.reminder-rule-note { padding: 0 13px; }
+.reminder-rule-dialog { max-width: 380px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.reminder-rule-dialog h2 { margin-top: 0; }
+.reminder-calendar-name { overflow-wrap: anywhere; }
+.reminder-checkbox { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 14px; line-height: 1.5; margin: 12px 0; }
+.reminder-checkbox input { flex: none; width: 20px; height: 20px; accent-color: var(--accent); }
+.reminder-rule-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.reminder-rule-fields:disabled { opacity: 0.65; }
+.reminder-rule-dialog .cal-manage-input { font-size: 16px; min-width: 0; max-width: 100%; }
+.reminder-dialog-actions { justify-content: flex-end; margin-top: 16px; }

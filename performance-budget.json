@@ -1,7 +1,7 @@
 {
   "javascript": {
     "maxRawBytes": 819200,
-    "maxGzipBytes": 225280
+    "maxGzipBytes": 240640
   },
   "pets": {
     "maxCharacterBytes": 196608,

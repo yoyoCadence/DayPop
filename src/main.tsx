@@ -4,6 +4,7 @@ import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { SessionDataProvider } from './data/SessionDataProvider';
 import { AppUpdateProvider } from './pwa/AppUpdateProvider';
+import { ReminderProvider } from './reminders/ReminderProvider';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RootErrorFallback } from './shell/RootErrorFallback';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -27,11 +28,13 @@ createRoot(document.getElementById('root')!).render(
           covers this file's composition (`e2e/version-check.spec.ts` does). */}
       <AppUpdateProvider>
         <AuthProvider>
-          <SessionDataProvider>
-            <ThemeProvider>
-              <App />
-            </ThemeProvider>
-          </SessionDataProvider>
+          <ReminderProvider>
+            <SessionDataProvider>
+              <ThemeProvider>
+                <App />
+              </ThemeProvider>
+            </SessionDataProvider>
+          </ReminderProvider>
         </AuthProvider>
       </AppUpdateProvider>
     </ErrorBoundary>

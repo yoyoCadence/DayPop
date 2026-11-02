@@ -3,6 +3,7 @@ import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
+import { enableReminder, reminderDialog, reminderLogin, reminderToggle, type ReminderHarnessWindow } from './reminder-support';
 import {
   agendaRow,
   calendarViewButton,
@@ -14,9 +15,26 @@ import {
 } from './support';
 
 // DP-159: deliberately small WebKit gate, not the full Chromium matrix or an
-// iOS device claim. Every test uses a fresh guest context and the real adapter.
+// iOS device claim. Original tests use a fresh guest and real data adapter;
+// reminder UI cases explicitly inject synthetic service/browser ports, without OS Push claims.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('提醒設定明確同意、規則保存與取消後焦點', async ({ page }) => {
+  const clean = monitorBrowser(page); await reminderLogin(page); await enableReminder(page);
+  const opener = page.locator('.reminder-calendar-row'); await opener.click(); const dialog = reminderDialog(page);
+  await dialog.getByLabel('開啟這本日曆的提醒').check(); await dialog.getByLabel('提前幾分鐘', { exact: false }).fill('15');
+  await dialog.getByRole('button', { name: '儲存', exact: true }).click(); await expect(dialog).toBeHidden(); await expect(opener).toBeFocused();
+  await opener.click(); await dialog.getByRole('button', { name: '取消', exact: true }).click(); await expect(opener).toBeFocused();
+  await reminderToggle(page).click(); await expect(reminderToggle(page)).toHaveAttribute('aria-pressed', 'false'); clean();
+});
+
+test('提醒後端尚未啟用時不自動要求同意', async ({ page }) => {
+  const clean = monitorBrowser(page); await reminderLogin(page);
+  await page.evaluate(() => { (window as ReminderHarnessWindow).__daypopReminderHarness!.capabilities.enabled = false; });
+  await page.getByRole('button', { name: '重新確認提醒', exact: true }).click(); await expect(reminderToggle(page)).toBeDisabled();
+  await expect(page.getByText('背景提醒尚未啟用，請稍後再試。', { exact: true })).toBeVisible(); clean();
 });
 
 test('單月切換、列數、鍵盤、重載與左右手勢', async ({ page }) => {

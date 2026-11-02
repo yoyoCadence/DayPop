@@ -7,6 +7,8 @@ import { FamilyInvitationGate } from './family/FamilyInvitationGate';
 import { ReleaseNoticeDialog } from './pwa/ReleaseNoticeDialog';
 import { UpdateDialog } from './pwa/UpdateDialog';
 import { useAppUpdateState } from './pwa/appUpdateContext';
+import { ReminderWarning } from './reminders/ReminderWarning';
+import { useReminders } from './reminders/reminderContext';
 import { CalendarScreen, type CalendarFocus } from './screens/calendar/CalendarScreen';
 import { downloadJsonBackup } from './screens/backupDownload';
 import { DataRecoveryScreen } from './screens/DataRecoveryScreen';
@@ -45,6 +47,7 @@ export default function App() {
   const updater = useAppUpdateState();
   const modalLayerOpen = useModalLayerOpen();
   const { user, isPasswordRecovery } = useAuth();
+  const reminders = useReminders();
 
   const { state, refresh,personalData,confirmation,retainedSharingDrafts,discardSharingDraft } = useDayPopDataState();
 
@@ -58,9 +61,10 @@ export default function App() {
     state.status === 'ready' && state.warning ? (
       <RemoteDataWarningBanner warning={state.warning} onRefresh={refresh} />
     ) : null;
-  const banner =
-    storageWarning || remoteWarning || retainedSharingDrafts?.length ? (
+  const reminderWarning = Boolean(reminders?.view.pendingCount && !['busy', 'loading'].includes(reminders.view.phase));
+  const banner = storageWarning || remoteWarning || retainedSharingDrafts?.length || reminderWarning ? (
       <>
+        <ReminderWarning onOpenSettings={state.status === 'ready' ? () => changeTab('settings') : undefined} />
         {storageWarning}
         {remoteWarning}
         {retainedSharingDrafts?.length?<div className="family-feedback" role="status">有未保存的輸入已保留。{' '}

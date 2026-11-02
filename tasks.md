@@ -76,7 +76,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next。DP-230 合併後將 controller 接到已確認登入／登出與外部身分切換，依實際原稿渲染接 canonical 設定／日曆規則 UI；完整互動、焦點、quota、離線與裝置失敗狀態驗證後才準備正式候選，正式啟用另待放行。
+- [ ] **DP-232 — 提醒與月曆聯合發布準備（2026-11-02）：** Backlog → Next。依擁有者選擇，待 DP-231 合併後核對正式 20／21 migration、Edge／VAPID／服務秘密／cron 的具體前置，準備版本及短更新公告，包含左右翻頁與自動列數修正；不得把 localhost／替身當 OS 投遞。遠端操作沿既有交接與授權界線，需先完成可審核候選。
+
 
 
 
@@ -234,7 +235,9 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-230 — 提醒裝置 controller（2026-11-01）：** Backlog → Next → In Progress。PR #225 最終 384105c 的四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，由該最新 main 接續。整合 service／browser／安全收據，處理明確啟用、晚到註冊 lease、停用／帳號切換撤銷及未確認狀態；PR #226 原 head 3dd843b 的 P2（中斷 registering 無法恢復）已補四項回歸、明確同帳號同訂閱重試及精確還原負控制；1f4d76e 的 P2 未送出收據另補局部清理／精確 revision、六項回歸及兩個負控制精確還原；最終 1,764＋39 Node、相關 176 三時區、lint／typecheck／build／原預算過，須修正後 head 四 CI／完成審查才合併。DP-231 再接 canonical UI／AuthProvider，本段沒有 App caller，正式啟用仍待驗收放行。
+- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next → In Progress。先於 PR #226 等待期間在獨立分支準備，現已對齊其最終 2ae943d 四 CI／完成審查後合併的 main bed614a；從此完成自己的 UI／Auth PR。DP-230 合併後將 controller 接到已確認登入／登出與外部身分切換，依實際原稿渲染接 canonical 設定／日曆規則 UI；目前已接正式 host／Auth／原稿設定 UI，37 新單元／完整 1,801＋39 Node、213 三時區、Chromium 16 passed／6 共用矩陣略過、WebKit 12、本機 production 真正兩帳號 Auth／HTTP及 SQL 個人資料不變、十負控制精確還原與六張目視；native／健康為明確替身，無實際 Push。正式啟用前置另段核對；自己的最新四 CI／同 head 完成審查才合併，詳 docs/reminder-settings.md。擁有者 2026-11-02 選擇提醒完成後與月曆修正聯合發布。
+
+
 
 - [ ] **DP-223 — App 提醒與 service worker 接線（2026-10-31）：** Backlog → Next → In Progress。承接 DP-222 合併後，再依 canonical 原稿接本人日曆規則、權限／裝置註冊、登出與帳號切換撤銷及固定匿名通知／App scope 點擊；逐段驗證與 PR，不跳過 UI 對照。後端尚未啟用時清楚顯示不可用，不製作會假裝響的提醒；正式 migration／秘密／cron／部署與真機收信另待具體放行。 分段由 DP-226 先接匿名 worker，再接 client service／裝置生命週期與原稿設定 UI；各段獨立 PR。
 
@@ -498,6 +501,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-230 — 提醒裝置 controller（2026-11-02）：** Backlog → Next → In Progress → Done。從 d17eae5 整合 service／browser／安全收據、固定原帳號撤銷 lease、明確同意及未知／晚到結果、雙邊停用與身分切換。兩輪同 head P2 的 registering 恢復與未送出清理／精確 revision 已先重現再修正；最終 1,764＋39 Node、176 三時區、HTTP 22/22、十一個負控制精確還原、原產物／預算過。PR #226 最終 2ae943d 四 CI 41307384015（Chromium 307 passed／13 skipped、19.4 分鐘；465 pgTAP／HTTP 22/22、實際 UTC）／同 head 完成審查無發現且討論全解後合併 bed614a。詳 [controller](docs/reminder-device-controller.md)。本段沒有 App caller 或正式啟用；DP-231 另接 UI／Auth。
 
 - [x] **DP-229 — 提醒註冊補償與撤銷資料（2026-11-01）：** Backlog → Next → In Progress → Done。由 5354543 接晚到已知 id 註冊補償、固定本人裝置的暫時撤銷 closure／重讀與五秒期限；獨立安全收據／裝置摘要與 quota／corrupt／future barrier。32 新回歸、相關 132 項三時區實際列印、完整 1,720＋39 Node、真正本機 HTTP 21/21、十個負控制精確還原、lint／typecheck／Pages build／原預算過。PR #225 最終 384105c 四 CI 41301260472（Chromium 307 passed／13 skipped、16.7 分鐘；465 pgTAP／HTTP 21/21）／同 head 完成審查無發現及無未解決討論後合併 d17eae5，詳 [撤銷與收據](docs/reminder-revocation.md)。本機七集合各 0／配置清空／stack 已停；下一段 controller，再接 UI／AuthProvider。沒有 App caller 或正式啟用。
 
