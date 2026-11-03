@@ -40,7 +40,9 @@
 - **DP-227：本人提醒 client service。** 獨立資料合約、精確 CAS、安全 metadata 與帳號切換 request 身分；60 新單元／三時區、真正本機 HTTP 20/20 與六個精確還原負控制過，PR #223 四 CI／同 head 完成審查無發現後合併 cff0a15，詳 [合約與證據](reminder-client.md)。沒有 App caller。
 - **DP-228：瀏覽器 adapter。** 公開 worker v1 握手、預備／明確手勢後權限、暫時訂閱能力、取消與本機移除的獨立重讀，PR #224 四 CI／同 head 完成審查無發現後合併 5354543，詳 [行為、證據與限制](reminder-browser.md)。尚無 App caller 或真正 Push 訂閱。
 - **DP-229：補償、撤銷與收據。** 已知 id 的晚到註冊補償、固定本人裝置的暫時撤銷 closure／重讀與五秒期限、獨立版本化安全收據／裝置摘要；真正 HTTP 21/21 與十個精確還原負控制，詳 [證據與限制](reminder-revocation.md)。自己的四 CI／同 head 完成審查後才合併，尚無 App caller。
-- **後續：App（DP-223／DP-230）。** 整合裝置註冊與撤銷 controller，再補本人日曆規則與 canonical 設定 UI；之後準備正式設定、migration、cron、部署與真機收信，不把本機 Notification API／HTTP 當成正式收信。
+- **DP-230／231：controller 與 App 已合併。** PR #226／227 分別四 CI／同 head 完成審查無發現後合併 bed614a／9162b49；正式 host、明確手勢、本人規則 CAS、登出撤銷與未知操作恢復已接，詳 [App 證據](reminder-settings.md)。公開仍 0.4.6，沒有真 Push。
+- **DP-232：正式前置候選。** 依當日唯讀前置補 cron／net 第 22 份 migration，實際 HTTP schema 隔離與 rollback 的固定管理者啟停 SQL；詳 [前置、操作與回復](reminder-release-readiness-2026-11-03.md)。自己的四 CI／完成審查後才合併，沒有正式啟用。
+- **後續 DP-233：聯合版本候選。** 依擁有者選擇與單月左右翻頁／自動列數修正一起準備；先完成可審核版本、公告與升級驗證，再沿既有正式 migration／秘密／排程與發布界線完成啟用和真機收信。
 
 DP-219 不連線改正式帳號、不發通知、不放金鑰、不改資料庫或 0.4.6 公告。每段依擁有者既有授權開 PR，自己的四 CI／同 head 審查完成無發現及無未解決討論後合併。正式 migration／伺服器秘密／排程及前端發布仍需依既有界線，先完成可審核實作才請擁有者放行。
 

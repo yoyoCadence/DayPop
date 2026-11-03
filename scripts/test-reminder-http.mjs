@@ -28,7 +28,7 @@ const admin = createClient(config.url.href, config.adminKey, options);
 const anonymous = createClient(config.url.href, config.publicKey, options);
 const actors = [];
 let vite, touchedConfig = false, checks = 0, stage = 'setup';
-const expectedChecks = 22;
+const expectedChecks = 23;
 async function rpc(client, name, args = {}) {
   const response = await client.rpc(name, args);
   assert.ok(!response.error, `${name} must succeed`);
@@ -413,6 +413,18 @@ try {
     }
     await reminderB.unregisterDevice(other);
     assert.deepEqual(await repository.load(), personalBefore, 'Lease preserves personal snapshot');
+  });
+  await check('scheduler and network schemas remain outside the App Data API', async () => {
+    assert.equal(sql("select count(*) from pg_extension where extname in ('pg_cron','pg_net');"), '2', 'Both scheduler prerequisites must actually be installed');
+    assert.equal(sql('select count(*) from net.http_request_queue;'), '0', 'No database HTTP queued before API checks');
+    for (const client of [anonymous, a.client, b.client]) {
+      const network = await client.schema('net').rpc('http_post', { url: 'http://127.0.0.1:9', body: {} });
+      assert.equal(network.error?.code, 'PGRST106', 'Network schema must be rejected before executing any HTTP function');
+      const scheduler = await client.schema('cron').rpc('schedule', { job_name: 'daypop-scheduler-rejected', schedule: '* * * * *', command: 'select 1' });
+      assert.equal(scheduler.error?.code, 'PGRST106', 'Scheduler schema must be rejected before creating a job');
+    }
+    assert.equal(sql('select count(*) from net.http_request_queue;'), '0', 'API denials leave no queued database HTTP');
+    assert.equal(sql("select count(*) from cron.job where jobname='daypop-scheduler-rejected';"), '0', 'API denials create no job');
   });
   assert.equal(checks, expectedChecks, 'All HTTP groups must execute');
 } catch (cause) {

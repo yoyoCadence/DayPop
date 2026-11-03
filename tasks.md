@@ -76,7 +76,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-232 — 提醒與月曆聯合發布準備（2026-11-02）：** Backlog → Next。依擁有者選擇，待 DP-231 合併後核對正式 20／21 migration、Edge／VAPID／服務秘密／cron 的具體前置，準備版本及短更新公告，包含左右翻頁與自動列數修正；不得把 localhost／替身當 OS 投遞。遠端操作沿既有交接與授權界線，需先完成可審核候選。
+- [ ] **DP-233 — 提醒與月曆聯合版本候選（2026-11-03）：** Backlog → Next。DP-232 合併後準備 0.4.7 版號、短公告與真正 production 更新／離線／資料保存驗證，包含單月左右翻頁與自動列數修正；正式 migration／秘密／cron 啟用及真機收信沿交接界線，尚未完成不冒充已發布。
 
 
 
@@ -235,7 +235,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-231 — 提醒設定與 Auth 接線（2026-11-01）：** Backlog → Next → In Progress。已對齊 PR #226 最終 2ae943d 四 CI／完成審查後的 main bed614a，完成正式 host／設定 UI、隔離、CAS 與恢復；38 新／完整 1,802＋39 Node、214 三時區、提醒 Chromium 18 passed／6 矩陣略過、WebKit 12、本機 production 真正兩帳號與十一負控制過，詳 docs/reminder-settings.md。PR #227 的 P2 零筆 active 恢復與 P1 隱私說明已修正，1b9f241 完成審查無發現；CI Chromium 有十六個全頁 status 歧義失敗並取消。已為提醒／資料傳輸命名並明確定位，24 匯入流程／31 單元／lint／typecheck／Pages build 再過，原斷言及所有 CI 門檻不變；自己的修正 head 四 CI／完成審查才合併。擁有者選擇提醒後與月曆聯合發布，目前沒有正式啟用／部署。
+- [ ] **DP-232 — 提醒排程前置與聯合發布交接（2026-11-03）：** Backlog → Next → In Progress。PR #227 等 CI 時先在隔離工作區暫接依賴準備，現已對齊其最終 14a446e 四 CI／同 head 完成審查後合併的 main 9162b49。正式唯讀確認 19／repo 21 migration、sender／四項秘密缺少、Vault 已有、cron／net 未啟用但已 preload。補第 22 份擴充 migration、私有 Data API schema 的真實 HTTP 回歸及受保護啟停 SQL／狀態查詢；本機 478 pgTAP、HTTP 23、rollback 操作 17／四負控制、public types 不變過。擴充屬平台管理，保留原 grants；沒有建立正式 job／秘密／啟用或發布。完成自己的品質／最新四 CI／審查後才合併，版號／公告另 DP-233。
 
 
 
@@ -501,6 +501,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-231 — 提醒設定與 Auth 接線（2026-11-03）：** PR #227 最終 14a446e 的 CI 41645097826 四項全成功（Chromium 325 passed／19 skipped、20.1 分鐘，WebKit 12、465 pgTAP／HTTP 22，實際 UTC），同 head 完成審查無發現、討論全解後合併 9162b49。正式 host／原稿設定、逐日曆 CAS／雙邊停用／A→B→A 隔離與隱私說明已接；38 新／完整 1,802＋39 Node、214 三時區、本機 production 真正兩帳號／資料不變、十一負控制與手機／桌面驗證過。審查兩項與 CI status 歧義均修正；原資料斷言與 gate 保留。詳 docs/reminder-settings.md。沒有正式 migration／秘密／cron／OS 訂閱／部署，公開仍 0.4.6，依擁有者選擇接 DP-232／233 聯合發布。
 
 - [x] **DP-230 — 提醒裝置 controller（2026-11-02）：** Backlog → Next → In Progress → Done。從 d17eae5 整合 service／browser／安全收據、固定原帳號撤銷 lease、明確同意及未知／晚到結果、雙邊停用與身分切換。兩輪同 head P2 的 registering 恢復與未送出清理／精確 revision 已先重現再修正；最終 1,764＋39 Node、176 三時區、HTTP 22/22、十一個負控制精確還原、原產物／預算過。PR #226 最終 2ae943d 四 CI 41307384015（Chromium 307 passed／13 skipped、19.4 分鐘；465 pgTAP／HTTP 22/22、實際 UTC）／同 head 完成審查無發現且討論全解後合併 bed614a。詳 [controller](docs/reminder-device-controller.md)。本段沒有 App caller 或正式啟用；DP-231 另接 UI／Auth。
 
