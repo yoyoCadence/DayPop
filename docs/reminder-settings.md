@@ -34,7 +34,7 @@ storage／storage mode、worker 更換、回前景及重新連線會失效未使
 
 控制後來源 SHA-256：provider `7a7815340e3c84927662e3801a5a069598821dad2e3dcbe2f9c9f9b588149009`、設定 `26a5f0e87dca696a6c89d63aed186bb0047c44134ec25d8e65f76ca266d943d1`、browser `e8d75c3368edc061c6e22e6982ecaad7f3d20e92e7ac9bc791a41bb6b521afc3`。控制／完整紀錄在 TEMP；不提交能力資料、憑證或私鑰。
 
-最新完整 1,802 單元耗時 122.18 秒，lint／typecheck／canonical bundle 過。最後正常 Pages build：JS＋worker 795,170 raw／235,002 gzip、CSS 121,024／29,600，所有 CSP／無遠端 runtime 依賴與產物守門過。相對基線 JS 增 38,402 raw／11,794 gzip，CSS 增 1,278／239；沒有 QA 本機公開 key 留在最後正常環境的建置流程。
+最新完整 1,802 單元耗時 122.18 秒，lint／typecheck／canonical bundle 過。11 月 3 日僅再補資料與隱私文字，另重驗設定 12 項與 lint／typecheck。最後正常 Pages build：JS＋worker 795,828 raw／235,243 gzip、CSS 121,024／29,600，所有 CSP／無遠端 runtime 依賴與產物守門過。相對基線 JS 增 39,060 raw／12,035 gzip，CSS 增 1,278／239；沒有 QA 本機公開 key 留在最後正常環境的建置流程。
 
 ## 真正 production App／本機 Auth 與 HTTP
 
@@ -49,6 +49,8 @@ Notification 權限與 PushManager 訂閱邊界明確替換為假能力；fixtur
 只清理本次兩個假帳號；users／families／calendars／events／todos／rules／devices 各 0，配置 disabled 且 public key／heartbeat／error 清空，假憑證檔移除，專用 stack 已停止，瀏覽器 contexts 已關閉。背景 preview 初次 TCP／CIM 未回報 owner，後續已核對 4186 的 OwningProcess 29164 與本次 Vite preview 命令列，停止後 PID 不存在且 HTTP 不再回應。
 
 PR #227 初次 head `a6c31b3` 審查指出上述 active 失配收據缺少零筆恢復入口；已修正並加入單元、兩 viewport 的 native／server 遺失回歸及負控制。仍須以修正後 head 重跑自己的四 CI／完成審查，初次結果不替代最終 gate。
+
+`4c20897` 的完成審查另指出 DP-118 隱私卡片未同步提醒資料。2026-11-03 已補上本人日曆規則／逐裝置同意、Supabase 訂閱能力與匿名推播、JSON 不含背景規則／裝置訂閱、登出保留日曆／規則但嘗試雙邊清理，以及失敗後安全收據與重登提示；事實表同步於 [資料與隱私](data-and-privacy.md)。只改說明，沒有新增資料處理或同意流程。真正 production 的 390×844／1280×900／320×568 以 Enter／Space 展開收合、捲到底、全文與無溢出／console 0／localStorage bytes 不變均過，實際 Asia/Taipei，新增段落與末段截圖已目視。該舊 head CI 三項成功、Chromium 取消不算通過；仍以最新 head 四 CI／完成審查為準。
 
 ## 發布界線
 
