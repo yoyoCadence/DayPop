@@ -58,6 +58,9 @@ for await (const file of walk(dist)) {
   scanned += 1;
   const text = await readFile(file, 'utf8');
   const relativePath = relative(root, file);
+  if (text.includes('__daypopReminderHarness') || text.includes('daypop-e2e-synthetic-no-network')) {
+    problems.push(`${relativePath} contains the dev-only reminder harness`);
+  }
 
   if (FETCHED_EXTENSIONS.has(extname(file))) {
     // The CSP meta names origins it *permits*; that is the opposite of a fetch.

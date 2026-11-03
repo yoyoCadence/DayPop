@@ -1,5 +1,9 @@
 # Production JS／CSS 產物大小上限
 
+DP-231（2026-11-02）提醒 App 接線：DP-230／main `bed614a` 的 JS＋worker 為 756,768 raw／223,208 gzip；首次加入裝置生命週期、Auth bridge、逐日曆設定／失敗恢復 UI 後為 794,783／234,861，增加 38,015 raw／11,653 gzip，沒有新增套件。原 gzip 上限確實擋下此 build（超過 9,581 bytes）。本段將 JS gzip 從 220 KiB 調至 **235 KiB／240,640 bytes**，保留約 5.6 KiB 空間；JS raw 800 KiB、CSS 與寵物上限、總量計法及所有超限守門不變。功能成本與實際最終數值隨 PR 揭露；不移除確認／隱私保護、不藉拆 chunk 隱藏總量。下方表格保留 DP-119 原始基線。
+
+最終正常 Pages build 為 JS＋worker 795,896 raw／235,263 gzip（較基線 +39,128／+12,055），距新 gzip 上限 5,377 bytes；CSS 121,024／29,600（+1,278／+239），仍沿原上限。後續變更仍須同一個 guard，不代表實機效能或首次下載已驗收。
+
 DP-119 把大小上限接入既有 `npm run check:build`，由 PR／main CI 的相對、`/DayPop/` 與 `/` 三種 base 建置，以及 staging 部署閘門共同執行。配置在根目錄 `performance-budget.json`；超限、配置缺漏／無效或讀取失敗都使檢查失敗。
 
 2026-10-04，以已合併 DP-118 的 `main`（`5e0e060`）、v0.4.2、預設相對 base 的 production build 為基線：

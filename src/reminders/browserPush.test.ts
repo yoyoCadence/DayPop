@@ -47,6 +47,15 @@ describe('browser reminder adapter (DP-228)', () => {
     const identity = await h.device.identity(); expect(identity?.fingerprint).toMatch(/^[a-f0-9]{64}$/); expect(identity?.publicKey).toBe(KEY);
     expect(JSON.stringify(identity)).not.toContain(ENDPOINT); expect(h.request).not.toHaveBeenCalled(); expect(h.subscribe).not.toHaveBeenCalled(); expect(h.worker.postMessage).not.toHaveBeenCalled();
   });
+  it.each([
+    [{ ios: true, standalone: false, supported: false }, 'install'],
+    [{ supported: false }, 'unsupported'],
+    [{ secure: false }, 'unsupported'],
+  ] as const)('keeps actionable support guidance when native identity cannot be read %#', async (options, kind) => {
+    const h = harness(options); vi.mocked(h.browser.registration).mockRejectedValue(new TypeError('PRIVATE missing native API'));
+    await expect(h.device.identity()).rejects.toMatchObject({ kind });
+    expect(h.request).not.toHaveBeenCalled(); expect(h.subscribe).not.toHaveBeenCalled();
+  });
   it('prepares a supported worker without requesting permission, subscribing or persisting', async () => {
     process.stdout.write('DP-228 actual timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '\n');
     const h = harness(), store = vi.spyOn(Storage.prototype, 'setItem');

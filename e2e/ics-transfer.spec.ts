@@ -121,7 +121,7 @@ test('ICS 真實下載與取消不寫入，確認附加會重新命名碰撞 UID
   await chooseIcs(page, path);
   await confirm.click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('匯入 6 筆資料');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('匯入 6 筆資料');
   const restored = await storedEnvelope(page);
   expect(restored.revision).toBe(8);
   expectAppendPreservesSource(restored.data, 4, 2);
@@ -173,7 +173,7 @@ test('外部 ICS 的浮動時間使用偏好時區，TZID／UTC／全天與文�
   expect(await storedBytes(page)).toBe(beforeBytes);
   await preview.getByRole('button', { name: '匯入 4 筆', exact: true }).click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('匯入 4 筆資料');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('匯入 4 筆資料');
   const result = await storedEnvelope(page);
   expect(result.revision).toBe(8);
   expectAppendPreservesSource(result.data, 4, 0);
@@ -217,7 +217,7 @@ for (const invalid of [
     await expect(preview).toContainText('共 4 筆行程');
     await preview.getByRole('button', { name: '匯入 4 筆', exact: true }).click();
     await expect(preview).toBeHidden();
-    await expect(page.getByRole('status')).toContainText('匯入 4 筆資料');
+    await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('匯入 4 筆資料');
     const result = await storedEnvelope(page);
     expect(result.revision).toBe(8);
     expectAppendPreservesSource(result.data, 4, 0);

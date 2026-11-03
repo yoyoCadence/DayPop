@@ -323,7 +323,7 @@ describe('設定 分組', () => {
     expect(groups).toEqual([
       { title: '外觀', labels: [] },
       { title: '夥伴', labels: [] },
-      { title: '日曆', labels: ['我的日曆', '顯示與時區'] },
+      { title: '日曆', labels: ['我的日曆', '顯示與時區', '提醒'] },
       { title: '帳號與資料', labels: ['帳號', '家庭群組', '日曆分享', '資料備份', '資料與隱私'] },
       { title: '關於', labels: ['還沒有的功能'] },
     ]);

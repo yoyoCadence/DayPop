@@ -13,6 +13,8 @@ import { ThemeProvider } from '../theme/ThemeProvider';
 import { FakeSupabase } from './fakeSupabase';
 import { FamilyServiceContext } from '../family/familyContext';
 import { FakeFamilyService } from './fakeFamilyService';
+import { ReminderProvider } from '../reminders/ReminderProvider';
+import { FakeReminderHarness } from './fakeReminders';
 import '../theme/fonts.css';
 import '../styles.css';
 
@@ -32,6 +34,8 @@ const E2E_NOW = '2026-08-09T00:00:00.000Z';
  */
 export const fakeSupabase = new FakeSupabase();
 export const familyServices = new Map<string, FakeFamilyService>();
+const reminderHarness = new FakeReminderHarness();
+Object.defineProperty(window, '__daypopReminderHarness', { value: reminderHarness, configurable: true });
 // Expose this dev-only test seam without importing the React entry a second
 // time (which would create another root and reset the synthetic Auth session).
 Object.defineProperty(window, '__daypopFamilyServices', { value: familyServices, configurable: true });
@@ -141,6 +145,7 @@ function createSession(email: string): Session {
 createRoot(document.getElementById('root')!).render(
   <AppUpdateProvider>
     <E2EAuthProvider>
+      <ReminderProvider createController={reminderHarness.createController} serviceForUser={reminderHarness.serviceForUser}>
       <FamilyServiceContext.Provider value={familyServiceForUser}>
       <SessionDataProvider client={fakeSupabase.asClient()} storage={window.localStorage}>
         <ThemeProvider>
@@ -148,6 +153,7 @@ createRoot(document.getElementById('root')!).render(
         </ThemeProvider>
       </SessionDataProvider>
       </FamilyServiceContext.Provider>
+      </ReminderProvider>
     </E2EAuthProvider>
   </AppUpdateProvider>,
 );

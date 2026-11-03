@@ -165,7 +165,7 @@ test('帳號 JSON 還原會重新寫入並讀回，重登不依賴快取且遊�
   preview = await previewBackup(page, path);
   await preview.getByRole('button', { name: '取代資料', exact: true }).click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('還原 3 筆資料');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('還原 3 筆資料');
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
   const restoredData = await accountData(page);
   expect(withoutServerTimes(restoredData)).toEqual(withoutServerTimes(original));
@@ -231,7 +231,7 @@ test('帳號有附件時拒絕 JSON 取代，快取、重新讀回的資料與�
   await expect(preview.getByRole('alert')).toContainText('不能用取代的方式匯入');
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('button', { name: '取代資料', exact: true })).toBeEnabled();
-  await expect(page.getByRole('status').filter({ hasText: '已從' })).toHaveCount(0);
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true }).filter({ hasText: '已從' })).toHaveCount(0);
   expect(await storageBytes(page, accountCacheKey)).toBe(beforeBytes);
   expect(await storageBytes(page, guestKey)).toBe(guestBytes);
   await preview.getByRole('button', { name: '取消', exact: true }).click();

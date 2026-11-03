@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useAuth } from '../auth/authContext';
 import { FamilyCard } from '../family/FamilyCard';
 import { CalendarSharingCard } from './CalendarSharingCard';
+import { ReminderSettings } from '../reminders/ReminderSettings';
 import { downloadTextFile, readTextFile } from '../browser/dataTransferFiles';
 import { useDayPopData, useDayPopDataState } from '../data/dataContext';
 import { nextCalendarColor, sortedCalendars } from '../domain/calendars';
@@ -59,9 +60,9 @@ const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
  * kept working inside the canonical shell. DP-113 applies the same card and
  * control tokens to those DayPop-owned surfaces without changing their flows.
  *
- * 桌寵與一般只搬移現有偏好模型撐得起的控制項。原稿的「選擇夥伴」與
- * 「左右滑動翻頁」需要新的偏好欄位與 migration，等級／XP 需要 DP-041 的規則，
- * 預設提醒與通知提醒屬 DP-042 —— 這些一律留在下方的「尚未搬移」清單，
+ * 原稿的「選擇夥伴」與等級／XP 尚待後續規則；左右翻頁已由 DP-225 接在月曆頁首。
+ * 通知依 DP-042 採本人／裝置／日曆明確選擇；舊逐筆提醒仍保留而不自動套用。
+ * 其他未完成項目留在下方的「尚未搬移」清單，
  * 不以停用或假的成功狀態充數。
  */
 export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffoldScreenProps) {
@@ -425,7 +426,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           )}
 
 
-          {/* 原稿 :329-337 的「一般」。預設提醒與通知提醒屬 DP-042，雲端同步在帳號區塊。
+          {/* 原稿 :329-337 的「一般」。日曆提醒另列，雲端同步在帳號區塊。
               All three rows are about the calendar, so the label says so (DP-164). */}
           <div className="dp-section-label">顯示與時區</div>
           <div className="set-pref-rows">
@@ -485,6 +486,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               </select>
             </div>
           </div>
+          <p className="set-pref-help">月曆頁首的顯示方式圖示可切換「連續捲動／單月翻頁」；單月模式可左右滑動換月。</p>
+          <ReminderSettings calendars={data.calendars} timezone={preferences.timezone} onOpenAuth={onOpenAuth} updater={updater} />
         </div>
 
         <div className="dp-settings-group">
@@ -601,7 +604,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             .ics 是 Google 日曆、Apple 日曆與 Outlook 等服務共用的格式；匯入只會附加行程，不會取代現有資料。
           </p>
           {transferMessage ? (
-            <p className="data-transfer-status" role="status">
+            <p className="data-transfer-status" role="status" aria-label="資料傳輸狀態">
               {transferMessage}
             </p>
           ) : null}
@@ -658,8 +661,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               than shown as controls that do nothing — DP-014's rule. Written for
               the person using the App, without task numbers (DP-163). For
               whoever picks these up: AI is DP-043, the level is DP-041, choosing
-              a partner DP-040／DP-172, swipe paging needs a preference field,
-              notifications DP-042. The原檔's developer and demo-data controls are
+              a partner DP-040／DP-172. Paging and calendar reminders are now wired;
+              per-event overrides remain deferred. The原檔's developer and demo-data controls are
               not something a person uses, so they are not listed. */}
           <div className="dp-section-label">還沒有的功能</div>
           <div className="dp-note">
@@ -668,8 +671,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               <li>AI 助理</li>
               <li>桌寵的等級與成長</li>
               <li>為桌寵選擇其他夥伴</li>
-              <li>左右滑動翻頁</li>
-              <li>通知與預設提醒</li>
+              <li>逐筆提醒的個別覆寫</li>
             </ul>
           </div>
 

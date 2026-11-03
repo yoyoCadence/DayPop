@@ -106,7 +106,11 @@ export class BrowserReminderDevice {
       const key = subscription.options.applicationServerKey;
       if (key && new Uint8Array(key)[0] !== 4) throw failure();
       return { fingerprint: await reminderDeviceFingerprint(this.browser.scope, subscription.endpoint), publicKey: key ? base64url(key, 65) : null };
-    } catch (cause) { throw safe(cause); }
+    } catch (cause) {
+      // A missing native API must retain install/support guidance for the setup UI.
+      // Successful identity reads still work without installation, so cleanup can inspect old subscriptions.
+      this.available(); throw safe(cause);
+    }
   }
   private available() {
     if (!this.browser.secure) throw new BrowserReminderError('unsupported', '請使用安全連線開啟日蹦，再設定通知。');
