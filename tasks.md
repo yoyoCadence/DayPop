@@ -76,8 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-234 — 正式提醒設定、聯合發布與上線驗證（2026-11-03／04）：** Backlog → Next。依擁有者「提醒完成後一起發布」及 11-04 明確答覆「授權你依清單代跑三份 migration 並完成提醒正式設定」，待 DP-233 候選合併後只代跑 20261029123000／20261031090000／20261103000000、確認 22 檔對齊，依 PR #228 已審核交接完成提醒秘密／Edge／cron 健康、既有 Deploy staging 與真正舊版更新／公開成品驗證；不以本機替身冒充 OS 收信，實體 iPhone standalone 仍需擁有者參與。
-
 
 
 
@@ -235,9 +233,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-235 — 完整 Chromium CI 執行預算（2026-11-04）：** Backlog → Next → In Progress。DP-233 的 6379da2 三次達 25 分鐘取消；後兩輪 344 案例全部完成（325 通過／19 略過、無失敗），仍未完成 job，不算 pass。相同案例比前置 PR 總測時多約 18%；將 Chromium job 25→30 分鐘以容納全套與收尾。只改這個 job 預算及說明，四 gate／所有案例與斷言／個別期限／worker／retry／runner／秘密界線不變，隨 #229 的新 head 完整 CI／同 head 審查後才合併，不藉此發布未過檢查的候選。
-
-- [ ] **DP-233 — 提醒與月曆聯合版本候選（2026-11-03）：** Backlog → Next → In Progress。從 PR #228 最終 25a4b9c 四 CI／完成審查後合併的 main 23916f5 接續；0.4.7 版號、四條短公告與生成資產，十份歷史公告／runtime／v4／22 migration 不變。完整 1,802＋39 Node、lint／typecheck／Pages build／公告與 canonical 守門、相關 Chromium 50 passed／8 skipped＋WebKit 12、三 viewport production 公告／翻頁／登入入口／焦點／reload／bytes 與偏好保存、console 0、六圖目視過，實際時區列印。詳 docs/reminder-calendar-release-candidate-2026-11-03.md；自己的最新四 CI／同 head 完成審查後才合併，正式設定／真正公開舊版更新及真機另 DP-234，沒有正式寫入或 dispatch。
+- [ ] **DP-234 — 正式提醒設定、聯合發布與上線驗證（2026-11-04）：** Backlog → Next → In Progress。擁有者明確授權的三份 migration 已精確 dry-run／push 後 22 對齊；四 Edge／兩 Vault、sender ACTIVE v1、固定每分鐘 job 1／active 1 及持續 key-bound heartbeat 完成，權限／types／API 隔離通過、明文已清除。#229 最終 a66d0be 四 CI／完成審查無發現後合併 c952688；已從該 main 啟動 Deploy staging 41751090045，待六 jobs、公開 artifact、真正 0.4.6 更新保存與兩 viewport；iPhone 真機仍需擁有者參與。詳 docs/deployment-verification-2026-11-04.md。
 
 
 
@@ -503,6 +499,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-235 — 完整 Chromium CI 執行預算（2026-11-04）：** Backlog → Next → In Progress → Done。原 6379da2 三輪達 25 分鐘取消，後兩輪全部 344 案例完成仍不算 pass；相同案例比前置 PR 總測時多約 18%。只將完整 Chromium job 25→30 分鐘，四 gate／案例與斷言／個別期限／worker／retry／runner 不變；隨 #229 最新 a66d0be 完整四 CI／同 head 完成審查無發現及討論 0 後合併 c952688。新 Chromium 325 passed／19 skipped、20.0 分鐘；不是以取消輪放行。
+
+- [x] **DP-233 — 提醒與月曆聯合版本候選（2026-11-03／04）：** Backlog → Next → In Progress → Done。PR #229 最終 a66d0be 的四 CI 41748282546 全過（Chromium 325 passed／19 skipped、20.0 分鐘，WebKit 12、1,802＋39 Node、478 pgTAP／HTTP 23／scheduler 17、實際 UTC），同 head 完成審查無發現且討論 0 後合併 c952688。0.4.7 版號／四條短公告／生成資產，十份歷史公告、runtime／v4／22 migration 不變；本機三 viewport／升級／資料保存與六圖目視已驗，公開實際更新另 DP-234，不以候選稱已發布。
 
 - [x] **DP-232 — 提醒排程前置與聯合發布交接（2026-11-03）：** Backlog → Next → In Progress → Done。PR #228 最終 25a4b9c 的 CI 41654578744 四項全成功（Chromium 325 passed／19 skipped、20.9 分鐘，WebKit 12、478 pgTAP／提醒 HTTP 23/23／rollback 操作 17/17、實際 UTC），同 head 完成審查無發現及無未解決討論後合併 23916f5。第 22 份只裝擴充，保留平台 grants；真實 API 私有 schema 拒絕、啟停 SQL 的角色／秘密／key／job guard／冪等及四負控制精確還原過，完整 1,802＋39 Node、lint／typecheck／build／canonical guard 過。詳 docs/reminder-release-readiness-2026-11-03.md。正式唯讀仍 19 檔，沒有正式 job／秘密／啟用或發布；owner CLI 三份 migration／22 檔對齊與正式設定另 DP-234，版號候選另 DP-233。
 
