@@ -272,6 +272,9 @@ jobs:
       - name: Reminder Auth and HTTP (two accounts, no push delivery)
         run: npm run supabase:test:reminders
 
+      - name: Reminder scheduler operations (local rollback only, no HTTP dispatch)
+        run: npm run supabase:test:reminder-scheduler
+
       - name: Reminder lease, settings CAS and lock-wait expiry
         run: npm run supabase:test:reminder-concurrency
 

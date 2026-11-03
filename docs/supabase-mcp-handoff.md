@@ -2,6 +2,8 @@
 
 給接手 Supabase MCP 階段的 agent。`tasks.md` 的「建議執行順序」停止點已於 2026-08-08 抵達，專案擁有者確認改由可使用 MCP 的 agent 接手。
 
+> **2026-11-03／DP-232 提醒正式前置候選：** PR #227 已四 CI／同 head 無發現後合併 `9162b49`，設定與登出接線已齊。這次 linked CLI 唯讀確認 history 遠端 19／原 repo 21、無 remote-only、sender 0、四項必要秘密名稱缺少；Vault 已裝，cron／net 未裝但已 preload，CLI effective role 為 postgres。公開 key 的 GET limit=0 也確認 cron／net 各 406／PGRST106；沒有帳號或事項內容讀取。新第 22 份只安裝擴充，保留 Supabase 管理的 grants；操作 SQL／狀態檔與完整前置見 [交接](reminder-release-readiness-2026-11-03.md)。本機 478 pgTAP／HTTP 23／實際操作 rollback 17、四負控制與 public types 不變過，均非正式啟用。仍由擁有者 CLI 審閱並套用三份待 migration，沒有代推、正式秘密／cron／Push 或部署；自己的 gate 過後另接 DP-233 聯合版本候選。
+
 這份文件**不重複**已經寫在別處的內容，只記錄交接當下的狀態、你必須先知道的前置與陷阱。canonical 來源仍是：
 
 - [`../AGENTS.md`](../AGENTS.md) — 協作契約、執行模式、範圍控制、安全基線、§0.1 目前技術狀態。

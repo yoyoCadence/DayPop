@@ -1202,3 +1202,5 @@ DP-227（2026-11-01）將提醒 client 做成獨立 session-only service，規�
 DP-228（2026-11-01）先獨立瀏覽器原語：App scope／active worker 必須回答公開提醒 v1，預備在 30 秒內才可由直接使用者動作請求通知權限；不在能力查詢時提示或建立訂閱。不同 VAPID key 不自動輪替，晚到取消須清理新訂閱，本機移除須重新讀到 null，不能靠 API 的 boolean 宣稱成功。握手不啟用 waiting worker，也不代替 App 更新或登入授權。伺服器撤銷、持久化 handle 與 Auth／UI 接線另段，詳 [瀏覽器 adapter](reminder-browser.md)。
 
 DP-229（2026-11-01）先補已知裝置 id 的晚到註冊補償與固定本人裝置的暫時撤銷能力，所有撤銷須以相同原 token 重新讀本人 metadata 為空；五秒未確認就保留安全 id，不回假成功。安全裝置收據各用 scope／operation UUID 獨立 key、版本／revision／future／quota write barrier，不進 v4；以 scope 分隔的 endpoint SHA-256 摘要匹配本機訂閱，不保存 capability／加密 key／JWT。revision 只拒絕已觀察的過期修改，不假裝有跨分頁原子 CAS；controller 尚須做 epoch／storage 事件與後端重確認。詳 [補償與安全資料](reminder-revocation.md)，沒有 App caller 或正式啟用。
+
+DP-232（2026-11-03）在 App 接線合併後核對正式前置：pg_cron／pg_net 未安裝但已 preload，補第 22 份純安裝 migration；由 Supabase 管理 extension grants，Data API 排除 cron／net 的邊界用實際 HTTP 驗證。正式啟停以獨立的 postgres 原子操作完成，固定已連結 project ref、每分鐘與專用 Vault token，不含 private key／個人內容；無效秘密、隱含換 key 或不同同名 job 拒絕，重跑保留 job／健康，停用保留資料。這些是具體可審核操作，沒有在 migration、CI 或 App 中自動啟用；先完成 [發布前置](reminder-release-readiness-2026-11-03.md) 與版本候選，再沿既有授權／擁有者 CLI 界線執行。
