@@ -142,7 +142,7 @@ test('JSON 真實下載、取消預覽、確認取代與 reload 保留完整遊�
   await chooseBackup(page, path);
   await preview.getByRole('button', { name: '取代資料', exact: true }).click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('還原');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('還原');
   await expect.poll(async () => (await storedEnvelope(page)).data).toEqual(backupData);
   expect((await storedEnvelope(page)).revision).toBe(changed.revision + 1);
   await reloadApp(page);

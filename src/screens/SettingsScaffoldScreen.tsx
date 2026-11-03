@@ -604,7 +604,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             .ics 是 Google 日曆、Apple 日曆與 Outlook 等服務共用的格式；匯入只會附加行程，不會取代現有資料。
           </p>
           {transferMessage ? (
-            <p className="data-transfer-status" role="status">
+            <p className="data-transfer-status" role="status" aria-label="資料傳輸狀態">
               {transferMessage}
             </p>
           ) : null}

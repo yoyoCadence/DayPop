@@ -46,7 +46,7 @@ export function ReminderSettings({ calendars, timezone, onOpenAuth, updater }: {
         </button>
       </div>
       <div className="reminder-settings-detail">
-        <p className="set-pref-help" role="status">{status}</p>
+        <p className="set-pref-help" role="status" aria-label="裝置提醒狀態">{status}</p>
         {view?.pendingCount ? <p className="set-pref-help">有 {view.pendingCount} 筆裝置操作待確認；請保留連線，必要時重新登入原帳號確認停用。</p> : null}
         <p className="set-pref-help">逐本日曆選擇要提醒的事項。通知不顯示行程內容，關閉 App 後由背景服務排程；可能因網路或系統設定而延遲。</p>
         {!auth.user ? <button className="button secondary" type="button" onClick={onOpenAuth} disabled={Boolean(auth.configurationError)}>登入後設定提醒</button> :

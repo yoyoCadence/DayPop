@@ -32,9 +32,9 @@ storage／storage mode、worker 更換、回前景及重新連線會失效未使
 | 負控制 | 八項 frontend source：跳過登出清理、顯示舊 A projection、僅比較 logout userId、移除規則工作身分、丟 CAS、錯把錯誤關窗、延後手勢呼叫、移除保存期限；全部被指定案例抓到。另撤掉原生提示 fallback，三場景全失敗；撤掉零筆 unconfirmed 恢復入口，新單元失敗。十項 source／一項 artifact 控制均 finally 精確還原、正常再過。 |
 | 產物隔離 | production 排除 dev-only FakeReminderHarness；check:build 額外擋其識別字。注入假 harness marker 的 emitted entry 被拒，finally 逐 byte 還原後正常 guard 過。沒有新增套件或 workflow。 |
 
-控制後來源 SHA-256：provider `7a7815340e3c84927662e3801a5a069598821dad2e3dcbe2f9c9f9b588149009`、設定 `26a5f0e87dca696a6c89d63aed186bb0047c44134ec25d8e65f76ca266d943d1`、browser `e8d75c3368edc061c6e22e6982ecaad7f3d20e92e7ac9bc791a41bb6b521afc3`。控制／完整紀錄在 TEMP；不提交能力資料、憑證或私鑰。
+先前負控制時來源 SHA-256：provider `7a7815340e3c84927662e3801a5a069598821dad2e3dcbe2f9c9f9b588149009`、設定 `26a5f0e87dca696a6c89d63aed186bb0047c44134ec25d8e65f76ca266d943d1`、browser `e8d75c3368edc061c6e22e6982ecaad7f3d20e92e7ac9bc791a41bb6b521afc3`。控制／完整紀錄在 TEMP；不提交能力資料、憑證或私鑰。其後的狀態區命名只加 aria-label，不改裝置生命週期。
 
-最新完整 1,802 單元耗時 122.18 秒，lint／typecheck／canonical bundle 過。11 月 3 日僅再補資料與隱私文字，另重驗設定 12 項與 lint／typecheck。最後正常 Pages build：JS＋worker 795,828 raw／235,243 gzip、CSS 121,024／29,600，所有 CSP／無遠端 runtime 依賴與產物守門過。相對基線 JS 增 39,060 raw／12,035 gzip，CSS 增 1,278／239；沒有 QA 本機公開 key 留在最後正常環境的建置流程。
+最新完整 1,802 單元耗時 122.18 秒，lint／typecheck／canonical bundle 過。11 月 3 日補資料與隱私文字及狀態名稱，另重驗相關設定／提醒與 lint／typecheck。最後正常 Pages build：JS＋worker 795,896 raw／235,263 gzip、CSS 121,024／29,600，所有 CSP／無遠端 runtime 依賴與產物守門過。相對基線 JS 增 39,128 raw／12,055 gzip，CSS 增 1,278／239；沒有 QA 本機公開 key 留在最後正常環境的建置流程。
 
 ## 真正 production App／本機 Auth 與 HTTP
 
@@ -51,6 +51,8 @@ Notification 權限與 PushManager 訂閱邊界明確替換為假能力；fixtur
 PR #227 初次 head `a6c31b3` 審查指出上述 active 失配收據缺少零筆恢復入口；已修正並加入單元、兩 viewport 的 native／server 遺失回歸及負控制。仍須以修正後 head 重跑自己的四 CI／完成審查，初次結果不替代最終 gate。
 
 `4c20897` 的完成審查另指出 DP-118 隱私卡片未同步提醒資料。2026-11-03 已補上本人日曆規則／逐裝置同意、Supabase 訂閱能力與匿名推播、JSON 不含背景規則／裝置訂閱、登出保留日曆／規則但嘗試雙邊清理，以及失敗後安全收據與重登提示；事實表同步於 [資料與隱私](data-and-privacy.md)。只改說明，沒有新增資料處理或同意流程。真正 production 的 390×844／1280×900／320×568 以 Enter／Space 展開收合、捲到底、全文與無溢出／console 0／localStorage bytes 不變均過，實際 Asia/Taipei，新增段落與末段截圖已目視。該舊 head CI 三項成功、Chromium 取消不算通過；仍以最新 head 四 CI／完成審查為準。
+
+`1b9f241` 的完成審查無發現、討論全解；CI `41639735252` 三項成功，但 Chromium 在 25 分鐘取消，不能合併。取消前十六個匯入／備份案例含重試共 32 次失敗；本機先重現真正原因：新增提醒 status 使頁面有兩個未命名 status，舊全頁定位違反 strict mode。現在兩個區域分別命名「裝置提醒狀態」及「資料傳輸狀態」，四份既有 spec 明確定位後者，原本的下載內容、匯入、拒絕、取消、附件、重登及資料 bytes 斷言全保留。手機／桌面 24/24（4.5 分鐘）過，實際 Asia/Taipei／America/New_York 均列印；沒有改 timeout／worker／retry／CI gate，也未以任意第一個元素或隱藏提醒狀態避開問題。仍須修正後 head 完整四 CI／完成審查。
 
 ## 發布界線
 

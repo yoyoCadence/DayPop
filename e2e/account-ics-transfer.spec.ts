@@ -246,7 +246,7 @@ test('帳號 ICS 真實下載再附加會保留附件、重新命名碰撞 UID �
   await chooseIcs(page, path);
   await confirm.click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('匯入 5 筆資料');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('匯入 5 筆資料');
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
   const result = await accountData(page);
   const { incoming, incomingExceptions } = expectSourcePreserved(result, source, 3, 2);
@@ -327,7 +327,7 @@ test('帳號 ICS 後續非法時區整份拒絕，重新選有效檔可附加並
   expect(await accountData(page)).toEqual(source);
   await preview.getByRole('button', { name: '匯入 4 筆', exact: true }).click();
   await expect(preview).toBeHidden();
-  await expect(page.getByRole('status')).toContainText('匯入 4 筆資料');
+  await expect(page.getByRole('status', { name: '資料傳輸狀態', exact: true })).toContainText('匯入 4 筆資料');
   await expect(page.getByText('● 已同步', { exact: true })).toBeVisible();
   expect(await storageBytes(page, accountCacheKey)).not.toBe(beforeValid);
   const result = await accountData(page);
