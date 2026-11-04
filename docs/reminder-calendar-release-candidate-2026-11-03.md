@@ -6,7 +6,13 @@
 
 前置 PR #228 最終 `25a4b9c` 的四 CI `41654578744` 全過，且同 head 審查 completed、無發現、無未解決討論後合併為 main `23916f5`。Chromium 325 passed／19 skipped（20.9 分鐘）、WebKit 12 passed、478 pgTAP、提醒 HTTP 23/23、管理操作 rollback 17/17，實際 UTC。本候選從隔離工作區暫接該依賴完成驗證，再對齊此最新 main 開獨立 PR。
 
-只更新 package／lock 的 release version、生成的 PWA 版本資產、0.4.7 四條公告與交接文件。App runtime、worker template、依賴、22 份 migration、user-data v4、CI／worker／retry／timeout 及產物預算不變。十份歷史公告逐項相同，package／lock 除 release version 外完全相同。
+更新 package／lock 的 release version、生成的 PWA 版本資產、0.4.7 四條公告與交接文件；另依下述 DP-235 證據，將完整 Chromium job 的預算 25→30 分鐘。App runtime、worker template、依賴、22 份 migration、user-data v4、四個 CI gate／所有案例／個別測試期限／worker／retry／runner 及產物預算不變。十份歷史公告逐項相同，package／lock 除 release version 外完全相同。
+
+### 完整 CI 預算修正（DP-235）
+
+原 head `6379da2` 的 CI `41737926541` 三次 Chromium 皆被 25 分鐘上限取消；第一次到第 326 個案例，第二、三次全部 344 個案例已結束，325 個通過／19 個略過標記且沒有失敗，但 job 仍未成功結束，不能算 pass。與前置 PR 相同的 325 項案例總測時從 1,221.188 秒增至 1,436.866 秒（約慢 18%，多個檔案皆變慢），不再反覆碰運氣重跑。
+
+只將該 job 預算設為 30 分鐘，提供完整矩陣與收尾的空間，沿 DP-180 隨矩陣擴張調整整個 job 的做法；沒有放寬任何個別測試期限、刪除斷言、加 worker／retry 或改其他三個 job／部署觸發。新 head 仍需重新通過四 CI、同 head 完成審查無發現及無未解決討論；此前沒有 dispatch。
 
 0.4.7「翻月與日曆提醒」公告：
 
