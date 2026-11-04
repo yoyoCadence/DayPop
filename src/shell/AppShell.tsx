@@ -4,6 +4,7 @@ import { useDayPopDataState } from '../data/dataContext';
 import { TabBar } from './TabBar';
 import type { ShellTab } from './tabs';
 import { AppViewportContext } from './viewportContext';
+import { useInstalledGestures } from './useInstalledGestures';
 import './shell.css';
 import './accountAndDialogs.css';
 import '../theme/mangaJournal.css';
@@ -60,6 +61,7 @@ export function AppShell({
   // Published so sheets and dialogs can portal into the viewport instead of
   // escaping the preview frame — see `ViewportLayer`.
   const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+  useInstalledGestures(viewport);
 
   return (
     <div className="dp-preview" data-theme={state.status === 'ready' ? theme.id : undefined} data-color-mode={resolvedMode} style={cssVariables}>

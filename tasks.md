@@ -235,6 +235,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-236 — 主畫面縮放與手機表單橫向溢出（2026-11-04）：** 依擁有者真機回報優先修正，Backlog → Next → In Progress。installed 限縮放／保留平移及 WebKit gesture 防護、16px 輸入、原生欄位可縮／長名稱換行及垂直捲動已完成。原 main 的新表單回歸抓到 233px 溢出；候選四尺寸／45 個相關 browser 案例各通過（完整矩陣後修正兩個 locator 補跑，九略過）、1,806 單元＋39 Node、lint／typecheck／Pages build／原預算過。歷史 WebKit 首輪失敗、無效 pinch 正控制及 main 同樣失敗的舊保存 harness 均保留，後者另 DP-237。詳 docs/mobile-viewport-dialogs.md。Chrome host 不可用，先推候選待 PR／自己的四 CI／同 head 審查；尚未合併／發布，iPhone standalone 原生手勢／鍵盤仍待複驗。資料 schema／提醒規則／已發布公告不變。
+
 - [ ] **DP-235 — 完整 Chromium CI 執行預算（2026-11-04）：** Backlog → Next → In Progress。DP-233 的 6379da2 三次達 25 分鐘取消；後兩輪 344 案例全部完成（325 通過／19 略過、無失敗），仍未完成 job，不算 pass。相同案例比前置 PR 總測時多約 18%；將 Chromium job 25→30 分鐘以容納全套與收尾。只改這個 job 預算及說明，四 gate／所有案例與斷言／個別期限／worker／retry／runner／秘密界線不變，隨 #229 的新 head 完整 CI／同 head 審查後才合併，不藉此發布未過檢查的候選。
 
 - [ ] **DP-233 — 提醒與月曆聯合版本候選（2026-11-03）：** Backlog → Next → In Progress。從 PR #228 最終 25a4b9c 四 CI／完成審查後合併的 main 23916f5 接續；0.4.7 版號、四條短公告與生成資產，十份歷史公告／runtime／v4／22 migration 不變。完整 1,802＋39 Node、lint／typecheck／Pages build／公告與 canonical 守門、相關 Chromium 50 passed／8 skipped＋WebKit 12、三 viewport production 公告／翻頁／登入入口／焦點／reload／bytes 與偏好保存、console 0、六圖目視過，實際時區列印。詳 docs/reminder-calendar-release-candidate-2026-11-03.md；自己的最新四 CI／同 head 完成審查後才合併，正式設定／真正公開舊版更新及真機另 DP-234，沒有正式寫入或 dispatch。
@@ -343,6 +345,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
   > **原本列的「週檢視補上全天列」已移除**：DP-015 期間回頭核對原稿，`buildWeek()` 的 `evs.forEach(e=>{ if(e.allDay) return; ... })` 會直接略過全天事件，週檢視的 markup 也只有欄頭與時間格，**原稿的週檢視根本不顯示全天事件**。DayPop 現況（`WeekView.tsx` 的 `if (event.allDay) continue;`）與原稿一致，因此這不是待補的搬移項目。若日後希望週檢視顯示全天事件，那是新的產品決策，不能當成「還原原稿」處理。同時收掉 DP-051／053／057 的過渡措施：快速新增改為交給事件 sheet 確認而非直接建立、事件 sheet 補齊原稿欄位、待辦新增入口移回寵物對話泡泡（DP-040）、週檢視補上全天列、列表檢視在天氣資料來源定案後補回該欄位（DP-054），並移除 `shell.css` 末段最後的 scaffold 橋接。
 
 ## Backlog
+
+- [ ] **DP-237 — 保存草稿 e2e 的 dev entry 重複匯入（2026-11-04 登記）：** DP-236 擴大驗證發現本機 `event-save-draft.spec.ts` 六項案例在 `fail()` 動態匯入 `e2eAuthMain.tsx` 後出現 duplicate createRoot 訊息並重設假帳號畫面，導致原視窗消失。先以原 main runtime 比較確認，再改用既有的 window fake Supabase seam，保留原保存／快取／重複範圍斷言；不要把測試逾時直接放寬或混入產品保存邏輯。此項先登記，與手機縮放修正分開審核。
 
 
 

@@ -748,6 +748,14 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
   `parseReleaseInfo()` 現在在 fetch 邊界檢查 `version`、`releasedAt`、`title` 為非空字串、`changes` 為字串陣列，並有寬鬆的上限：每段文字 500 字、最多 50 條；目前最長的一版是 11 條、每條最多 53 字。只保留這四個欄位。不合格的回應丟 `ReleaseInfoError`，走所有失敗檢查共用的路徑：自動檢查安靜，設定頁顯示「本次檢查失敗：更新資訊格式不正確」，手動檢查顯示「暫時無法檢查更新」。**不要改成在繪製時以空陣列掩蓋**：那會把壞掉的回應當成一個沒有變更內容的新版本提示更新。
   觸發條件很窄：回應必須是合法 JSON，`version` 是字串且不比目前版本舊。依程式碼判讀，回 HTML 的 captive portal 會在 `response.json()` 失敗，`version` 不是字串會在比較版本時丟錯，這兩種本來就落在失敗路徑。沒有發現線上的 `version.json` 損壞過。驗證：所有已發布的公告與目前的 `version.json` 都通過解析；hook 的 10 個案例（兩條路徑 × 五種格式）與 e2e 的兩個案例在還原修正後都失敗，e2e 失敗時畫面就是最外層錯誤畫面。
 
+### 主畫面縮放與表單寬度（DP-236，2026-11-04）
+
+擁有者在已加入主畫面的 iPhone 回報容易縮放，提醒及新增行程視窗可左右移動。本次依明確委託修正觸控／寬度契約：installed App（`display-mode: standalone` 或 iOS `navigator.standalone`）的 viewport 固定頁面縮放，仍允許兩向原生平移，由月曆與週格自己的手勢契約決定方向。以 viewport 的 `touch-action: pan-x pan-y` 及限定該元素的 WebKit `gesturestart`／`gesturechange` 防護處理，不攔截單指 touchmove、click 或 keyboard；display mode 改回 browser／unmount 時清理。普通瀏覽器的縮放與全域 viewport meta 保留，沒有新增使用者資料／裝置偏好。
+
+行程日期／時刻／選單／文字與備註採 16px 輸入字體；標題原為 18px 保留。日期／時刻欄位可縮至欄寬，長日曆名稱可換行，提醒與行程內容以垂直捲動為主，避免用裁切掩蓋欄位超寬。這是刻意調整 canonical 原稿表單的字體及響應式邊界，不重設計資訊架構、控制順序或保存語意。模擬 Chromium／WebKit 的幾何與 gesture 事件測試不代表 iPhone standalone 原生縮放／鍵盤已驗；合併、發布後仍須擁有者原機複驗。
+
+installed 的快速新增、搜尋與設定等其他輸入也採 16px，避免單靠手勢防護仍發生 focus 縮放。
+
 ## 6. 資料庫與日期邊界
 
 ### 週檢視的三日模式（DP-167，2026-10-15）

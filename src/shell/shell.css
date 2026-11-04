@@ -84,6 +84,18 @@ body {
   font-family: var(--font-body);
 }
 
+/* Installed App: pan in either direction without pinch/double-tap page zoom.
+   The regular browser keeps its zoom. Child week/month gesture rules still apply. */
+.dp-viewport[data-installed] {
+  touch-action: pan-x pan-y;
+}
+
+/* Small inputs can trigger focus zoom independently of touch gestures on iOS.
+   Keep the event title's existing 18px size, and give other installed inputs 16px. */
+.dp-viewport[data-installed] :is(input, select, textarea):not(.cal-title-input) {
+  font-size: 16px;
+}
+
 /* Scanline / texture overlay (pixel theme). */
 .dp-texture {
   position: absolute;

@@ -1524,6 +1524,8 @@ button.cal-day-todo-title {
 
 .cal-sheet {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   max-height: 88%;
   flex-direction: column;
   border-top: var(--bd) solid var(--border);
@@ -1583,11 +1585,15 @@ button.cal-day-todo-title {
 
 .cal-sheet-body {
   flex: 1;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
   padding: 12px 14px 18px;
 }
 
 .cal-field {
+  min-width: 0;
   margin-bottom: 11px;
 }
 
@@ -1603,12 +1609,14 @@ button.cal-day-todo-title {
 .cal-field input[type="time"],
 .cal-field select {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: var(--bd) solid var(--border);
   border-radius: calc(var(--radius) - 2px);
   background: var(--bg);
   padding: 9px 10px;
   color: var(--fg);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 /* 只在編輯自訂重複規則的行程時出現 —— DP-082。 */
@@ -1627,7 +1635,7 @@ button.cal-day-todo-title {
   background: var(--bg);
   padding: 10px 11px;
   color: var(--fg);
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.5;
   resize: none;
 }
@@ -1642,6 +1650,9 @@ button.cal-day-todo-title {
 
 .cal-cal-chip {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: 6px;
   border: 2px solid var(--border);
