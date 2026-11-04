@@ -756,6 +756,8 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 installed 的快速新增、搜尋與設定等其他輸入也採 16px，避免單靠手勢防護仍發生 focus 縮放。
 
+擁有者追加頂部模糊及整頁位移截圖後，擴充此契約：installed 模式的 html／body／root 禁止外層捲動，body 與 App viewport 固定於視窗，safe area 由實底覆蓋；各區自己的捲動保留。viewport meta 僅在此模式加入 maximum-scale=1／user-scalable=no，回 browser 或卸載時精確還原原值（原本沒有就移除暫建元素）；上段「全域 viewport meta 保留」描述第一版，現在以此模式限定規則取代。模擬驗證焦點／轉向後外層 scrollX/Y 為 0，未涵蓋 iPhone 系統 scroll-edge 模糊與原生鍵盤，不能宣稱其真機問題已驗收。
+
 ## 6. 資料庫與日期邊界
 
 ### 週檢視的三日模式（DP-167，2026-10-15）

@@ -235,7 +235,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-236 — 主畫面縮放與手機表單橫向溢出（2026-11-04）：** 依擁有者真機回報優先修正，Backlog → Next → In Progress。installed 限縮放／保留平移及 WebKit gesture 防護、16px 輸入、原生欄位可縮／長名稱換行及垂直捲動已完成。原 main 的新表單回歸抓到 233px 溢出；候選四尺寸／45 個相關 browser 案例各通過（完整矩陣後修正兩個 locator 補跑，九略過）、1,806 單元＋39 Node、lint／typecheck／Pages build／原預算過。歷史 WebKit 首輪失敗、無效 pinch 正控制及 main 同樣失敗的舊保存 harness 均保留，後者另 DP-237。詳 docs/mobile-viewport-dialogs.md。Chrome host 不可用，先推候選待 PR／自己的四 CI／同 head 審查；尚未合併／發布，iPhone standalone 原生手勢／鍵盤仍待複驗。資料 schema／提醒規則／已發布公告不變。
+- [ ] **DP-236 — 主畫面縮放與手機表單橫向溢出（2026-11-04）：** 依擁有者真機回報優先修正，Backlog → Next → In Progress。installed 限縮放／保留平移及 WebKit gesture 防護、16px 輸入、原生欄位可縮／長名稱換行及垂直捲動已完成。原 main 的新表單回歸抓到 233px 溢出；候選四尺寸／45 個相關 browser 案例各通過（完整矩陣後修正兩個 locator 補跑，九略過）、1,806 單元＋39 Node、lint／typecheck／Pages build／原預算過。歷史 WebKit 首輪失敗、無效 pinch 正控制及 main 同樣失敗的舊保存 harness 均保留，後者另 DP-237。詳 docs/mobile-viewport-dialogs.md。Chrome host 不可用，先推候選待 PR／自己的四 CI／同 head 審查；尚未合併／發布，iPhone standalone 原生手勢／鍵盤仍待複驗。資料 schema／提醒規則／已發布公告不變。 ????????????installed ?????????? safe area????? viewport meta ???????? 1,808?39 Node?lint?Pages build????????? browser 5 passed?1 skipped?????????????????????? iPhone ???
 
 - [ ] **DP-235 — 完整 Chromium CI 執行預算（2026-11-04）：** Backlog → Next → In Progress。DP-233 的 6379da2 三次達 25 分鐘取消；後兩輪 344 案例全部完成（325 通過／19 略過、無失敗），仍未完成 job，不算 pass。相同案例比前置 PR 總測時多約 18%；將 Chromium job 25→30 分鐘以容納全套與收尾。只改這個 job 預算及說明，四 gate／所有案例與斷言／個別期限／worker／retry／runner／秘密界線不變，隨 #229 的新 head 完整 CI／同 head 審查後才合併，不藉此發布未過檢查的候選。
 

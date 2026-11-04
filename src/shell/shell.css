@@ -86,8 +86,52 @@ body {
 
 /* Installed App: pan in either direction without pinch/double-tap page zoom.
    The regular browser keeps its zoom. Child week/month gesture rules still apply. */
+html[data-daypop-installed],
+html[data-daypop-installed] body,
+html[data-daypop-installed] #root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-daypop-installed] body {
+  position: fixed;
+  inset: 0;
+}
+
+html[data-daypop-installed] .dp-preview {
+  min-height: 0;
+}
+
 .dp-viewport[data-installed] {
+  position: fixed;
+  inset: 0;
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+  border-radius: 0;
   touch-action: pan-x pan-y;
+}
+
+/* An opaque, fixed safe-area strip. Content scrolls below it, rather than
+   moving the page/title behind iOS's system scroll-edge treatment. */
+.dp-viewport[data-installed]::before {
+  position: absolute;
+  z-index: 39;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: env(safe-area-inset-top);
+  background: var(--bg);
+  content: "";
+  pointer-events: none;
+}
+
+html[data-daypop-installed] :is(.dp-notch, .dp-statusbar, .dp-preview-caption) {
+  display: none;
 }
 
 /* Small inputs can trigger focus zoom independently of touch gestures on iOS.

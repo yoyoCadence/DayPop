@@ -69,11 +69,14 @@ export async function checkMobileDialogs(page: Page) {
 
 export async function checkInstalledPageGestures(page: Page, nativeTouch: boolean) {
   const clean = monitorBrowser(page);
+  await page.emulateMedia({ colorScheme: 'dark' });
   // Explicit installed-mode substitute, not a claim about actual iPhone UI.
   await page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { configurable: true, value: true }));
   await seedMonthPaging(page);
   const viewport = page.locator('.dp-viewport');
   await expect(viewport).toHaveAttribute('data-installed', '');
+  await expect(page.locator('html')).toHaveAttribute('data-daypop-installed', '');
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /maximum-scale=1, user-scalable=no/);
   expect(await viewport.evaluate(el => getComputedStyle(el).touchAction)).toBe('pan-x pan-y');
   expect(await page.getByRole('textbox', { name: '快速新增', exact: true }).evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
   expect(await viewport.evaluate(el => {
@@ -92,6 +95,33 @@ export async function checkInstalledPageGestures(page: Page, nativeTouch: boolea
   await tabButton(page, '搜尋').click();
   await tabButton(page, '設定').click();
   expect(await viewport.locator('input, select, textarea').evaluateAll(fields => fields.filter(field => parseFloat(getComputedStyle(field).fontSize) < 16).length)).toBe(0);
+  // Focus, inner scrolling, rotation and a short available window must not pan
+  // the outer document or detach the four tabs from the App viewport.
+  for (const size of [{ width: 430, height: 932 }, { width: 932, height: 430 }, { width: 390, height: 360 }]) {
+    await page.setViewportSize(size);
+    const name = page.getByLabel('寵物名字', { exact: true });
+    await name.focus();
+    await name.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollTo(100, 100));
+    const geometry = await viewport.evaluate(el => {
+      const bounds = el.getBoundingClientRect();
+      const tabs = el.querySelector('.dp-tabbar')!.getBoundingClientRect();
+      return { x: scrollX, y: scrollY, left: bounds.left, top: bounds.top,
+        right: bounds.right, bottom: bounds.bottom, width: innerWidth, height: innerHeight,
+        tabsBottom: tabs.bottom, documentWidth: document.documentElement.scrollWidth,
+        bodyPosition: getComputedStyle(document.body).position,
+        safeAreaColor: getComputedStyle(el, '::before').backgroundColor };
+    });
+    expect(geometry).toMatchObject({ x: 0, y: 0, left: 0, top: 0, bodyPosition: 'fixed' });
+    expect(geometry.right).toBe(geometry.width);
+    expect(geometry.bottom).toBe(geometry.height);
+    expect(geometry.tabsBottom).toBe(geometry.bottom);
+    expect(geometry.documentWidth).toBe(geometry.width);
+    expect(geometry.safeAreaColor).toMatch(/^rgb\(/);
+  }
+  await page.setViewportSize({ width: 430, height: 932 });
+  await tabButton(page, '日曆').click();
+  await page.screenshot({ path: test.info().outputPath('installed-header-430.png') });
   expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
   clean();
 }
