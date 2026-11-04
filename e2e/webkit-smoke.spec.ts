@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { checkPetSleep } from './fixtures/petSleep';
+import { checkPetCollection } from './fixtures/petCollection';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
@@ -19,6 +20,10 @@ import {
 // reminder UI cases explicitly inject synthetic service/browser ports, without OS Push claims.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('三款 Blender 七態可解碼，真正 walk 動畫有不同影格', async ({ page }) => {
+  await checkPetCollection(page);
 });
 
 test('提醒設定明確同意、規則保存與取消後焦點', async ({ page }) => {

@@ -20,6 +20,16 @@ function render(pose: PetPose = 'idle', cue: number | null = null, paused = fals
 }
 const image = () => host.querySelector<HTMLImageElement>('img')!;
 async function load() { await act(async () => image().dispatchEvent(new Event('load'))); }
+it.each(['marshmallow_cat', 'honey_bear', 'peach_bunny'] as const)('%s has seven native poses and a static reduced-motion walking alternative', async kind => {
+  expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'jump', 'look', 'sit', 'sleep', 'walk']);
+  act(() => root.render(<PetArtwork kind={kind} pose="walk" paused={false} cue={null} onCueDone={done} />));
+  expect(image().getAttribute('src')).toMatch(/walk.*webp/);
+  await load();
+  expect(image().hidden).toBe(false);
+  act(() => { media.matches = true; media.dispatchEvent(new Event('change')); });
+  expect(image().getAttribute('src')).toMatch(/idle.*png/);
+  expect(done).not.toHaveBeenCalled();
+});
 it('registers the mixed five-state package for both keys; unmade poses keep CSS', () => {
   for (const kind of ['moon_cat', 'orbit_ufo'] as const) {
     expect(Object.keys(PET_ASSETS[kind]).sort()).toEqual(['grab', 'idle', 'jump', 'look', 'sleep']);

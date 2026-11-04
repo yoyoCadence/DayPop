@@ -3,6 +3,16 @@ import { basename, join } from 'node:path';
 
 /** Check the actual emitted, content-hashed files, including the unselected registry entry. */
 export async function checkPetAssets(source, builtFiles, budget) {
+  return checkPackageAssets(source, builtFiles, budget, Object.fromEntries(['moon-cat', 'orbit-ufo'].map(kind =>
+    [kind, ['idle.webp', 'look.webp', 'sleep.webp', 'jump.webp', 'idle.png', 'grab.png', 'sleep.png']])));
+}
+
+export async function checkCollectionAssets(source, builtFiles, budget) {
+  return checkPackageAssets(source, builtFiles, budget, Object.fromEntries(['marshmallow-cat', 'honey-bear', 'peach-bunny'].map(kind =>
+    [kind, ['idle.webp', 'walk.webp', 'look.webp', 'sleep.webp', 'jump.webp', 'idle.png', 'sit.png', 'grab.png', 'sleep.png']])));
+}
+
+async function checkPackageAssets(source, builtFiles, budget, packages) {
   const problems = [];
   const totals = {};
   const limits = ['maxCharacterBytes', 'maxIdleBytes', 'maxLookBytes', 'maxSleepBytes', 'maxJumpBytes', 'maxStaticBytes'];
@@ -10,16 +20,16 @@ export async function checkPetAssets(source, builtFiles, budget) {
     if (!Number.isSafeInteger(budget?.[key]) || budget[key] <= 0) problems.push(`pets.${key} must be a positive safe integer`);
   }
   if (problems.length) return { problems, totals };
-  const expected = ['moon-cat', 'orbit-ufo'].flatMap(kind => ['idle.webp', 'look.webp', 'sleep.webp', 'jump.webp', 'idle.png', 'grab.png', 'sleep.png'].map(file => `${kind}-${file}`));
+  const expected = Object.entries(packages).flatMap(([kind, files]) => files.map(file => `${kind}-${file}`));
   const actual = await readdir(source);
   if (actual.length !== expected.length || expected.some(file => !actual.includes(file))) {
-    problems.push('pet assets must contain exactly the approved seven files per character');
+    problems.push('pet assets must contain exactly the approved files per character');
     return { problems, totals };
   }
   for (const name of expected) {
     const bytes = await readFile(join(source, name));
-    const [kind, pose, extension] = /^(moon-cat|orbit-ufo)-(idle|look|grab|sleep|jump)\.(webp|png)$/.exec(name).slice(1);
-    const metric = extension === 'png' ? 'maxStaticBytes' : { idle: 'maxIdleBytes', look: 'maxLookBytes', sleep: 'maxSleepBytes', jump: 'maxJumpBytes' }[pose];
+    const [kind, pose, extension] = /^(.+)-(idle|look|grab|sleep|jump|walk|sit)\.(webp|png)$/.exec(name).slice(1);
+    const metric = extension === 'png' ? 'maxStaticBytes' : { idle: 'maxIdleBytes', walk: 'maxLookBytes', look: 'maxLookBytes', sleep: 'maxSleepBytes', jump: 'maxJumpBytes' }[pose];
     totals[kind] = (totals[kind] ?? 0) + bytes.length;
     if (bytes.length > budget[metric]) problems.push(`${name} ${bytes.length} exceeds ${metric} ${budget[metric]} bytes`);
     const pattern = new RegExp(`^${kind}-${pose}-[A-Za-z0-9_-]+\\.${extension}$`);

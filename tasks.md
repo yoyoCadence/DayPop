@@ -235,6 +235,10 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-239 — 夥伴選擇的 v5 偏好與設定（2026-11-04，DP-172／238 子段）：** 依擁有者可切換要求，Backlog → Next → In Progress。獨立接 DP-238 registry，canonical petKind 沿 domain／repository 保存，先完成 write barrier、v1–v4 guest 與帳號 cache 遷移、future／corrupt 拒寫、備份與匯入；新增列欄位 migration／重新產生 types／本機 RLS 與真實 HTTP。設定可選三款新夥伴並保留原兩款；原姓名、主題及使用者資料不變。新正式 migration 依既有界線另外放行，先做可審核候選，不能只另存暫時 key 假裝已保存。自己的四 CI／同 head 審查後才合併。
+
+- [ ] **DP-240 — 前景自主活動與走路狀態（2026-11-04，DP-238 子段）：** 依擁有者自主走動要求，Backlog → Next。使用 DP-238 真實 walk／sit 動作，活動範圍避開 header／FAB／分頁；碰觸、拖移、鍵盤、泡泡、表單、收起、背景與 reduced-motion 均暫停，不能自行寫掉使用者保存位置。獨立於 v5 偏好與手機外層修正驗證及 PR；尚未接線。
+
 - [ ] **DP-238 — 三款精緻可切換夥伴與自主活動（2026-11-04）：** 依擁有者新委託解除寵物暫緩，Backlog → Next → In Progress。使用既有官方 Blender 與可編輯來源製作至少三款精緻夥伴／動作、提供設定切換並保存，加入前景自主走動／活潑動作；保留表單避讓、拖曳／鍵盤、關閉、減少動態與安全圖片預算。先檢查既有來源及契約，選擇偏好沿 canonical domain／repository，若需 v5 先完成 write barrier／遷移及本機 schema 回歸。保留原已採用素材及歷史證據，新增交付目錄；獨立 PR／CI／同 head 審查後才合併。先做可審核候選，不因本委託自行套正式 migration 或部署；DP-234 通知三項已另記於其分支、DP-236 手機修正候選不混入。
 
 - [ ] **DP-235 — 完整 Chromium CI 執行預算（2026-11-04）：** Backlog → Next → In Progress。DP-233 的 6379da2 三次達 25 分鐘取消；後兩輪 344 案例全部完成（325 通過／19 略過、無失敗），仍未完成 job，不算 pass。相同案例比前置 PR 總測時多約 18%；將 Chromium job 25→30 分鐘以容納全套與收尾。只改這個 job 預算及說明，四 gate／所有案例與斷言／個別期限／worker／retry／runner／秘密界線不變，隨 #229 的新 head 完整 CI／同 head 審查後才合併，不藉此發布未過檢查的候選。

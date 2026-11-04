@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { checkPetAssets } from './pet-assets-budget.mjs';
+import { checkPetAssets, checkCollectionAssets } from './pet-assets-budget.mjs';
 
 const limits = { maxCharacterBytes: 135, maxIdleBytes: 30, maxLookBytes: 20, maxSleepBytes: 20, maxJumpBytes: 20, maxStaticBytes: 15 };
 async function fixture(run) {
@@ -30,6 +30,52 @@ test('unique static assets count once and exact per-file/character boundaries pa
   assert.deepEqual(result.problems, []);
   assert.deepEqual(result.totals, { 'moon-cat': 135, 'orbit-ufo': 135 });
 }));
+
+test('three-character seven-state collection rejects a missing walk, changed bytes and exceeded character budget', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'daypop-collection-budget-'));
+  const source = join(root, 'source'); const built = join(root, 'assets');
+  await mkdir(source); await mkdir(built);
+  const files = [];
+  try {
+    for (const kind of ['marshmallow-cat', 'honey-bear', 'peach-bunny']) {
+      for (const [pose, ext] of [['idle','webp'],['walk','webp'],['look','webp'],['sleep','webp'],['jump','webp'],['idle','png'],['sit','png'],['grab','png'],['sleep','png']]) {
+        const name = `${kind}-${pose}`; const bytes = Buffer.alloc(10, files.length + 1);
+        await writeFile(join(source, `${name}.${ext}`), bytes);
+        const output = join(built, `${name}-contentHash.${ext}`);
+        await writeFile(output, bytes); files.push(output);
+      }
+    }
+    const budget = { ...limits, maxCharacterBytes: 90 };
+    assert.deepEqual((await checkCollectionAssets(source, files, budget)).problems, []);
+    assert((await checkCollectionAssets(source, files, { ...budget, maxCharacterBytes: 89 })).problems.some(p => p.includes('maxCharacterBytes')));
+    const walk = files.find(file => file.includes('honey-bear-walk-'));
+    assert((await checkCollectionAssets(source, files.filter(file => file !== walk), budget)).problems.some(p => p.includes('honey-bear-walk.webp')));
+    await writeFile(walk, Buffer.alloc(10, 0));
+    assert((await checkCollectionAssets(source, files, budget)).problems.some(p => p.includes('emitted bytes differ')));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('new production sprites match all 27 packaged files and three reopened native sources', async () => {
+  const root = new URL('../', import.meta.url);
+  const base = 'docs/pet-concepts/2026-11-04/';
+  const manifest = JSON.parse(await readFile(new URL(`${base}manifest.json`, root), 'utf8'));
+  const proof = JSON.parse(await readFile(new URL(`${base}source-proof.json`, root), 'utf8'));
+  assert.equal(manifest.assets.length, 27);
+  assert.equal(proof.length, 3);
+  for (const source of manifest.source) {
+    const bytes = await readFile(new URL(`${base}${source.path.replaceAll('\\', '/')}`, root));
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), source.sha256);
+    assert(proof.some(item => item.sourceSha256 === source.sha256 && item.poses.length === 7 && item.externalImages === 0));
+  }
+  for (const asset of manifest.assets) {
+    const name = asset.path.replaceAll('\\', '/').split('/').at(-1);
+    const bytes = await readFile(new URL(`src/assets/pet-collection/${name}`, root));
+    assert.equal(bytes.length, asset.bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), asset.sha256);
+    const packaged = await readFile(new URL(`${base}${asset.path.replaceAll('\\', '/')}`, root));
+    assert.deepEqual(bytes, packaged);
+  }
+});
 for (const limit of Object.keys(limits)) {
   test(`rejects an exceeded ${limit} even if other limits pass`, () => fixture(async ({ source, files }) => {
     const result = await checkPetAssets(source, files, { ...limits, [limit]: limits[limit] - 1 });
