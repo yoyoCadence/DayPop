@@ -233,7 +233,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-234 — 正式提醒設定、聯合發布與上線驗證（2026-11-04）：** Backlog → Next → In Progress。擁有者明確授權的三份 migration 已精確 dry-run／push 後 22 對齊；四 Edge／兩 Vault、sender ACTIVE v1、固定每分鐘 job 1／active 1 及持續 key-bound heartbeat 完成，權限／types／API 隔離通過、明文已清除。#229 最終 a66d0be 四 CI／完成審查無發現後合併 c952688；已從該 main 啟動 Deploy staging 41751090045，待六 jobs、公開 artifact、真正 0.4.6 更新保存與兩 viewport；iPhone 真機仍需擁有者參與。詳 docs/deployment-verification-2026-11-04.md。
+- [ ] **DP-234 — 正式提醒設定、聯合發布與上線驗證（2026-11-04）：** Backlog → Next → In Progress。明確授權的三份 migration 已精確 dry-run／push 後 22 對齊，秘密／sender／單一排程與持續 key-bound heartbeat 完成，權限／types／API 隔離通過。#229 最終 a66d0be 四 CI／同 head 完成審查後合併 c952688；由此執行 Deploy staging 41751090045 六 jobs 全成功，0.4.7 已上線，17 項公開成品逐 byte 相同於 artifact 13287238014。手機／桌面公告、翻月、自動列數、提醒登入入口／焦點／reload 原資料及單月 key 保存、console 0、六圖目視通過，實際 Asia/Taipei。部署 Chromium 為 324 passed／1 flaky（既有 retry 後成功）／19 skipped，未改測試設定。真正舊 0.4.6 階段等待三小時後已退出，沒有原地更新結果；這項與 iPhone standalone 收信／手勢仍待驗，故本父項不移 Done。詳 docs/deployment-verification-2026-11-04.md 與 postflight JSON；0.4.7 公告自此不可回寫，寵物暫緩與 DP-034 放行界線保留。
 
 
 

@@ -1,0 +1,254 @@
+{
+  "checkedAt": "2026-11-04T11:48:52.934Z",
+  "actualTimezone": "Etc/GMT-8",
+  "artifactId": "13287238014",
+  "release": {
+    "version": "0.4.7",
+    "releasedAt": "2026-11-04",
+    "title": "翻月與日曆提醒",
+    "changes": [
+      "月曆可切換連續捲動與單月翻頁，單月支援左右滑動換月",
+      "修正自動列數跨月滑動時的畫面跳動",
+      "登入後可依日曆設定背景提醒，並在每台裝置明確開啟通知",
+      "提醒設定失敗保留輸入；登出會嘗試停用這台裝置的通知"
+    ]
+  },
+  "csp": true,
+  "manifestScope": "./",
+  "hasExpectedPublicProject": true,
+  "publicAuth": {
+    "healthStatus": 200,
+    "settingsStatus": 200,
+    "emailEnabled": true,
+    "googleEnabled": true,
+    "signupDisabled": false,
+    "emailAutoConfirm": false
+  },
+  "inlinePaperMatch": true,
+  "assets": [
+    {
+      "path": "/DayPop/version.json",
+      "status": 200,
+      "bytes": 418,
+      "sha256": "85660743e6d26c97d55e38e3816c66472a6861247bfeda3aa7c2eec9e0219ffb",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/",
+      "status": 200,
+      "bytes": 1801,
+      "sha256": "0bb208ba93b7b065a1e3261187f99c9bd4f39bd9ace674c220bf23acbe3e0c7d",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/index-DfA4CrFQ.js",
+      "status": 200,
+      "bytes": 791717,
+      "sha256": "3e501b0d16306ad32c02b7fa7383416a7a0089907ab9622c1dcf83f6b769059d",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/index-BdqhETte.css",
+      "status": 200,
+      "bytes": 121024,
+      "sha256": "fa63aed2913418af814148c28eeafd043810d02353c5bda16884e5677958b081",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/sw.js",
+      "status": 200,
+      "bytes": 4073,
+      "sha256": "9e185cbd15ce9caf9375499b0a8448ddf7bfab09c42fd20b0ab48c349fe6df3b",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/manifest.webmanifest",
+      "status": 200,
+      "bytes": 955,
+      "sha256": "a024cdf896c9d3ad63e338ecb565ee13020e2af5a889a65c5e4ae6ea5a497acb",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/desk-BG0LEVk1.webp",
+      "status": 200,
+      "bytes": 90564,
+      "sha256": "3c3a07a065464bc18855c0698d56e27c2b1286c4a109290238bc3f43c86e006a",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/page-edges-J3lamw2P.webp",
+      "status": 200,
+      "bytes": 17932,
+      "sha256": "d2c506ffa1ecd692c52a739eeaf006b68dee0d0e5412c23f02adfb70c88c9344",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/header-B7EdgrIN.webp",
+      "status": 200,
+      "bytes": 31210,
+      "sha256": "dbfc4889ab248d84d7a9763a14b3118809193abeb5a9dd8e5afa25ebabe6d5b3",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/navigation-XLqiz-BZ.webp",
+      "status": 200,
+      "bytes": 9464,
+      "sha256": "8b861091cb48849920139a5f1ad51ce9388bfe6b1f83e2233b2147a259edc7a0",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/assets/desk-dark-kpRBmB9A.webp",
+      "status": 200,
+      "bytes": 66512,
+      "sha256": "f069569fe4ad65f22d69576e860a637ecfe75a215fc5de3afc4084c52e50f15a",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/icon-192.png",
+      "status": 200,
+      "bytes": 6252,
+      "sha256": "a5a13b9d5d6e050d41e46d34f6fe03dbec238657fbb09d5119fda7d7ca806179",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/icon-512.png",
+      "status": 200,
+      "bytes": 16978,
+      "sha256": "7a7a2bb83f15d0a95c067027efb6e7ce1ddae3dc0c35f51b3d7ada92c2652c28",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/maskable-192.png",
+      "status": 200,
+      "bytes": 4336,
+      "sha256": "b07b57243236d7229a8d283d8ab188170d5e8eaf24ba282ba6a146d60c4416e7",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/maskable-512.png",
+      "status": 200,
+      "bytes": 12041,
+      "sha256": "0f189009dd9e9265df9abe9e5a3b6039bc7e4336aa9d5e523fa9293d5c8f07df",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/daypop.svg",
+      "status": 200,
+      "bytes": 578,
+      "sha256": "a31a65aca52a0bc6f87669bc97c63e1e54b91d4e34a2e873d42592842c968979",
+      "artifactByteMatch": true
+    },
+    {
+      "path": "/DayPop/icons/apple-touch-icon-180.png",
+      "status": 200,
+      "bytes": 4783,
+      "sha256": "793919d9622c195cb78f438bf09e450f95dca1c84e1ad28ef00ea9bc3f4b222d",
+      "artifactByteMatch": true
+    }
+  ],
+  "deployment": {
+    "runId": 41751090045,
+    "sourceSha": "c9526886fbd88f1d7dd7cc0de0cd1a04ecd9f469",
+    "jobsSucceeded": 6,
+    "chromium": {
+      "passed": 324,
+      "flaky": 1,
+      "skipped": 19,
+      "minutes": 20.5
+    },
+    "webkitPassed": 12,
+    "unitPassed": 1802,
+    "nodePassed": 39,
+    "pgTapPassed": 478,
+    "reminderHttpGroupsPassed": 23,
+    "schedulerChecksPassed": 17,
+    "artifactZipSha256": "d7b78ac5ea0a41c9b24281c63079bfac941e56c5dc9838575f795f35a57ce5e1"
+  },
+  "publicUi": {
+    "checkedAt": "2026-11-04T11:48:44.546Z",
+    "baseUrl": "https://yoyocadence.github.io/DayPop/",
+    "results": [
+      {
+        "name": "phone",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "timezone": "Asia/Taipei",
+        "consoleErrors": 0,
+        "consoleWarnings": 0,
+        "adaptiveSyntheticHeldTouchPassed": true,
+        "anchorPreserved": true,
+        "monthModePreserved": true,
+        "nativeChromiumTouchSwipe": true,
+        "guestBytesPreserved": true,
+        "loginFocusPassed": true
+      },
+      {
+        "name": "desktop",
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        },
+        "timezone": "Asia/Taipei",
+        "consoleErrors": 0,
+        "consoleWarnings": 0,
+        "adaptiveSyntheticHeldTouchPassed": true,
+        "anchorPreserved": true,
+        "monthModePreserved": true,
+        "nativeChromiumTouchSwipe": false,
+        "guestBytesPreserved": true,
+        "loginFocusPassed": true
+      }
+    ]
+  },
+  "reminderHealth": {
+    "stage": "status",
+    "checkedAt": "2026-11-04T11:48:48.531Z",
+    "status": [
+      {
+        "active_job_count": 1,
+        "enabled": true,
+        "job_count": 1,
+        "last_cron_status": "succeeded",
+        "last_error": null,
+        "last_tick": "2026-11-04 11:48:00.915844+00",
+        "public_key_fingerprint": "174fe0d2bcdd"
+      }
+    ]
+  },
+  "oldClientUpdate": {
+    "status": "not-verified",
+    "reason": "Original real public 0.4.6 browser exited after its three-hour wait; no automatic or manual reload result exists.",
+    "baseline": {
+      "bytes": 1000,
+      "schemaVersion": 4,
+      "revision": 3,
+      "hash": "ef1d1e77ff36b61f1ae6f79beafb8fb038985880c5c977ea0dc1afc2640d1c12",
+      "theme": "dark",
+      "seen": "0.4.6",
+      "mode": "paged",
+      "script": "/DayPop/assets/index-BU-7o4xM.js",
+      "navigation": "navigate",
+      "timezone": "Asia/Taipei",
+      "scope": "https://yoyocadence.github.io/DayPop/",
+      "controlled": "activated",
+      "waiting": false,
+      "caches": [
+        "daypop-app-shell-0.4.6"
+      ]
+    },
+    "baselineCheckedAt": "2026-11-04T00:58:22.762Z"
+  },
+  "physicalIphone": {
+    "status": "not-verified",
+    "checks": [
+      "standalone-background-push",
+      "notification-click",
+      "adaptive-rows",
+      "horizontal-month-paging"
+    ]
+  },
+  "accountLoginTest": "not-run",
+  "oauthFlowTest": "not-run"
+}
