@@ -98,9 +98,10 @@ jobs:
   e2e:
     name: Playwright / mobile and desktop
     runs-on: ubuntu-26.04
-    # DP-180: 264 cases reached case 263 at the former 20-minute job limit.
-    # Allow the full matrix to finish; per-test deadlines remain in Playwright.
-    timeout-minutes: 25
+    # DP-235: the 344-case matrix completed 325 passes / 19 skips but was
+    # canceled during teardown at 25 minutes in two consecutive runs.
+    # Allow the full matrix and teardown; per-test deadlines/workers/retries stay.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
