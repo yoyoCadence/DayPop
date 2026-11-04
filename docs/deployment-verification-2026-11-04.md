@@ -76,4 +76,10 @@ Deploy staging [`41751090045`](https://github.com/yoyoCadence/DayPop/actions/run
 
 ## 實體裝置界線
 
+### 首次未收到提醒的診斷（2026-11-04）
+
+擁有者回報約 20:30 設定 20:40 的行程、提前 10 分鐘，未收到通知；因此預定提醒時間其實是 20:30（12:30 UTC）。13:21 UTC 以唯讀 metadata／去識別化計數確認：裝置與日曆規則均已存在、key 綁定正確，但兩者均未在 12:30 UTC 前完成。24 小時 ledger 無投遞記錄；20:25–20:45 的 20 個 sender gateway 回應均 200，heartbeat 持續且 last_error 空。沒有讀取任何行程文字、裝置 endpoint／加密 key、JWT、秘密或 HTTP headers，沒有改寫正式資料或重送通知。
+
+現存記錄符合既有不補發契約：planner 拒絕 fireAt 早於規則 updatedAt／事項 createdAt，controller／DB claim 另拒絕早於 deviceCreatedAt 的工作。這支持「本次碰到排程資格邊界」的判斷，但現存版本無法重建可能已被替換的舊規則／裝置歷史，不宣稱完整還原當時過程或已驗證 OS 收信。既有本機 schedule／delivery 109 項回歸通過、實際 Etc/GMT-8，沒有改程式。已請擁有者維持登入、將同一本日曆提前分鐘保存為 `0`，新增至少五分鐘後開始的指定時間事項，鎖屏後等開始時間加兩分鐘回報；仍待結果，不將 DP-234／042 移 Done。
+
 iPhone 加到主畫面後，以本人帳號開「設定 → 提醒 → 這台裝置的通知」，逐本日曆開啟、提前分鐘填 0 並儲存；建立約五分鐘後的指定時間行程，回主畫面或鎖屏，確認固定匿名通知及點擊。另驗取消／重複、停用／登出，以及自動列數跨 4／5／6 週月份和左右翻月。這部分需要擁有者真機結果；服務健康、provider accepted、本機替身、Chromium touch 或 viewport 都不能代替。DP-042／正式放行仍不得因此提前結案。
