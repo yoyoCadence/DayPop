@@ -35,7 +35,7 @@ for (const account of [false, true]) {
     data.preferences.timezone = 'Asia/Taipei';
     data.preferences.petEnabled = false;
     await page.addInitScript((data) => {
-      if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.calendars[0]!.createdAt, data }));
+      if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.calendars[0]!.createdAt, data }));
     }, data);
     await openApp(page, account ? '/e2e/auth.html' : '/');
     expect(await page.title()).toContain('DayPop');

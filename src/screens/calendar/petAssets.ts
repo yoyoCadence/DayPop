@@ -15,7 +15,8 @@ import ufoJump from '../../assets/pets/orbit-ufo-jump.webp';
 import { COLLECTION_ASSETS } from './petCollection';
 
 // Internal asset keys only. Choosing a partner is DP-172, not a second preference store.
-export type PetKind = 'moon_cat' | 'orbit_ufo' | keyof typeof COLLECTION_ASSETS;
+import type { PetKind } from '../../domain/types';
+export type { PetKind } from '../../domain/types';
 export type PetPose = 'idle' | 'look' | 'grab' | 'walk' | 'sit' | 'sleep' | 'jump';
 interface PetAsset { still: string; animation?: string; durationMs?: number }
 export const PET_ASSETS: Record<PetKind, Partial<Record<PetPose, PetAsset>>> = {

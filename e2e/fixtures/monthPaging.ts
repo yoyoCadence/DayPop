@@ -17,7 +17,7 @@ export async function seedMonthPaging(page: Page) {
   data.stickers = [{ id: '22500000-0000-4000-8000-000000000003', calendarId, date: '2026-11-18', glyph: '🎂', assetKey: null, sortOrder: 0, createdAt: instant, updatedAt: instant }];
   await page.addInitScript(({ data, instant }) => {
     // Reload must read the actual saved document, never re-seed it.
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: instant, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 7, updatedAt: instant, data }));
   }, { data, instant });
   await openApp(page);
   await expect(page.locator('h1.cal-period')).toHaveText('2026年 11月');

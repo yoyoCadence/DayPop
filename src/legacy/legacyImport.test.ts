@@ -89,6 +89,7 @@ describe('legacy calpet.v2 import', () => {
       containedAiKey: true,
     });
     expect(plan.preferences).toEqual({
+      petKind: 'moon_cat',
       timezone: 'Asia/Taipei',
       weekStartsOn: 1,
       theme: 'dark',

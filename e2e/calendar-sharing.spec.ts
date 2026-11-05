@@ -207,7 +207,7 @@ test('擁有者明確確認歷史內容與 edit/view，新增私人事項保留�
   await expect(form).toBeHidden();
   expect(await page.evaluate(()=> (window as HarnessWindow).__daypopSharingHarness!.rows('events')[0]?.sharing_scope)).toBe('private');
   const cache=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),`daypop.account-cache.${SELF}`);
-  expect(cache.schemaVersion).toBe(4);expect(cache.data.events[0].sharingScope).toBe('private');expect(cache.data).not.toHaveProperty('shares');clean();
+  expect(cache.schemaVersion).toBe(5);expect(cache.data.events[0].sharingScope).toBe('private');expect(cache.data).not.toHaveProperty('shares');clean();
 });
 
 test('離線或撤權移除待辦列時保留已輸入草稿，登出清除記憶體副本',async({page})=>{

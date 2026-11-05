@@ -457,6 +457,7 @@ function legacyPreferences(
     ),
     defaultReminderMinutes,
     petName: optionalText(settings.petName, current.petName, 'settings.petName', 40, issues),
+    petKind: current.petKind,
     petEnabled: optionalBoolean(settings.petEnabled, current.petEnabled, 'settings.petEnabled', issues),
   };
 }

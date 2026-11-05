@@ -122,6 +122,7 @@ export function migrateV2UserData(value: unknown): DayPopUserData {
     ...value,
     eventAttachments: [],
     preferences: {
+      petKind: 'moon_cat',
       ...value.preferences,
       themeId: value.preferences.themeId ?? 'manga',
     },
@@ -131,7 +132,13 @@ export function migrateV2UserData(value: unknown): DayPopUserData {
 /** Schema v4 adds attachment metadata; existing v3 guest data has no blobs. */
 export function migrateV3UserData(value: unknown): DayPopUserData {
   if (!isRecord(value)) throw new Error('schema v3 資料內容不完整');
-  return parseDayPopUserData({ ...value, eventAttachments: [] }, { allowLegacyTitles: true });
+  return migrateV4UserData({ ...value, eventAttachments: [] });
+}
+
+/** v5 only adds the partner key; preserve every saved collection and preference. */
+export function migrateV4UserData(value: unknown): DayPopUserData {
+  if (!isRecord(value) || !isRecord(value.preferences)) throw new Error('schema v4 資料內容不完整');
+  return parseDayPopUserData({ ...value, preferences: { petKind: 'moon_cat', ...value.preferences } }, { allowLegacyTitles: true });
 }
 
 function isV1Event(value: unknown): value is V1CalendarEvent {

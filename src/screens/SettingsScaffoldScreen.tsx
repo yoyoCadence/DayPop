@@ -26,6 +26,7 @@ import { CalendarEditDialog } from './CalendarEditDialog';
 import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
 import { DataPrivacyCard } from './DataPrivacyCard';
+import { PetChoices } from './PetChoices';
 import './screens.css';
 import './calendarManage.css';
 import './dataTransfer.css';
@@ -60,7 +61,7 @@ const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
  * kept working inside the canonical shell. DP-113 applies the same card and
  * control tokens to those DayPop-owned surfaces without changing their flows.
  *
- * 原稿的「選擇夥伴」與等級／XP 尚待後續規則；左右翻頁已由 DP-225 接在月曆頁首。
+ * 原稿的「選擇夥伴」接 canonical 偏好；等級／XP 尚待規則，左右翻頁位於月曆頁首。
  * 通知依 DP-042 採本人／裝置／日曆明確選擇；舊逐筆提醒仍保留而不自動套用。
  * 其他未完成項目留在下方的「尚未搬移」清單，
  * 不以停用或假的成功狀態充數。
@@ -328,7 +329,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
 
         <div className="dp-settings-group">
           <h2 className="dp-settings-group-title">夥伴</h2>
-          {/* 原稿 :317-326。等級／XP 區塊屬 DP-041、選擇夥伴屬 DP-040，都還沒搬。 */}
+          {/* 原稿 :317-326；選擇夥伴接 canonical 偏好，等級／XP 仍屬 DP-041。 */}
           <div className="set-pref-card">
             <div className="set-pref-toggle-row">
               <span className="set-pref-toggle-label" id="pet-enabled-label">
@@ -357,6 +358,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               onChange={(event) => changePetName(event.target.value)}
               onBlur={commitPetName}
             />
+            <PetChoices value={preferences.petKind} saving={dataState.status !== 'ready' || Boolean(dataState.saving)}
+              onChange={petKind => { updatePreferences({ petKind }); }} />
             {/*
               原稿 :323 的說明列了四個能力：在角落走動、用漫畫對話框提醒今日與
               明日的待辦、透過牠新增待辦、請牠給行程建議。DP-169 接上了對話泡泡

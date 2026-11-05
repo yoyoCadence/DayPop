@@ -18,7 +18,7 @@ async function setup(page: Page) {
     { ...common, id: '11400000-0000-4000-8000-000000000003', title: '九點會議', allDay: false, startsAt: '2026-08-12T01:00:00.000Z', endsAt: '2026-08-12T02:00:00.000Z', timezone: 'Asia/Taipei' },
   ];
   await page.addInitScript((data) => {
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.events[0]!.createdAt, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.events[0]!.createdAt, data }));
   }, data);
   await openApp(page);
   console.log('DP-114 browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));

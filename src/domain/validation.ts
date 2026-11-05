@@ -8,6 +8,7 @@ import type {
   TodoItem,
   UserPreferences,
 } from './types';
+import { PET_KINDS } from './types';
 import {
   MAX_EVENT_ATTACHMENT_BYTES,
   eventAttachmentObjectPath,
@@ -445,6 +446,7 @@ function validatePreferences(
       issues,
     ) &&
     validateTrimmedString(value.petName, `${path}.petName`, issues) &&
+    validateEnum(value.petKind, PET_KINDS, `${path}.petKind`, issues) &&
     validateBoolean(value.petEnabled, `${path}.petEnabled`, issues);
   return valid ? (value as unknown as UserPreferences) : null;
 }

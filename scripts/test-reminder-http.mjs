@@ -15,8 +15,9 @@ const status = spawnSync(process.execPath, [resolve('node_modules/supabase/dist/
 assert.equal(status.status, 0, 'Start the local HTTP stack first');
 const config = localSupabaseHttpConfig(status.stdout);
 const container = process.env.DAYPOP_REMINDER_DB_CONTAINER || 'supabase_db_DayPop';
-assert.ok(['supabase_db_DayPop', 'supabase_db_DayPopReminders'].includes(container), 'Only named local test stacks are allowed');
-assert.equal(config.url.port, container === 'supabase_db_DayPopReminders' ? '56321' : '54321', 'HTTP API and fixture database must identify the same local stack');
+const localPorts = { supabase_db_DayPop: '54321', supabase_db_DayPopReminders: '56321', supabase_db_DayPopPets: '57321' };
+assert.ok(Object.hasOwn(localPorts, container), 'Only named local test stacks are allowed');
+assert.equal(config.url.port, localPorts[container], 'HTTP API and fixture database must identify the same local stack');
 function sql(statement) {
   const result = spawnSync(process.env.DAYPOP_DOCKER_BIN || 'docker', ['exec', '-i', container, 'psql', '-X', '-qAt', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1'],
     { input: statement, encoding: 'utf8', windowsHide: true, timeout: 30_000 });
@@ -52,7 +53,7 @@ try {
   console.log(`Reminder HTTP environment: ${config.url.origin}; timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
   assert.equal(sql("select count(*) from daypop_reminders.configuration where singleton and not enabled and public_key is null and last_tick is null;"), '1', 'Never overwrite an installed sender configuration');
   vite = await createServer({ configFile: false, envFile: false, logLevel: 'error', server: { middlewareMode: true, watch: null },
-    ssr: { noExternal: ['rrule'] }, define: { __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version), __DATA_SCHEMA_VERSION__: '4' } });
+    ssr: { noExternal: ['rrule'] }, define: { __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version), __DATA_SCHEMA_VERSION__: '5' } });
   const { SupabaseDayPopRepository } = await vite.ssrLoadModule('/src/data/supabaseRepository.ts');
   const { SupabaseFamilyService } = await vite.ssrLoadModule('/src/family/familyService.ts');
   const { SupabaseReminderService } = await vite.ssrLoadModule('/src/reminders/reminderService.ts');

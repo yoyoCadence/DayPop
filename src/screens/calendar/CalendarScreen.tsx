@@ -486,6 +486,7 @@ export function CalendarScreen({
         <PetLayer
           todoCompletions={todoCompletions}
           petName={data.preferences.petName}
+          petKind={data.preferences.petKind}
           todos={data.todos}
           todayKey={todayKey}
           greeted={petGreeted}
