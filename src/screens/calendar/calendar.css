@@ -2034,3 +2034,6 @@ button.cal-day-todo-title {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+.cal-pet[data-facing="left"] .cal-pet-art {
+  transform: scaleX(-1);
+}

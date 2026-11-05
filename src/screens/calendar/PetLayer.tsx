@@ -7,6 +7,8 @@ import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { PetArtwork } from './PetArtwork';
 import { IdlePetArtwork } from './IdlePetArtwork';
+import { PET_ASSETS } from './petAssets';
+import { usePetAutonomy } from './usePetAutonomy';
 import type { TodoCompletionSource } from '../../data/dataContext';
 
 export interface PetLayerProps {
@@ -40,8 +42,9 @@ export interface PetLayerProps {
  *
  * DP-170 adds device-local placement, dragging, docking and a collapsed tab.
  * DP-188 adds the approved default cat's idle/look/grab artwork. DP-193/197
- * add foreground sleep and confirmed-command jump feedback. Still to come: walking and
- * the seven-state machine (DP-171), choosing a partner (DP-172).
+ * add foreground sleep and confirmed-command jump feedback. DP-239 adds the
+ * saved partner; DP-240 gives the three new seven-state partners foreground
+ * strolls and rest, retaining the two legacy partners' five-state behaviour.
  */
 export function PetLayer({
   petName,
@@ -63,6 +66,10 @@ export function PetLayer({
   const controlRef = useRef<HTMLButtonElement>(null);
   const bubbleLayerRef = useRef<HTMLDivElement>(null);
   const placement = usePetPlacement(bubble !== null, layerRef, controlRef, bubbleLayerRef);
+  const autonomous = Boolean(PET_ASSETS[petKind].walk);
+  const activity = usePetAutonomy({ enabled: autonomous, control: controlRef, area: placement.area,
+    blocked: placement.hidden || placement.collapsed || placement.moving || placement.dragging || bubble !== null || lookCue !== null || jumpCue !== null,
+    currentPosition: placement.currentPosition, paint: placement.paint, settle: placement.settle });
   const completed = useEffectEvent(() => {
     if (document.hidden || placement.hidden || placement.collapsed || placement.moving || placement.dragging || bubble || lookCue !== null) return;
     setJumpCue(++cueSequence.current);
@@ -70,7 +77,7 @@ export function PetLayer({
   useEffect(() => todoCompletions?.subscribe(() => completed()), [todoCompletions]);
   // One count for the badge and the greeting, so they cannot disagree.
   const lists = useMemo(() => petBubbleTodos(todos, todayKey), [todos, todayKey]);
-  const pose = placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : jumpCue !== null ? 'jump' : 'idle';
+  const pose = placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : jumpCue !== null ? 'jump' : activity.pose;
   const label =
     lists.open > 0
       ? `${petName}，今天還有 ${lists.open} 件待辦`
@@ -101,6 +108,8 @@ export function PetLayer({
           aria-haspopup="dialog"
           aria-label={label}
           aria-describedby={placement.moving ? 'pet-move-instructions' : undefined}
+          data-activity={pose}
+          data-facing={activity.facing}
           onClick={event => openBubble(event.detail)}
           onKeyDown={placement.onKeyDown}
           onBlur={placement.onBlur}
@@ -110,7 +119,7 @@ export function PetLayer({
           onPointerCancel={placement.onPointerCancel}
           onLostPointerCapture={placement.onPointerCancel}
         >
-          {pose === 'idle' ? <IdlePetArtwork kind={petKind} paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork kind={petKind} pose={pose}
+          {pose === 'idle' && !autonomous ? <IdlePetArtwork kind={petKind} paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork kind={petKind} pose={pose}
             paused={bubble !== null} hidden={placement.hidden} cue={lookCue ?? jumpCue}
             onCueDone={cue => {
               setLookCue(current => current === cue ? null : current);

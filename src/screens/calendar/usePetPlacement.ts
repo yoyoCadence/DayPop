@@ -8,6 +8,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
   const [geometry, setGeometry] = useState<{ area: PetArea; covered: boolean } | null>(null);
   const [moving, setMoving] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [transient, setTransient] = useState<PetPoint | null>(null);
   const preview = useRef<PetPoint | null>(null);
   const drag = useRef<{ id: number; x: number; y: number; origin: PetPoint; moved: boolean; scaleX: number; scaleY: number } | null>(null);
   const suppressClick = useRef(false);
@@ -15,7 +16,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
   const modalOpen = useModalLayerOpen(bubbleLayer);
   const collapsed = saved?.collapsed ?? false;
   const size = collapsed ? 44 : 60;
-  const position = geometry ? placePet(saved, geometry.area, size) : null;
+  const position = geometry ? transient ? constrainPet(transient, geometry.area, size) : placePet(saved, geometry.area, size) : null;
   const hidden = (geometry ? geometry.covered || !position : false) || modalOpen;
 
   function paint(point: PetPoint | null) {
@@ -65,6 +66,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
         previousMeasurement = measurement;
         drag.current = null;
         preview.current = null;
+        setTransient(null);
         setMoving(false);
         setDragging(false);
         setGeometry(next);
@@ -113,10 +115,12 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     const next = rememberPet(point, geometry.area);
     savePetPlacement(next);
     setSaved(next);
+    setTransient(null);
     paint(placePet(next, geometry.area, 60));
     setMoving(false);
   }
   function setCollapsed(value: boolean) {
+    setTransient(null);
     // Collapsing is not a move: retain the initial 14px resting inset too.
     const next = { ...(saved ?? (geometry && position ? rememberPet(position, geometry.area, false) : { x: 0, y: 1, collapsed: false })), collapsed: value };
     savePetPlacement(next);
@@ -145,7 +149,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     if (event.button !== 0 || event.isPrimary === false || !position || !geometry || moving) return;
     suppressClick.current = false;
     const rect = event.currentTarget.getBoundingClientRect();
-    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: position, moved: false,
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: preview.current ?? position, moved: false,
       scaleX: rect.width / 60, scaleY: rect.height / 60 };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
@@ -179,6 +183,13 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     cancel();
   }
   return { collapsed, hidden, moving, dragging, position, setCollapsed, startMoving,
+    area: geometry?.area ?? null,
+    currentPosition: () => preview.current ?? position,
+    paint,
+    settle: () => {
+      const point = preview.current ?? position;
+      if (point) setTransient(current => current?.x === point.x && current.y === point.y ? current : point);
+    },
     restoreFocus: () => { pendingFocus.current = true; },
     onKeyDown, onPointerDown, onPointerMove, onPointerUp, onPointerCancel,
     onBlur: () => { if (moving) cancel(); },
