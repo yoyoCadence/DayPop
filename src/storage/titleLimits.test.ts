@@ -20,12 +20,12 @@ function fixture() {
 }
 function stored(data = fixture()) {
   const storage = new MemoryStorage();
-  storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: NOW, data }));
+  storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify({ schemaVersion: __DATA_SCHEMA_VERSION__, revision: 7, updatedAt: NOW, data }));
   return storage;
 }
 
 describe('title limits and pre-existing guest titles (DP-125)', () => {
-  it.each(['{broken', JSON.stringify({ schemaVersion: 5 })])('keeps the write barrier ahead of title refusal', async (raw) => {
+  it.each(['{broken', JSON.stringify({ schemaVersion: __DATA_SCHEMA_VERSION__ + 1 })])('keeps the write barrier ahead of title refusal', async (raw) => {
     const storage = new MemoryStorage();
     storage.setItem(USER_DATA_STORAGE_KEY, raw);
     await expect(new LocalDayPopRepository(storage).addTodo({ title: long, date: '2026-10-04' })).rejects.toBeInstanceOf(LocalDataBlockedError);

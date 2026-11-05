@@ -26,7 +26,7 @@ async function seed(page: Page, adaptive = false) {
     createdAt: measurementInstant, updatedAt: measurementInstant,
   }));
   await page.addInitScript(({ data, measurementInstant }) => {
-    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 1, updatedAt: measurementInstant, data }));
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 1, updatedAt: measurementInstant, data }));
   }, { data, measurementInstant });
   await openApp(page);
   await expect(page.locator('.cal-cell').filter({ has: page.locator('.cal-cell-event') }).first()).toBeAttached();

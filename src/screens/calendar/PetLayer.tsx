@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import type { NewTodoInput } from '../../domain/mutations';
 import { petBubbleTodos } from '../../domain/petBubble';
-import type { TodoItem } from '../../domain/types';
+import type { PetKind, TodoItem } from '../../domain/types';
 import { PetBubble, type PetBubbleMode } from './PetBubble';
 import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
@@ -11,6 +11,7 @@ import type { TodoCompletionSource } from '../../data/dataContext';
 
 export interface PetLayerProps {
   petName: string;
+  petKind?: PetKind;
   todos: TodoItem[];
   /** Today in the display timezone — the day the badge and the bubble count from. */
   todayKey: string;
@@ -44,6 +45,7 @@ export interface PetLayerProps {
  */
 export function PetLayer({
   petName,
+  petKind = 'moon_cat',
   todos,
   todayKey,
   greeted,
@@ -108,7 +110,7 @@ export function PetLayer({
           onPointerCancel={placement.onPointerCancel}
           onLostPointerCapture={placement.onPointerCancel}
         >
-          {pose === 'idle' ? <IdlePetArtwork paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork pose={pose}
+          {pose === 'idle' ? <IdlePetArtwork kind={petKind} paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork kind={petKind} pose={pose}
             paused={bubble !== null} hidden={placement.hidden} cue={lookCue ?? jumpCue}
             onCueDone={cue => {
               setLookCue(current => current === cue ? null : current);

@@ -54,7 +54,7 @@ try {
   // loading .env. No alternate copy of the repository or family logic.
   vite = await createServer({ configFile: false, envFile: false, logLevel: 'error', server: { middlewareMode: true, watch: null },
     ssr: { noExternal: ['rrule'] },
-    define: { __APP_VERSION__: JSON.stringify(packageJson.version), __DATA_SCHEMA_VERSION__: '4' } });
+    define: { __APP_VERSION__: JSON.stringify(packageJson.version), __DATA_SCHEMA_VERSION__: '5' } });
   const { SupabaseDayPopRepository } = await vite.ssrLoadModule('/src/data/supabaseRepository.ts');
   const { SupabaseFamilyService, FamilyError } = await vite.ssrLoadModule('/src/family/familyService.ts');
   const { resolveEventOccurrences } = await vite.ssrLoadModule('/src/domain/recurrence.ts');

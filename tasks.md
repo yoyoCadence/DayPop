@@ -235,7 +235,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
-- [ ] **DP-239 — 夥伴選擇的 v5 偏好與設定（2026-11-04，DP-172／238 子段）：** 依擁有者可切換要求，Backlog → Next → In Progress。獨立接 DP-238 registry，canonical petKind 沿 domain／repository 保存，先完成 write barrier、v1–v4 guest 與帳號 cache 遷移、future／corrupt 拒寫、備份與匯入；新增列欄位 migration／重新產生 types／本機 RLS 與真實 HTTP。設定可選三款新夥伴並保留原兩款；原姓名、主題及使用者資料不變。新正式 migration 依既有界線另外放行，先做可審核候選，不能只另存暫時 key 假裝已保存。自己的四 CI／同 head 審查後才合併。
+- [ ] **DP-239 — 夥伴選擇的 v5 偏好與設定（2026-11-04，DP-172／238 子段）：** 依擁有者可切換要求，Backlog → Next → In Progress。獨立接 DP-238 registry，canonical petKind 沿 domain／repository 保存，先完成 write barrier、v1–v4 guest 與帳號 cache 遷移、future／corrupt 拒寫、備份與匯入；新增列欄位 migration／重新產生 types／本機 RLS 與真實 HTTP。設定可選三款新夥伴並保留原兩款；原姓名、主題及使用者資料不變。新正式 migration 依既有界線另外放行，先做可審核候選，不能只另存暫時 key 假裝已保存。自己的四 CI／同 head 審查後才合併。 候選已接五款／v5／備份 v2；1,817＋41 Node、lint／TypeScript／Pages build／原預算、478 pgTAP、新 HTTP 9／家庭 17／提醒 23、local advisors 通過；三平台選擇 3 及 production 完整 v4 遷移／reload 2 過。相關矩陣與失敗補跑詳 docs/pet-selection.md；11-05 假資料各 0、專用 stack 已停。Chrome host 仍不可用，PR／自己的四 CI／同 head 審查待完成，尚未正式 migration 或發布。
 
 - [ ] **DP-240 — 前景自主活動與走路狀態（2026-11-04，DP-238 子段）：** 依擁有者自主走動要求，Backlog → Next。使用 DP-238 真實 walk／sit 動作，活動範圍避開 header／FAB／分頁；碰觸、拖移、鍵盤、泡泡、表單、收起、背景與 reduced-motion 均暫停，不能自行寫掉使用者保存位置。獨立於 v5 偏好與手機外層修正驗證及 PR；尚未接線。
 

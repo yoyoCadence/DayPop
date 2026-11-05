@@ -248,6 +248,7 @@ export function preferencesFromRow(row: Tables<'user_preferences'>): UserPrefere
     calendarGridMode: row.fixed_six_week_grid ? 'fixed-six' : 'adaptive',
     defaultReminderMinutes: row.default_reminder_minutes,
     petName: row.pet_name,
+    petKind: row.pet_kind,
     petEnabled: row.pet_enabled,
   });
 }
@@ -267,6 +268,7 @@ export function preferencesToInsert(
     fixed_six_week_grid: valid.calendarGridMode === 'fixed-six',
     default_reminder_minutes: valid.defaultReminderMinutes,
     pet_name: valid.petName,
+    pet_kind: valid.petKind,
     pet_enabled: valid.petEnabled,
   };
 }

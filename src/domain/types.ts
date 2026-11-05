@@ -114,6 +114,9 @@ export interface Sticker {
   updatedAt: IsoInstant;
 }
 
+export const PET_KINDS = ['moon_cat', 'orbit_ufo', 'marshmallow_cat', 'honey_bear', 'peach_bunny'] as const;
+export type PetKind = typeof PET_KINDS[number];
+
 export interface UserPreferences {
   timezone: string;
   weekStartsOn: 0 | 1;
@@ -123,6 +126,7 @@ export interface UserPreferences {
   /** Up to 10 reminders, each 0–10080 minutes before an event. */
   defaultReminderMinutes: number[];
   petName: string;
+  petKind: PetKind;
   petEnabled: boolean;
 }
 
@@ -175,6 +179,7 @@ export function createEmptyUserData(options: EmptyUserDataOptions = {}): DayPopU
       calendarGridMode: 'adaptive',
       defaultReminderMinutes: [],
       petName: '摩卡',
+      petKind: 'moon_cat',
       petEnabled: true,
     },
   };

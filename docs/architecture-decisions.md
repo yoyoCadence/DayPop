@@ -750,6 +750,10 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 ## 6. 資料庫與日期邊界
 
+### 可保存的夥伴選擇（DP-239，2026-11-04／05）
+
+依擁有者新委託接三款 Blender 素材，petKind 使用 canonical preference／repository，五值含原兩款，guest 與帳號 cache v4→v5，舊資料補月光貓並保留其他欄位。先驗 guest write barrier 與帳號 future cache 拒絕降版；新 JSON backup v2 明確承載選擇並支援 v1 遷移。第 23 份 migration 擴充本人 user_preferences 與既有 invoker replace RPC：原八 key 必填、新 key 可省略以兼容舊 client，省略保留現值；null／非法值拒絕，不改 RLS／grants。正式須先套 migration 再發布前端，不另設臨時 storage。來源、真實 HTTP 與 production 證據／限制見 [夥伴選擇](pet-selection.md)；自主走動由 DP-240 獨立實作。
+
 ### 週檢視的三日模式（DP-167，2026-10-15）
 
 七欄各 60px 要 456px（含 36px 時間軸），390px 的手機只能橫向捲動，閱讀與拖曳都吃力。原稿沒有三日檢視，這是新增的模式。

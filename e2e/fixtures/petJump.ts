@@ -11,7 +11,7 @@ export async function openJumpFixture(page: Page) {
   data.todos = [{ id, calendarId: data.calendars[0]!.id, parentId: null, title: '完成回饋', dueDate: '2026-10-25', priority: 'none',
     sortOrder: 0, sharingScope: 'inherit', completedAt: null, createdAt: now, updatedAt: now }];
   await page.addInitScript(data => {
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.todos[0]!.createdAt, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.todos[0]!.createdAt, data }));
   }, data);
   await openApp(page);
   const timezone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);

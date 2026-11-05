@@ -33,7 +33,7 @@ import { parseDayPopUserData } from './validation';
 
 export const BACKUP_FORMAT = 'daypop.backup';
 /** Bumped only when the file layout changes in a way an older App cannot read. */
-export const BACKUP_FORMAT_VERSION = 1;
+export const BACKUP_FORMAT_VERSION = 2;
 
 /** Fail closed on absurd input rather than building a giant plan — as DP-025 does. */
 const LIMITS = {
@@ -231,10 +231,8 @@ export function planJsonImport(text: string, current: DayPopUserData): ImportPla
         : '這個檔案不是 DayPop 備份格式（缺少 format 標記）。',
     );
   }
-  // Exactly 1, not "at most 1": there is no v0 and no fractional format, so
-  // nothing exists that could read one. The accepted set widens only when a
-  // migrator for an older layout actually exists.
-  if (parsed.formatVersion !== BACKUP_FORMAT_VERSION) {
+  // v1 has no partner choice; v2 requires it. Unknown/fractional versions fail closed.
+  if (parsed.formatVersion !== 1 && parsed.formatVersion !== BACKUP_FORMAT_VERSION) {
     const newer =
       typeof parsed.formatVersion === 'number' && parsed.formatVersion > BACKUP_FORMAT_VERSION;
     throw new DataTransferError(
@@ -261,7 +259,9 @@ export function planJsonImport(text: string, current: DayPopUserData): ImportPla
   // emptied rather than parsed: they are not carried in a backup.
   let next: DayPopUserData;
   try {
-    next = parseDayPopUserData({ ...body, eventAttachments: [] });
+    const preferences = parsed.formatVersion === 1 && isRecord(body.preferences)
+      ? { petKind: 'moon_cat', ...body.preferences } : body.preferences;
+    next = parseDayPopUserData({ ...body, preferences, eventAttachments: [] });
   } catch (cause) {
     throw new DataTransferError(
       `這個備份檔的內容不完整或格式有誤，沒有匯入任何資料。（${

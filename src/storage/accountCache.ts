@@ -1,7 +1,7 @@
 import type { DayPopUserData } from '../domain/types';
 import { isIsoInstant, parseDayPopUserData } from '../domain/validation';
 import { getAppStorage, type StorageLike } from './browserStorage';
-import { migrateV3UserData } from './localDataMigration';
+import { migrateV3UserData, migrateV4UserData } from './localDataMigration';
 
 export const ACCOUNT_CACHE_PREFIX = 'daypop.account-cache.';
 
@@ -56,14 +56,14 @@ export function readAccountCache(
   }
 
   try {
-    if (schemaVersion === 3) {
+    if (schemaVersion === 3 || schemaVersion === 4) {
       return {
         status: 'ready',
         envelope: {
           schemaVersion: __DATA_SCHEMA_VERSION__,
           accountId,
           updatedAt: parsed.updatedAt,
-          data: parseDayPopUserData(migrateV3UserData(parsed.data)),
+          data: parseDayPopUserData(schemaVersion === 3 ? migrateV3UserData(parsed.data) : migrateV4UserData(parsed.data)),
         },
       };
     }
@@ -94,6 +94,10 @@ export function writeAccountCache(
   storage: StorageLike = getAppStorage(),
   now: Date = new Date(),
 ): StoredAccountCache {
+  // A still-open older client must never downgrade a newer cache envelope.
+  if (readAccountCache(accountId, storage).status === 'future') {
+    throw new Error('帳號快取來自較新版本，請先更新 App。');
+  }
   const envelope: StoredAccountCache = {
     schemaVersion: __DATA_SCHEMA_VERSION__,
     accountId,

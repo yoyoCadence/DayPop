@@ -268,6 +268,9 @@ jobs:
       - name: Real local Auth and HTTP sharing (two accounts)
         run: npm run supabase:test:http
 
+      - name: Partner preference Auth and HTTP isolation (two accounts)
+        run: npm run supabase:test:pets
+
       # DP-220: notification capabilities and sender authorization use the
       # same local-only Auth/PostgREST stack. No push request leaves the runner.
       - name: Reminder Auth and HTTP (two accounts, no push delivery)

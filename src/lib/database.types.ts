@@ -641,6 +641,7 @@ export type Database = {
           default_reminder_minutes: number[]
           fixed_six_week_grid: boolean
           pet_enabled: boolean
+          pet_kind: string
           pet_name: string
           theme: string
           theme_id: string
@@ -654,6 +655,7 @@ export type Database = {
           default_reminder_minutes?: number[]
           fixed_six_week_grid?: boolean
           pet_enabled?: boolean
+          pet_kind?: string
           pet_name?: string
           theme?: string
           theme_id?: string
@@ -667,6 +669,7 @@ export type Database = {
           default_reminder_minutes?: number[]
           fixed_six_week_grid?: boolean
           pet_enabled?: boolean
+          pet_kind?: string
           pet_name?: string
           theme?: string
           theme_id?: string

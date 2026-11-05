@@ -26,7 +26,7 @@ test('子項只在日詳情的父待辦下出現，列表、寵物徽章與綜�
   ];
   await page.addInitScript((data) => {
     if (!localStorage.getItem('daypop.user-data')) {
-      localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
+      localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
     }
   }, data);
   await openApp(page);

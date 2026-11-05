@@ -18,7 +18,7 @@ async function setup(page: Page, fold = false) {
   }];
   await page.addInitScript((data) => {
     if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({
-      schemaVersion: 4, revision: 0, updatedAt: data.events[0]!.createdAt, data,
+      schemaVersion: 5, revision: 0, updatedAt: data.events[0]!.createdAt, data,
     }));
   }, data);
   await openApp(page);

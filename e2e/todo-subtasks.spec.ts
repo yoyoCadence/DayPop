@@ -38,7 +38,7 @@ test('遊客子項新增、鍵盤展開與獨立完成，reload 與刪除保持�
     { ...common, id: '11600000-0000-4000-8000-000000000003', title: '買牛奶', sortOrder: 1 },
   ];
   await page.addInitScript((data) => {
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
   }, data);
   await openApp(page);
   console.log('DP-116 browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), 'display: Asia/Taipei');

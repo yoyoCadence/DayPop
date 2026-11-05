@@ -41,7 +41,7 @@ test('遊客刪除父待辦清除全部子孫，reload 可讀且其餘待辦仍�
   await page.clock.setFixedTime(new Date(NOW));
   const data = fixture();
   await page.addInitScript((data) => {
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
   }, data);
   await openApp(page);
   console.log('DP-115 guest browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));

@@ -42,7 +42,7 @@ async function open(page: Page) {
     if (!localStorage.getItem('daypop.user-data')) {
       localStorage.setItem(
         'daypop.user-data',
-        JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.calendars[0]!.createdAt, data }),
+        JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.calendars[0]!.createdAt, data }),
       );
     }
   }, seeded());

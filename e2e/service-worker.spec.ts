@@ -6,9 +6,9 @@ const cachePrefix = 'daypop-app-shell-';
 const otherCache = 'other-app-static';
 const databaseName = 'daypop-worker-test';
 const persistentValues = {
-  'daypop.user-data': JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: '2026-09-30T04:00:00.000Z', data: backupData }),
+  'daypop.user-data': JSON.stringify({ schemaVersion: 5, revision: 7, updatedAt: '2026-09-30T04:00:00.000Z', data: backupData }),
   'daypop.account-cache.00000000-0000-4000-8000-000000000095': JSON.stringify({
-    schemaVersion: 4, accountId: '00000000-0000-4000-8000-000000000095',
+    schemaVersion: 5, accountId: '00000000-0000-4000-8000-000000000095',
     updatedAt: '2026-09-30T04:00:00.000Z', data: backupData,
   }),
   'calpet.v2': '{"synthetic":"原始 legacy bytes 不可刪除"}',

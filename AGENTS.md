@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **可保存夥伴選擇候選（DP-239，2026-11-04／05）：** 接 DP-238 素材分支，canonical petKind／v5／備份 v2、五款設定與原生 radio、前景圖片接線完成。v1–v4 遷移保留資料及 metadata，guest 與帳號 future cache 保護、舊備份相容與非法 key 拒絕；第 23 份 migration 只加本人偏好欄位並擴充既有 invoker replace RPC，原 22 份不變，本機產生 types。1,817＋41 Node、lint／TypeScript／Pages build／原預算與 CSP、478 pgTAP、新 HTTP 9／家庭 17／提醒 23、local advisors 過；新選擇三平台 3、production 完整 v4 遷移及重載 2 過，相關歷史矩陣與失敗／補跑詳 [選擇證據](docs/pet-selection.md)。11-05 假資料五集合各 0／專用 stack 已停。Chrome host 仍不可用，PR／自己的四 CI／同 head 審查待完成；正式仍 0.4.7／v4，不因本段自行套新 migration 或發布。DP-240 接自主活動，與 DP-236 手機候選分開。
+
 - **三款 Blender 七態素材候選（DP-238，2026-11-04）：** 依擁有者新委託解除寵物暫緩，棉花貓／蜂蜜熊／蜜桃兔各有可編輯模型與原生七段 50 幀；重開 .blend、150 張原生與 decoded 影格邊界、27 份封裝／App bytes 與來源 proof／hash 已核對，原月光貓／飛碟與歷史來源不變。每款 118,654／119,107／103,265 bytes，沿原 192 KiB 與個別上限，walk 沿 look 48 KiB，registry 已接，設定／自主移動尚未接線。1,805＋41 Node、lint／TypeScript／Pages build／原 CSP 與預算過；舊互動 Chromium 十二項與新素材三平台三項各過、三圖目視、實際 Etc/GMT-8／Asia/Taipei。來源 marker 及 canvas 預設影格的失敗／修正詳 [來源與界線](docs/pet-concepts/2026-11-04/README.md)。PR 因 Chrome host 連線不可用受阻，自己的四 CI／同 head 審查後才合併；下一段 DP-239 獨立 v5 選擇偏好，之後 DP-240 自主活動。無 migration／正式操作／版號或部署，不混入 DP-236 手機候選。
 
 - **完整 Chromium CI 預算修正（DP-235，2026-11-04）：** #229 原 head 6379da2 的 CI 41737926541 三次達 25 分鐘取消；後兩輪 344 案例已完成 325 通過／19 略過、無失敗，仍不算 job pass。相同 325 項總測時比 #228 多約 18%，分布多檔；只將 Chromium job 預算 25→30 分鐘以容納完整矩陣及收尾，四 gate／案例與斷言／個別期限／worker／retry／runner／秘密界線不變。新 head 四 CI／同 head 完成審查後才合併及發布，詳 [候選證據](docs/reminder-calendar-release-candidate-2026-11-03.md)。前兩輪與原 head 待 CI 狀態保留作歷史，是否通過只認最新 head。

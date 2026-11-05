@@ -94,7 +94,7 @@ for (const scenario of scenarios) {
     const resetBytes = await page.evaluate((key) => localStorage.getItem(key), dataKey);
     const envelope = JSON.parse(resetBytes!);
     expect(envelope).toMatchObject({
-      schemaVersion: 4, revision: 1, updatedAt: fixedInstant,
+      schemaVersion: 5, revision: 1, updatedAt: fixedInstant,
       data: { events: [], eventExceptions: [], eventAttachments: [], todos: [], stickers: [],
         preferences: { themeId: 'manga', petName: '摩卡', timezone: 'Asia/Taipei' } },
     });
@@ -204,7 +204,7 @@ for (const scenario of scenarios) {
     expect(await memoryDownload.failure()).toBeNull();
     const backup = JSON.parse(await readFile((await memoryDownload.path())!, 'utf8')) as DayPopBackup;
     expect(backup).toMatchObject({
-      format: 'daypop.backup', formatVersion: 1, exportedAt: fixedInstant, appVersion: site.currentVersion,
+      format: 'daypop.backup', formatVersion: 2, exportedAt: fixedInstant, appVersion: site.currentVersion,
       omitted: { eventAttachments: 0 },
       data: { events: [], eventExceptions: [], todos: [], stickers: [],
         preferences: { themeId: 'manga', petName: '只在記憶體復原', timezone: 'Asia/Taipei' } },

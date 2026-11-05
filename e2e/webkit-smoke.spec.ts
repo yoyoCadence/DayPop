@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetCollection } from './fixtures/petCollection';
+import { checkPetChoice } from './fixtures/petChoice';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
@@ -21,6 +22,8 @@ import {
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
 });
+
+test('設定切換五款夥伴、重載保留，v4 其他資料不變', async ({ page }) => { await checkPetChoice(page); });
 
 test('三款 Blender 七態可解碼，真正 walk 動畫有不同影格', async ({ page }) => {
   await checkPetCollection(page);
