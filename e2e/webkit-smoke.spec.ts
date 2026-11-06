@@ -3,6 +3,7 @@ import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
+import { checkInstalledPageGestures, checkMobileDialogs } from './fixtures/mobileDialogs';
 import { enableReminder, reminderDialog, reminderLogin, reminderToggle, type ReminderHarnessWindow } from './reminder-support';
 import {
   agendaRow,
@@ -19,6 +20,14 @@ import {
 // reminder UI cases explicitly inject synthetic service/browser ports, without OS Push claims.
 test.beforeEach(async ({ browserName }) => {
   expect(browserName).toBe('webkit');
+});
+
+test('手機提醒與新增行程視窗適應寬度，只需上下捲動', async ({ page }) => {
+  await checkMobileDialogs(page);
+});
+
+test('主畫面模式固定縮放且保留月曆手勢', async ({ page }) => {
+  await checkInstalledPageGestures(page, false);
 });
 
 test('提醒設定明確同意、規則保存與取消後焦點', async ({ page }) => {

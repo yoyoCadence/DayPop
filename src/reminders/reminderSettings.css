@@ -6,10 +6,10 @@
 .reminder-calendar-row span:last-child { color: var(--muted); font-size: 12px; flex-shrink: 0; max-width: 55%; }
 .reminder-calendar-row:disabled { opacity: 0.65; }
 .reminder-rule-note { padding: 0 13px; }
-.reminder-rule-dialog { max-width: 380px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.cal-manage-dialog.reminder-rule-dialog { min-width: 0; max-width: 380px; max-height: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 .reminder-rule-dialog h2 { margin-top: 0; }
 .reminder-calendar-name { overflow-wrap: anywhere; }
-.reminder-checkbox { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 14px; line-height: 1.5; margin: 12px 0; }
+.reminder-checkbox { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 14px; line-height: 1.5; margin: 12px 0; overflow-wrap: anywhere; }
 .reminder-checkbox input { flex: none; width: 20px; height: 20px; accent-color: var(--accent); }
 .reminder-rule-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
 .reminder-rule-fields:disabled { opacity: 0.65; }
