@@ -2,7 +2,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkPerformanceBudget, measureBuildAssets } from './build-performance-budget.mjs';
-import { checkPetAssets } from './pet-assets-budget.mjs';
+import { checkPetAssets, checkCollectionAssets } from './pet-assets-budget.mjs';
 
 /**
  * Fails the build if the production output would reach the network at runtime,
@@ -138,6 +138,9 @@ try {
   const pets = await checkPetAssets(resolve(root, 'src/assets/pets'), distFiles.map(file => resolve(dist, file)), budget.pets);
   problems.push(...pets.problems);
   console.log(`Pet asset budget: ${JSON.stringify(pets.totals)}; each limit ${budget.pets?.maxCharacterBytes} bytes`);
+  const collection = await checkCollectionAssets(resolve(root, 'src/assets/pet-collection'), distFiles.map(file => resolve(dist, file)), budget.pets);
+  problems.push(...collection.problems);
+  console.log(`Pet collection budget: ${JSON.stringify(collection.totals)}; same per-character limits`);
   const totals = await measureBuildAssets(distFiles.map((file) => resolve(dist, file)));
   problems.push(...checkPerformanceBudget(totals, budget));
   for (const kind of ['javascript', 'css']) {

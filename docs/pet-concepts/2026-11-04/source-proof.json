@@ -1,0 +1,71 @@
+[
+  {
+    "kind": "cat",
+    "blenderVersion": "5.2.3 LTS",
+    "sourceSha256": "10fbb947706df8ef5e78ed5681084bbdfdd1d021a0ea4eeefee1c8a589862260",
+    "meshes": 26,
+    "animatedControls": 10,
+    "poses": [
+      "idle",
+      "walk",
+      "look",
+      "sit",
+      "sleep",
+      "jump",
+      "grab"
+    ],
+    "headLookSamples": [
+      0.0,
+      0.19696,
+      -0.0684,
+      -0.0
+    ],
+    "externalImages": 0
+  },
+  {
+    "kind": "bear",
+    "blenderVersion": "5.2.3 LTS",
+    "sourceSha256": "10b085c5b784f0a86e5779e34c44818988abc80d59094cd085242112c32e7928",
+    "meshes": 28,
+    "animatedControls": 10,
+    "poses": [
+      "idle",
+      "walk",
+      "look",
+      "sit",
+      "sleep",
+      "jump",
+      "grab"
+    ],
+    "headLookSamples": [
+      0.0,
+      0.19696,
+      -0.0684,
+      -0.0
+    ],
+    "externalImages": 0
+  },
+  {
+    "kind": "bunny",
+    "blenderVersion": "5.2.3 LTS",
+    "sourceSha256": "d22a3a6492feff6561a4488050e186747e6fc67be762f31533efb058cc703d5e",
+    "meshes": 29,
+    "animatedControls": 10,
+    "poses": [
+      "idle",
+      "walk",
+      "look",
+      "sit",
+      "sleep",
+      "jump",
+      "grab"
+    ],
+    "headLookSamples": [
+      0.0,
+      0.19696,
+      -0.0684,
+      -0.0
+    ],
+    "externalImages": 0
+  }
+]
