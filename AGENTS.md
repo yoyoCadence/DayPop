@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.4.8 手機修正發布候選（DP-241，2026-11-07）：** #233 四 CI 42346117253／同 head Codex 審查無發現後合併 3b09505，本段由此接續。擁有者同意先把 DP-236 單獨發成 0.4.8，再合併 DP-239（含第 23 份 migration）。只改 release version 與三條公告「手機操作更穩定」及生成的 version.json／sw.js，十一份歷史公告不變；1,811＋41 Node、Pages build／check:build、相關 Chromium 25 passed／3 skipped，320×568 公告完整可見。**合併後才 dispatch；在 0.4.8 上線前不要合併 DP-239**，否則下一次部署會先需要第 23 份 migration。
+
 - **e2e 不再重新匯入 dev auth entry（DP-237，2026-11-07）：** #232 四 CI 42344012375／同 head Codex 審查無發現後合併 8ff6291，本段由此接續。需要操作假 Supabase 的 spec 一律讀 `(window as HarnessWindow).__daypopSharingHarness`（型別在 `e2e/support.ts`），**不要再 `import('/src/test/e2eAuthMain.tsx')`**：該模組只要以不同 URL 被執行第二次就會再 `createRoot()`，重設已登入的 App（DP-236 在 Windows 本機遇到；雲端以 `?dup=1` 重現同一症狀）。`eslint.config.js` 對 `e2e/**/*.ts` 擋下任何含 `e2eAuthMain` 的字串字面值，因為 Linux CI 本身不會因此失敗。六份 spec Chromium 22 passed、lint 負控制六處全擋；只改測試與 lint，沒有產品／schema／版號／公告／部署變更。
 
 - **DP-238 三款夥伴素材併入 main（2026-11-07）：** #231 四 CI 42331719412／同 head Codex 審查無發現後合併 d7230ac，本段由此接續。原分支 `feat/dp-238-pet-collection`（78cce61）的 227 檔逐 byte 帶入，只合併 `e2e/webkit-smoke.spec.ts` 與 DP-236 新增案例（兩邊保留）。最新 main 上 lint／typecheck、1,811 單元＋41 Node（實際 Etc/GMT-8）、`/DayPop/` Pages build／check:build 過：JS＋worker 798,960 raw／236,282 gzip（上限 240,640，剩約 4.3 KiB）、CSS 122,147／29,778，三款各 118,654／119,107／103,265 bytes 在原每款 192 KiB 內。寵物相關 Chromium 34 passed／2 skipped（既有桌面略過、實際 Asia/Taipei），三款七態預覽截圖目視可解碼；WebKit 只由 CI 驗。**新款只進 registry，畫面上仍只有原本兩款可用；設定選擇（DP-239，含第 23 份 migration 與 user-data v5，仍在未合併的 `feat/dp-239-pet-choice`）與自主走動（DP-240）未接線**；造型品質未經擁有者目視驗收。沒有 schema／migration／版號／公告／部署變更，公開仍 0.4.7。
