@@ -141,13 +141,19 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
       if (event.key === 'Enter') commit(point); else cancel();
     } else if (event.key === 'Tab') cancel();
   }
-  function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0 || event.isPrimary === false || !position || !geometry || moving) return;
+  /**
+   * `from` is where the pet is drawn when that differs from the saved spot
+   * (DP-240: grabbed mid-excursion), so the drag continues under the pointer.
+   * Returns whether a drag is now tracked.
+   */
+  function onPointerDown(event: PointerEvent<HTMLButtonElement>, from?: PetPoint): boolean {
+    if (event.button !== 0 || event.isPrimary === false || !position || !geometry || moving) return false;
     suppressClick.current = false;
     const rect = event.currentTarget.getBoundingClientRect();
-    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: position, moved: false,
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: from ?? position, moved: false,
       scaleX: rect.width / 60, scaleY: rect.height / 60 };
     event.currentTarget.setPointerCapture?.(event.pointerId);
+    return true;
   }
   function onPointerMove(event: PointerEvent<HTMLButtonElement>) {
     const active = drag.current;
@@ -178,7 +184,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     if (drag.current?.moved) suppressClick.current = true;
     cancel();
   }
-  return { collapsed, hidden, moving, dragging, position, setCollapsed, startMoving,
+  return { collapsed, hidden, moving, dragging, position, area: geometry?.area ?? null, setCollapsed, startMoving,
     restoreFocus: () => { pendingFocus.current = true; },
     onKeyDown, onPointerDown, onPointerMove, onPointerUp, onPointerCancel,
     onBlur: () => { if (moving) cancel(); },
