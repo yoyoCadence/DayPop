@@ -350,8 +350,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Backlog
 
-- [ ] **DP-237 — 保存草稿 e2e 的 dev entry 重複匯入（2026-11-04 登記）：** DP-236 擴大驗證發現本機 `event-save-draft.spec.ts` 六項案例在 `fail()` 動態匯入 `e2eAuthMain.tsx` 後出現 duplicate createRoot 訊息並重設假帳號畫面，導致原視窗消失。先以原 main runtime 比較確認，再改用既有的 window fake Supabase seam，保留原保存／快取／重複範圍斷言；不要把測試逾時直接放寬或混入產品保存邏輯。此項先登記，與手機縮放修正分開審核。
-
 
 
 
@@ -511,6 +509,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-237 — 保存草稿 e2e 的 dev entry 重複匯入（2026-11-04 登記，2026-11-07 完成）：** Backlog → Next → In Progress → Done。Linux 上原 spec 照常通過，原 Windows 失敗沒有原樣重現；但把 spec 的動態 import 換成另一個 URL（`?dup=1`）讓 harness entry 再執行一次時，同樣出現「createRoot() on a container that has already been passed」、已登入畫面被重設、儲存點擊逾時，與 DP-236 記錄的症狀相同。依原定方向，六份 spec（event-save-draft、day-todo-add-draft、calendar-dialog-confirmation、create-retry-idempotent、attachment-delete-lost-response、event-delete-confirmation）不再 `import('/src/test/e2eAuthMain.tsx')`，改讀 harness 本來就掛在 window 上的同一個 `fakeSupabase`（`e2e/support.ts` 新增型別 `HarnessWindow`）；`delete fakeSupabase.rpc` 改為 `Reflect.deleteProperty`，執行期語意相同、型別可檢查。保存／快取／重複範圍等原斷言、期限、retry 與產品程式都沒動。另在 `eslint.config.js` 對 `e2e/**/*.ts` 禁止含 `e2eAuthMain` 的字串字面值：這個失敗只在特定環境出現、Linux CI 抓不到回歸，只能靠 lint 把關。六份 spec 手機／桌面 Chromium 22 passed（實際 America/New_York）；lint 守門的負控制：只還原六份舊 spec、保留新規則時六處全被擋下，恢復後 lint 通過。WebKit 未裝在雲端環境，這六份本來也不在 WebKit smoke 內。
 
 - [x] **DP-236 — 主畫面縮放與手機表單橫向溢出（2026-11-04／06）：** Backlog → Next → In Progress → Done。PR #230 最終 72d141e 的四 CI 42225597511 全過（Chromium 328 passed／20 skipped、WebKit 14、1,808 單元＋39 Node、478 pgTAP 與本機提醒／分享 HTTP），同 head Codex 審查 completed 無發現、無未解決討論後合併 8cb0c87。installed 限縮放／保留平移與 WebKit gesture 防護、16px 輸入、原生欄位可縮／長名稱換行、固定外層與實底 safe area；原 main 的 233px 溢出回歸與歷史失敗紀錄見 docs/mobile-viewport-dialogs.md。**尚未發布**：公開仍是 0.4.7（c952688），上線需新版號／公告與擁有者授權的部署；iPhone standalone 原生雙指／雙擊／鍵盤與頂部系統效果仍待發布後複驗。舊保存 e2e harness 另 DP-237。
 
