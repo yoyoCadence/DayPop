@@ -83,7 +83,7 @@ test('Production 開機原生 localStorage 不可用：持續警告、分頁編�
     events: [], eventExceptions: [], todos: [], stickers: [],
     preferences: {
       timezone: 'Asia/Taipei', weekStartsOn: 0, theme: 'light', themeId: 'manga',
-      calendarGridMode: 'adaptive', defaultReminderMinutes: [], petName: '摩卡', petEnabled: true,
+      calendarGridMode: 'adaptive', defaultReminderMinutes: [], petName: '摩卡', petEnabled: true, petKind: 'moon_cat',
     },
   });
 
