@@ -8,20 +8,22 @@ import {
   monitorBrowser,
   openApp,
   tabButton,
+  type HarnessWindow,
 } from './support';
 
 const KEY = 'daypop.account-cache.00000000-0000-4000-8000-000000000030';
 const DELETE_RPC = 'delete_event_attachment_with_cleanup';
-// The already loaded dev-only module owns this synthetic account. It is outside
-// the production graph; no cloud credentials or user rows are involved.
-const FAKE_MODULE = '/src/test/e2eAuthMain.tsx';
+// The running dev-only harness owns this synthetic account through
+// HarnessWindow. It is outside the production graph; no cloud credentials or
+// user rows are involved.
 
 /** Commits the deletion on the fake server, then loses its response. */
 async function loseDeleteResponse(page: Page, enabled: boolean) {
-  await page.evaluate(async ({ path, name, enabled }) => {
-    const { fakeSupabase } = await import(path);
+  await page.evaluate(({ name, enabled }) => {
+    const fakeSupabase = (window as HarnessWindow).__daypopSharingHarness!;
     if (!enabled) {
-      delete fakeSupabase.rpc;
+      // Drops the instance override so the prototype rpc() is used again.
+      Reflect.deleteProperty(fakeSupabase, 'rpc');
       return;
     }
     const committed = fakeSupabase.rpc.bind(fakeSupabase);
@@ -30,18 +32,18 @@ async function loseDeleteResponse(page: Page, enabled: boolean) {
       if (rpc === name) throw new Error('DP-135 回應遺失');
       return result;
     };
-  }, { path: FAKE_MODULE, name: DELETE_RPC, enabled });
+  }, { name: DELETE_RPC, enabled });
 }
 
-const server = (page: Page) => page.evaluate(async ({ path, name }) => {
-  const { fakeSupabase } = await import(path);
+const server = (page: Page) => page.evaluate((name) => {
+  const fakeSupabase = (window as HarnessWindow).__daypopSharingHarness!;
   return {
     metadata: fakeSupabase.rows('event_attachments').length,
     cleanupJobs: fakeSupabase.rows('attachment_cleanup_jobs').length,
     objects: fakeSupabase.objects.size,
     deleteCalls: fakeSupabase.rpcCalls.filter((call: { name: string }) => call.name === name).length,
   };
-}, { path: FAKE_MODULE, name: DELETE_RPC });
+}, DELETE_RPC);
 
 const cachedAttachments = (page: Page) =>
   page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).data.eventAttachments.length as number, KEY);

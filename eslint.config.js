@@ -29,6 +29,19 @@ export default tseslint.config(
     },
   },
   {
+    // DP-237: importing the dev-only auth entry from a spec can evaluate it a
+    // second time (another createRoot) when the URL differs from auth.html's,
+    // which on Windows reset the signed-in App mid-test. Linux CI does not
+    // reproduce that, so only lint keeps the pattern from coming back.
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: 'Literal[value=/e2eAuthMain/]',
+        message: 'Use HarnessWindow.__daypopSharingHarness from e2e/support.ts instead of importing the dev-only auth entry.',
+      }],
+    },
+  },
+  {
     files: ['**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 2022,

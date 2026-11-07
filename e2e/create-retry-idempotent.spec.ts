@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { E2E_EMAIL, E2E_PASSWORD, monitorBrowser, openApp, tabButton } from './support';
+import { E2E_EMAIL, E2E_PASSWORD, monitorBrowser, openApp, tabButton, type HarnessWindow } from './support';
 
 /**
  * A create that was stored but whose response was lost must not be duplicated
@@ -13,9 +13,9 @@ const DATE = '2026-09-30';
 const KEY = 'daypop.account-cache.00000000-0000-4000-8000-000000000030';
 test.use({ timezoneId: 'America/New_York' });
 
-// The already loaded dev-only module owns this synthetic account. It is outside
-// the production graph; no cloud credentials or user rows are involved.
-const FAKE_MODULE = '/src/test/e2eAuthMain.tsx';
+// The running dev-only harness owns this synthetic account through
+// HarnessWindow. It is outside the production graph; no cloud credentials or
+// user rows are involved.
 
 async function signIn(page: Page) {
   await page.clock.setFixedTime(new Date('2026-09-30T04:00:00.000Z'));
@@ -32,18 +32,18 @@ async function signIn(page: Page) {
 }
 
 async function loseResponses(page: Page, table: string, enabled: boolean) {
-  await page.evaluate(async ({ path, table, enabled }) => {
-    const { fakeSupabase } = await import(path);
+  await page.evaluate(({ table, enabled }) => {
+    const fakeSupabase = (window as HarnessWindow).__daypopSharingHarness!;
     if (enabled) fakeSupabase.lostResponses.set(table, 'DP-142 回應遺失');
     else fakeSupabase.lostResponses.delete(table);
-  }, { path: FAKE_MODULE, table, enabled });
+  }, { table, enabled });
 }
 
 /** What the fake server holds, by the user-facing label of each row. */
-const stored = (page: Page, table: string) => page.evaluate(async ({ path, table }) => {
-  const { fakeSupabase } = await import(path);
+const stored = (page: Page, table: string) => page.evaluate((table) => {
+  const fakeSupabase = (window as HarnessWindow).__daypopSharingHarness!;
   return (fakeSupabase.rows(table) as { title?: string; name?: string }[]).map((row) => row.title ?? row.name);
-}, { path: FAKE_MODULE, table });
+}, table);
 
 const cached = (page: Page, collection: 'events' | 'todos' | 'calendars') =>
   page.evaluate(({ key, collection }) => (JSON.parse(localStorage.getItem(key)!).data[collection] as { title?: string; name?: string }[]).map((row) => row.title ?? row.name), { key: KEY, collection });

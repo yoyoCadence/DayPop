@@ -1,7 +1,16 @@
 import { expect, type Page } from '@playwright/test';
+import type { FakeSupabase } from '../src/test/fakeSupabase';
 
 export const E2E_EMAIL = 'daypop-e2e@example.test';
 export const E2E_PASSWORD = 'daypop-e2e-password';
+
+/**
+ * The dev-only harness (src/test/e2eAuthMain.tsx) exposes its one FakeSupabase
+ * on window. Specs read it here instead of importing the entry again: a second
+ * evaluation of that module calls createRoot() again and replaces the signed-in
+ * App, so the window under test disappears (DP-237).
+ */
+export type HarnessWindow = Window & { __daypopSharingHarness?: FakeSupabase };
 
 /** Collects browser errors without hiding them behind a successful UI assertion. */
 export function monitorBrowser(page: Page) {

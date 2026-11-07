@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { E2E_EMAIL, E2E_PASSWORD, monitorBrowser, openApp, tabButton } from './support';
+import { E2E_EMAIL, E2E_PASSWORD, monitorBrowser, openApp, tabButton, type HarnessWindow } from './support';
 
 const DATE = '2026-09-30';
 const KEY = 'daypop.account-cache.00000000-0000-4000-8000-000000000030';
@@ -21,11 +21,10 @@ async function signIn(page: Page) {
 }
 
 async function failTodos(page: Page, enabled: boolean) {
-  await page.evaluate(async (enabled) => {
-    // The already loaded dev-only module owns this synthetic account. It is
-    // outside the production graph; no cloud credentials or user rows involved.
-    const path = '/src/test/e2eAuthMain.tsx';
-    const { fakeSupabase } = await import(path);
+  await page.evaluate((enabled) => {
+    // The running dev-only harness owns this synthetic account. It is outside
+    // the production graph; no cloud credentials or user rows involved.
+    const fakeSupabase = (window as HarnessWindow).__daypopSharingHarness!;
     if (enabled) fakeSupabase.rejections.set('todos', 'DP-137 測試連線失敗');
     else fakeSupabase.rejections.delete('todos');
   }, enabled);
