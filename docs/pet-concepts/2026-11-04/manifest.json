@@ -1,0 +1,346 @@
+{
+  "blenderVersion": "5.2.3",
+  "canvas": [
+    120,
+    120
+  ],
+  "display": [
+    60,
+    60
+  ],
+  "minimumTransparentMargin": 8,
+  "source": [
+    {
+      "path": "source\\cat.blend",
+      "sha256": "10fbb947706df8ef5e78ed5681084bbdfdd1d021a0ea4eeefee1c8a589862260"
+    },
+    {
+      "path": "source\\bear.blend",
+      "sha256": "10b085c5b784f0a86e5779e34c44818988abc80d59094cd085242112c32e7928"
+    },
+    {
+      "path": "source\\bunny.blend",
+      "sha256": "d22a3a6492feff6561a4488050e186747e6fc67be762f31533efb058cc703d5e"
+    }
+  ],
+  "assets": [
+    {
+      "kind": "marshmallow-cat",
+      "pose": "idle",
+      "path": "package\\marshmallow-cat-idle.webp",
+      "bytes": 19746,
+      "sha256": "52d2f720ccfcfaabd8cef4c6925c5c886fbfbfce19ef889eee923b403b461051",
+      "frames": 12,
+      "durationMs": 2160,
+      "loop": 0
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "idle",
+      "path": "package\\marshmallow-cat-idle.png",
+      "bytes": 9339,
+      "sha256": "2a85700369a0274023e837fe63689f45aa952b555c43c580511086e45bbcfa43",
+      "frames": 1,
+      "bounds": [
+        38,
+        29,
+        92,
+        110
+      ]
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "walk",
+      "path": "package\\marshmallow-cat-walk.webp",
+      "bytes": 14912,
+      "sha256": "a51e082f1f02f307b7730bd894fed755ee3f546898ee440faf8979b94af77508",
+      "frames": 8,
+      "durationMs": 800,
+      "loop": 0
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "look",
+      "path": "package\\marshmallow-cat-look.webp",
+      "bytes": 16992,
+      "sha256": "010fca8120288040bb03b08fcadc6800c4dc773dcf92e58f13f740cd3f811fbd",
+      "frames": 10,
+      "durationMs": 1600,
+      "loop": 1
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "sit",
+      "path": "package\\marshmallow-cat-sit.png",
+      "bytes": 9052,
+      "sha256": "f61b3b4f3fe813b6aa3767265d52c0771da08274b06448beb85bc4178328d96d",
+      "frames": 1,
+      "bounds": [
+        38,
+        33,
+        92,
+        108
+      ]
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "sleep",
+      "path": "package\\marshmallow-cat-sleep.webp",
+      "bytes": 12344,
+      "sha256": "e29b1bdf32b7ad876b083a8a0da3132fb8eddd70944879f7f3a96960125c26c0",
+      "frames": 8,
+      "durationMs": 2400,
+      "loop": 0
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "sleep",
+      "path": "package\\marshmallow-cat-sleep.png",
+      "bytes": 8990,
+      "sha256": "8e4dbe5decc555b6bd559ff0eddafd2fb1f602f71496fa3a6d568599e1c66ae5",
+      "frames": 1,
+      "bounds": [
+        37,
+        33,
+        92,
+        108
+      ]
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "jump",
+      "path": "package\\marshmallow-cat-jump.webp",
+      "bytes": 18076,
+      "sha256": "d02243be3f71f433ae2bdff53038124a7947ab6eccf02ecf036cc22cc52a41c7",
+      "frames": 10,
+      "durationMs": 1000,
+      "loop": 1
+    },
+    {
+      "kind": "marshmallow-cat",
+      "pose": "grab",
+      "path": "package\\marshmallow-cat-grab.png",
+      "bytes": 9203,
+      "sha256": "53cbf1833b2f64d2140af2939366cb4bf61e8b50c2f9e83f01c301198091538d",
+      "frames": 1,
+      "bounds": [
+        38,
+        29,
+        92,
+        110
+      ]
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "idle",
+      "path": "package\\honey-bear-idle.webp",
+      "bytes": 20600,
+      "sha256": "bb8d1a194f9229b60791c53ace7dc19a657e0b357a9e5787576c9aa7d1196d9d",
+      "frames": 12,
+      "durationMs": 2160,
+      "loop": 0
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "idle",
+      "path": "package\\honey-bear-idle.png",
+      "bytes": 9101,
+      "sha256": "8d4779abed7752a439bcc62847e48981554556f054e0f86ab4ddd0f145d692e9",
+      "frames": 1,
+      "bounds": [
+        35,
+        33,
+        84,
+        110
+      ]
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "walk",
+      "path": "package\\honey-bear-walk.webp",
+      "bytes": 15260,
+      "sha256": "f7de217971d2ff0565f35d273dc2c82f0fa6c698a69495d6e4c6174d0baa04a3",
+      "frames": 8,
+      "durationMs": 800,
+      "loop": 0
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "look",
+      "path": "package\\honey-bear-look.webp",
+      "bytes": 17126,
+      "sha256": "c860ee5baae23534f2fe6dcf6a6c050305cb096b16e6fc25d7edb0f6702ee384",
+      "frames": 10,
+      "durationMs": 1600,
+      "loop": 1
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "sit",
+      "path": "package\\honey-bear-sit.png",
+      "bytes": 8773,
+      "sha256": "1e164fd727fe4e9d39a8863cbc32cc094c46123beeb89c44a46a0a00aed425f8",
+      "frames": 1,
+      "bounds": [
+        34,
+        38,
+        83,
+        108
+      ]
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "sleep",
+      "path": "package\\honey-bear-sleep.webp",
+      "bytes": 12158,
+      "sha256": "6fc8c2a3065625d46af80c35ff532d70608af38fc9c37ed33e3b8dbbcd50da0b",
+      "frames": 8,
+      "durationMs": 2400,
+      "loop": 0
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "sleep",
+      "path": "package\\honey-bear-sleep.png",
+      "bytes": 8727,
+      "sha256": "dd9d095047a3f55d55dccf044beafd401dacd43d7df8c50cb1af5bab929bfcd9",
+      "frames": 1,
+      "bounds": [
+        34,
+        38,
+        83,
+        108
+      ]
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "jump",
+      "path": "package\\honey-bear-jump.webp",
+      "bytes": 18388,
+      "sha256": "ac8d9952e41e2328d567b61d1ec4736a55595f1fd2e00bc2620bb0b3bff8a7d8",
+      "frames": 10,
+      "durationMs": 1000,
+      "loop": 1
+    },
+    {
+      "kind": "honey-bear",
+      "pose": "grab",
+      "path": "package\\honey-bear-grab.png",
+      "bytes": 8974,
+      "sha256": "0ddf09348d537e918ccfb2e8235d36874aa4858ab216b791ba76888185e8f1b6",
+      "frames": 1,
+      "bounds": [
+        34,
+        34,
+        83,
+        110
+      ]
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "idle",
+      "path": "package\\peach-bunny-idle.webp",
+      "bytes": 16790,
+      "sha256": "f7b7449b5c11aedb609ad304535894e983e3dbf16c53d91878dc029417c32aa5",
+      "frames": 12,
+      "durationMs": 2160,
+      "loop": 0
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "idle",
+      "path": "package\\peach-bunny-idle.png",
+      "bytes": 8388,
+      "sha256": "6a3cfa570a2cfded0e4339bf8842ad9f461f699a325dbff4659dcea42e8c02d6",
+      "frames": 1,
+      "bounds": [
+        39,
+        20,
+        80,
+        106
+      ]
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "walk",
+      "path": "package\\peach-bunny-walk.webp",
+      "bytes": 13190,
+      "sha256": "46d8dd7d91d326234789e42b9fb35802bd2a4ecf548a7024759d9850b5302e05",
+      "frames": 8,
+      "durationMs": 800,
+      "loop": 0
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "look",
+      "path": "package\\peach-bunny-look.webp",
+      "bytes": 14210,
+      "sha256": "92b06cd1df0b73e798c145c74b7dd5ee3b2df06bef2e0368a3aea6771a9cec92",
+      "frames": 10,
+      "durationMs": 1600,
+      "loop": 1
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "sit",
+      "path": "package\\peach-bunny-sit.png",
+      "bytes": 8056,
+      "sha256": "d32b822a808f8744ffe30d0a70ff789fd8473dfc8c9b8b2091b5e47708458d7c",
+      "frames": 1,
+      "bounds": [
+        39,
+        24,
+        80,
+        105
+      ]
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "sleep",
+      "path": "package\\peach-bunny-sleep.webp",
+      "bytes": 10570,
+      "sha256": "afcc6c44a2a5c5bd1025dfc87b285764b5abc0ae7706a310a5d3a9dd3ef64db2",
+      "frames": 8,
+      "durationMs": 2400,
+      "loop": 0
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "sleep",
+      "path": "package\\peach-bunny-sleep.png",
+      "bytes": 7977,
+      "sha256": "cb83e6223f111df60f2ffa2ddf1d6a4a778fb5623e72fb934eb6917b64ace89b",
+      "frames": 1,
+      "bounds": [
+        39,
+        24,
+        80,
+        105
+      ]
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "jump",
+      "path": "package\\peach-bunny-jump.webp",
+      "bytes": 15788,
+      "sha256": "61d15b62ff806a660acf55daf93f6faebb010c052f255d4e0107de0a72a7f595",
+      "frames": 10,
+      "durationMs": 1000,
+      "loop": 1
+    },
+    {
+      "kind": "peach-bunny",
+      "pose": "grab",
+      "path": "package\\peach-bunny-grab.png",
+      "bytes": 8296,
+      "sha256": "856e00a2020bf6d6f854969901f324d9b2d66d8f75ff66fafc018068ee5a5f14",
+      "frames": 1,
+      "bounds": [
+        39,
+        20,
+        80,
+        106
+      ]
+    }
+  ]
+}
