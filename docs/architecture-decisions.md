@@ -737,6 +737,16 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 在保留已採坐姿模型的前提下，只能把貓現有兩前爪的交替稱為 paw_step；飛碟可沿 root 試作 glide，不新增 App walk key 或自動位移。八原生100ms取樣／0.8秒閉環與三編碼方案中，貓full品質過卻超192KiB，held雖總量過卻MAE超標，不能用二者互相替代而宣稱七態完成；飛碟full品質／假設總量過，仍待擁有者動作品質確認。hypothetical只加WebP、不含新增獨立PNG成本，不是已採包。相機／模型不改，首輪60px邊距失敗後只修整路徑，維持8／4px與MAE<0.008。實幀、原檔重渲染與二十項負控制見 [可行性與限制](pet-concepts/2026-10-25/motion-feasibility/README.md)。原方向僅貓原地步態，未要求站立四肢；下一段先量固定頭身尾、只動前爪的局部方案，站立四肢才需新模型／rig造型決定。本項不改既有五態、預算、播放政策、資料或部署。
 
+### 前景自主走動是疊在保存位置上的暫時位移（DP-240，2026-11-07）
+
+**決策（擁有者 DP-238／240 自主走動委託；預算由擁有者授權評估）：** 只有 registry 有 `walk` 的夥伴會在安靜畫面上「出遊」：最後一次輸入後 30–60 秒走出去 40–140px（36px/s）、坐 5 秒、走回，之後 45–90 秒再一次，沒有輸入時最多兩次就停在原地，讓 DP-193 的閒置睡眠照常發生。出遊是 `placePet()` 結果上的水平位移，**從不寫 `daypop.pet-placement`**；路徑每 4px 都必須是 `constrainPet()` 原樣接受的位置，所以不會走進標頭、分頁列、safe area 或 FAB 間距。任何地方的 pointerdown／keydown／wheel、拖移、鍵盤移動、泡泡、look／jump、暫藏、收起、背景與減少動態都讓它立即回到保存位置。
+
+**中途抓起**：壓在出遊中的夥伴上時，它停在畫面上當下的位置（含 CSS 過場的中間值），拖移從那裡接著走，放開時保存在放開處；只點一下則回家並開泡泡、不寫入。因為瀏覽器在 listener 之間會跑 microtask，React handler 執行時重設已經 re-render，所以由重設本身的 capture listener 先同步呼叫 `onInput`，`PetLayer` 在那裡讀 `getComputedStyle().transform`。不要改成在 React handler 讀，也不要改成 hold 在該段目標點（Chromium 會讓同值的過場繼續跑）。
+
+**預算**：JS gzip 238,124／240,640，比 DP-239 多 1,105 bytes。擁有者同意可以調高，但這次不需要，所以上限不變；下一個放不下的功能應該重新決定，而不是先放寬。
+
+契約、驗證、負控制與限制見 `docs/pet-wander.md`；iPhone 真機觀感、觸控抓取與造型品質待擁有者驗收。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

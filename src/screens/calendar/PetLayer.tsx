@@ -7,6 +7,9 @@ import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { PetArtwork } from './PetArtwork';
 import { IdlePetArtwork } from './IdlePetArtwork';
+import { PET_ASSETS } from './petAssets';
+import type { PetPoint } from './petPlacement';
+import { usePetWander } from './usePetWander';
 import type { TodoCompletionSource } from '../../data/dataContext';
 
 export interface PetLayerProps {
@@ -40,8 +43,10 @@ export interface PetLayerProps {
  *
  * DP-170 adds device-local placement, dragging, docking and a collapsed tab.
  * DP-188 adds the approved default cat's idle/look/grab artwork. DP-193/197
- * add foreground sleep and confirmed-command jump feedback. Still to come: walking and
- * the seven-state machine (DP-171), choosing a partner (DP-172).
+ * add foreground sleep and confirmed-command jump feedback. DP-239 chooses the
+ * partner. DP-240 lets partners with a real walk animation take short
+ * excursions along their own row and come back; the saved position never
+ * changes, and any interaction ends the excursion at once.
  */
 export function PetLayer({
   petName,
@@ -70,7 +75,36 @@ export function PetLayer({
   useEffect(() => todoCompletions?.subscribe(() => completed()), [todoCompletions]);
   // One count for the badge and the greeting, so they cannot disagree.
   const lists = useMemo(() => petBubbleTodos(todos, todayKey), [todos, todayKey]);
-  const pose = placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : jumpCue !== null ? 'jump' : 'idle';
+  // A primary pointer that lands on the pet mid-excursion holds it where it is
+  // drawn, so a drag starts under the pointer rather than from the saved spot;
+  // a plain tap releases it home. State for rendering, ref for the handlers.
+  const [held, setHeld] = useState<PetPoint | null>(null);
+  const heldRef = useRef<PetPoint | null>(null);
+  function hold(point: PetPoint | null) {
+    heldRef.current = point;
+    setHeld(point);
+  }
+  const wander = usePetWander({
+    // Only partners that really walk; the others would slide. No excursion
+    // while the user is moving, reading, typing or the pet is reacting.
+    enabled: Boolean(PET_ASSETS[petKind].walk) && !placement.hidden && !placement.collapsed && !placement.moving &&
+      !placement.dragging && held === null && bubble === null && lookCue === null && jumpCue === null,
+    home: placement.position,
+    area: placement.area,
+    onInput: event => {
+      const control = controlRef.current;
+      const position = placement.position;
+      if (wander.phase === 'rest' || placement.moving || !control || !position || event.type !== 'pointerdown') return;
+      const pointer = event as MouseEvent & { isPrimary?: boolean };
+      if (pointer.button !== 0 || pointer.isPrimary === false || !(event.target instanceof Node) || !control.contains(event.target)) return;
+      hold(drawnPoint(control) ?? { x: position.x + wander.offset, y: position.y });
+    },
+  });
+  const pose = placement.moving || placement.dragging ? 'grab' : lookCue !== null ? 'look' : jumpCue !== null ? 'jump'
+    : wander.phase === 'sit' ? (PET_ASSETS[petKind].sit ? 'sit' : 'idle')
+    : wander.phase === 'out' || wander.phase === 'back' ? 'walk' : 'idle';
+  const walkingStyle = wander.legMs > 0 && !held ? { transition: `transform ${wander.legMs}ms linear` } : undefined;
+  const drawn = held ?? (placement.position ? { x: placement.position.x + wander.offset, y: placement.position.y } : null);
   const label =
     lists.open > 0
       ? `${petName}，今天還有 ${lists.open} 件待辦`
@@ -97,18 +131,19 @@ export function PetLayer({
           ref={controlRef}
           type="button"
           hidden={placement.hidden}
-          style={placement.position ? { transform: `translate(${placement.position.x}px, ${placement.position.y}px)` } : undefined}
+          style={drawn ? { transform: `translate(${drawn.x}px, ${drawn.y}px)`, ...walkingStyle } : undefined}
+          data-wander={wander.phase === 'rest' ? undefined : wander.phase}
           aria-haspopup="dialog"
           aria-label={label}
           aria-describedby={placement.moving ? 'pet-move-instructions' : undefined}
           onClick={event => openBubble(event.detail)}
           onKeyDown={placement.onKeyDown}
           onBlur={placement.onBlur}
-          onPointerDown={placement.onPointerDown}
+          onPointerDown={event => { if (!placement.onPointerDown(event, heldRef.current ?? undefined)) hold(null); }}
           onPointerMove={event => { if (placement.onPointerMove(event)) { setLookCue(null); setJumpCue(null); } }}
-          onPointerUp={placement.onPointerUp}
-          onPointerCancel={placement.onPointerCancel}
-          onLostPointerCapture={placement.onPointerCancel}
+          onPointerUp={event => { placement.onPointerUp(event); hold(null); }}
+          onPointerCancel={() => { placement.onPointerCancel(); hold(null); }}
+          onLostPointerCapture={() => { placement.onPointerCancel(); hold(null); }}
         >
           {pose === 'idle' ? <IdlePetArtwork kind={petKind} paused={bubble !== null} hidden={placement.hidden} /> : <PetArtwork kind={petKind} pose={pose}
             paused={bubble !== null} hidden={placement.hidden} cue={lookCue ?? jumpCue}
@@ -142,4 +177,12 @@ export function PetLayer({
       )}
     </>
   );
+}
+
+/** Where the pet is drawn right now, mid-transition included; null where the browser cannot say. */
+function drawnPoint(element: HTMLElement): PetPoint | null {
+  const transform = getComputedStyle(element).transform;
+  if (!transform || transform === 'none' || typeof DOMMatrixReadOnly !== 'function') return null;
+  const matrix = new DOMMatrixReadOnly(transform);
+  return { x: matrix.m41, y: matrix.m42 };
 }

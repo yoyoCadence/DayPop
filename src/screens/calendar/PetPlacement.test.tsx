@@ -353,3 +353,65 @@ it('leaves no idle clock or input listener capable of restarting one after unmou
   expect(vi.getTimerCount()).toBe(0);
   expect(host.querySelector('.cal-pet-art')).toBeNull();
 });
+
+// DP-240: excursions are a transient offset on top of the saved position.
+function wanderingPet(petKind: 'marshmallow_cat' | 'moon_cat' = 'marshmallow_cat') {
+  act(() => root.render(null));
+  vi.useFakeTimers();
+  // random() = 0: first excursion after 30s, 40px to the right, 1,200ms legs.
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  act(() => root.render(<PetLayer petName="摩卡" petKind={petKind} todos={[]} todayKey="2026-10-22" greeted onGreeted={() => {}} onAddTodo={() => {}} onToggleTodo={() => {}} onDeleteTodo={() => {}} />));
+}
+/** Small steps: one long act() would batch a whole excursion into its last render. */
+function walk(ms: number) {
+  for (let left = ms; left > 0; left -= 500) act(() => { vi.advanceTimersByTime(Math.min(500, left)); });
+}
+const drawnAt = () => pet().style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/)!.slice(1).map(Number);
+it('walks out, sits and walks back on its own without saving anything', () => {
+  wanderingPet();
+  const before = { ...localStorage };
+  const [homeX, homeY] = drawnAt();
+  walk(30_000);
+  expect(pet().dataset.wander).toBe('out');
+  expect(drawnAt()).toEqual([homeX! + 40, homeY]);
+  expect(pet().style.transition).toBe('transform 1200ms linear');
+  walk(1_200);
+  expect(pet().dataset.wander).toBe('sit');
+  expect(artwork().getAttribute('src')).toMatch(/marshmallow-cat-sit/);
+  walk(5_000 + 1_200);
+  expect(pet().dataset.wander).toBeUndefined();
+  expect(drawnAt()).toEqual([homeX, homeY]);
+  expect({ ...localStorage }).toEqual(before);
+});
+it('a drag that starts mid-excursion continues under the pointer and saves where it is dropped', () => {
+  wanderingPet();
+  const [homeX, homeY] = drawnAt();
+  walk(30_000 + 1_200);
+  expect(pet().dataset.wander).toBe('sit');
+  pointer('pointerdown', 100, 550);
+  // Held where it sat: the input ends the excursion without a jump home.
+  expect(drawnAt()).toEqual([homeX! + 40, homeY]);
+  expect(pet().style.transition).toBe('');
+  pointer('pointermove', 130, 550); pointer('pointerup', 130, 550);
+  expect(drawnAt()[0]).toBeCloseTo(homeX! + 70, 0);
+  expect(JSON.parse(localStorage.getItem(key)!).x).toBeGreaterThan(0);
+});
+it('a tap mid-excursion returns home, opens the bubble and saves nothing', () => {
+  wanderingPet();
+  const [homeX, homeY] = drawnAt();
+  walk(30_000 + 1_200);
+  pointer('pointerdown', 100, 550); pointer('pointerup', 100, 550);
+  act(() => pet().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
+  expect(drawnAt()).toEqual([homeX, homeY]);
+  expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+  expect(localStorage.getItem(key)).toBeNull();
+});
+it('partners without a walk never leave their spot', () => {
+  wanderingPet('moon_cat');
+  const home = drawnAt();
+  for (let step = 0; step < 20; step += 1) {
+    walk(30_000);
+    expect(pet().dataset.wander).toBeUndefined();
+    expect(drawnAt()).toEqual(home);
+  }
+});
