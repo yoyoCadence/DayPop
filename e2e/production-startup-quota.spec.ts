@@ -19,7 +19,7 @@ const test = base.extend<{ site: ProductionUpdateSite }, {
 const dataKey = 'daypop.user-data';
 // The fixture's first occurrences fall on this day; the agenda lists from today.
 const fixedInstant = '2026-09-30T04:00:00.000Z';
-const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
+const guestBytes = JSON.stringify({ schemaVersion: 5, revision: 7, updatedAt: fixedInstant, data: backupData });
 // Same length as the App's startup probe key (`daypop.storage-probe`), under a
 // name the App does not own, so the check never looks like DayPop data.
 const probeSizedKey = 'quota-test.probesize';

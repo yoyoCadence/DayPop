@@ -25,7 +25,7 @@ test('顯示時區跨午夜會更新今天與逾期，不搬動日期、不清�
     completedAt: null, sortOrder: 1, sharingScope: 'inherit', createdAt: now, updatedAt: now,
   }];
   await page.addInitScript((data) => {
-    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 1, updatedAt: data.calendars[0]!.createdAt, data }));
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 1, updatedAt: data.calendars[0]!.createdAt, data }));
   }, data);
   await openApp(page);
   await page.clock.pauseAt(new Date(now));

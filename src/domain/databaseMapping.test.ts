@@ -203,6 +203,7 @@ describe('domain ↔ DB mapping', () => {
       theme_id: 'warm',
       default_reminder_minutes: [10],
       pet_name: '摩卡',
+      pet_kind: 'honey_bear',
       pet_enabled: true,
       created_at: NOW,
       updated_at: NOW,

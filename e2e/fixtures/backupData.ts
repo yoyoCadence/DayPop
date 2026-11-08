@@ -71,6 +71,6 @@ export const backupData: DayPopUserData = {
   preferences: {
     timezone: 'Asia/Taipei', weekStartsOn: 1, theme: 'light', themeId: 'warm',
     calendarGridMode: 'fixed-six', defaultReminderMinutes: [10, 30],
-    petName: '備份夥伴', petEnabled: false,
+    petName: '備份夥伴', petEnabled: false, petKind: 'moon_cat',
   },
 };

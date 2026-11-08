@@ -76,7 +76,7 @@ test('JSON 真實下載、取消預覽、確認取代與 reload 保留完整遊�
   await expect(lastBackup).toHaveText('這台裝置還沒有匯出過備份。');
   const { path, backup } = await downloadBackup(page, testInfo);
   expect(backup.format).toBe('daypop.backup');
-  expect(backup.formatVersion).toBe(1);
+  expect(backup.formatVersion).toBe(2);
   expect(backup.omitted).toEqual({ eventAttachments: 0 });
   expect(backup.data).toEqual(portableData);
   expect(await storedBytes(page), 'export must not write user data').toBe(sourceBytes);

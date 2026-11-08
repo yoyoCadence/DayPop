@@ -43,6 +43,7 @@
     "supabase:test:concurrency": "node scripts/test-family-concurrency.mjs",
     "supabase:test:sharing-concurrency": "node scripts/test-calendar-sharing-concurrency.mjs",
     "supabase:test:http": "node scripts/test-family-sharing-http.mjs",
+    "supabase:test:pets": "node scripts/test-pet-preferences-http.mjs",
     "supabase:test:reminders": "node scripts/test-reminder-http.mjs",
     "supabase:test:reminder-scheduler": "node scripts/test-reminder-scheduler.mjs",
     "supabase:test:reminder-edge": "node scripts/test-reminder-edge.mjs",

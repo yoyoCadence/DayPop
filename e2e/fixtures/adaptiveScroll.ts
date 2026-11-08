@@ -16,7 +16,7 @@ export async function checkAdaptiveScroll(page: Page) {
     const data = createEmptyUserData({ now: instant });
     data.preferences = { ...data.preferences, calendarGridMode: 'adaptive', weekStartsOn: scenario.weekStartsOn, petEnabled: false };
     await page.addInitScript(({ data, instant }) => {
-      localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 1, updatedAt: instant, data }));
+      localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 1, updatedAt: instant, data }));
     }, { data, instant });
     await openApp(page);
     const scroll = page.locator('.cal-month-scroll');

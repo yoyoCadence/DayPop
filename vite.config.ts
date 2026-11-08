@@ -83,7 +83,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __APP_VERSION__: JSON.stringify(packageJson.version),
-      __DATA_SCHEMA_VERSION__: '4',
+      __DATA_SCHEMA_VERSION__: '5',
     },
     test: {
       environment: 'jsdom',

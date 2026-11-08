@@ -12,6 +12,15 @@ const OWNER = '11111111-1111-4111-8111-111111111111';
 const OTHER_OWNER = '22222222-2222-4222-8222-222222222222';
 
 describe('signed-in account cache', () => {
+  it('rechecks the account cache before writing and preserves a newer envelope exactly', async () => {
+    const storage = new MemoryStorage();
+    const data = await new LocalDayPopRepository(new MemoryStorage()).load();
+    writeAccountCache(OWNER, data, storage);
+    const future = JSON.stringify({ schemaVersion: __DATA_SCHEMA_VERSION__ + 1, accountId: OWNER, updatedAt: '2026-11-04T00:00:00.000Z', data });
+    storage.setItem(accountCacheKey(OWNER), future);
+    expect(() => writeAccountCache(OWNER, data, storage)).toThrow(/較新版本/);
+    expect(storage.getItem(accountCacheKey(OWNER))).toBe(future);
+  });
   it('round-trips a validated, versioned document for one account', async () => {
     const storage = new MemoryStorage();
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
@@ -42,7 +51,7 @@ describe('signed-in account cache', () => {
     expect(storage.length).toBe(1);
   });
 
-  it('reads a same-account schema v3 cache as v4 with no invented attachments', async () => {
+  it('reads a same-account schema v3 cache as v5 with no invented attachments', async () => {
     const storage = new MemoryStorage();
     const data = await new LocalDayPopRepository(new MemoryStorage()).load();
     const { eventAttachments, ...v3Data } = data;
@@ -62,7 +71,7 @@ describe('signed-in account cache', () => {
     expect(result).toMatchObject({
       status: 'ready',
       envelope: {
-        schemaVersion: 4,
+        schemaVersion: 5,
         accountId: OWNER,
         updatedAt: '2026-08-08T14:00:00.000Z',
         data: { eventAttachments: [] },

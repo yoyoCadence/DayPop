@@ -18,7 +18,7 @@ const test = base.extend<{ site: ProductionUpdateSite }, {
 
 const dataKey = 'daypop.user-data';
 const fixedInstant = '2026-09-30T04:00:00.000Z';
-const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
+const guestBytes = JSON.stringify({ schemaVersion: 5, revision: 7, updatedAt: fixedInstant, data: backupData });
 const memoryTitle = '額度不足假期';
 // Grow the existing envelope beyond the final filler chunk's remaining space.
 const memoryNotes = '只留在記憶體的備註 '.repeat(256).trim();

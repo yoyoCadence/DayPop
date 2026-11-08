@@ -26,7 +26,7 @@ const test = base.extend<{ site: ProductionUpdateSite; browserHealth: void }, {
 const guestKey = 'daypop.user-data';
 const seenKey = 'daypop.release-notes-seen';
 const guestBytes = JSON.stringify({
-  schemaVersion: 4, revision: 7, updatedAt: '2026-09-30T04:00:00.000Z', data: backupData,
+  schemaVersion: 5, revision: 7, updatedAt: '2026-09-30T04:00:00.000Z', data: backupData,
 });
 
 async function assertGuestPreserved(page: Page) {

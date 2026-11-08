@@ -48,7 +48,7 @@ test('遊客可修正父待辦／完成子項標題，取消與空白不寫入�
     { ...common, id: '12000000-0000-4000-8000-000000000002', parentId: parent, title: '訂房', sortOrder: 1, completedAt: NOW },
   ];
   await page.addInitScript((data) => {
-    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
+    if (!localStorage.getItem('daypop.user-data')) localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: data.todos[0]!.updatedAt, data }));
   }, data);
   await openApp(page);
   console.log('DP-120 guest browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), 'display: Asia/Taipei');

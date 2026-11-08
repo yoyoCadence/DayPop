@@ -6,6 +6,7 @@ import {
   migrateV1UserData,
   migrateV2UserData,
   migrateV3UserData,
+  migrateV4UserData,
   type V1UserData,
 } from './localDataMigration';
 
@@ -110,6 +111,16 @@ export function readUserData(storage: StorageLike = getAppStorage()): StorageRea
   }
 
   if (parsed.schemaVersion !== __DATA_SCHEMA_VERSION__) {
+    if (schemaVersion === 4) {
+      try {
+        const envelope = { schemaVersion: __DATA_SCHEMA_VERSION__, revision: parsed.revision, updatedAt: parsed.updatedAt,
+          data: migrateV4UserData(parsed.data) };
+        storage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(envelope));
+        return { status: 'ready', envelope };
+      } catch (cause) {
+        return { status: 'corrupt', raw, reason: cause instanceof Error ? cause.message : 'schema v4 migration failed' };
+      }
+    }
     return { status: 'corrupt', raw, reason: `不支援 schema v${parsed.schemaVersion}` };
   }
 

@@ -72,7 +72,7 @@ test('Production 開機原生 localStorage 不可用：持續警告、分頁編�
   await expect(page.getByRole('button', { name: /漫畫/ })).toHaveAttribute('aria-pressed', 'true');
   const initial = await downloadBackup(page);
   expect(initial).toMatchObject({
-    format: 'daypop.backup', formatVersion: 1, appVersion: site.currentVersion,
+    format: 'daypop.backup', formatVersion: 2, appVersion: site.currentVersion,
     omitted: { eventAttachments: 0 },
   });
   expect(initial.data).toEqual({
@@ -83,7 +83,7 @@ test('Production 開機原生 localStorage 不可用：持續警告、分頁編�
     events: [], eventExceptions: [], todos: [], stickers: [],
     preferences: {
       timezone: 'Asia/Taipei', weekStartsOn: 0, theme: 'light', themeId: 'manga',
-      calendarGridMode: 'adaptive', defaultReminderMinutes: [], petName: '摩卡', petEnabled: true,
+      calendarGridMode: 'adaptive', defaultReminderMinutes: [], petName: '摩卡', petEnabled: true, petKind: 'moon_cat',
     },
   });
 

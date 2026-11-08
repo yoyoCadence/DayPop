@@ -30,7 +30,7 @@ describe('versioned user storage', () => {
 
     const stored = writeUserData(data, 0);
 
-    expect(stored.schemaVersion).toBe(4);
+    expect(stored.schemaVersion).toBe(5);
     expect(stored.revision).toBe(1);
     expect(readyEnvelope().data.preferences.petName).toBe('小蹦');
   });
@@ -46,14 +46,14 @@ describe('versioned user storage', () => {
     }
   });
 
-  it('migrates the retained v1 fixture to v4 and persists one stable default calendar', () => {
+  it('migrates the retained v1 fixture to v5 and persists one stable default calendar', () => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(v1Fixture));
 
     const first = readyEnvelope();
     const second = readyEnvelope();
     const calendarId = first.data.calendars[0]!.id;
 
-    expect(first.schemaVersion).toBe(4);
+    expect(first.schemaVersion).toBe(5);
     expect(first.data.eventAttachments).toEqual([]);
     expect(second.data.calendars[0]!.id).toBe(calendarId);
     expect(first.revision).toBe(7);
@@ -86,7 +86,7 @@ describe('versioned user storage', () => {
 
     const migrated = readyEnvelope();
 
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(5);
     expect(migrated.revision).toBe(11);
     expect(migrated.updatedAt).toBe('2026-08-08T00:00:00.000Z');
     expect(migrated.data.preferences).toMatchObject({
@@ -117,7 +117,7 @@ describe('versioned user storage', () => {
     const migrated = readyEnvelope();
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       revision: 12,
       updatedAt: '2026-08-09T00:00:00.000Z',
     });
@@ -241,6 +241,13 @@ describe('backup and reset', () => {
 // the local and the Supabase adapter. The guarantees asserted here are the
 // DP-016 ones and are unchanged: refuse the write, leave the bytes alone.
 describe('repository write barrier', () => {
+  it.each(['not-json', JSON.stringify({ schemaVersion: __DATA_SCHEMA_VERSION__ + 1, revision: 9, data: {} })])('rechecks storage before a preference update even after a readable load', async raw => {
+    const repository = new LocalDayPopRepository();
+    await repository.load();
+    localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
+    await expect(repository.updatePreferences({ petName: 'Updated' })).rejects.toThrow(LocalDataBlockedError);
+    expect(localStorage.getItem(USER_DATA_STORAGE_KEY)).toBe(raw);
+  });
   it.each(['not-json', JSON.stringify({ schemaVersion: 99, data: {} })])('blocks rescheduling before date validation and preserves raw bytes', async (raw) => {
     localStorage.setItem(USER_DATA_STORAGE_KEY, raw);
     const repository = new LocalDayPopRepository();

@@ -17,7 +17,7 @@ const test = base.extend<{ site: ProductionUpdateSite }, {
 const guestKey = 'daypop.user-data';
 const seenKey = 'daypop.release-notes-seen';
 const fixedInstant = '2026-09-30T04:00:00.000Z';
-const guestBytes = JSON.stringify({ schemaVersion: 4, revision: 7, updatedAt: fixedInstant, data: backupData });
+const guestBytes = JSON.stringify({ schemaVersion: 5, revision: 7, updatedAt: fixedInstant, data: backupData });
 
 test('漫畫素材尚未快取時離線切換，仍能儲存行程並重新載入', async ({ page, context, site }) => {
   await page.clock.setFixedTime(new Date(fixedInstant));
@@ -50,7 +50,7 @@ test('漫畫素材尚未快取時離線切換，仍能儲存行程並重新載�
   await page.goto(`${site.origin}/setup.html`);
   await page.evaluate(({ data, version, now }) => {
     localStorage.setItem('daypop.release-notes-seen', version);
-    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: now, data }));
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: now, data }));
   }, { data, version: site.currentVersion, now: fixedInstant });
   await page.goto(`${site.origin}/DayPop/`);
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
@@ -103,7 +103,7 @@ test('首次離線完成待辦缺 jump 圖片仍保存完成，回快取 idle �
   await page.goto(`${site.origin}/setup.html`);
   await page.evaluate(({ data, now, version }) => {
     localStorage.setItem('daypop.release-notes-seen', version);
-    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 4, revision: 0, updatedAt: now, data }));
+    localStorage.setItem('daypop.user-data', JSON.stringify({ schemaVersion: 5, revision: 0, updatedAt: now, data }));
   }, { data, now, version: site.currentVersion });
   await page.goto(`${site.origin}/DayPop/`);
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state)).toBe('activated');
@@ -318,7 +318,7 @@ test('已快取 production 遊客 App 離線另開頁、編輯及 reload 保存�
     await coldPage.getByLabel('寵物名字').fill('離線夥伴');
     await coldPage.getByLabel('寵物名字').blur();
     const expectedEnvelope = {
-      schemaVersion: 4, revision: 9, updatedAt: fixedInstant,
+      schemaVersion: 5, revision: 9, updatedAt: fixedInstant,
       data: {
         ...backupData,
         events: backupData.events.map((event) => event.title === '備份假期'
