@@ -363,17 +363,18 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             {/*
               原稿 :323 的說明列了四個能力：在角落走動、用漫畫對話框提醒今日與
               明日的待辦、透過牠新增待辦、請牠給行程建議。DP-169 接上了對話泡泡
-              與新增；走動屬 DP-170、行程建議屬 DP-043，這兩項依
-              `docs/prototype-behavior-baseline.md` 的規則明講成還沒有，不以假的
-              成功狀態充數。「提醒」改說「列出」：泡泡只在點牠時出現，不是會自己
-              跳出來的提醒（可靠提醒是 DP-042）。
+              與新增，DP-240 接上走動（只有有走路動作的三款，減少動態效果時不走）；
+              行程建議屬 DP-043，依 `docs/prototype-behavior-baseline.md` 的規則
+              明講成還沒有，不以假的成功狀態充數。「提醒」改說「列出」：泡泡只在
+              點牠時出現，不是會自己跳出來的提醒（可靠提醒是 DP-042）。
             */}
             {/* DP-163: no task numbers in what the person reads. The pet rests at
                 the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
             <p className="set-pref-help">
               牠待在日曆左下角，顯示今天還有幾件待辦。點牠會用漫畫對話框列出今日與明日的待辦，也能直接透過牠新增待辦。
+              棉花貓、蜂蜜熊與蜜桃兔在畫面安靜一陣子後會出去走走，再回到你放牠的地方；碰一下畫面就會馬上回來，開啟「減少動態效果」時不會走動。
               <br />
-              <span className="set-pref-pending">還沒有的功能：在角落走動、請牠給行程建議。</span>
+              <span className="set-pref-pending">還沒有的功能：請牠給行程建議。</span>
             </p>
           </div>
         </div>
@@ -663,8 +664,8 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
           {/* What the原檔's 設定 has that DayPop does not yet, said plainly rather
               than shown as controls that do nothing — DP-014's rule. Written for
               the person using the App, without task numbers (DP-163). For
-              whoever picks these up: AI is DP-043, the level is DP-041, choosing
-              a partner DP-040／DP-172. Paging and calendar reminders are now wired;
+              whoever picks these up: AI is DP-043, the level is DP-041. Choosing
+              a partner (DP-239), paging and calendar reminders are now wired;
               per-event overrides remain deferred. The原檔's developer and demo-data controls are
               not something a person uses, so they are not listed. */}
           <div className="dp-section-label">還沒有的功能</div>
@@ -673,7 +674,6 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             <ul>
               <li>AI 助理</li>
               <li>桌寵的等級與成長</li>
-              <li>為桌寵選擇其他夥伴</li>
               <li>逐筆提醒的個別覆寫</li>
             </ul>
           </div>

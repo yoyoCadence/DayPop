@@ -188,6 +188,21 @@ class PendingPreferencesRepository extends LocalDayPopRepository {
   }
 }
 
+describe('設定 說明不與已有的功能矛盾', () => {
+  it('能選夥伴、會走動之後，不再把它們列為還沒有的功能', async () => {
+    await render();
+    // The controls and behaviour exist: the partner radios are right here.
+    expect(container.querySelectorAll('input[name="pet-kind"]').length).toBe(5);
+    const pending = container.querySelector('.set-pref-pending')?.textContent ?? '';
+    expect(pending).not.toMatch(/走動/);
+    expect(pending).toMatch(/行程建議/);
+    const notYet = [...container.querySelectorAll('.dp-note li')].map(item => item.textContent);
+    expect(notYet).not.toContain('為桌寵選擇其他夥伴');
+    expect(notYet).toEqual(['AI 助理', '桌寵的等級與成長', '逐筆提醒的個別覆寫']);
+    expect(container.querySelector('.set-pref-help')?.textContent).toMatch(/減少動態效果/);
+  });
+});
+
 describe('設定 桌寵（寫入尚未回應時）', () => {
   it('同一次編輯裡的中間值不會被送出，只送最終值', async () => {
     const repository = new PendingPreferencesRepository();
