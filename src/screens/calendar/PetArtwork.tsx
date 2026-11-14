@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PET_ASSETS, type PetKind, type PetPose } from './petAssets';
+import { lastDecoded } from './petArtworkMemory';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(change: () => void) {
@@ -42,14 +43,19 @@ export function PetArtwork({ kind = 'moon_cat', pose, paused, hidden = false, cu
     if (singlePlay && cue !== null) onCueDone(cue);
   }
   return <span className="cal-pet-art" aria-hidden="true" data-paused={stopped}>
-    {src ? <DecodedArtwork key={`${src}:${cue ?? ''}`} src={src} onReady={ready} onUnavailable={unavailable} /> : <CssPet />}
+    {src ? <DecodedArtwork key={`${src}:${cue ?? ''}`} kind={kind} src={src} onReady={ready} onUnavailable={unavailable} /> : <CssPet />}
   </span>;
 }
 
-/** Keep the old character visible until a real image decodes; stale loads cannot replace a new pose. */
-function DecodedArtwork({ src, onReady, onUnavailable }: { src: string; onReady(): void; onUnavailable(): void }) {
+/**
+ * Keep the old character visible until a real image decodes; stale loads cannot replace a new pose.
+ * The old character is the last image this kind decoded, or the CSS fallback on a first load.
+ * A failed image always falls back to CSS, as before.
+ */
+function DecodedArtwork({ kind, src, onReady, onUnavailable }: { kind: PetKind; src: string; onReady(): void; onUnavailable(): void }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [previous] = useState(() => lastDecoded.get(kind));
   const active = useRef(false);
   // A cached image may load/decode before passive effects. Mark this committed
   // instance synchronously so that a valid early load is not discarded forever.
@@ -61,11 +67,14 @@ function DecodedArtwork({ src, onReady, onUnavailable }: { src: string; onReady(
   async function loaded(image: HTMLImageElement) {
     try {
       await image.decode?.();
-      if (active.current) { setReady(true); onReady(); }
+      if (active.current) { lastDecoded.set(kind, src); setReady(true); onReady(); }
     } catch { if (active.current) fail(); }
   }
   return <>
-    {!ready || failed ? <CssPet /> : null}
+    {failed || (!ready && !previous) ? <CssPet /> : null}
+    {/* A background, not an <img>: the pending image stays the only <img>, so
+        "which image is the pet showing" keeps a single answer. */}
+    {!ready && !failed && previous && <span className="cal-pet-image cal-pet-previous" style={{ backgroundImage: `url("${previous}")` }} />}
     {!failed && <img className="cal-pet-image" src={src} width="60" height="60" alt="" draggable={false}
       hidden={!ready} onLoad={event => { void loaded(event.currentTarget); }} onError={fail} />}
   </>;

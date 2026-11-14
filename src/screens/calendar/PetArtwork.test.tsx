@@ -2,7 +2,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { PetArtwork } from './PetArtwork';
-import { PET_ASSETS, type PetPose } from './petAssets';
+import { forgetDecodedPetArtwork } from './petArtworkMemory';
+import { PET_ASSETS, type PetKind, type PetPose } from './petAssets';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -14,7 +15,7 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', () => media);
   done.mockClear();
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.useRealTimers(); forgetDecodedPetArtwork(); });
 function render(pose: PetPose = 'idle', cue: number | null = null, paused = false, hidden = false) {
   act(() => root.render(<PetArtwork pose={pose} cue={cue} paused={paused} hidden={hidden} onCueDone={done} />));
 }
@@ -204,4 +205,55 @@ it.each(['look', 'jump'] as const)('discards a background %s before decoding and
     expect(image()).toBeNull();
     expect(done).toHaveBeenCalledExactlyOnceWith(11);
   } finally { hidden.mockRestore(); }
+});
+
+// DP-248: every pose change mounts a new image (idle even swaps component), so
+// the character must not flash the CSS fallback while the next pose decodes.
+const previous = () => host.querySelector<HTMLElement>('.cal-pet-previous');
+function mount(key: string, props: { kind?: PetKind; pose: PetPose; cue?: number | null; paused?: boolean }) {
+  act(() => root.render(<PetArtwork key={key} kind={props.kind} pose={props.pose} cue={props.cue ?? null}
+    paused={props.paused ?? false} onCueDone={done} />));
+}
+it('holds the last decoded image, not the CSS pet, while a remounted pose decodes', async () => {
+  mount('a', { pose: 'idle' });
+  expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+  expect(previous()).toBeNull();
+  const idle = image().getAttribute('src')!;
+  await load();
+  mount('b', { pose: 'look', cue: 1 });
+  expect(host.querySelector('.cal-pet-body')).toBeNull();
+  expect(previous()?.style.backgroundImage).toBe(`url("${idle}")`);
+  expect(host.querySelectorAll('img')).toHaveLength(1);
+  expect(image().hidden).toBe(true);
+  expect(image().getAttribute('src')).toMatch(/look.*webp/);
+  await load();
+  expect(previous()).toBeNull();
+  expect(image().hidden).toBe(false);
+  // The next one holds the look it just decoded.
+  mount('c', { pose: 'grab' });
+  expect(previous()?.style.backgroundImage).toMatch(/look.*webp/);
+  expect(host.querySelector('.cal-pet-body')).toBeNull();
+});
+it('never shows another partner while a newly chosen one decodes', async () => {
+  mount('a', { kind: 'moon_cat', pose: 'idle' });
+  await load();
+  mount('b', { kind: 'orbit_ufo', pose: 'idle' });
+  expect(previous()).toBeNull();
+  expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+});
+it('falls back to CSS, without the held image, when the next pose fails', async () => {
+  mount('a', { pose: 'idle' });
+  await load();
+  mount('b', { pose: 'sleep' });
+  expect(previous()).not.toBeNull();
+  act(() => image().dispatchEvent(new Event('error')));
+  expect(previous()).toBeNull();
+  expect(image()).toBeNull();
+  expect(host.querySelector('.cal-pet-body')).not.toBeNull();
+  // A failed decode is never remembered as something to hold.
+  mount('c', { pose: 'sleep' });
+  Object.defineProperty(image(), 'decode', { value: () => Promise.reject(new Error('invalid')) });
+  await load();
+  mount('d', { pose: 'grab' });
+  expect(previous()?.style.backgroundImage).toMatch(/idle.*webp/);
 });

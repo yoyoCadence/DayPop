@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { forgetDecodedPetArtwork } from './petArtworkMemory';
 import { PetLayer } from './PetLayer';
 
 let host: HTMLDivElement;
@@ -29,6 +30,7 @@ beforeEach(() => {
   act(() => root.render(<PetLayer petName="摩卡" todos={[]} todayKey="2026-10-22" greeted onGreeted={() => {}} onAddTodo={() => {}} onToggleTodo={() => {}} onDeleteTodo={() => {}} />));
 });
 afterEach(() => {
+  forgetDecodedPetArtwork();
   act(() => root.unmount());
   host.remove();
   vi.restoreAllMocks();
