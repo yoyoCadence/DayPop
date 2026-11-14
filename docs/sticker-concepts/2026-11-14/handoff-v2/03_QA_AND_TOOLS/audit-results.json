@@ -1,0 +1,23 @@
+{
+  "phase": "1",
+  "assets": {
+    "happy.svg": 1493,
+    "gift.svg": 867,
+    "cake.svg": 1134,
+    "hiking.svg": 1123
+  },
+  "bytes_total": 4617,
+  "errors": [],
+  "warnings": [
+    "happy: license is review-pending; NOT READY TO PUBLISH",
+    "gift: license is review-pending; NOT READY TO PUBLISH",
+    "cake: license is review-pending; NOT READY TO PUBLISH",
+    "hiking: license is review-pending; NOT READY TO PUBLISH",
+    "Original fallback hiking=🏔️ absent from catalog; v2 manifest corrected to ⛰️, automated repo-based check still required"
+  ],
+  "visual_check": "DRAFT PRE-REVIEW FAILED (happy/hiking); phone recheck pending",
+  "license_approval": "PENDING owner review",
+  "repo_integration": "NOT STARTED",
+  "publish_ready": false,
+  "catalog_check": "Manual cross-check 4 of 4 from repo main; automated validation pending"
+}

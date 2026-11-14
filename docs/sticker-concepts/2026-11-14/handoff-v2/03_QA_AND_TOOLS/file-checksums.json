@@ -1,0 +1,18 @@
+{
+  "happy.svg": {
+    "bytes": 1493,
+    "sha256": "355ddea1179c560571261b556ef8ebb4feff44c0e5a3e88580a3c39456b18f48"
+  },
+  "gift.svg": {
+    "bytes": 867,
+    "sha256": "baca82009668b7ef2f2b6cc7a74d4b733c966e435dbc69fd0efb94591c56e158"
+  },
+  "cake.svg": {
+    "bytes": 1134,
+    "sha256": "acd40521d3c993cb6314dd19dd536232ba00f3f493986c95194ea82b979f42cf"
+  },
+  "hiking.svg": {
+    "bytes": 1123,
+    "sha256": "259d7eeb9a79828e5a838824b7b56df6ebacf0ea8a045c4e00fe8f3500067c2d"
+  }
+}

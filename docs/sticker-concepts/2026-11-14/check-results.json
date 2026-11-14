@@ -1,0 +1,84 @@
+{
+  "errors": [],
+  "files": {
+    "happy.svg": {
+      "bytes": 1005,
+      "sha256": "6e6ea33a546cab41acc1ae9c7f874b4354907743abbbb4dafd1e25db11ad883f",
+      "fills_besides_ink_and_white": [
+        "#80554d",
+        "#ff747a",
+        "#ffe6ca"
+      ],
+      "shades": [],
+      "main_colours": [
+        "#80554d",
+        "#ff747a",
+        "#ffe6ca"
+      ]
+    },
+    "gift.svg": {
+      "bytes": 926,
+      "sha256": "75c8baca07cf0862315c84caafbed7b625373ee44d9ea9c3ee101291d17d5707",
+      "fills_besides_ink_and_white": [
+        "#ff747a",
+        "#ff8a8a",
+        "#ffd44f"
+      ],
+      "shades": [
+        "#ff8a8a"
+      ],
+      "main_colours": [
+        "#ff747a",
+        "#ffd44f"
+      ]
+    },
+    "cake.svg": {
+      "bytes": 1193,
+      "sha256": "76c8e72022ca95d2e1635d705119597c7cf69ad712235ba6ff2065ba67161dd8",
+      "fills_besides_ink_and_white": [
+        "#ff747a",
+        "#ffd44f",
+        "#ffe6ca"
+      ],
+      "shades": [],
+      "main_colours": [
+        "#ff747a",
+        "#ffd44f",
+        "#ffe6ca"
+      ]
+    },
+    "hiking.svg": {
+      "bytes": 686,
+      "sha256": "e7c26921e7b220d78b25fc2842288dfc55233e693647302d9e650aad1a56440a",
+      "fills_besides_ink_and_white": [
+        "#65a76b",
+        "#76ba79",
+        "#ffd44f",
+        "#ffe6ca"
+      ],
+      "shades": [
+        "#65a76b"
+      ],
+      "main_colours": [
+        "#76ba79",
+        "#ffd44f",
+        "#ffe6ca"
+      ]
+    }
+  },
+  "svg_checked": true,
+  "bytes_total": 3810,
+  "catalogue": "240 glyphs in 11 categories from src/domain/stickerGlyphs.ts",
+  "licence_pending": [
+    "cake",
+    "gift",
+    "happy",
+    "hiking"
+  ],
+  "publishable": false,
+  "not_checked_here": [
+    "phone visual review",
+    "rights and AI-tool terms",
+    "App integration (Phase 3)"
+  ]
+}
