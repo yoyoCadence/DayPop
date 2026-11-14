@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.5.1「夥伴變大了」發布候選（DP-250，2026-11-14）：** 擁有者授權直接發版部署。只改 release version、三條公告（夥伴放大 1.4 倍、換動作不再閃、泡泡對準頭）與生成的 version.json／sw.js，歷史公告不變，沒有 migration。合併後 dispatch Deploy staging，**0.5.1 一經部署即不可回寫**。
+
 - **夥伴是 84px（DP-249，2026-11-14）：** 擁有者覺得 60px 太小，選了 84px。**尺寸只有一個來源：`src/screens/calendar/petPlacement.ts` 的 `PET_SIZE`**，幾何、出遊、拖移比例與圖片寬高都讀它；`calendar.css` 的 `.cal-pet`／`.cal-pet-image` 寫死 84px，要一起改。CSS 角色保留原稿 60px 的畫法、以 `scale(1.4)` 放大。**泡泡位置跟著角色高度**：`petBubble.css` 距底 174px（矮螢幕 160px），改角色尺寸就要一起改，`pet-bubble.spec.ts` 會檢查尾巴仍在頭上方。e2e 的跳躍／睡眠 fixture 要求 84×84。下方各段提到的 60×60 是當時的尺寸。
 
 - **夥伴換動作不再閃回 CSS（DP-248，2026-11-14）：** `PetArtwork` 每換一個 pose／cue 都重新掛載圖片，新圖解碼前改顯示該角色上一張已解碼的圖（`src/screens/calendar/petArtworkMemory.ts`，模組層級、每款角色一張、只記成功解碼），以背景圖畫出，**頁面上的 `<img>` 仍只有一張**，e2e 用 `pet.locator('img')` 判斷目前姿勢的寫法不受影響。第一次載入、換角色、載入失敗仍是 CSS（`production-offline` 的離線缺圖回 CSS 依賴這一點）。**單元測試會共用這份記憶**，有載入圖片的測試檔要在 `afterEach` 呼叫 `forgetDecodedPetArtwork()`。`e2e/pet-wander.spec.ts` 以 MutationObserver 監看整趟出遊不得出現 `.cal-pet-body`。
