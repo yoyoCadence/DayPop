@@ -131,6 +131,11 @@ for (const mode of MODES) {
 
     await openDayDetail(page);
     await audit(page, '日詳情');
+    // DP-243: the category chips use accent/accent-fg and fg/surface, both
+    // already guaranteed per theme by textContrast.test.ts.
+    await page.getByRole('button', { name: '＋ 貼圖', exact: true }).click();
+    await page.getByRole('group', { name: '貼圖分類' }).getByRole('button', { name: '美食', exact: true }).click();
+    await audit(page, '貼圖選擇器');
     await closeDayDetail(page);
 
     // DP-169. The bubble keeps the原檔's white paper and black ink in every

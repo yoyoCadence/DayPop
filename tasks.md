@@ -352,6 +352,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Backlog
 
+- [ ] **DP-244 — 圖檔貼圖（提案，等擁有者決定）：** DP-243 已用 emoji 解決數量與分類；圖檔貼圖只解決「各裝置長得一樣」與「DayPop 自己的風格」。三個選項（維持 emoji／開源 emoji 圖檔集／自訂漫畫貼紙）、授權條件、尺寸與交付格式見 [`docs/sticker-asset-spec.md`](docs/sticker-asset-spec.md)。不需要 migration（沿用 `asset_key`，同時存 fallback `glyph`）。建議先用一到兩週再決定；選自訂貼紙時先做最常用的 24 張。
+
 
 
 
@@ -511,6 +513,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-243 — 貼圖擴充到 240 個並分類（2026-11-14）：** 擁有者回報「日曆的表情符號太少了，需要更多並分類；如果需要素材可以開規格」，Backlog → Next → In Progress 後完成。只用系統 emoji，不需素材、不改 schema 或資料：`STICKER_CATEGORIES` 240 個、11 類（標記、心情、慶祝、工作、金錢、健康、出遊、美食、生活、休閒、天氣），原稿 63 個全保留，加入在地節日與生活（🧧🏮🥮🛵🀄🌀🗑️）。全部以 Unicode 資料核對為 fully qualified、Emoji 12.0 以前（🧋🪙 因此不收）。選擇器新增 `StickerPicker.tsx`：分類按鈕換行、格子一次一類並保留原稿高度；「最近」由使用者自己貼過的貼圖推算（最多 12 個），不另存紀錄。驗證：lint／typecheck、1,856 單元＋41 Node（新增 9 個目錄／最近案例與 5 個選擇器案例；把 `☀️` 改 `☀`、拿掉 `💲` 的負控制三案例失敗、還原通過）、Pages build／check:build。新 e2e `sticker-picker.spec.ts` 手機與桌面 5 passed／3 個寬度案例依設計只跑手機，實際 Asia/Taipei，320／360／390px 分類列 3／2／2 行、無水平溢出；axe 加上打開的選擇器，漫畫淺／深色兩個專案 4 passed；相關 e2e 29 passed，`mobile-dialogs` 的 404 console 在未修改的 main 同樣失敗，屬雲端環境、以 CI 為準。截圖已目視。JS gzip 238,231 → 239,310（+1,079，剩 1,330），上限未調。WebKit 只由 CI 驗；真機上逐一顯示未看。沒有版號、公告或部署。決策見 ADR §3、清單與核對見 `docs/sticker-catalog.md`。
 
 - [x] **DP-240 — 前景自主活動與走路狀態（2026-11-04 登記，2026-11-07 完成）：** Backlog → Next → In Progress → Done。只有有 walk 動作的三款新夥伴會在安靜畫面出遊：30–60 秒後沿自己那列走出 40–140px、坐 5 秒、走回，45–90 秒後再一次，無輸入最多兩次後停住（保留 DP-193 睡眠）。路徑逐 4px 經 `constrainPet()` 驗證，避開標頭／分頁／safe area／FAB 間距；任何輸入、拖移、鍵盤移動、泡泡、look／jump、暫藏、收起、背景與減少動態立即回保存位置，**從不寫 `daypop.pet-placement`**。中途按住停在畫面當下位置（含過場中間值），拖移從那裡接著走並保存在放開處，單點回家開泡泡且不寫入。1,843 單元＋41 Node、`src/screens/calendar` 實際 Etc/GMT-8 342 項、lint／typecheck／`/DayPop/` build／check:build；十一個負控制（hook 六、PetLayer 四、真實瀏覽器 hold 兩種）都先失敗再逐 byte 還原；新 e2e mobile／desktop 4 passed、寵物相關 40 passed／2 skipped，實際 Asia/Taipei、console 0。JS gzip 238,124／240,640（+1,105），擁有者授權可調但不需要，上限不變。設定頁說明同步：DP-239 留下的「還沒有：為桌寵選擇其他夥伴」與「還沒有：在角落走動」已不成立，改寫並以元件測試釘住（舊文案負控制失敗）。契約與限制見 [docs/pet-wander.md](docs/pet-wander.md)；iPhone 真機觀感／觸控抓取與新造型品質待擁有者驗收，沒有 schema／版號／公告／部署。
 

@@ -1065,17 +1065,50 @@
   font-weight: 700;
 }
 
-/* Negative top margin tucks the picker under the row above, matching the原檔. */
+/* Negative top margin tucks the picker under the row above, matching the原檔.
+   DP-243 adds the category row; the grid below keeps the原檔's 172px box
+   (less its 10px padding and 1px border) and scrolls on its own. */
 .cal-day-sticker-pick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   margin: -8px 0 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px;
   background: var(--surface-2);
-  max-height: 172px;
+}
+
+/* Wraps rather than scrolling sideways: eleven or twelve two-character chips
+   are two lines from 360px up, and every category stays in view. */
+.cal-day-sticker-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* The search page's calendar chips (search.css), a little narrower. */
+.cal-day-sticker-cat {
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 4px 8px;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.cal-day-sticker-cat[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.cal-day-sticker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 150px;
   overflow-y: auto;
 }
 

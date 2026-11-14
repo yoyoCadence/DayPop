@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { timedEventFromWallTime } from '../../domain/eventTime';
-import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
+import { STICKER_CATEGORIES } from '../../domain/stickerGlyphs';
 import {
   resolveEventOccurrences,
   type OccurrenceWindow,
@@ -109,6 +109,9 @@ function click(element: Element | null | undefined) {
 
 const picker = () => container.querySelector('.cal-day-sticker-pick');
 const options = () => [...container.querySelectorAll('.cal-day-sticker-option')];
+const categories = () => [...container.querySelectorAll<HTMLButtonElement>('.cal-day-sticker-cat')];
+const pressedCategory = () =>
+  categories().filter((button) => button.getAttribute('aria-pressed') === 'true').map((button) => button.textContent);
 
 describe('DayDetailSheet all-day spans (DP-126)', () => {
   const travel: CalendarEvent = {
@@ -595,7 +598,12 @@ describe('DayDetailSheet stickers', () => {
     click(container.querySelector('.cal-day-sticker-add'));
 
     expect(picker()).not.toBeNull();
-    expect(options()).toHaveLength(STICKER_GLYPHS.length);
+    // DP-243: a first-time user starts at the first category, with no 「最近」.
+    expect(categories().map((button) => button.textContent)).toEqual(
+      STICKER_CATEGORIES.map((category) => category.label),
+    );
+    expect(pressedCategory()).toEqual(['標記']);
+    expect(options().map((node) => node.textContent)).toEqual(STICKER_CATEGORIES[0]!.glyphs);
   });
 
   it('adds the tapped glyph for this day and closes the picker', () => {
@@ -604,9 +612,72 @@ describe('DayDetailSheet stickers', () => {
 
     click(options()[12]);
 
-    expect(props.onAddSticker).toHaveBeenCalledWith({ date: DATE, glyph: STICKER_GLYPHS[12] });
+    expect(props.onAddSticker).toHaveBeenCalledWith({
+      date: DATE,
+      glyph: STICKER_CATEGORIES[0]!.glyphs[12],
+    });
     // The原檔 closes after one pick rather than staying open.
     expect(picker()).toBeNull();
+  });
+
+  it('switches the grid to the tapped category and adds from it (DP-243)', () => {
+    const props = render();
+    click(container.querySelector('.cal-day-sticker-add'));
+    const food = STICKER_CATEGORIES.find((category) => category.id === 'food')!;
+
+    click(categories().find((button) => button.textContent === '美食'));
+
+    expect(pressedCategory()).toEqual(['美食']);
+    expect(container.querySelector('.cal-day-sticker-grid')?.getAttribute('aria-label')).toBe('美食貼圖');
+    expect(options().map((node) => node.textContent)).toEqual(food.glyphs);
+    click(options().find((node) => node.textContent === '🍜'));
+    expect(props.onAddSticker).toHaveBeenCalledExactlyOnceWith({ date: DATE, glyph: '🍜' });
+  });
+
+  it('opens on 「最近」 with the user’s own stickers from any day, newest first (DP-243)', () => {
+    const props = render({
+      stickers: [
+        { ...sticker('a', '🎂', '2026-07-01'), createdAt: '2026-08-01T00:00:00.000Z' },
+        { ...sticker('b', '🍜', '2026-08-20'), createdAt: '2026-08-03T00:00:00.000Z' },
+        { ...sticker('c', '🎂'), createdAt: '2026-08-02T00:00:00.000Z' },
+      ],
+    });
+    click(container.querySelector('.cal-day-sticker-add'));
+
+    expect(categories()[0]?.textContent).toBe('最近');
+    expect(pressedCategory()).toEqual(['最近']);
+    expect(options().map((node) => node.textContent)).toEqual(['🍜', '🎂']);
+
+    click(categories().find((button) => button.textContent === '天氣'));
+    expect(options()).toHaveLength(STICKER_CATEGORIES.find((category) => category.id === 'weather')!.glyphs.length);
+    click(categories()[0]);
+    click(options()[1]);
+    expect(props.onAddSticker).toHaveBeenCalledExactlyOnceWith({ date: DATE, glyph: '🎂' });
+  });
+
+  it('falls back to the first category when 「最近」 empties while open (DP-243)', () => {
+    const props = render({ stickers: [sticker('a', '🎂')] });
+    click(container.querySelector('.cal-day-sticker-add'));
+    expect(pressedCategory()).toEqual(['最近']);
+
+    // Tapping the day's only sticker deletes it; the picker stays open.
+    act(() => root.render(<DayDetailSheet {...props} stickers={[]} />));
+
+    expect(categories()[0]?.textContent).toBe('標記');
+    expect(pressedCategory()).toEqual(['標記']);
+    expect(options().map((node) => node.textContent)).toEqual(STICKER_CATEGORIES[0]!.glyphs);
+  });
+
+  it('starts again from the default group on the next opening (DP-243)', () => {
+    render();
+    click(container.querySelector('.cal-day-sticker-add'));
+    click(categories().find((button) => button.textContent === '休閒'));
+    click(container.querySelector('.cal-day-sticker-add'));
+    expect(picker()).toBeNull();
+
+    click(container.querySelector('.cal-day-sticker-add'));
+
+    expect(pressedCategory()).toEqual(['標記']);
   });
 
   it('shows only this day’s stickers and deletes the one tapped', () => {
