@@ -76,6 +76,12 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
+- [ ] **DP-246 — DP-244 Phase 2：補充 20 張漫畫貼圖（共 24 張）：** 擁有者決策 7 條件式批准：Phase 1 四張的 QA、掃描、安全與 license gate 通過後直接開始，不需再詢問；DP-244 已滿足。24 張的選擇是**人工的產品優先假設**（App 不收集使用頻率，「最近」只看個人紀錄），先覆蓋 11 個分類的常用情境，不得說是資料驅動。每張 ≤ 4 KB、總計 ≤ 96 KB、最多 4 個主色、fallback 在 DP-243 清單且分類一致、沿用 `check_stickers.py`／負控制／月格 harness。**圖檔只留在 repo 之外**（決策 6），每批 PR 只提交 manifest、hash、檢查結果與紀錄；每批由擁有者手機目視。授權維持 `review-pending`。不部署、不改 240 emoji、不調 JS 預算、不改 Auth 或 schema。
+
+- [ ] **DP-248 — 夥伴換動作時閃成 CSS 摩卡（2026-11-14）：** 擁有者回報「寵物移動一個瞬間都會變成原本的摩卡圖示，會閃一下」。成因：`PetArtwork.tsx` 的 `DecodedArtwork` 以 `${src}:${cue}` 為 key，每換一次動作（idle／walk／look／sleep…）就重新掛載，新圖解碼完成前畫 `CssPet`（月光貓之前的 CSS 角色）。修正方向：新圖解碼期間繼續顯示上一張已解碼的圖，只有第一次載入或載入失敗才畫 CSS 角色。
+
+- [ ] **DP-249 — 夥伴放大到 84px（2026-11-14）：** 擁有者回報「寵物太小隻了」，在 72／84／96px 之間選了 **84px**（+40%）。牽動 `petWander.ts` 的 `PET_SIZE`、`calendar.css` 的角色與圖片尺寸、`petPlacement.ts` 的幾何與 e2e；側籤、泡泡、FAB 間距不可因此越界。素材是 120×120，DPR 3 下約放大 2.1 倍，擁有者接受。不部署，上線要另外發版與授權。
+
 
 
 
@@ -235,7 +241,7 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 ## In Progress
 
 
-- [ ] **DP-245 — 0.5.0「貼圖變多了」發布（2026-11-14）：** 擁有者授權發新版本並部署，Backlog → Next → In Progress。#239（DP-243）四 CI 43576264244／同 head Codex 審查無發現後合併 fe04504，本段由此接續。只改 release version 0.4.9→0.5.0、新增三條公告並以既有 generator 產生 version.json／sw.js；十三份歷史公告不變，runtime、user-data v5、23 份 migration 與預算不變，**沒有 migration，部署前不需動 Supabase**。`check:release-notes` 以已部署的 0.4.9 version.json 檔案比對通過（這個環境連不到 github.io，部署 workflow 會對線上再比一次）；production Pages build／check:build 過（JS gzip 239,309／240,640）；production 320×568／390×844 公告完整可見、不需捲動，console 0，實際 Asia/Taipei。合併後 dispatch Deploy staging；**0.5.0 一經部署即不可回寫**。線上公告與手機實機觀感待擁有者確認。
+- [ ] **DP-245 — 0.5.0「貼圖變多了」發布（2026-11-14）：** 擁有者授權發新版本並部署，Backlog → Next → In Progress。#239（DP-243）四 CI 43576264244／同 head Codex 審查無發現後合併 fe04504，本段由此接續。只改 release version 0.4.9→0.5.0、新增三條公告並以既有 generator 產生 version.json／sw.js；十三份歷史公告不變，runtime、user-data v5、23 份 migration 與預算不變，**沒有 migration，部署前不需動 Supabase**。`check:release-notes` 以已部署的 0.4.9 version.json 檔案比對通過（這個環境連不到 github.io，部署 workflow 會對線上再比一次）；production Pages build／check:build 過（JS gzip 239,309／240,640）；production 320×568／390×844 公告完整可見、不需捲動，console 0，實際 Asia/Taipei。#240 四 CI 43578107409／同 head Codex 審查無發現後合併 d514449，依擁有者授權 dispatch Deploy staging #23（43579999874），六 jobs 全部成功（含 Refuse to rewrite deployed release notes 與 Publish to Pages，09:46 UTC），**0.5.0 公告自此不可回寫**。這個環境連不到 github.io，線上公告與手機實機觀感待擁有者確認，確認前不移 Done。
 
 - [ ] **DP-242 — 0.4.9 夥伴選擇與走動發布（2026-11-08）：** 擁有者 11-08 以 CLI 推送第 23 份 migration 後要求「完成後幫我更新佈署，讓我可以開始用最新的」，Backlog → Next → In Progress。擁有者先 `git pull` 取得 main，dry-run 只列 `20261104143910_pet_partner_preference.sql` 一份，`db push` 回報 Applying／Finished（擁有者截圖）。本項只改 release version 0.4.8→0.4.9（package／lock）、新增三條公告「選擇你的夥伴」並以既有 generator 產生 version.json／sw.js；十二份歷史公告逐字不變，runtime／v5／23 migration／預算不變。公告 73 code point（0.4.8 為 69），production build 320×568／390×844 首次開啟完整可見、按鈕在畫面內、無水平溢出、console 0，實際 Asia/Taipei。lint／typecheck、1,844 單元＋41 Node（實際 Etc/GMT-8）、`/DayPop/` build／check:build（JS＋worker 804,188／238,231 gzip）、公告／更新相關 Chromium 26 passed／2 skipped；匯入預覽焦點 2 項在本機失敗，未修改的 main 在本機同樣失敗、CI 全綠，屬已知環境問題。自己的四 CI／同 head 審查後合併，再依擁有者要求 dispatch Deploy staging；linked types 比對由擁有者在部署前執行。 **2026-11-10 已部署：** #237 合併 83e9590；擁有者 linked types 比對只有 `__InternalSupabase`（14.17）、五處括號換行與檔尾空行，沒有 `pet_kind` 差異。Deploy staging #22（42831486476）六 jobs 全部成功，**0.4.9 公告自此不可回寫**。待擁有者以正式帳號確認夥伴選擇可保存、iPhone 走動觀感後移 Done。
 
@@ -354,7 +360,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Backlog
 
-- [ ] **DP-244 — 圖檔貼圖（提案，等擁有者決定）：** DP-243 已用 emoji 解決數量與分類；圖檔貼圖只解決「各裝置長得一樣」與「DayPop 自己的風格」。三個選項（維持 emoji／開源 emoji 圖檔集／自訂漫畫貼紙）、授權條件、尺寸與交付格式見 [`docs/sticker-asset-spec.md`](docs/sticker-asset-spec.md)。不需要 migration（沿用 `asset_key`，同時存 fallback `glyph`）。建議先用一到兩週再決定；選自訂貼紙時先做最常用的 24 張。
+- [ ] **DP-247 — DP-244 Phase 3：圖檔貼圖接入 App（待擁有者另行批准）：** registry、寫入 `assetKey`＋fallback `glyph`、月格／日詳情／選擇器／綜覽四處顯示與退回、「最近」、離線、`check:build` 預算與 SVG 白名單、署名。**已知前置**：Vite 會把 4 KB 以下的 SVG 內嵌進 JS（實測），必須以 `assetsInlineLimit` 函式排除並輸出到 `/assets/` 才吃得到現有 SW 快取；只有 `assetKey` 的資料目前畫成空白。不需要 migration。細節見 [`docs/sticker-concepts/2026-11-14/README.md`](docs/sticker-concepts/2026-11-14/README.md) §7。
+
 
 
 
@@ -515,6 +522,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-244 — 自訂漫畫貼圖 Phase 1：四張驗收（2026-11-14）：** Backlog → Next → In Progress → Done。第一版接手包（v1）要求先核對 repo 再做 Phase 1；擁有者看過第一輪後交來 v2 與 `OWNER-DECISIONS-2026-11-14.md`（七項決策），v2 文件存於 `docs/sticker-concepts/2026-11-14/handoff-v2/`（沒有圖檔）。**repo 實查**：`stickers.asset_key` 已存在、不需要 migration；Vite 會把 4 KB 以下的 SVG 內嵌進 JS（實測）；SW 只快取 `/assets/`／`/icons/`。**第一輪**只把四張等比縮放到長邊 92%；擁有者決策 1：gift、cake 保留，happy、hiking 要簡化。**第二輪**由 Claude Code 重寫 happy（臉部大特寫）與 hiking（大小山峰＋貼在山後的日光，拿掉背包），fallback 固定 ⛰️；四張 686–1,193 bytes、共 3,810，各 2–3 個主色（決策 4，同一主色的明暗不另計），長邊 91.7–92.1%。**檢查**：`check_stickers.py --assets` 0 錯誤，新增主色上限與 `asset-hashes.json` 的 SHA-256 釘選；18 組負控制全部照預期（含改檔未更新 hash、色票外新色、5 個以上主色）；新單元測試 `stickerAssetManifest.test.ts` 以 DP-243 清單核對 manifest（改回 🏔️ 時 2 項失敗）；Chromium 解碼 4／4；`month_cell_harness.mjs` 在真正的 App 月格把 emoji 換成圖檔，字級 19／15／12／10px、日詳情 20px，淺深主題、溢出 0、console 0、實際 Asia/Taipei，截圖目視。**擁有者 2026-11-14 用手機看第二輪實寸預覽答覆「通過」。****權利**：`rights-review.md` 逐檔記錄服務、日期、流程、修改、SHA-256、Anthropic 兩份條款原文與生效日期、相似性初查；沒有阻擋問題。OpenAI 條款這裡連不到，待擁有者存檔；四張 `license` 維持 `review-pending`，改成已核准要擁有者簽核。Phase 2 的 license gate 解讀為「審核表完成且沒有阻擋問題」（審核表 §6）。**依決策 6，圖檔不進 repo**：SVG、實寸預覽、月格截圖交給擁有者保管；本 PR 第一次推送（8b41de2）曾提交第一輪草稿與 v1 接手包圖檔，已從分支移除，但公開 repo 的 PR 推送紀錄仍看得到。沒有任何產品程式、schema、版號或部署變更。紀錄見 `docs/sticker-concepts/2026-11-14/README.md`。
 
 - [x] **DP-243 — 貼圖擴充到 240 個並分類（2026-11-14）：** 擁有者回報「日曆的表情符號太少了，需要更多並分類；如果需要素材可以開規格」，Backlog → Next → In Progress 後完成。只用系統 emoji，不需素材、不改 schema 或資料：`STICKER_CATEGORIES` 240 個、11 類（標記、心情、慶祝、工作、金錢、健康、出遊、美食、生活、休閒、天氣），原稿 63 個全保留，加入在地節日與生活（🧧🏮🥮🛵🀄🌀🗑️）。全部以 Unicode 資料核對為 fully qualified、Emoji 12.0 以前（🧋🪙 因此不收）。選擇器新增 `StickerPicker.tsx`：分類按鈕換行、格子一次一類並保留原稿高度；「最近」由使用者自己貼過的貼圖推算（最多 12 個），不另存紀錄。驗證：lint／typecheck、1,856 單元＋41 Node（新增 9 個目錄／最近案例與 5 個選擇器案例；把 `☀️` 改 `☀`、拿掉 `💲` 的負控制三案例失敗、還原通過）、Pages build／check:build。新 e2e `sticker-picker.spec.ts` 手機與桌面 5 passed／3 個寬度案例依設計只跑手機，實際 Asia/Taipei，320／360／390px 分類列 3／2／2 行、無水平溢出；axe 加上打開的選擇器，漫畫淺／深色兩個專案 4 passed；相關 e2e 29 passed，`mobile-dialogs` 的 404 console 在未修改的 main 同樣失敗，屬雲端環境、以 CI 為準。截圖已目視。JS gzip 238,231 → 239,310（+1,079，剩 1,330），上限未調。WebKit 只由 CI 驗；真機上逐一顯示未看。沒有版號、公告或部署。決策見 ADR §3、清單與核對見 `docs/sticker-catalog.md`。
 

@@ -1,0 +1,53 @@
+{
+  "current": {
+    "happy": {
+      "sha256": "6e6ea33a546cab41acc1ae9c7f874b4354907743abbbb4dafd1e25db11ad883f",
+      "decoded": true,
+      "box": [
+        4,
+        4,
+        92,
+        92
+      ],
+      "longSide": 91.7,
+      "coverage": 65.3
+    },
+    "gift": {
+      "sha256": "75c8baca07cf0862315c84caafbed7b625373ee44d9ea9c3ee101291d17d5707",
+      "decoded": true,
+      "box": [
+        7.3,
+        3.8,
+        88.7,
+        92.2
+      ],
+      "longSide": 92.1,
+      "coverage": 67.6
+    },
+    "cake": {
+      "sha256": "76c8e72022ca95d2e1635d705119597c7cf69ad712235ba6ff2065ba67161dd8",
+      "decoded": true,
+      "box": [
+        3.8,
+        5.8,
+        92.2,
+        90.2
+      ],
+      "longSide": 92.1,
+      "coverage": 59.8
+    },
+    "hiking": {
+      "sha256": "e7c26921e7b220d78b25fc2842288dfc55233e693647302d9e650aad1a56440a",
+      "decoded": true,
+      "box": [
+        4,
+        12,
+        92,
+        86
+      ],
+      "longSide": 91.7,
+      "coverage": 48.9
+    }
+  },
+  "browser": "Chromium (Playwright)"
+}

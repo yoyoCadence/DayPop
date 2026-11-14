@@ -1,0 +1,5 @@
+id,name,category,fallback,file,author,source_url,license,license_url,modified
+happy,開心,mood,😊,happy.svg,DayPop（AI 輔助原創 SVG，Claude 重繪）,,review-pending,,第二輪：依擁有者決策 2 改為臉部大特寫，2026-11-14 由 Claude Code（Anthropic）重新撰寫 SVG，未沿用第一輪圖形
+gift,禮物,celebrate,🎁,gift.svg,DayPop（AI 輔助原創 SVG 草圖）,,review-pending,,第一輪 ChatGPT 輔助 SVG 草稿；2026-11-14 由 Claude Code 等比縮放置中到長邊 92%，形狀與色彩未改
+cake,蛋糕,food,🍰,cake.svg,DayPop（AI 輔助原創 SVG 草圖）,,review-pending,,第一輪 ChatGPT 輔助 SVG 草稿；2026-11-14 由 Claude Code 等比縮放置中到長邊 92%，形狀與色彩未改
+hiking,登山,travel,⛰️,hiking.svg,DayPop（AI 輔助原創 SVG，Claude 重繪）,,review-pending,,第二輪：依擁有者決策 3 改為山峰＋日光、拿掉背包，2026-11-14 由 Claude Code（Anthropic）重新撰寫 SVG；fallback 固定為清單內的 ⛰️
