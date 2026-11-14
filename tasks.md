@@ -78,8 +78,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-246 — DP-244 Phase 2：補充 20 張漫畫貼圖（共 24 張）：** 擁有者決策 7 條件式批准：Phase 1 四張的 QA、掃描、安全與 license gate 通過後直接開始，不需再詢問；DP-244 已滿足。24 張的選擇是**人工的產品優先假設**（App 不收集使用頻率，「最近」只看個人紀錄），先覆蓋 11 個分類的常用情境，不得說是資料驅動。每張 ≤ 4 KB、總計 ≤ 96 KB、最多 4 個主色、fallback 在 DP-243 清單且分類一致、沿用 `check_stickers.py`／負控制／月格 harness。**圖檔只留在 repo 之外**（決策 6），每批 PR 只提交 manifest、hash、檢查結果與紀錄；每批由擁有者手機目視。授權維持 `review-pending`。不部署、不改 240 emoji、不調 JS 預算、不改 Auth 或 schema。
 
-- [ ] **DP-248 — 夥伴換動作時閃成 CSS 摩卡（2026-11-14）：** 擁有者回報「寵物移動一個瞬間都會變成原本的摩卡圖示，會閃一下」。成因：`PetArtwork.tsx` 的 `DecodedArtwork` 以 `${src}:${cue}` 為 key，每換一次動作（idle／walk／look／sleep…）就重新掛載，新圖解碼完成前畫 `CssPet`（月光貓之前的 CSS 角色）。修正方向：新圖解碼期間繼續顯示上一張已解碼的圖，只有第一次載入或載入失敗才畫 CSS 角色。
-
 - [ ] **DP-249 — 夥伴放大到 84px（2026-11-14）：** 擁有者回報「寵物太小隻了」，在 72／84／96px 之間選了 **84px**（+40%）。牽動 `petWander.ts` 的 `PET_SIZE`、`calendar.css` 的角色與圖片尺寸、`petPlacement.ts` 的幾何與 e2e；側籤、泡泡、FAB 間距不可因此越界。素材是 120×120，DPR 3 下約放大 2.1 倍，擁有者接受。不部署，上線要另外發版與授權。
 
 
@@ -522,6 +520,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-248 — 夥伴換動作時閃成 CSS 角色（2026-11-14）：** 擁有者回報「寵物移動一個瞬間都會變成原本的摩卡圖示，會閃一下」，Next → In Progress → Done。**成因**：`PetArtwork.tsx` 的 `DecodedArtwork` 以 `${src}:${cue}` 為 key，每換一個動作就重新掛載（idle 還整個換元件），新圖解碼前畫 `CssPet`；即使圖已快取，解碼也至少要一個 frame。**修正**：新增 `petArtworkMemory.ts` 記住每款角色最後一張成功解碼的圖，新圖解碼期間以背景圖顯示它（`.cal-pet-previous`，不是 `<img>`，「目前畫的是哪張圖」仍只有一個答案）；第一次載入、換角色、載入失敗仍畫 CSS，失敗不被記住。**驗證**：三個新單元（保留上一張、換角色不借用、失敗回 CSS 且不記住），停用記憶的負控制 2 項失敗、忽略角色的負控制 1 項失敗，還原後通過；新 e2e 以 MutationObserver 監看整趟出遊，舊程式在 out／sit／back／rest 四次換圖都閃出 CSS 而失敗，修正後手機與桌面通過。lint／typecheck、1,859 單元＋41 Node、Pages build／check:build（JS gzip 239,361／240,640，+51）；寵物相關 e2e 52 passed／2 skipped，`production-offline` 的版本檢查計數項在未修改的程式同樣失敗，屬雲端環境、以 CI 為準。沒有 schema、版號、公告或部署變更；iPhone 真機觀感待擁有者確認。
 
 - [x] **DP-244 — 自訂漫畫貼圖 Phase 1：四張驗收（2026-11-14）：** Backlog → Next → In Progress → Done。第一版接手包（v1）要求先核對 repo 再做 Phase 1；擁有者看過第一輪後交來 v2 與 `OWNER-DECISIONS-2026-11-14.md`（七項決策），v2 文件存於 `docs/sticker-concepts/2026-11-14/handoff-v2/`（沒有圖檔）。**repo 實查**：`stickers.asset_key` 已存在、不需要 migration；Vite 會把 4 KB 以下的 SVG 內嵌進 JS（實測）；SW 只快取 `/assets/`／`/icons/`。**第一輪**只把四張等比縮放到長邊 92%；擁有者決策 1：gift、cake 保留，happy、hiking 要簡化。**第二輪**由 Claude Code 重寫 happy（臉部大特寫）與 hiking（大小山峰＋貼在山後的日光，拿掉背包），fallback 固定 ⛰️；四張 686–1,193 bytes、共 3,810，各 2–3 個主色（決策 4，同一主色的明暗不另計），長邊 91.7–92.1%。**檢查**：`check_stickers.py --assets` 0 錯誤，新增主色上限與 `asset-hashes.json` 的 SHA-256 釘選；18 組負控制全部照預期（含改檔未更新 hash、色票外新色、5 個以上主色）；新單元測試 `stickerAssetManifest.test.ts` 以 DP-243 清單核對 manifest（改回 🏔️ 時 2 項失敗）；Chromium 解碼 4／4；`month_cell_harness.mjs` 在真正的 App 月格把 emoji 換成圖檔，字級 19／15／12／10px、日詳情 20px，淺深主題、溢出 0、console 0、實際 Asia/Taipei，截圖目視。**擁有者 2026-11-14 用手機看第二輪實寸預覽答覆「通過」。****權利**：`rights-review.md` 逐檔記錄服務、日期、流程、修改、SHA-256、Anthropic 兩份條款原文與生效日期、相似性初查；沒有阻擋問題。OpenAI 條款這裡連不到，待擁有者存檔；四張 `license` 維持 `review-pending`，改成已核准要擁有者簽核。Phase 2 的 license gate 解讀為「審核表完成且沒有阻擋問題」（審核表 §6）。**依決策 6，圖檔不進 repo**：SVG、實寸預覽、月格截圖交給擁有者保管；本 PR 第一次推送（8b41de2）曾提交第一輪草稿與 v1 接手包圖檔，已從分支移除，但公開 repo 的 PR 推送紀錄仍看得到。沒有任何產品程式、schema、版號或部署變更。紀錄見 `docs/sticker-concepts/2026-11-14/README.md`。
 

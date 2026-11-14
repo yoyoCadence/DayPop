@@ -133,3 +133,51 @@ test('減少動態與沒有走路動作的夥伴都不會自己移動', async ({
   }).toBe('out');
   clean();
 });
+
+test('出遊每換一個動作都不會閃回 CSS 角色（DP-248）', async ({ page }) => {
+  const clean = monitorBrowser(page);
+  await page.clock.install({ time: new Date('2026-11-07T04:00:00Z') });
+  await openApp(page);
+  console.log('DP-248 browser timezone:', await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
+  await choose(page, '棉花貓');
+  await expect(image(page)).toHaveAttribute('src', /marshmallow-cat-idle.*webp/);
+  // From here on the character has decoded once: any CSS pet that appears,
+  // even for a single frame, is the flash the owner saw.
+  await pet(page).evaluate(button => {
+    const seen: string[] = [];
+    (window as unknown as { cssPetFlashes: string[] }).cssPetFlashes = seen;
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element && (node.matches('.cal-pet-body') || node.querySelector('.cal-pet-body'))) {
+            seen.push(button.getAttribute('data-wander') ?? 'rest');
+          }
+        }
+      }
+    }).observe(button, { childList: true, subtree: true });
+  });
+  const flashes = () => page.evaluate(() => (window as unknown as { cssPetFlashes: string[] }).cssPetFlashes);
+  const legOf = async () => Number((await pet(page).getAttribute('style'))!.match(/transform (\d+)ms linear/)![1]);
+
+  // idle → walk out → sit → walk back → idle: four image changes.
+  await page.clock.fastForward(60_000);
+  await expect(pet(page)).toHaveAttribute('data-wander', 'out');
+  await expect(image(page)).toHaveAttribute('src', /marshmallow-cat-walk.*webp/);
+  const out = await legOf();
+  await page.waitForTimeout(out + 200);
+  await page.clock.fastForward(out);
+  await expect(pet(page)).toHaveAttribute('data-wander', 'sit');
+  await expect(image(page)).toHaveAttribute('src', /marshmallow-cat-sit/);
+  await page.clock.fastForward(5_000);
+  await expect(pet(page)).toHaveAttribute('data-wander', 'back');
+  await expect(image(page)).toHaveAttribute('src', /marshmallow-cat-walk.*webp/);
+  const back = await legOf();
+  await page.waitForTimeout(back + 200);
+  await page.clock.fastForward(back);
+  await expect(pet(page)).not.toHaveAttribute('data-wander');
+  await expect(image(page)).toHaveAttribute('src', /marshmallow-cat-idle.*webp/);
+  await expect(image(page)).toBeVisible();
+  await expect(pet(page).locator('.cal-pet-previous')).toHaveCount(0);
+  expect(await flashes()).toEqual([]);
+  clean();
+});

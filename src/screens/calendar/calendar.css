@@ -788,6 +788,8 @@
 }
 
 .cal-pet-image[hidden] { display: none; }
+/* DP-248: the last decoded image, held while the next pose decodes. */
+.cal-pet-previous { background: center / contain no-repeat; }
 .cal-pet-art[data-paused="true"] .cal-pet-eye { animation: none; }
 
 .cal-pet-body {
