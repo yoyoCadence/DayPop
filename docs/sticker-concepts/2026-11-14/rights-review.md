@@ -1,8 +1,8 @@
-# DP-244 Phase 1｜素材權利審核表（2026-11-14）
+# DP-244／246｜素材權利審核表（2026-11-14）
 
-> **結論：沒有發現阻擋 Phase 2 製作的問題，但這不是法律查核，也不是授權核准。** 四張的 `license` 全部維持 `review-pending`。能把它改成專案授權格式（例如 `owner-original`）的只有專案擁有者的簽核（§5），agent 不會自行更改。
+> **結論：Phase 1 四張與 Phase 2 二十張都沒有發現阻擋問題，但這不是法律查核，也不是授權核准。** 二十四張的 `license` 全部維持 `review-pending`。能把它改成專案授權格式（例如 `owner-original`）的只有專案擁有者的簽核（§5），agent 不會自行更改。
 >
-> 依擁有者決策 6，這四張 SVG 在核准前**不提交到 repo**（公開 repo 一提交就看得到）。repo 只保存本表、manifest、SHA-256 與檢查結果；SVG 檔另交給擁有者保管，用 `asset-hashes.json` 比對是不是同一份。
+> 依擁有者決策 6，這些 SVG 在核准前**不提交到 repo**（公開 repo 一提交就看得到）。repo 只保存本表、manifest、SHA-256 與檢查結果；SVG 檔另交給擁有者保管，用 `asset-hashes.json` 比對是不是同一份。
 
 ## 1. 逐檔紀錄
 
@@ -24,7 +24,34 @@
 
 「人工修改」這一欄沒有任何人手繪或手改。四張都是 AI 服務寫出的 SVG 程式，加上 agent 的程式化修改；擁有者做的是選擇方向和驗收，不是繪製。紀錄裡不能寫成人工手繪。
 
-## 2. Anthropic 條款（happy、hiking）
+### 1.1 Phase 2 二十張（DP-246）
+
+二十張都由 Claude Code（Anthropic）在 2026-11-14 直接寫出 SVG 形狀與路徑，沿用 Phase 1 的白色外框、墨線 `#261C22` 與色票；沒有參考圖、沒有描圖、沒有用圖像生成，也沒有沿用任何第三方 emoji／SVG 套件。部分檔案之後只經 [`normalize_svg.py`](normalize_svg.py) 等比縮放置中到長邊約 92%，形狀與色彩不變。沒有任何人手繪或手改。清單是人工的產品優先假設（App 不收集使用頻率）。
+
+| id | fallback | bytes | SHA-256 |
+|---|---|---|---|
+| `star` | ⭐ | 533 | `2b8dc1a8e19b42f11539cde7e56813906335a7c6fa2879d3dd84d1db0fc66849` |
+| `alert` | ❗ | 649 | `1f9a23187ee82f110c759a6cc48b3415d36467ad80be2ad740e2ad886216ebbe` |
+| `done` | ✅ | 574 | `4aab54854cfceb7135213b48517452245ae8a1d7b95f73406ccb700b37ca3e47` |
+| `heart` | ❤️ | 657 | `42f62e78be15c1ec419b4622ecef6e37b7ce632c0dda273053c2d5a0efc469ab` |
+| `sad` | 😢 | 1,068 | `af45174e4b0a7011d3b687fba4e636b81c510457e86abe972bae2009a6567720` |
+| `birthday` | 🎂 | 1,098 | `7c01ae39594afc5abac639b00a9d94593c4d9d6c3a9d558d4bc955153b6afeb7` |
+| `party` | 🎉 | 1,197 | `bd379d8a670113e5a88e91236c98ee32b56057323eb37c66d137c3189fb9353d` |
+| `briefcase` | 💼 | 869 | `95d8e473a374c9633b24e3d410e240dcb96638ab79690a66ea63699639ca394f` |
+| `memo` | 📝 | 1,253 | `68daf5481753b381202ed37da3e769490c5174ae9be84c86efce8e3effd90d6e` |
+| `money` | 💰 | 977 | `a6fdcfaf8d8e43528856ab94ba8da787c7ab8c47b0d3da177d3a577cbd387933` |
+| `card` | 💳 | 651 | `a19cd76c9fe8c1ef80b000bc81fecf8afcc5e3b6f9cfbc89143dca9e86f2f704` |
+| `pill` | 💊 | 661 | `a7ce19bcd4dedb33db08e6d5c77ce3a1ecc5d891408f58a8d5cefe3ed3622083` |
+| `tooth` | 🦷 | 919 | `63ddaade949049670572dad17d63cb66f6f2f7eee4ebc36010bf5ddd62052a72` |
+| `plane` | ✈️ | 1,067 | `bf50c6321f63493a8ad5e0cef92bdd3f6f66543cf673d60358f487b96cce04f0` |
+| `coffee` | ☕ | 1,013 | `3bb3d524032eab74c6be8b0a9f802508e277f0a6b1cf8b5dc374a874d0511355` |
+| `home` | 🏠 | 889 | `90f85b04d03b7d259f1362c41ad4ceb3d02f3c421c7dfae4caddc93f6ef143da` |
+| `cart` | 🛒 | 1,315 | `2e057264c13ae49e309e8ef40992d2710f29f7601edb4c4b8cd7ece1d2cbb24a` |
+| `music` | 🎵 | 1,050 | `cd8115c1c8d18e6ad02cfe30cc90cf9bab3ecde6229be5ef1f3e0c388c034960` |
+| `sunny` | ☀️ | 993 | `4b49f3f687adeb4b83132f8254ab0368546125408bb0b2e033d04041a3e46325` |
+| `rainy` | 🌧️ | 1,155 | `e8a91a3291b58f2a0df469ac5e73a824db20a809c6ba095fb755c72655923432` |
+
+## 2. Anthropic 條款（happy、hiking 與 Phase 2 二十張）
 
 2026-11-14 讀取，兩頁都只看到生效日期，沒有另外的「最後更新」日期。
 
@@ -33,7 +60,7 @@
 | [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) | Effective Oct 8, 2025 | §4：「Subject to your compliance with our Terms, we assign to you all of our right, title, and interest—if any—in Outputs.」§11 以「AS IS」提供，並明確排除 NON-INFRINGEMENT 在內的保證 |
 | [Commercial Terms](https://www.anthropic.com/legal/commercial-terms) | Effective Jun 17, 2025 | §B：「Anthropic agrees that Customer (a) retains all rights to its Inputs, and (b) owns its Outputs.」以及「Anthropic hereby assigns to Customer its right, title and interest (if any) in and to Outputs.」§L.2 排除 NON-INFRINGEMENT 在內的默示保證 |
 
-**哪一份適用，取決於擁有者用的 Claude 方案**（個人方案多半是 Consumer，Team／Enterprise／API 多半是 Commercial），agent 從工作環境無法判斷。兩份的共同點：
+**擁有者 2026-11-14 確認使用的是 Claude Pro（個人方案），因此適用 Consumer Terms**；Commercial Terms 留作對照。兩份的共同點：
 
 - Anthropic 把它在輸出上的權利轉給使用者，但兩份都寫了「if any」，**沒有保證輸出一定有著作權**。
 - 兩份都**不保證輸出不侵權**。
@@ -60,19 +87,23 @@ agent 在 2026-11-14 檢查了四張的結構，並以實寸預覽目視：
 
 agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、OpenMoji 的實際圖檔，**這一步要擁有者目視確認**：把實寸預覽與這幾套 emoji 的 😊🎁🍰⛰️ 並排看，看有沒有「看起來就是同一張」的情況。四張都是通用題材，相似度主要來自題材本身，不構成抄襲；要擋的是構圖、配色、比例都一樣的那種。happy 是人物，最需要看。
 
+### 4.1 Phase 2 二十張
+
+二十張都是通用題材的常見畫法：五角星、驚嘆號、打勾方框、愛心、與 happy 同一個角色的難過臉（眉毛、圓點眼、下彎嘴、藍色淚滴）、插蠟燭的整個蛋糕、拉炮與彩帶、公事包、便條紙與鉛筆、寫著 `$` 的錢袋、信用卡、膠囊、亮晶晶的牙齒、飛機俯視、馬克杯、房子、購物車、兩個連在一起的八分音符、太陽、雨雲。除了錢袋上以路徑畫出的 `$` 符號，沒有任何文字、標誌或商標。擁有者 2026-11-14 用手機看過二十四張的實寸預覽並答覆可以，那是**可讀性**驗收；與既有 emoji 圖集並排的相似性目視仍算在擁有者簽核的範圍內。
+
 ## 5. 擁有者簽核需要的證據
 
 依擁有者決策 5，`review-pending` 改成專案授權格式前要有：
 
 | 證據 | 狀態 |
 |---|---|
-| 服務名稱、日期、製作流程、修改紀錄、原檔 SHA-256 | **已完成**（§1） |
-| Anthropic 條款頁與讀取日期 | **已完成**（§2）；適用哪一份待擁有者確認方案 |
-| OpenAI 條款頁與讀取日期 | **待擁有者**（§3，這裡連不到） |
-| 第三方相似性風險，經人工核對 | **agent 初查完成，待擁有者目視**（§4） |
+| 服務名稱、日期、製作流程、修改紀錄、原檔 SHA-256 | **已完成**（§1、§1.1） |
+| Anthropic 條款頁與讀取日期 | **已完成**（§2）；擁有者確認為 Pro，適用 Consumer Terms |
+| OpenAI 條款頁與讀取日期 | **待擁有者**（§3，這裡連不到）；只影響 gift、cake |
+| 第三方相似性風險，經人工核對 | **agent 初查完成，待擁有者目視**（§4、§4.1） |
 | 擁有者明確簽核：誰、何時、批准哪幾個檔案、對應哪個 SHA-256 | **待擁有者** |
 
-簽核前：manifest 維持 `review-pending`、SVG 不進 repo、App 不接這四張。
+簽核前：manifest 維持 `review-pending`、SVG 不進 repo、App 不接這些貼圖（Phase 3／DP-247 不開始）。
 
 ## 6. Phase 2 的 license gate 怎麼解讀
 

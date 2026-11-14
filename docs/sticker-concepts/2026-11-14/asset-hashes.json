@@ -18,5 +18,105 @@
     "bytes": 686,
     "sha256": "e7c26921e7b220d78b25fc2842288dfc55233e693647302d9e650aad1a56440a",
     "round": 2
+  },
+  "star.svg": {
+    "bytes": 533,
+    "sha256": "2b8dc1a8e19b42f11539cde7e56813906335a7c6fa2879d3dd84d1db0fc66849",
+    "round": "phase2-batch1"
+  },
+  "alert.svg": {
+    "bytes": 649,
+    "sha256": "1f9a23187ee82f110c759a6cc48b3415d36467ad80be2ad740e2ad886216ebbe",
+    "round": "phase2-batch1"
+  },
+  "done.svg": {
+    "bytes": 574,
+    "sha256": "4aab54854cfceb7135213b48517452245ae8a1d7b95f73406ccb700b37ca3e47",
+    "round": "phase2-batch1"
+  },
+  "heart.svg": {
+    "bytes": 657,
+    "sha256": "42f62e78be15c1ec419b4622ecef6e37b7ce632c0dda273053c2d5a0efc469ab",
+    "round": "phase2-batch1"
+  },
+  "sad.svg": {
+    "bytes": 1068,
+    "sha256": "af45174e4b0a7011d3b687fba4e636b81c510457e86abe972bae2009a6567720",
+    "round": "phase2-batch1"
+  },
+  "birthday.svg": {
+    "bytes": 1098,
+    "sha256": "7c01ae39594afc5abac639b00a9d94593c4d9d6c3a9d558d4bc955153b6afeb7",
+    "round": "phase2-batch一"
+  },
+  "party.svg": {
+    "bytes": 1197,
+    "sha256": "bd379d8a670113e5a88e91236c98ee32b56057323eb37c66d137c3189fb9353d",
+    "round": "phase2-batch1"
+  },
+  "briefcase.svg": {
+    "bytes": 869,
+    "sha256": "95d8e473a374c9633b24e3d410e240dcb96638ab79690a66ea63699639ca394f",
+    "round": "phase2-batch二"
+  },
+  "memo.svg": {
+    "bytes": 1253,
+    "sha256": "68daf5481753b381202ed37da3e769490c5174ae9be84c86efce8e3effd90d6e",
+    "round": "phase2-batch二"
+  },
+  "money.svg": {
+    "bytes": 977,
+    "sha256": "a6fdcfaf8d8e43528856ab94ba8da787c7ab8c47b0d3da177d3a577cbd387933",
+    "round": "phase2-batch二"
+  },
+  "card.svg": {
+    "bytes": 651,
+    "sha256": "a19cd76c9fe8c1ef80b000bc81fecf8afcc5e3b6f9cfbc89143dca9e86f2f704",
+    "round": "phase2-batch二"
+  },
+  "pill.svg": {
+    "bytes": 661,
+    "sha256": "a7ce19bcd4dedb33db08e6d5c77ce3a1ecc5d891408f58a8d5cefe3ed3622083",
+    "round": "phase2-batch二"
+  },
+  "tooth.svg": {
+    "bytes": 919,
+    "sha256": "63ddaade949049670572dad17d63cb66f6f2f7eee4ebc36010bf5ddd62052a72",
+    "round": "phase2-batch二"
+  },
+  "plane.svg": {
+    "bytes": 1067,
+    "sha256": "bf50c6321f63493a8ad5e0cef92bdd3f6f66543cf673d60358f487b96cce04f0",
+    "round": "phase2-batch二"
+  },
+  "coffee.svg": {
+    "bytes": 1013,
+    "sha256": "3bb3d524032eab74c6be8b0a9f802508e277f0a6b1cf8b5dc374a874d0511355",
+    "round": "phase2-batch三"
+  },
+  "home.svg": {
+    "bytes": 889,
+    "sha256": "90f85b04d03b7d259f1362c41ad4ceb3d02f3c421c7dfae4caddc93f6ef143da",
+    "round": "phase2-batch三"
+  },
+  "cart.svg": {
+    "bytes": 1315,
+    "sha256": "2e057264c13ae49e309e8ef40992d2710f29f7601edb4c4b8cd7ece1d2cbb24a",
+    "round": "phase2-batch三"
+  },
+  "music.svg": {
+    "bytes": 1050,
+    "sha256": "cd8115c1c8d18e6ad02cfe30cc90cf9bab3ecde6229be5ef1f3e0c388c034960",
+    "round": "phase2-batch三"
+  },
+  "sunny.svg": {
+    "bytes": 993,
+    "sha256": "4b49f3f687adeb4b83132f8254ab0368546125408bb0b2e033d04041a3e46325",
+    "round": "phase2-batch三"
+  },
+  "rainy.svg": {
+    "bytes": 1155,
+    "sha256": "e8a91a3291b58f2a0df469ac5e73a824db20a809c6ba095fb755c72655923432",
+    "round": "phase2-batch三"
   }
 }

@@ -3,3 +3,23 @@ happy,開心,mood,😊,happy.svg,DayPop（AI 輔助原創 SVG，Claude 重繪）
 gift,禮物,celebrate,🎁,gift.svg,DayPop（AI 輔助原創 SVG 草圖）,,review-pending,,第一輪 ChatGPT 輔助 SVG 草稿；2026-11-14 由 Claude Code 等比縮放置中到長邊 92%，形狀與色彩未改
 cake,蛋糕,food,🍰,cake.svg,DayPop（AI 輔助原創 SVG 草圖）,,review-pending,,第一輪 ChatGPT 輔助 SVG 草稿；2026-11-14 由 Claude Code 等比縮放置中到長邊 92%，形狀與色彩未改
 hiking,登山,travel,⛰️,hiking.svg,DayPop（AI 輔助原創 SVG，Claude 重繪）,,review-pending,,第二輪：依擁有者決策 3 改為山峰＋日光、拿掉背包，2026-11-14 由 Claude Code（Anthropic）重新撰寫 SVG；fallback 固定為清單內的 ⛰️
+star,星星,mark,⭐,star.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+alert,注意,mark,❗,alert.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+done,完成,mark,✅,done.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+heart,愛心,mood,❤️,heart.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+sad,難過,mood,😢,sad.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+birthday,生日,celebrate,🎂,birthday.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+party,派對,celebrate,🎉,party.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第一批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+briefcase,公事包,work,💼,briefcase.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+memo,筆記,work,📝,memo.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+money,錢袋,money,💰,money.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+card,信用卡,money,💳,card.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+pill,吃藥,health,💊,pill.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+tooth,牙醫,health,🦷,tooth.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+plane,飛機,travel,✈️,plane.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第二批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+coffee,咖啡,food,☕,coffee.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+home,回家,home,🏠,home.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+cart,購物,home,🛒,cart.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+music,音樂,fun,🎵,music.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+sunny,晴天,weather,☀️,sunny.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設
+rainy,下雨,weather,🌧️,rainy.svg,DayPop（AI 輔助原創 SVG，Claude 繪製）,,review-pending,,Phase 2 第三批：2026-11-14 由 Claude Code（Anthropic）撰寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是人工的產品優先假設

@@ -3,7 +3,8 @@
 //
 // Usage, from the repository root, with the dev server running
 // (`npm run dev -- --host 127.0.0.1 --port 4180`, empty Supabase env):
-//   node docs/sticker-concepts/2026-11-14/month_cell_harness.mjs ASSETS_DIR OUT_DIR [BASE_URL]
+//   node docs/sticker-concepts/2026-11-14/month_cell_harness.mjs ASSETS_DIR OUT_DIR [BASE_URL] [IDS]
+// IDS is up to four manifest ids, comma-separated (default: the first four).
 // Set CHROMIUM_PATH to use a preinstalled browser.
 //
 // It seeds a guest calendar with 1–4 emoji stickers on four days, lets the App
@@ -17,12 +18,15 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 
-const [assets, out, base = 'http://127.0.0.1:4180/'] = process.argv.slice(2);
-if (!assets || !out) throw new Error('usage: month_cell_harness.mjs ASSETS_DIR OUT_DIR [BASE_URL]');
+const [assets, out, base = 'http://127.0.0.1:4180/', ids] = process.argv.slice(2);
+if (!assets || !out) throw new Error('usage: month_cell_harness.mjs ASSETS_DIR OUT_DIR [BASE_URL] [IDS]');
 mkdirSync(out, { recursive: true });
 const manifest = readFileSync(new URL('./manifest.csv', import.meta.url), 'utf8').replace(/^\uFEFF/, '').trim().split(/\r?\n/).slice(1)
   .map((line) => line.split(','))
+  .filter(([id]) => !ids || ids.split(',').includes(id))
+  .slice(0, 4)
   .map(([id, name, , fallback, file]) => ({ id, name, fallback, uri: 'data:image/svg+xml;base64,' + readFileSync(join(assets, file)).toString('base64') }));
+if (ids && manifest.length !== Math.min(4, ids.split(',').length)) throw new Error(`unknown id in ${ids}`);
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const results = [];

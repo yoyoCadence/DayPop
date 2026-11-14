@@ -76,8 +76,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## Next
 
-- [ ] **DP-246 — DP-244 Phase 2：補充 20 張漫畫貼圖（共 24 張）：** 擁有者決策 7 條件式批准：Phase 1 四張的 QA、掃描、安全與 license gate 通過後直接開始，不需再詢問；DP-244 已滿足。24 張的選擇是**人工的產品優先假設**（App 不收集使用頻率，「最近」只看個人紀錄），先覆蓋 11 個分類的常用情境，不得說是資料驅動。每張 ≤ 4 KB、總計 ≤ 96 KB、最多 4 個主色、fallback 在 DP-243 清單且分類一致、沿用 `check_stickers.py`／負控制／月格 harness。**圖檔只留在 repo 之外**（決策 6），每批 PR 只提交 manifest、hash、檢查結果與紀錄；每批由擁有者手機目視。授權維持 `review-pending`。不部署、不改 240 emoji、不調 JS 預算、不改 Auth 或 schema。
-
 
 
 
@@ -520,6 +518,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-246 — DP-244 Phase 2：補充 20 張漫畫貼圖，共 24 張（2026-11-14）：** Next → In Progress → Done。擁有者決策 7 條件式批准（Phase 1 的 QA、掃描、安全與 license gate 通過後直接開始），DP-244 合併後接續。二十張由 Claude Code 直接寫 SVG，沿用 Phase 1 的白色外框、墨線與色票，11 個分類各有常用情境；**清單是人工的產品優先假設**（App 不收集使用頻率，「最近」只看個人紀錄），不是資料驅動。分三批畫：生日蛋糕在 10–12px 太扁，改高並加粗蠟燭；派對碎紙減到兩個、拉炮放大；雨滴放大；畫布邊緣被裁到的五張（生日、飛機、咖啡、購物車、晴天）以實際範圍重新置中。二十張 533–1,315 bytes、1–4 個主色、長邊 91.5–92.9%，二十四張共 22,398 bytes（上限 98,304）。fallback 都在 DP-243 清單且分類一致（`stickerAssetManifest.test.ts`）。**檢查**：`check_stickers.py --assets` 二十四張 0 錯誤、SHA-256 釘選；18 組負控制照預期；量測與月格 harness 加上 id 清單參數，二十張分五組在真正的 App 月格跑，淺深主題 10 張截圖，溢出 0、console 0、實際 Asia/Taipei。**擁有者 2026-11-14 用手機看過二十四張的實寸預覽，答覆「可以」。****權利**：`rights-review.md` §1.1 逐檔記錄二十張的 SHA-256；擁有者確認 Claude 方案是 Pro，Anthropic Consumer Terms 適用。二十四張 `license` 仍是 `review-pending`：OpenAI 條款存檔（只影響 gift、cake）、擁有者把預覽與 Apple／Noto／Fluent／Twemoji／OpenMoji 並排的相似性目視（agent 初查未發現問題）、指名檔案與 SHA-256 的擁有者簽核仍缺，所以 Phase 3（DP-247）仍不能開始。依決策 6，**圖檔、預覽與截圖都不進 repo**，交給擁有者保管；本 PR 只有 manifest、hash、檢查結果、量測與紀錄。沒有產品程式、240 emoji、JS 預算、Auth、schema、版號或部署變更。紀錄見 `docs/sticker-concepts/2026-11-14/README.md` §2.3。
 
 - [x] **DP-249 — 夥伴放大到 84px（2026-11-14）：** 擁有者回報「現在寵物太小隻了」，在 72／84／96px 中選 84px（+40%），Next → In Progress → Done。`petPlacement.ts` 匯出唯一的 `PET_SIZE = 84`，靠邊、FAB 間距、拖移比例、鍵盤移動、出遊路徑與圖片寬高都讀它；`calendar.css` 的角色與圖片 84px，CSS 角色以 `scale(1.4)` 保留原稿 60px 比例。**泡泡跟著上移 24px**（174px，矮螢幕 160px）：放大後泡泡會蓋到頭頂，`pet-bubble.spec.ts` 的位置案例先抓到，修正後尾巴仍在頭上方 12px。保存的比例值不改寫，44px 側籤不變。驗證：lint／typecheck、1,859 單元＋41 Node、Pages build／check:build（JS gzip 239,357／240,640）；寵物、月格、axe 相關 e2e 手機與桌面通過；390×844、320×568、932×430 淺深色量測角色 84×84、在分頁列上方、不碰 FAB、泡泡完整在畫面內、無水平溢出、console 0。刻意偏離原稿 60px，見 ADR §4。iPhone 真機觀感待擁有者確認；上線隨 0.5.1。
 
