@@ -20,7 +20,9 @@ import { chromium } from 'playwright';
 const here = dirname(fileURLToPath(import.meta.url));
 const [assets] = process.argv.slice(2);
 if (!assets) throw new Error('usage: measure_stickers.mjs ASSETS_DIR');
-const names = ['happy', 'gift', 'cake', 'hiking'];
+// Every sticker in the manifest, in manifest order (Phase 1 and Phase 2 alike).
+const names = readFileSync(join(here, 'manifest.csv'), 'utf8').replace(/^\uFEFF/, '').trim().split(/\r?\n/).slice(1)
+  .map((line) => line.split(',')[4].replace(/\.svg$/, ''));
 const sets = { current: assets };
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});

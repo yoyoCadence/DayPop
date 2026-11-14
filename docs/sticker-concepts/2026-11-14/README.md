@@ -1,6 +1,6 @@
-# DP-244 Phase 1｜四張漫畫貼圖驗收紀錄（2026-11-14）
+# DP-244／246｜漫畫貼圖 Phase 1–2 驗收紀錄（2026-11-14）
 
-> **狀態：Phase 1 驗收通過，授權仍是 `review-pending`。** 擁有者 2026-11-14 用手機看過第二輪四張的實寸預覽，答覆「通過」；QA、掃描、安全檢查都通過；權利審核表沒有發現阻擋問題（[`rights-review.md`](rights-review.md)）。依擁有者決策 7，下一步是 Phase 2（DP-246）製作補充 20 張。
+> **狀態：Phase 1、Phase 2 驗收通過，二十四張的授權仍是 `review-pending`。** 擁有者 2026-11-14 用手機看過第二輪四張的實寸預覽，答覆「通過」；QA、掃描、安全檢查都通過；權利審核表沒有發現阻擋問題（[`rights-review.md`](rights-review.md)）。依擁有者決策 7 接著做 Phase 2（DP-246）：補 20 張、共 24 張，擁有者同日用手機看過全部二十四張的實寸預覽，答覆可以（§2.3）。**Phase 3（DP-247，接進 App）還沒開始**：授權未核准（OpenAI 條款存檔與擁有者明確簽核仍缺），見 §5。
 >
 > **這裡沒有任何貼圖檔。** 依擁有者決策 6，授權未核准的 SVG 不提交到公開 repo。repo 只保存 manifest、SHA-256、檢查程式與結果；SVG 與實寸預覽另交給擁有者保管，用 [`asset-hashes.json`](asset-hashes.json) 比對是不是同一份。**沒有接入 App**：沒有 registry、UI、service worker、schema、版號、公告或部署變更，DP-243 的 240 個系統 emoji 不受影響。
 >
@@ -44,12 +44,41 @@
 
 墨線 `#261C22` 與白色外框不算主色。四張共 3,810 bytes（單張上限 4,096、24 張上限 98,304）。
 
+### 2.3 Phase 2：補 20 張（DP-246）
+
+二十張都由 Claude Code 直接寫 SVG，沿用 Phase 1 的白色外框、墨線與色票；清單是**人工的產品優先假設**，先讓 11 個分類各有常用情境（App 不收集使用頻率，「最近」只看個人紀錄，不能說是資料驅動）。分三批畫，第一批的生日蛋糕在 10–12px 太扁，改高並加粗蠟燭；派對拉炮的碎紙減到兩個、拉炮放大；下雨的雨滴放大。畫布邊緣被裁到的五張（生日、飛機、咖啡、購物車、晴天）以量到的真實範圍重新置中。擁有者 2026-11-14 用手機看過全部二十四張，答覆可以。
+
+| 分類 | id | 名稱 | fallback | bytes | 主色 | 長邊 |
+|---|---|---|---|---|---|---|
+| mark | `star` | 星星 | ⭐ | 533 | 1 | 91.5% |
+| mark | `alert` | 注意 | ❗ | 649 | 1 | 92.2% |
+| mark | `done` | 完成 | ✅ | 574 | 1 | 92.1% |
+| mood | `heart` | 愛心 | ❤️ | 657 | 1 | 92.1% |
+| mood | `sad` | 難過 | 😢 | 1,068 | 3 | 91.7% |
+| celebrate | `birthday` | 生日 | 🎂 | 1,098 | 4 | 92% |
+| celebrate | `party` | 派對 | 🎉 | 1,197 | 4 | 92.1% |
+| work | `briefcase` | 公事包 | 💼 | 869 | 2 | 91.7% |
+| work | `memo` | 筆記 | 📝 | 1,253 | 3 | 92.4% |
+| money | `money` | 錢袋 | 💰 | 977 | 2 | 92.1% |
+| money | `card` | 信用卡 | 💳 | 651 | 2 | 92.1% |
+| health | `pill` | 吃藥 | 💊 | 661 | 1 | 91.9% |
+| health | `tooth` | 牙醫 | 🦷 | 919 | 1 | 92% |
+| travel | `plane` | 飛機 | ✈️ | 1,067 | 1 | 92% |
+| food | `coffee` | 咖啡 | ☕ | 1,013 | 2 | 92.1% |
+| home | `home` | 回家 | 🏠 | 889 | 4 | 92.9% |
+| home | `cart` | 購物 | 🛒 | 1,315 | 2 | 92.1% |
+| fun | `music` | 音樂 | 🎵 | 1,050 | 1 | 92.1% |
+| weather | `sunny` | 晴天 | ☀️ | 993 | 1 | 92.1% |
+| weather | `rainy` | 下雨 | 🌧️ | 1,155 | 1 | 92.1% |
+
+二十張 533–1,315 bytes；二十四張共 22,398 bytes（上限 98,304）。
+
 ## 3. 檢查
 
 - **[`check_stickers.py`](check_stickers.py)**：fallback 與分類直接讀 `src/domain/stickerGlyphs.ts`（240 個、11 類）；SVG 只允許 SVG 命名空間內的白名單元素與屬性，拒絕註解、DTD、CDATA、processing instruction、其他命名空間、`style`、事件屬性、`url()`／`data:`／`javascript:`、非十六進位色值、文字節點與非 `0 0 96 96` 的 viewBox。另外檢查主色：填色必須是色票色，或與某個色票色的 RGB 距離 ≤ 40（算作那個主色的明暗）；主色超過 4 個就失敗。每個檔案都必須與 `asset-hashes.json` 的 SHA-256 相同。不給 `--assets` 時只檢查 manifest。第二輪結果見 [`check-results.json`](check-results.json)：**0 錯誤**，授權待簽核所以 `publishable: false`。
 - **負控制**（[`negative_controls.py`](negative_controls.py)，在 repo 外的暫存目錄改壞再跑）：18 組全部符合預期。未修改的基準組與「第 4 個主色」通過；其餘 16 種破壞全部被擋下：第一版的 🏔️、分類不符、不明授權值、改了檔案卻沒更新 hash、`<script>`、xlink `<image>`、`url()` 填色、外來命名空間、`onload`、`style`、XML 註解、DOCTYPE、非 96 viewBox、超過 4,096 bytes、色票外的新顏色、5 個以上主色。改 SVG 的那幾組會重算 hash，確定擋下它的是目標規則而不是 hash。
 - **單元測試**（[`src/domain/stickerAssetManifest.test.ts`](../../../src/domain/stickerAssetManifest.test.ts)，`npm run test` 的一部分）：每個 fallback 都在 DP-243 清單且分類相同、hiking 是 ⛰️、id 唯一且與檔名一致、授權值只能是 `review-pending` 或已知的可發布值。把 manifest 改回 🏔️ 時有 2 項失敗，改回後通過。
-- **實際解碼**（[`measure_stickers.mjs`](measure_stickers.mjs)，Chromium）：四張都以 96×96 解碼成功，數據與 hash 見 [`measure-results.json`](measure-results.json)。WebKit／Safari 沒有跑。
+- **實際解碼**（[`measure_stickers.mjs`](measure_stickers.mjs)，Chromium，讀 manifest 的全部列）：二十四張都以 96×96 解碼成功，長邊 91.5–92.9%，數據與 hash 見 [`measure-results.json`](measure-results.json)。WebKit／Safari 沒有跑。
 
 靜態檢查不能取代正式的 sanitizer：Phase 3 進建置流程時，要把同一套白名單變成 `check:build` 的一部分。
 
@@ -61,6 +90,8 @@
 2. 讓 App 用自己的 CSS 排版，月格字級依張數是 19／15／12／10px，日詳情 20px；
 3. 把每個貼圖 `<span>` 的文字換成同字級大小的 `<img>`，在淺色與深色漫畫主題各截圖一次（390×844，DPR 3）。
 
+Phase 2 另以第四個參數（id 清單）把二十張分成五組各跑一次，淺深主題共 10 張截圖：字級、溢出 0、console 0、實際時區 Asia/Taipei 都相同。
+
 結果：月格實際字級 `19／15,15／12,12,12／10,10,10,10`，日詳情 20px，水平溢出 0，console 沒有錯誤或警告，瀏覽器實際時區 Asia/Taipei。截圖目視：10px 四張排得下一行，臉、禮物、蛋糕、山都還分得出來；深色主題的白色外框看得到。**這是在 DOM 裡替換，不是 Phase 3 的接入**，看不出載入、快取與 fallback 的行為。截圖含圖檔，與 SVG 一起交給擁有者，不提交。
 
 ## 4. Gate 狀態
@@ -68,13 +99,13 @@
 | Gate | 狀態 | 證據 |
 |---|---|---|
 | SVG 可解析、白名單、無外部引用 | **通過** | `check-results.json`、18 組負控制 |
-| 單張 ≤ 4,096 bytes | **通過** | 686–1,193 bytes |
+| 單張 ≤ 4,096 bytes、總量 ≤ 98,304 | **通過** | 533–1,315 bytes，共 22,398 |
 | 1:1、透明底、viewBox `0 0 96 96` | **通過** | 檢查程式＋Chromium 解碼 |
 | fallback 在 DP-243 清單且分類一致，hiking 是 ⛰️ | **通過** | 檢查程式、單元測試 |
-| 最多 4 個主色 | **通過** | 每張 2–3 個主色 |
-| 四張比例一致 | **通過** | 長邊 91.7–92.1% |
-| 16px 認得出、10px 分得出主色與輪廓、深淺背景 | **通過** | 擁有者 2026-11-14 手機實寸預覽答覆「通過」 |
-| 真實月格 | **通過** | §3.1 |
+| 最多 4 個主色 | **通過** | 每張 1–4 個主色 |
+| 比例一致 | **通過** | 長邊 91.5–92.9% |
+| 16px 認得出、10px 分得出主色與輪廓、深淺背景 | **通過** | 擁有者 2026-11-14 手機實寸預覽：Phase 1 答覆「通過」，Phase 2 二十四張答覆可以 |
+| 真實月格 | **通過** | §3.1（Phase 1 一組、Phase 2 五組） |
 | 權利審核 | **審核表完成，沒有阻擋問題；授權未核准** | [`rights-review.md`](rights-review.md)；`license` 維持 `review-pending` |
 | 不影響 240 emoji、舊資料、離線、JS 預算 | 未開始（Phase 3） | 這次沒有任何產品程式變更 |
 
@@ -84,16 +115,17 @@
 
 詳見 [`rights-review.md`](rights-review.md)。要點：
 
-- 四張的 `license` 都是 `review-pending`，agent 沒有、也不會改成 `owner-original`。
+- 二十四張的 `license` 都是 `review-pending`，agent 沒有、也不會改成 `owner-original`。
 - happy、hiking 由 Claude Code（Anthropic）寫出；gift、cake 由 ChatGPT（OpenAI）輔助寫出。兩家條款都把輸出權利轉給使用者，但都寫「if any」，也都不保證不侵權。
-- 待擁有者補：OpenAI 條款存檔（這個環境連不到 openai.com）、確認用的是哪個 Claude 方案、與常見 emoji 圖集目視比對、最後的簽核。
+- 擁有者已確認 Claude 方案是 Pro，Anthropic 的 Consumer Terms 適用 happy、hiking 與 Phase 2 二十張。
+- 待擁有者補：OpenAI 條款存檔（這個環境連不到 openai.com，只影響 gift、cake）、與常見 emoji 圖集目視比對、最後的簽核。
 - Phase 2 的 license gate 解讀為「審核表完成且沒有阻擋問題」，已滿足；把任何一張改成已核准的 gate 仍是擁有者簽核（審核表 §6）。
 
 ## 6. 圖檔放在哪裡
 
 | 內容 | 位置 |
 |---|---|
-| 四張 SVG、實寸預覽 HTML、真實月格截圖 | repo 之外；交給擁有者保管。核對：與 `asset-hashes.json` 的 SHA-256 相同 |
+| 二十四張 SVG、實寸預覽 HTML、真實月格截圖 | repo 之外；交給擁有者保管。核對：與 `asset-hashes.json` 的 SHA-256 相同 |
 | manifest、hash、檢查程式與結果、本頁、審核表 | 本目錄 |
 | 第二版接手包（文件、清單、稽核程式，沒有圖檔） | [`handoff-v2/`](handoff-v2/00_START_HERE/README.md) |
 
@@ -158,6 +190,12 @@ VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY= npm run dev -- --host 127.0.0.
 
 ```bash
 node docs/sticker-concepts/2026-11-14/month_cell_harness.mjs ASSETS_DIR OUT_DIR
+```
+
+要指定哪四張，加上 base URL 與逗號分隔的 id（最多四個）：
+
+```bash
+node docs/sticker-concepts/2026-11-14/month_cell_harness.mjs ASSETS_DIR OUT_DIR http://127.0.0.1:4180/ star,alert,done,heart
 ```
 
 需要用預先安裝的 Chromium 時，在 node 指令前加上 `CHROMIUM_PATH=/opt/pw-browsers/chromium`。

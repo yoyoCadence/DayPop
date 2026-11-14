@@ -20,7 +20,8 @@ from pathlib import Path
 
 repo, assets, work = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 concept = repo / 'docs/sticker-concepts/2026-11-14'
-SVGS = ['happy.svg', 'gift.svg', 'cake.svg', 'hiking.svg']
+# Every file the manifest names: the checker in --assets mode needs them all.
+SVGS = [line.split(',')[4] for line in (concept / 'manifest.csv').read_text(encoding='utf-8-sig').splitlines()[1:] if line]
 
 
 def tree():
