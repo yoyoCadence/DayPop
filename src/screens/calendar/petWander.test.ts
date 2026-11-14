@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PetArea } from './petPlacement';
+import { PET_SIZE, type PetArea } from './petPlacement';
 import {
   WANDER_MAX_DISTANCE,
   WANDER_MAX_LEG_MS,
@@ -36,14 +36,14 @@ describe('DP-240 excursion planning', () => {
       const offset = planWanderOffset(home, area, fixed(0.1, draw));
       if (offset === null) continue;
       for (let x = home.x; offset > 0 ? x <= home.x + offset : x >= home.x + offset; x += Math.sign(offset)) {
-        expect(x + 60 + 8 <= 290 || home.y + 60 + 8 <= 560).toBe(true);
+        expect(x + PET_SIZE + 8 <= 290 || home.y + PET_SIZE + 8 <= 560).toBe(true);
       }
     }
     expect(wanderPathClear(150, 280, 540, area)).toBe(false);
   });
 
   it('stays inside the content width and below the header', () => {
-    expect(wanderPathClear(300, 320, 400, area)).toBe(false); // 320 + 60 > 366
+    expect(wanderPathClear(300, 320, 400, area)).toBe(false); // 320 + 84 > 366
     expect(wanderPathClear(100, 140, 100, area)).toBe(false); // above the header
     expect(wanderPathClear(100, 140, 400, area)).toBe(true);
   });

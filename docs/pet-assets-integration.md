@@ -63,7 +63,7 @@ PR #186 head `984509d` 四項 CI／審查無發現後合併 `a85b60f`（run `400
 ## 播放與責任
 
 - `petAssets.ts` 保存內部 `moon_cat`／`orbit_ufo` 與七種 pose 型別，目前只有 idle／look／grab 有素材。其餘四態缺圖時沿用原 CSS，不表示已完成七態。
-- `PetLayer.tsx` 維持既有名稱、待辦徽章、泡泡、焦點與 60×60 操作區。idle 是 4.4 秒原生循環 WebP；關閉泡泡才觸發一次 1.6 秒 look，單次 cue 以重新掛載圖片重播，解碼完成才起計時。
+- `PetLayer.tsx` 維持既有名稱、待辦徽章、泡泡、焦點與 60×60 操作區（DP-249 起放大為 84×84，見 ADR §4）。idle 是 4.4 秒原生循環 WebP；關閉泡泡才觸發一次 1.6 秒 look，單次 cue 以重新掛載圖片重播，解碼完成才起計時。
 - `usePetPlacement.ts` 沿既有超過 4px 的拖移門檻才回報 dragging；pointer 按下不切 grab，真正拖移及鍵盤移動時才用 grab PNG，放開／取消回 idle。只在開始拖移時打斷 look，不以每次 pointermove 重畫。
 - `PetArtwork.tsx` 管媒體偏好、頁面可見性、解碼、靜態替代與 cue 清理。泡泡開啟或 reduced-motion 時換真正 PNG；暫藏、頁面背景與初次幾何量測期間移除圖片，收起則卸載圖片元件。CSS 替代在停止狀態也不眨眼。
 - DP-248：換動作（走出去、坐下、走回、look／jump、睡醒）時，新圖解碼完成前繼續顯示這個角色上一張已解碼的圖（`petArtworkMemory.ts`，每款角色各記一張、只記成功解碼），不再閃回 CSS；只有第一次載入、換了角色或載入失敗才畫 CSS。

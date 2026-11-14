@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { forgetDecodedPetArtwork } from './petArtworkMemory';
 import { PetLayer } from './PetLayer';
+import { PET_SIZE } from './petPlacement';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,7 +24,7 @@ beforeEach(() => {
     if (this.classList.contains('cal-header')) return DOMRect.fromRect({ x: 0, y: 0, width: 390, height: 150 });
     if (this.classList.contains('cal-fab')) return DOMRect.fromRect({ x: 318, y: height - 72, width: 56, height: 56 });
     if (this.classList.contains('cal-pet-layer')) return DOMRect.fromRect({ x: 12, y: 0, width: 366, height: 0 });
-    if (this.classList.contains('cal-pet')) return DOMRect.fromRect({ width: 60, height: 60 });
+    if (this.classList.contains('cal-pet')) return DOMRect.fromRect({ width: PET_SIZE, height: PET_SIZE });
     return DOMRect.fromRect({ x: 12, y: 0, width: 366, height });
   });
   vi.stubGlobal('PointerEvent', MouseEvent);

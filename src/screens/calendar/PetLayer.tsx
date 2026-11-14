@@ -35,7 +35,8 @@ export interface PetLayerProps {
  * App 內浮動寵物 (DP-051) and its speech bubble (DP-169).
  *
  * The原檔 floats the pet in a zero-height layer pinned above the tab bar.
- * DP-051 fixed that geometry — the layer inset, the 60 × 60 footprint, the
+ * DP-051 fixed that geometry — the layer inset, the 60 × 60 footprint (84 × 84
+ * since DP-249, at the owner's request), the
  * resting position and the badge — with a CSS character in the原檔's
  * proportions and outline. DP-169 makes it a button: tapping it, or Enter and
  * Space on it, opens the bubble, a greeting the first time in a session and

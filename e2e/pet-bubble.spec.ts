@@ -63,7 +63,8 @@ test('點寵物先打招呼，再列出今日與明日待辦；新增的待辦�
   await expect(bubble(page)).toContainText('嗨，我是摩卡！今天還有 2 件待辦，其中 1 件重要，要一起看看嗎？');
   await expect(bubble(page).getByRole('button', { name: '看待辦', exact: true })).toBeFocused();
 
-  // Where the原檔 puts it: 12px from the left, 150px above the bottom, the
+  // Where the原檔 puts it: 12px from the left, 150px above the bottom (174px
+  // since DP-249 made the pet 84px), the
   // tail over the pet's head. Measured once the pop-in has finished.
   const geometry = await page.evaluate(async () => {
     await Promise.all(
@@ -84,7 +85,7 @@ test('點寵物先打招呼，再列出今日與明日待辦；新增的待辦�
       tailAbovePet: box.bottom < character.top && character.top - box.bottom < 20,
     };
   });
-  expect(geometry).toEqual({ left: 12, bottom: 150, width: 270, petLeft: 26, petBottom: 78, tailAbovePet: true });
+  expect(geometry).toEqual({ left: 12, bottom: 174, width: 270, petLeft: 26, petBottom: 78, tailAbovePet: true });
 
   await bubble(page).getByRole('button', { name: '看待辦', exact: true }).click();
   await expect(bubble(page).getByRole('heading', { name: '今日待辦' })).toBeFocused();

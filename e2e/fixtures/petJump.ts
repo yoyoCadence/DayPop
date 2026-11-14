@@ -50,7 +50,7 @@ export async function checkPetJump(page: Page) {
   await page.clock.fastForward(1); await jumpReady(page, /idle.*webp/);
   expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(saved);
   const after = (await pet.boundingBox())!;
-  expect([after.x, after.y, after.width, after.height]).toEqual([before.x, before.y, 60, 60]);
+  expect([after.x, after.y, after.width, after.height]).toEqual([before.x, before.y, 84, 84]);
   await row.click(); await jumpReady(page, /idle.*webp/);
   expect((await storedJumpTodo(page)).completedAt).toBeNull();
   await row.click(); await jumpReady(page, /jump.*webp/);

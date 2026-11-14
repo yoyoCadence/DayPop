@@ -25,7 +25,7 @@ export async function checkPetSleep(page: Page, wheel = true) {
   await page.clock.fastForward(1); await ready(/sleep.*webp/);
   await expect(pet).toBeFocused();
   const bounds = (await pet.boundingBox())!;
-  expect([bounds.width, bounds.height]).toEqual([60, 60]);
+  expect([bounds.width, bounds.height]).toEqual([84, 84]); // DP-249
   if (wheel) {
     await page.mouse.wheel(0, 1); await ready(/idle.*webp/);
     await page.clock.fastForward(120000); await ready(/sleep.*webp/);

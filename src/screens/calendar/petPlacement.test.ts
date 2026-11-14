@@ -1,15 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppStorage, MemoryStorage } from '../../storage/browserStorage';
-import { loadPetPlacement, savePetPlacement, PET_PLACEMENT_KEY, placePet, rememberPet, type PetArea } from './petPlacement';
+import { loadPetPlacement, savePetPlacement, PET_PLACEMENT_KEY, PET_SIZE, placePet, rememberPet, type PetArea } from './petPlacement';
 
 const area: PetArea = { width: 366, height: 600, top: 160, obstacle: { left: 296, top: 530, right: 352, bottom: 586 } };
 describe('device pet placement', () => {
   it('preserves the default resting position and keeps a free position until within 24px of an edge', () => {
     expect(placePet(null, area, 60)).toEqual({ x: 14, y: 540 });
-    expect(rememberPet({ x: 100, y: 300 }, area)).toEqual({ x: 100 / 306, y: 140 / 380, collapsed: false });
+    // DP-249: the partner is 84px, so the free range is 366 − 84 = 282 wide
+    // and 600 − 84 − 160 = 356 tall.
+    expect(PET_SIZE).toBe(84);
+    expect(placePet(null, area, PET_SIZE)).toEqual({ x: 14, y: 516 });
+    expect(rememberPet({ x: 100, y: 300 }, area)).toEqual({ x: 100 / 282, y: 140 / 356, collapsed: false });
     expect(rememberPet({ x: 24, y: 300 }, area).x).toBe(0);
-    expect(rememberPet({ x: 281, y: 300 }, area).x).toBe(281 / 306);
-    expect(rememberPet({ x: 282, y: 300 }, area).x).toBe(1);
+    expect(rememberPet({ x: 257, y: 300 }, area).x).toBe(257 / 282);
+    expect(rememberPet({ x: 258, y: 300 }, area).x).toBe(1);
   });
   it('keeps the whole character, badge and shadow clear of the FAB and bounds', () => {
     const position = placePet({ x: 1, y: 1, collapsed: false }, area, 60)!;

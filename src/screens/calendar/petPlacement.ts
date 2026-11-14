@@ -50,6 +50,13 @@ export function constrainPet(point: PetPoint, area: PetArea, size: number): PetP
   return candidates[0] ?? null;
 }
 
+/**
+ * The partner's drawn square, in CSS px. DP-249: the owner found the
+ * prototype's 60px too small on a phone and chose 84px (+40%). Every geometry
+ * check (edges, the FAB gap, the walk path) uses this one number.
+ */
+export const PET_SIZE = 84;
+
 export function placePet(saved: PetPlacement | null, area: PetArea, size: number): PetPoint | null {
   const x = saved ? (saved.collapsed ? (saved.x > .5 ? 1 : 0) : saved.x) * (area.width - size) : 14;
   const y = saved ? area.top + saved.y * (area.height - size - area.top) : area.height - size;
@@ -58,10 +65,10 @@ export function placePet(saved: PetPlacement | null, area: PetArea, size: number
 
 /** Snap only on commit. Resizes/projected obstacle avoidance never rewrite saved ratios. */
 export function rememberPet(point: PetPoint, area: PetArea, snap = true): PetPlacement {
-  const maxX = area.width - 60;
+  const maxX = area.width - PET_SIZE;
   const snapped = !snap ? point.x : point.x <= 24 ? 0 : maxX - point.x <= 24 ? maxX : point.x;
-  const safe = constrainPet({ x: snapped, y: point.y }, area, 60) ?? point;
+  const safe = constrainPet({ x: snapped, y: point.y }, area, PET_SIZE) ?? point;
   return { x: maxX > 0 ? clamp(safe.x / maxX, 1) : 0,
-    y: area.height - 60 > area.top ? clamp((safe.y - area.top) / (area.height - 60 - area.top), 1) : 0,
+    y: area.height - PET_SIZE > area.top ? clamp((safe.y - area.top) / (area.height - PET_SIZE - area.top), 1) : 0,
     collapsed: false };
 }

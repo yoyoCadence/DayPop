@@ -28,15 +28,17 @@
    lives in the viewport rather than the app body, so it adds back what the
    app body sits inside: the side safe area and the tab bar's own bottom
    safe-area padding. The height is capped so the bubble and its ✕ stay on
-   screen; the lists scroll inside instead. */
+   screen; the lists scroll inside instead.
+   DP-249: the pet is 84px instead of 60px, so the bubble sits 24px higher
+   (174px, cap 199px) to keep the tail over its head. */
 .cal-pet-bubble {
   position: absolute;
-  bottom: calc(150px + env(safe-area-inset-bottom));
+  bottom: calc(174px + env(safe-area-inset-bottom));
   left: calc(12px + env(safe-area-inset-left));
   display: flex;
   width: 270px;
   max-width: calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
-  max-height: calc(100% - 175px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  max-height: calc(100% - 199px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
   flex-direction: column;
   border: 3px solid #141414;
   border-radius: 20px;
@@ -321,7 +323,7 @@
 @media (max-height: 500px) and (pointer: coarse),
   (max-height: 500px) and (max-width: 899px) {
   .cal-pet-bubble {
-    bottom: calc(136px + env(safe-area-inset-bottom));
-    max-height: calc(100% - 161px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+    bottom: calc(160px + env(safe-area-inset-bottom));
+    max-height: calc(100% - 185px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
   }
 }
