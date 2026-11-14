@@ -10,11 +10,11 @@ import { todoGroupsOn } from '../../domain/todos';
 import { isTitleTooLong, MAX_TITLE_INPUT_LENGTH, TITLE_LENGTH_MESSAGE } from '../../domain/titles';
 import { DayTodoCard } from './DayTodoCard';
 import { useConfirmedTodoAdd } from './useConfirmedTodoAdd';
+import { StickerPicker } from './StickerPicker';
 
 /** Marks the second and later days of a cross-midnight event — DP-064. */
 const CONTINUATION_LABEL = '續';
 import { calendarColor } from '../../domain/calendars';
-import { STICKER_GLYPHS } from '../../domain/stickerGlyphs';
 import type { OccurrenceWindow, ResolvedEventOccurrence } from '../../domain/recurrence';
 import type { Calendar, CalendarEvent, Sticker, TodoItem, TodoPriority } from '../../domain/types';
 import { useModalFocus } from '../../shell/useModalFocus';
@@ -236,23 +236,14 @@ function DayDetailSheetBody({
           </div>
 
           {pickerOpen && (
-            <div className="cal-day-sticker-pick" role="group" aria-label="選擇貼圖">
-              {STICKER_GLYPHS.map((glyph) => (
-                <button
-                  className="cal-day-sticker-option"
-                  key={glyph}
-                  type="button"
-                  aria-label={`加入貼圖 ${glyph}`}
-                  onClick={() => {
-                    onAddSticker({ date: dateKey, glyph });
-                    // The原檔 closes the picker after one pick.
-                    setPickerOpen(false);
-                  }}
-                >
-                  {glyph}
-                </button>
-              ))}
-            </div>
+            <StickerPicker
+              stickers={stickers}
+              onPick={(glyph) => {
+                onAddSticker({ date: dateKey, glyph });
+                // The原檔 closes the picker after one pick.
+                setPickerOpen(false);
+              }}
+            />
           )}
 
           <div className="cal-day-section">行程</div>

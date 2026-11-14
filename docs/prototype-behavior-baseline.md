@@ -88,7 +88,7 @@
 | 重複事件與例外 | 可用但模型隱含 | Domain 行為完成（DP-012／DP-027） | RFC 5545 RECUR validation、DST-safe occurrence expansion、cancel／replacement exception、單次／全部 mutation 與 ICS inclusive／exclusive round-trip 已完成。DP-081 起四個檢視都畫得出每一次 occurrence，DP-082 起事件 sheet 建得出重複事件，**並且點開某一次再儲存或刪除時會問「只改這一次／套用全部」**：全部走 `updateEvent`／`deleteEvent`，單次走 `replaceEventOccurrence`／`cancelEventOccurrence`。**從搜尋／綜覽打開時不問**，因為那兩個畫面搜的是 base event，結果本身就是整個系列。**週檢視的重複色塊仍不可拖曳**：底層已經齊備，但原稿 `wkUp` 是不問就拆成獨立事件，與 sheet 剛開始顯示的對話框互相矛盾，屬未定的產品決策。完整檔案匯入／預覽／合併已由 DP-056 完成。 |
 | 日詳情 sheet | 可用 | 已搬移（DP-057／DP-063） | 點月格開啟；行程列含全天／時間範圍與衝突標籤、空狀態、＋新增事件與待辦清單；貼圖列與選擇器已由 DP-055 接上，標題下方的地點副標已由 DP-063 補回（原稿的 `e.hasLoc`）。待辦子項與排序欄位已由 DP-012 完成，操作 UI 待 DP-014。**跨午夜行程的衝突判定**與原稿同樣以同日 `HH:MM` 比較，因此不會被判為衝突；要改是新的產品決策，見 DP-064。 |
 | 新增／完成／刪除待辦 | 可用 | 新增／完成／刪除可用（DP-057） | Canonical Todo 已含 parent、sort order、priority、due date 與 completion instant；子項／排序操作與日期移動 UI 待 DP-014，新增入口目前在日詳情與事件 sheet，寵物對話泡泡待 DP-040。**2026-10-17 起寵物對話泡泡也能新增今日／明日待辦、勾選與刪除（DP-169）**；排序仍未接。 |
-| 貼圖 | 可用 | 已搬移（DP-055） | Canonical Sticker 同時保留 glyph 與可版本化 asset key；月格依當日數量調整字級（1／2／3／4+ → 19／15／12／10px）並置底，日詳情有貼圖列與 63 個 glyph 的選擇器（點既有貼圖即刪除、選一個後選擇器關閉），綜覽的貼圖分頁以 glyph 取代色條並可點開當日。 |
+| 貼圖 | 可用 | 已搬移（DP-055） | Canonical Sticker 同時保留 glyph 與可版本化 asset key；月格依當日數量調整字級（1／2／3／4+ → 19／15／12／10px）並置底，日詳情有貼圖列與 63 個 glyph 的選擇器（點既有貼圖即刪除、選一個後選擇器關閉；**2026-11-14 DP-243 起擴充為 240 個、11 類加「最近」，原稿 63 個全保留，刻意偏離原稿，見 ADR §3**），綜覽的貼圖分頁以 glyph 取代色條並可點開當日。 |
 | 主題與個人偏好 | 可用 | 已接上保存（DP-018） | 六套 theme id 與 system／light／dark 分開保存；system 即時跟隨裝置，並同步 CSS、theme-color meta 與 manifest 靜態啟動色。本機 v2→v3 與 DB migration 都保留既有值。 |
 | 日曆管理（顯示、改名、顏色） | 可用 | 已搬移（DP-059） | 設定的「我的日曆」可新增、改名、換色與切換顯示；顏色套用到月／週／列表／日詳情／綜覽／搜尋，隱藏只是顯示過濾不刪資料。與原稿的差異：刪除日曆時其事件／待辦／貼圖會移到倖存的預設日曆，不留孤兒資料，且只剩一個日曆時拒絕刪除。 |
 
