@@ -20,7 +20,8 @@ type ManifestRow = Record<(typeof COLUMNS)[number], string>;
 const PUBLISHABLE = ['owner-original', 'CC0', 'CC BY 4.0', 'MIT', 'Apache 2.0', 'SIL OFL 1.1'];
 
 function readManifest(text: string): ManifestRow[] {
-  const [header, ...lines] = text.replace(/^\uFEFF/, '').trimEnd().split('\n');
+  // CRLF too: a Windows checkout with core.autocrlf rewrites the file's line endings.
+  const [header, ...lines] = text.replace(/^\uFEFF/, '').trimEnd().split(/\r?\n/);
   expect(header!.split(',')).toEqual(COLUMNS);
   return lines.map((line) => {
     const cells = line.split(',');
@@ -34,6 +35,11 @@ const rows = readManifest(readFileSync(MANIFEST, 'utf8'));
 const categoryOf = new Map(STICKER_CATEGORIES.flatMap((category) => category.glyphs.map((glyph) => [glyph, category.id] as const)));
 
 describe('DP-244 sticker asset manifest', () => {
+  it('reads the same rows from a CRLF checkout', () => {
+    const text = readFileSync(MANIFEST, 'utf8');
+    expect(readManifest(text.replace(/\r?\n/g, '\r\n'))).toEqual(rows);
+  });
+
   it('falls back to an emoji the DP-243 picker offers, in the same category', () => {
     expect(rows.length).toBeGreaterThanOrEqual(4);
     expect(rows.length).toBeLessThanOrEqual(24);

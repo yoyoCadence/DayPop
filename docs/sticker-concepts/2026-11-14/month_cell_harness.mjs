@@ -20,7 +20,7 @@ import { chromium } from 'playwright';
 const [assets, out, base = 'http://127.0.0.1:4180/'] = process.argv.slice(2);
 if (!assets || !out) throw new Error('usage: month_cell_harness.mjs ASSETS_DIR OUT_DIR [BASE_URL]');
 mkdirSync(out, { recursive: true });
-const manifest = readFileSync(new URL('./manifest.csv', import.meta.url), 'utf8').replace(/^﻿/, '').trim().split('\n').slice(1)
+const manifest = readFileSync(new URL('./manifest.csv', import.meta.url), 'utf8').replace(/^\uFEFF/, '').trim().split(/\r?\n/).slice(1)
   .map((line) => line.split(','))
   .map(([id, name, , fallback, file]) => ({ id, name, fallback, uri: 'data:image/svg+xml;base64,' + readFileSync(join(assets, file)).toString('base64') }));
 
