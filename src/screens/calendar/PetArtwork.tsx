@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PET_ASSETS, type PetKind, type PetPose } from './petAssets';
 import { lastDecoded } from './petArtworkMemory';
+import { PET_SIZE } from './petPlacement';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeMotion(change: () => void) {
@@ -75,7 +76,7 @@ function DecodedArtwork({ kind, src, onReady, onUnavailable }: { kind: PetKind; 
     {/* A background, not an <img>: the pending image stays the only <img>, so
         "which image is the pet showing" keeps a single answer. */}
     {!ready && !failed && previous && <span className="cal-pet-image cal-pet-previous" style={{ backgroundImage: `url("${previous}")` }} />}
-    {!failed && <img className="cal-pet-image" src={src} width="60" height="60" alt="" draggable={false}
+    {!failed && <img className="cal-pet-image" src={src} width={PET_SIZE} height={PET_SIZE} alt="" draggable={false}
       hidden={!ready} onLoad={event => { void loaded(event.currentTarget); }} onError={fail} />}
   </>;
 }

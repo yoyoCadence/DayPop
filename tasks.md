@@ -78,8 +78,6 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 - [ ] **DP-246 — DP-244 Phase 2：補充 20 張漫畫貼圖（共 24 張）：** 擁有者決策 7 條件式批准：Phase 1 四張的 QA、掃描、安全與 license gate 通過後直接開始，不需再詢問；DP-244 已滿足。24 張的選擇是**人工的產品優先假設**（App 不收集使用頻率，「最近」只看個人紀錄），先覆蓋 11 個分類的常用情境，不得說是資料驅動。每張 ≤ 4 KB、總計 ≤ 96 KB、最多 4 個主色、fallback 在 DP-243 清單且分類一致、沿用 `check_stickers.py`／負控制／月格 harness。**圖檔只留在 repo 之外**（決策 6），每批 PR 只提交 manifest、hash、檢查結果與紀錄；每批由擁有者手機目視。授權維持 `review-pending`。不部署、不改 240 emoji、不調 JS 預算、不改 Auth 或 schema。
 
-- [ ] **DP-249 — 夥伴放大到 84px（2026-11-14）：** 擁有者回報「寵物太小隻了」，在 72／84／96px 之間選了 **84px**（+40%）。牽動 `petWander.ts` 的 `PET_SIZE`、`calendar.css` 的角色與圖片尺寸、`petPlacement.ts` 的幾何與 e2e；側籤、泡泡、FAB 間距不可因此越界。素材是 120×120，DPR 3 下約放大 2.1 倍，擁有者接受。不部署，上線要另外發版與授權。
-
 
 
 
@@ -520,6 +518,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 - 安裝原則：只從專案官方文件與 npm 官方 registry 取得、提交 lockfile、避免 beta／未維護套件、先檢查 package provenance／license／必要權限，不執行來路不明的一鍵腳本。
 
 ## Done
+
+- [x] **DP-249 — 夥伴放大到 84px（2026-11-14）：** 擁有者回報「現在寵物太小隻了」，在 72／84／96px 中選 84px（+40%），Next → In Progress → Done。`petPlacement.ts` 匯出唯一的 `PET_SIZE = 84`，靠邊、FAB 間距、拖移比例、鍵盤移動、出遊路徑與圖片寬高都讀它；`calendar.css` 的角色與圖片 84px，CSS 角色以 `scale(1.4)` 保留原稿 60px 比例。**泡泡跟著上移 24px**（174px，矮螢幕 160px）：放大後泡泡會蓋到頭頂，`pet-bubble.spec.ts` 的位置案例先抓到，修正後尾巴仍在頭上方 12px。保存的比例值不改寫，44px 側籤不變。驗證：lint／typecheck、1,859 單元＋41 Node、Pages build／check:build（JS gzip 239,357／240,640）；寵物、月格、axe 相關 e2e 手機與桌面通過；390×844、320×568、932×430 淺深色量測角色 84×84、在分頁列上方、不碰 FAB、泡泡完整在畫面內、無水平溢出、console 0。刻意偏離原稿 60px，見 ADR §4。iPhone 真機觀感待擁有者確認；上線隨 0.5.1。
 
 - [x] **DP-248 — 夥伴換動作時閃成 CSS 角色（2026-11-14）：** 擁有者回報「寵物移動一個瞬間都會變成原本的摩卡圖示，會閃一下」，Next → In Progress → Done。**成因**：`PetArtwork.tsx` 的 `DecodedArtwork` 以 `${src}:${cue}` 為 key，每換一個動作就重新掛載（idle 還整個換元件），新圖解碼前畫 `CssPet`；即使圖已快取，解碼也至少要一個 frame。**修正**：新增 `petArtworkMemory.ts` 記住每款角色最後一張成功解碼的圖，新圖解碼期間以背景圖顯示它（`.cal-pet-previous`，不是 `<img>`，「目前畫的是哪張圖」仍只有一個答案）；第一次載入、換角色、載入失敗仍畫 CSS，失敗不被記住。**驗證**：三個新單元（保留上一張、換角色不借用、失敗回 CSS 且不記住），停用記憶的負控制 2 項失敗、忽略角色的負控制 1 項失敗，還原後通過；新 e2e 以 MutationObserver 監看整趟出遊，舊程式在 out／sit／back／rest 四次換圖都閃出 CSS 而失敗，修正後手機與桌面通過。lint／typecheck、1,859 單元＋41 Node、Pages build／check:build（JS gzip 239,361／240,640，+51）；寵物相關 e2e 52 passed／2 skipped，`production-offline` 的版本檢查計數項在未修改的程式同樣失敗，屬雲端環境、以 CI 為準。沒有 schema、版號、公告或部署變更；iPhone 真機觀感待擁有者確認。
 

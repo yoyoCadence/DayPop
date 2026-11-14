@@ -16,7 +16,7 @@ const stored = (page: Page) => page.evaluate(() => ({
 const drawn = (page: Page) => pet(page).evaluate(element => {
   const rect = element.getBoundingClientRect();
   const layer = element.parentElement!.getBoundingClientRect();
-  const scale = rect.width / 60;
+  const scale = rect.width / 84; // DP-249: the partner is 84px
   return { x: Math.round((rect.x - layer.x) / scale), y: Math.round((rect.y - layer.y) / scale) };
 });
 

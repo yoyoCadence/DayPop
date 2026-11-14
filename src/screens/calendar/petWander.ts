@@ -1,4 +1,4 @@
-import { constrainPet, type PetArea, type PetPoint } from './petPlacement';
+import { constrainPet, PET_SIZE, type PetArea, type PetPoint } from './petPlacement';
 
 /**
  * DP-240: a short foreground excursion along the pet's own row.
@@ -27,7 +27,6 @@ export const WANDER_NEXT_DELAY_MS: readonly [number, number] = [45_000, 90_000];
  */
 export const WANDER_MAX_PER_QUIET = 2;
 
-const PET_SIZE = 60;
 const PATH_STEP = 4;
 
 export function delayBetween([min, max]: readonly [number, number], random: () => number): number {

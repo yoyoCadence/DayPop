@@ -764,6 +764,18 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 契約、驗證、負控制與限制見 `docs/pet-wander.md`；iPhone 真機觀感、觸控抓取與造型品質待擁有者驗收。
 
+### 夥伴放大到 84px（DP-249，2026-11-14 擁有者選擇）
+
+**決策：** 擁有者回報「現在寵物太小隻了」，在 72／84／96px 之間選了 **84px**（+40%）。這是刻意偏離原稿：原稿與 DP-051／170 的角色是 60×60。
+
+- **單一常數**：`petPlacement.ts` 匯出 `PET_SIZE = 84`，靠邊、FAB 8px 間距、拖移比例、鍵盤移動、出遊路徑（`petWander.ts`）與圖片寬高都讀它；`calendar.css` 的 `.cal-pet`／`.cal-pet-image` 寫死 84px，註解要求兩邊一起改。
+- **CSS 角色**：不重畫，維持 60px 的原稿比例與描邊，以 `transform: scale(1.4)` 從左上角放大到 84px 方框。
+- **泡泡**：原稿把泡泡放在距底 150px，尾巴落在 60px 角色頭上、離頭頂 12px。角色高了 24px，泡泡跟著上移到 174px（最大高度扣除量 175 → 199），矮螢幕的 136px 改 160px（185）；與頭頂的 12px 關係不變。
+- **不變的部分**：44px 收起側籤、徽章位置、FAB 間距、保存的比例值（`daypop.pet-placement` 存的是比例，既有位置在新尺寸重新投影，不改寫保存值）、120×120 素材。
+- **觀感**：120px 素材在 84px、DPR 3 下約放大 2.1 倍，會比 60px 時略軟，擁有者選擇時已知。
+
+**驗證：** `petPlacement.test.ts` 以 84px 的可用範圍（366 − 84 = 282 寬、600 − 84 − 160 = 356 高）重算靠邊與比例；`PetPlacement.test.tsx` 的角色矩形改用 `PET_SIZE`；`petWander.test.ts` 的 FAB 與右邊界斷言改用 `PET_SIZE`。e2e 的跳躍／睡眠 fixture 要求 84×84，泡泡位置案例要求 174px 且尾巴仍在頭上。390×844、320×568、932×430 淺深色量測：角色 84×84、底邊在分頁列上方、與 FAB 不重疊、泡泡完整在畫面內且離頭頂 12px、沒有水平溢出、console 0。iPhone 真機觀感待擁有者確認。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。

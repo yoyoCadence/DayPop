@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { useModalLayerOpen } from '../../shell/useModalFocus';
-import { constrainPet, loadPetPlacement, placePet, rememberPet, savePetPlacement, type PetArea, type PetPoint } from './petPlacement';
+import { constrainPet, loadPetPlacement, PET_SIZE, placePet, rememberPet, savePetPlacement, type PetArea, type PetPoint } from './petPlacement';
 
 /** UI-only movement. Pointer previews stay in refs/the DOM; commit is the only write. */
 export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivElement | null>, control: RefObject<HTMLButtonElement | null>, bubbleLayer: RefObject<HTMLDivElement | null>) {
@@ -14,7 +14,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
   const pendingFocus = useRef(false);
   const modalOpen = useModalLayerOpen(bubbleLayer);
   const collapsed = saved?.collapsed ?? false;
-  const size = collapsed ? 44 : 60;
+  const size = collapsed ? 44 : PET_SIZE;
   const position = geometry ? placePet(saved, geometry.area, size) : null;
   const hidden = (geometry ? geometry.covered || !position : false) || modalOpen;
 
@@ -113,7 +113,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     const next = rememberPet(point, geometry.area);
     savePetPlacement(next);
     setSaved(next);
-    paint(placePet(next, geometry.area, 60));
+    paint(placePet(next, geometry.area, PET_SIZE));
     setMoving(false);
   }
   function setCollapsed(value: boolean) {
@@ -134,7 +134,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     const direction = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] }[event.key];
     if (direction) {
       event.preventDefault();
-      paint(constrainPet({ x: point.x + direction[0]!, y: point.y + direction[1]! }, geometry.area, 60));
+      paint(constrainPet({ x: point.x + direction[0]!, y: point.y + direction[1]! }, geometry.area, PET_SIZE));
     } else if (event.key === 'Enter' || event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -151,7 +151,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
     suppressClick.current = false;
     const rect = event.currentTarget.getBoundingClientRect();
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: from ?? position, moved: false,
-      scaleX: rect.width / 60, scaleY: rect.height / 60 };
+      scaleX: rect.width / PET_SIZE, scaleY: rect.height / PET_SIZE };
     event.currentTarget.setPointerCapture?.(event.pointerId);
     return true;
   }
@@ -165,7 +165,7 @@ export function usePetPlacement(bubbleOpen: boolean, layer: RefObject<HTMLDivEle
       active.moved = true;
       setDragging(true);
     }
-    if (active.moved) paint(constrainPet({ x: active.origin.x + dx, y: active.origin.y + dy }, geometry.area, 60));
+    if (active.moved) paint(constrainPet({ x: active.origin.x + dx, y: active.origin.y + dy }, geometry.area, PET_SIZE));
     return started;
   }
   function onPointerUp(event: PointerEvent<HTMLButtonElement>) {
