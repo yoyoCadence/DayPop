@@ -19,7 +19,7 @@ import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { SharingConfirmationDialog } from './screens/SharingConfirmationDialog';
 import { RetainedSharingDraftDialog } from './screens/RetainedSharingDraftDialog';
 import { AppShell } from './shell/AppShell';
-import { BOOT_RELEASE_WAIT_MS, dismissBoot } from './shell/boot';
+import { BOOT_RELEASE_WAIT_MS, dismissBoot, dismissBootAfter } from './shell/boot';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
@@ -65,8 +65,7 @@ export default function App() {
       dismissBoot();
       return;
     }
-    const fallback = window.setTimeout(() => dismissBoot(), BOOT_RELEASE_WAIT_MS);
-    return () => window.clearTimeout(fallback);
+    return dismissBootAfter(BOOT_RELEASE_WAIT_MS);
   }, [settled, releaseKnown]);
 
   // Shown on every tab while the browser refuses to persist data — DP-017.

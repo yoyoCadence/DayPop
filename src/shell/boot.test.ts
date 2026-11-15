@@ -1,5 +1,8 @@
+/// <reference types="node" />
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BOOT_FADE_MS, dismissBoot } from './boot';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { BOOT_FADE_MS, BOOT_RELEASE_WAIT_MS, dismissBoot, dismissBootAfter } from './boot';
 
 function addBoot(): HTMLElement {
   const boot = document.createElement('div');
@@ -62,5 +65,47 @@ describe('start-up screen (DP-258)', () => {
     dismissBoot();
     expect(boot.className).toBe(classes);
     expect(vi.getTimerCount()).toBe(1);
+  });
+});
+
+describe('bounded wait for the version check (DP-258)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    document.getElementById('boot')?.remove();
+  });
+
+  it('lifts the cover when the CSS wait ends, even if timers never fire', () => {
+    vi.useFakeTimers();
+    preferReducedMotion(false);
+    const boot = addBoot();
+    dismissBootAfter(BOOT_RELEASE_WAIT_MS);
+    expect(boot.classList.contains('is-waiting')).toBe(true);
+    const other = new Event('animationend');
+    Object.defineProperty(other, 'animationName', { value: 'dp-boot-hop' });
+    boot.dispatchEvent(other);
+    expect(boot.dataset.done).toBeUndefined();
+    const end = new Event('animationend');
+    Object.defineProperty(end, 'animationName', { value: 'dp-boot-wait' });
+    boot.dispatchEvent(end);
+    expect(boot.dataset.done).toBe('true');
+  });
+
+  it('cancels cleanly when the check settles first', () => {
+    vi.useFakeTimers();
+    preferReducedMotion(false);
+    const boot = addBoot();
+    const cancel = dismissBootAfter(BOOT_RELEASE_WAIT_MS);
+    cancel();
+    expect(boot.classList.contains('is-waiting')).toBe(false);
+    vi.advanceTimersByTime(BOOT_RELEASE_WAIT_MS);
+    expect(boot.dataset.done).toBeUndefined();
+  });
+
+  it('keeps the CSS wait as long as BOOT_RELEASE_WAIT_MS', () => {
+    const css = readFileSync(join(process.cwd(), 'src/shell/boot.css'), 'utf8');
+    const lengths = [...css.matchAll(/dp-boot-wait ([\d.]+)s/g)].map((match) => Number(match[1]) * 1000);
+    expect(lengths.length).toBe(2);
+    for (const length of lengths) expect(length).toBe(BOOT_RELEASE_WAIT_MS);
   });
 });

@@ -100,6 +100,23 @@
   to { visibility: visible; }
 }
 
+/* The bounded wait for the first version check (DP-258): its animationend
+ * lifts the cover. Nothing changes on screen; it is a timer that keeps
+ * running even where the page's JavaScript timers are paused. Same length as
+ * BOOT_RELEASE_WAIT_MS, written for both motion preferences. */
+@media (prefers-reduced-motion: no-preference) {
+  .dp-boot.is-waiting { animation: dp-boot-wait 2.5s linear forwards; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-boot.is-waiting { animation: dp-boot-wait 2.5s linear forwards; }
+}
+
+@keyframes dp-boot-wait {
+  from { outline-color: transparent; }
+  to { outline-color: transparent; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .dp-boot-icon {
     animation: dp-boot-hop 0.9s cubic-bezier(0.3, 0, 0.4, 1) infinite;
