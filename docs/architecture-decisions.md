@@ -823,6 +823,7 @@ installed 的快速新增、搜尋與設定等其他輸入也採 16px，避免�
 擁有者回報：每次更新後打開 App，會先看到空白／「載入中…」與日曆，接著公告才彈出，那一瞬間很醜；並指定參考自己的 4WD Carplay（`YoyoVector/Carplay`）。
 
 - **做法**：沿 Carplay 的模式，`index.html` 直接放一個載入畫面（`#boot`），在任何程式碼抵達前就畫出來：「日蹦」圖示壓扁、彈起、落地，下方輪播四句載入文字。資料備妥（`state.status` 不再是 `loading`，含 ready、blocked、failed）後才淡出 0.3 秒並移除，所以日曆與更新公告在載入畫面底下已經就位，一起出現。根錯誤畫面也會移除它。
+- **也等第一次版本檢查**：公告要等 `version.json` 回來才知道要不要出現，而它可能比資料晚到（Codex 在 PR #253 指出）。所以日曆就緒時，載入畫面還會等 `useAppUpdate().releaseCheckSettled`（第一次檢查成功或失敗都算），最多 `BOOT_RELEASE_WAIT_MS` 2.5 秒；離線或很慢時照樣放行，公告之後再出現。復原與重試畫面不等。本機 production 量測：`version.json` 晚 1.5 秒時，載入畫面消失那一刻公告已開；晚 5 秒時約 3 秒放行，公告稍後出現。
 - **與 Carplay 不同的地方**：DayPop 的 CSP 不允許內嵌 `<script>` 與 `<style>`，所以樣式放在 `src/shell/boot.css`，隨 Vite 在 `<head>` 連結的樣式表一起載入（production 首次繪製前就套用），移除邏輯在 App 的程式碼裡。不做百分比進度條：DayPop 沒有可量的載入階段，假進度沒有資訊量。
 - **沒有程式碼也要能脫身**：12 秒後以純 CSS 顯示「載入比平常久，請確認網路後重新整理」。這是只改 `visibility` 的定時顯示，兩種動態偏好都會出現；`reducedMotion.test.ts` 看得到它在兩個 media 區塊裡分別宣告。
 - **配色**：此時還讀不到使用者的主題，固定用紙色（`#fffaf0`）與深色模式的 `#121212`；選了其他主題的人會先看到這個中性畫面，再換成自己的主題。

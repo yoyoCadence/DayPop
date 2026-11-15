@@ -8,6 +8,11 @@
  * browser that skips the transition.
  */
 export const BOOT_FADE_MS = 300;
+/**
+ * Longest the cover waits, once the data is ready, for the first version
+ * check: a slow or offline check must not hold the app behind it.
+ */
+export const BOOT_RELEASE_WAIT_MS = 2500;
 
 export function dismissBoot(doc: Document = document): void {
   const boot = doc.getElementById('boot');

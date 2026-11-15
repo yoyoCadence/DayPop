@@ -31,7 +31,7 @@ function fixture() {
     savingRule: false, refresh: vi.fn(async () => {}), enable: vi.fn(async () => true), disable: vi.fn(async () => true),
     saveRule: vi.fn<ReminderContextValue['saveRule']>(async input => ({ ...input, updatedAt: NOW })), reloadRule: vi.fn<ReminderContextValue['reloadRule']>(async () => saved),
   } satisfies ReminderContextValue;
-  const updater: AppUpdateState = { currentVersion: '0.4.6', currentRelease: null, availableRelease: null, whatsNew: null, checkResult: null, checking: false, preparing: false, error: null, updateError: null,
+  const updater: AppUpdateState = { currentVersion: '0.4.6', currentRelease: null, availableRelease: null, whatsNew: null, releaseCheckSettled: true, checkResult: null, checking: false, preparing: false, error: null, updateError: null,
     checkForUpdate: vi.fn(), updateNow: vi.fn(), dismissUpdate: vi.fn(), acknowledgeWhatsNew: vi.fn(), clearCheckResult: vi.fn() };
   const onOpenAuth = vi.fn(), onOpenSettings = vi.fn(); let calendars = [calendar];
   const render = async () => { await act(async () => root.render(<AuthContext.Provider value={auth}><ReminderContext.Provider value={reminders}>

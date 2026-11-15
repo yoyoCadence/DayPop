@@ -20,6 +20,12 @@ export interface AppUpdateState {
    * build, and a version check then finds nothing newer to announce.
    */
   whatsNew: ReleaseInfo | null;
+  /**
+   * The first version check has finished, either way — DP-258. Until then a
+   * release notice may still be on its way, so the start-up cover waits for it
+   * (for a bounded time) instead of lifting onto a screen that then pops up.
+   */
+  releaseCheckSettled: boolean;
   /** Outcome of the last manual check, when it found no update — DP-090. */
   checkResult: UpdateCheckResult | null;
   checking: boolean;
@@ -61,6 +67,7 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
   const [seenRelease, setSeenRelease] = useState(() => readSeenRelease(storage));
   const [checkResult, setCheckResult] = useState<UpdateCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
+  const [releaseCheckSettled, setReleaseCheckSettled] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
@@ -152,6 +159,7 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
       if (manual) setCheckResult({ kind: 'failed', message });
     } finally {
       setChecking(false);
+      setReleaseCheckSettled(true);
     }
   }, []);
 
@@ -184,6 +192,7 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
       })
       .catch((cause: unknown) => {
         setError(cause instanceof Error ? cause.message : '無法註冊離線更新服務');
+        setReleaseCheckSettled(true);
       });
 
     // The timer is not throttled: it fires every 30 minutes, which is already
@@ -265,6 +274,7 @@ export function useAppUpdate(storage: StorageLike = getAppStorage()): AppUpdateS
     currentRelease,
     availableRelease,
     whatsNew,
+    releaseCheckSettled,
     checkResult,
     checking,
     preparing,
