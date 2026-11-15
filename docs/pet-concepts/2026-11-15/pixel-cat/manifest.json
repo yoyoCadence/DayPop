@@ -1,0 +1,166 @@
+{
+  "key": "pixel_cat",
+  "canvas": [
+    120,
+    120
+  ],
+  "cssPixels": 84,
+  "transparentMargin": 8,
+  "nativeTool": "Pillow image drawing",
+  "nativeToolVersion": "Pillow 13.0.0",
+  "encoder": "Pillow 13.0.0, libwebp 1.6.0",
+  "conceptReferenceSha256": "7e32913c1564e93acd7b647fd7f8aa87409548585a23a36cab1a42ea5d6fb511",
+  "source": [
+    {
+      "path": "pixel-cat/draw.py",
+      "bytes": 7304,
+      "sha256": "42c50c8938c330f3833e91da2312b7a907e8ddda37324e39e38991a4b85a919f"
+    },
+    {
+      "path": "pixel-cat/palette.json",
+      "bytes": 202,
+      "sha256": "23bab07caa2473fbc1bc2c36863718bbfdb3121e1bcd019d296510bab14184c5"
+    },
+    {
+      "path": "pixel-cat/sprite-atlas.svg",
+      "bytes": 199731,
+      "sha256": "17b671065f538ce090b9882a8fe2543ac554b6c10e1f31708b719b1cf13d9e3e"
+    },
+    {
+      "path": "motion.py",
+      "bytes": 606,
+      "sha256": "ce225bdd74093140e2cd35bfdd9483027600bd9f7a64bbccca9f4f19687ec9bc"
+    },
+    {
+      "path": "package_pets.py",
+      "bytes": 8770,
+      "sha256": "88c64aa9b52f776172aa7649fc80c366fc56402b841e721e668ef4ea4b1c13f2"
+    }
+  ],
+  "poses": {
+    "idle": {
+      "png": {
+        "path": "pixel-cat-idle.png",
+        "bytes": 937,
+        "sha256": "ec3229a63b890274a1d4efb9dac1927cc7590c2c89a14beb5f8b9ad94fa15953"
+      },
+      "webp": {
+        "path": "pixel-cat-idle.webp",
+        "bytes": 1206,
+        "sha256": "de6e7e256d8771a794bd218b7ce6f06ef448c377412c15ef2a4677fddf50df56",
+        "frames": 5,
+        "distinctFrames": 5,
+        "durationMs": 2160,
+        "loop": 0,
+        "quality": 100
+      }
+    },
+    "walk": {
+      "png": {
+        "path": "pixel-cat-walk.png",
+        "bytes": 958,
+        "sha256": "7b303689a0a3484257fb3d0e788291bc9d67c6374fbb9e751804896415314677"
+      },
+      "webp": {
+        "path": "pixel-cat-walk.webp",
+        "bytes": 2618,
+        "sha256": "ca8cfb45e7038e8a2c7f06ebf285edce71eefc92356a3b26a929e563791aef40",
+        "frames": 8,
+        "distinctFrames": 5,
+        "durationMs": 800,
+        "loop": 0,
+        "quality": 100
+      }
+    },
+    "sit": {
+      "png": {
+        "path": "pixel-cat-sit.png",
+        "bytes": 898,
+        "sha256": "e91ef781fc80b36955599e0138cdd9ce0169e3fad6986d209c705ffdc834ef4e"
+      },
+      "webp": {
+        "path": "pixel-cat-sit.webp",
+        "bytes": 1664,
+        "sha256": "a9395901b4d29c32ae4c0559963614eb668ba74f2e89a948966d055ff0db338e",
+        "frames": 6,
+        "distinctFrames": 6,
+        "durationMs": 1490,
+        "loop": 0,
+        "quality": 100
+      }
+    },
+    "sleep": {
+      "png": {
+        "path": "pixel-cat-sleep.png",
+        "bytes": 734,
+        "sha256": "dc4f1f1dc6aeb08e50e46b7c5126b175c4386eed4508f09dc1caba78e7e01799"
+      },
+      "webp": {
+        "path": "pixel-cat-sleep.webp",
+        "bytes": 1438,
+        "sha256": "56a9f5fa2e0e035b31f2d19e8ae87f3a78102f71427665b18da022abefdb1e44",
+        "frames": 5,
+        "distinctFrames": 3,
+        "durationMs": 2400,
+        "loop": 0,
+        "quality": 100
+      }
+    },
+    "jump": {
+      "png": {
+        "path": "pixel-cat-jump.png",
+        "bytes": 801,
+        "sha256": "d563b4c2306e2fe4094083bb88389d96c0f64f67f35301f7d0fba472ef3b9e1b"
+      },
+      "webp": {
+        "path": "pixel-cat-jump.webp",
+        "bytes": 2894,
+        "sha256": "d0d110b6dc16518d27b715aa2418078dc1f20eb01962f76667892f75bec91e53",
+        "frames": 10,
+        "distinctFrames": 10,
+        "durationMs": 1000,
+        "loop": 1,
+        "quality": 100
+      }
+    },
+    "look": {
+      "png": {
+        "path": "pixel-cat-look.png",
+        "bytes": 942,
+        "sha256": "811da513c1aade863d2dd644465ba5c635ae1c8081e2d5733056e80c02228119"
+      },
+      "webp": {
+        "path": "pixel-cat-look.webp",
+        "bytes": 2418,
+        "sha256": "43701950751e7fc9b2285d65910181ee3d9cf75cbd441e4fd131739f273a8af2",
+        "frames": 9,
+        "distinctFrames": 9,
+        "durationMs": 1600,
+        "loop": 1,
+        "quality": 100
+      }
+    },
+    "grab": {
+      "png": {
+        "path": "pixel-cat-grab.png",
+        "bytes": 984,
+        "sha256": "13c0a1a83cd6927bb58fdf7290b5a1d10ea905e3f86b05636e5771305e2dee96"
+      },
+      "webp": {
+        "path": "pixel-cat-grab.webp",
+        "bytes": 1646,
+        "sha256": "0d548a15202499a5d956d2c116496bbd8f2b6e36c8970b682d65f6cef181101f",
+        "frames": 4,
+        "distinctFrames": 3,
+        "durationMs": 600,
+        "loop": 0,
+        "quality": 100
+      }
+    }
+  },
+  "assetBytes": 20138,
+  "badgeInset": {
+    "top": 15,
+    "right": 12
+  }
+}
