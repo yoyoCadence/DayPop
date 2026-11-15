@@ -388,7 +388,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
                 the bottom left (`.cal-pet` is `left: 14px`); this used to say right. */}
             <p className="set-pref-help">
               牠待在日曆左下角，顯示今天還有幾件待辦。點牠會用漫畫對話框列出今日與明日的待辦，也能直接透過牠新增待辦。
-              棉花貓、蜂蜜熊與蜜桃兔在畫面安靜一陣子後會出去走走，再回到你放牠的地方；碰一下畫面就會馬上回來，開啟「減少動態效果」時不會走動。
+              有走路動作的夥伴在畫面安靜一陣子後會出去走走，再回到你放牠的地方；碰一下畫面就會馬上回來，開啟「減少動態效果」時不會走動。
               <br />
               <span className="set-pref-pending">還沒有的功能：請牠給行程建議。</span>
             </p>

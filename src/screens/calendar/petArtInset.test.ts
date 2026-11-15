@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { PET_KINDS, type PetKind } from '../../domain/types';
+import { NEW_PET_KINDS, PET_KINDS, type PetKind } from '../../domain/types';
 import { PET_ART_INSET, PET_ART_SIZE, PET_ASSETS, petBadgeOffset } from './petAssets';
 import { PET_SIZE } from './petPlacement';
 
@@ -14,6 +14,8 @@ const IDLE_FILES: Record<PetKind, string> = {
   marshmallow_cat: 'src/assets/pet-collection/marshmallow-cat-idle.png',
   honey_bear: 'src/assets/pet-collection/honey-bear-idle.png',
   peach_bunny: 'src/assets/pet-collection/peach-bunny-idle.png',
+  ...Object.fromEntries(NEW_PET_KINDS.map(key => [key, `src/assets/pet-directions/${key.replaceAll('_', '-')}-idle.png`])) as
+    Record<typeof NEW_PET_KINDS[number], string>,
 };
 
 const ALPHA_THRESHOLD = 24;

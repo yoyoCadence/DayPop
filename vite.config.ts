@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -57,7 +59,42 @@ function contentSecurityPolicy(supabaseUrl: string | undefined): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
+// A content digest per character keeps all of its pose URLs consistent when
+// the art changes. Repeating the digest also avoids spending the JS gzip
+// budget on 56 independently random filename suffixes.
+const petDirectionDirectory = new URL('./src/assets/pet-directions/', import.meta.url);
+
+function petDirectionDigests() {
+  const hashes = new Map<string, ReturnType<typeof createHash>>();
+  for (const file of readdirSync(petDirectionDirectory).sort()) {
+    const character = file.slice(0, file.lastIndexOf('-'));
+    const hash = hashes.get(character) ?? createHash('sha256');
+    hash.update(file).update(readFileSync(new URL(file, petDirectionDirectory)));
+    hashes.set(character, hash);
+  }
+  return new Map([...hashes].map(([name, hash]) => [name, hash.digest('hex').slice(0, 12)]));
+}
+
+function emitPetActions(digests: ReadonlyMap<string, string>): Plugin {
+  return {
+    name: 'daypop-pet-actions',
+    apply: 'build',
+    buildStart() {
+      for (const file of readdirSync(petDirectionDirectory)) {
+        if (file.endsWith('-idle.png')) continue; // Used as each runtime URL's imported anchor.
+        const character = file.slice(0, file.lastIndexOf('-'));
+        const dot = file.lastIndexOf('.');
+        this.emitFile({
+          type: 'asset',
+          fileName: `assets/${file.slice(0, dot)}-${digests.get(character)}${file.slice(dot)}`,
+          source: readFileSync(new URL(file, petDirectionDirectory)),
+        });
+      }
+    },
+  };
+}
+
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, '.', 'VITE_');
 
   // The `VITE_` prefix limits *which* variables are read, not what they hold —
@@ -65,14 +102,27 @@ export default defineConfig(({ mode }) => {
   // the gate that stops it.
   assertBrowserSafeKey(env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
+  const petDigests = command === 'build' ? petDirectionDigests() : new Map<string, string>();
   return {
+    build: {
+      rolldownOptions: {
+        output: {
+          assetFileNames(asset) {
+            const original = asset.originalFileNames.find(name => name.startsWith('src/assets/pet-directions/'));
+            const file = original?.split('/').pop();
+            const digest = file && petDigests.get(file.slice(0, file.lastIndexOf('-')));
+            return digest ? `assets/[name]-${digest}[extname]` : 'assets/[name]-[hash][extname]';
+          },
+        },
+      },
+    },
     // Relative by default so `dist/` can be opened from any path. A deploy
     // under a subpath (GitHub Pages project sites) must override this with an
     // absolute `--base=/<repo>/`: `import.meta.env.BASE_URL` feeds the service
     // worker scope, the version check and the Supabase auth redirect, and `./`
     // would resolve those against the domain root. See docs/deployment.md.
     base: './',
-    plugins: [react(), contentSecurityPolicy(env.VITE_SUPABASE_URL)],
+    plugins: [react(), contentSecurityPolicy(env.VITE_SUPABASE_URL), emitPetActions(petDigests)],
     server: {
       // DP-108: Playwright writes tens of thousands of generated files under
       // output/playwright/ (production fixture builds, reports, traces). The

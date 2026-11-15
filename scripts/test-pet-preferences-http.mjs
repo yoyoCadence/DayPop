@@ -74,7 +74,7 @@ try {
     baseline = await fresh();
   });
   await check('all five choices persist through real repository and independent reload', async () => {
-    for (const petKind of ['moon_cat','orbit_ufo','marshmallow_cat','honey_bear','peach_bunny']) {
+    for (const petKind of ['moon_cat','orbit_ufo','marshmallow_cat','honey_bear','peach_bunny','manga_cat','pixel_cat','mecha_spirit','red_panda']) {
       await a.repository.updatePreferences({ petKind });
       const actual = await fresh();
       assert.equal(actual.preferences.petKind, petKind);
@@ -111,7 +111,7 @@ try {
     assert.deepEqual(await fresh(), before);
   });
   await check('v2 backup restores the selected choice through the atomic RPC', async () => {
-    await a.repository.updatePreferences({ petKind: 'honey_bear' });
+    await a.repository.updatePreferences({ petKind: 'mecha_spirit' });
     backup = await fresh();
     await a.repository.updatePreferences({ petKind: 'peach_bunny' });
     const plan = planJsonImport(JSON.stringify(buildJsonBackup(backup)), await a.repository.load());

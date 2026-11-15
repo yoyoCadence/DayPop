@@ -13,11 +13,15 @@ const choices: { kind: PetKind; name: string }[] = [
   { kind: 'peach_bunny', name: '蜜桃兔' },
   { kind: 'moon_cat', name: '月光貓' },
   { kind: 'orbit_ufo', name: '軌道噗' },
+  { kind: 'manga_cat', name: '柑橘貓' },
+  { kind: 'pixel_cat', name: '果粒貓' },
+  { kind: 'mecha_spirit', name: '星輪精靈' },
+  { kind: 'red_panda', name: '栗尾熊貓' },
 ];
 
 export function PetChoices({ value, saving, onChange }: { value: PetKind; saving: boolean; onChange(kind: PetKind): void }) {
   // Selection remains available offline even when preview PNGs have never been
-  // visited/cached. Do not issue five guaranteed-to-fail image requests then.
+  // visited/cached. Do not issue guaranteed-to-fail image requests then.
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine);
   return <fieldset className="set-pet-choices" disabled={saving}>
     <legend className="set-pref-field-label">選擇夥伴</legend>
