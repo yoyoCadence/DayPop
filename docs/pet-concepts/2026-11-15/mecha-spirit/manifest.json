@@ -1,0 +1,161 @@
+{
+  "key": "mecha_spirit",
+  "canvas": [
+    120,
+    120
+  ],
+  "cssPixels": 84,
+  "transparentMargin": 8,
+  "nativeTool": "Blender",
+  "nativeToolVersion": "Blender 4.3.2",
+  "encoder": "Pillow 13.0.0, libwebp 1.6.0",
+  "conceptReferenceSha256": "a98f7472a7c8097c86b6ecc21018f390e2d536e39c00efd7e4c177b6faa3a3ed",
+  "source": [
+    {
+      "path": "mecha-spirit/character.blend",
+      "bytes": 205342,
+      "sha256": "106440a1ca4bc99d7ed0afd5dcc3af3e5ce5a195aff01dcd4c612a0c8f9fa818"
+    },
+    {
+      "path": "create_3d.py",
+      "bytes": 23129,
+      "sha256": "65a6baccac0fd7cf3888df380bcebe4660f71c4ec1f9e6097fcbd64446d74298"
+    },
+    {
+      "path": "motion.py",
+      "bytes": 606,
+      "sha256": "ce225bdd74093140e2cd35bfdd9483027600bd9f7a64bbccca9f4f19687ec9bc"
+    },
+    {
+      "path": "package_pets.py",
+      "bytes": 8770,
+      "sha256": "88c64aa9b52f776172aa7649fc80c366fc56402b841e721e668ef4ea4b1c13f2"
+    }
+  ],
+  "poses": {
+    "idle": {
+      "png": {
+        "path": "mecha-spirit-idle.png",
+        "bytes": 13510,
+        "sha256": "c9a87528a11d8578d09b8fd55c52bb45e5b763a81a41c996a0333fd1daae4d1e"
+      },
+      "webp": {
+        "path": "mecha-spirit-idle.webp",
+        "bytes": 16394,
+        "sha256": "ba76867333ca2a40786e084d216078e1b2826122b61aa78e10fda2cda0737a19",
+        "frames": 7,
+        "distinctFrames": 7,
+        "durationMs": 2160,
+        "loop": 0,
+        "quality": 75
+      }
+    },
+    "walk": {
+      "png": {
+        "path": "mecha-spirit-walk.png",
+        "bytes": 13406,
+        "sha256": "c9f6669fae7e4e6ed7220777bb2ba422f077d50ce60b672395f63daa5ee89d1d"
+      },
+      "webp": {
+        "path": "mecha-spirit-walk.webp",
+        "bytes": 16854,
+        "sha256": "23cd6da25bcb128e11c4948847cd7591cb4e6cbdb861945105bbf532f651ab7b",
+        "frames": 8,
+        "distinctFrames": 7,
+        "durationMs": 800,
+        "loop": 0,
+        "quality": 65
+      }
+    },
+    "sit": {
+      "png": {
+        "path": "mecha-spirit-sit.png",
+        "bytes": 13264,
+        "sha256": "22750277e257e019958ca0f705c798ada061f2747664c27ce72485d2091a8b81"
+      },
+      "webp": {
+        "path": "mecha-spirit-sit.webp",
+        "bytes": 8914,
+        "sha256": "76caa33fa853f4c1cd97f7910a834f411150a6d2ddfb2d42c3ed9e6bee9519ed",
+        "frames": 4,
+        "distinctFrames": 4,
+        "durationMs": 1490,
+        "loop": 0,
+        "quality": 75
+      }
+    },
+    "sleep": {
+      "png": {
+        "path": "mecha-spirit-sleep.png",
+        "bytes": 11477,
+        "sha256": "8ed6ec7a9299697f7701f325721f1ab4392318bf7dd529f4fb19af5f71d8f263"
+      },
+      "webp": {
+        "path": "mecha-spirit-sleep.webp",
+        "bytes": 14028,
+        "sha256": "7f238e589f8ddc855ec01aba6f6dd71ae7c3826cdf118e73fda7d43fdc1b10ae",
+        "frames": 8,
+        "distinctFrames": 8,
+        "durationMs": 2400,
+        "loop": 0,
+        "quality": 65
+      }
+    },
+    "jump": {
+      "png": {
+        "path": "mecha-spirit-jump.png",
+        "bytes": 13064,
+        "sha256": "17fef69e4461a1e52662284e3acd8baff4904de21582cc70ed66cbec132e3a5f"
+      },
+      "webp": {
+        "path": "mecha-spirit-jump.webp",
+        "bytes": 15422,
+        "sha256": "fc3dc0f3fed9000c444e637429fe034f86aa5f6528cca30ecd0b1de55d231c43",
+        "frames": 10,
+        "distinctFrames": 10,
+        "durationMs": 1000,
+        "loop": 1,
+        "quality": 20
+      }
+    },
+    "look": {
+      "png": {
+        "path": "mecha-spirit-look.png",
+        "bytes": 13752,
+        "sha256": "50889971c7a3eaabe6afe9e4c7400837b936fd75fc5eed7fbaabedef8da83dfb"
+      },
+      "webp": {
+        "path": "mecha-spirit-look.webp",
+        "bytes": 15444,
+        "sha256": "02e1e85110f3870f1d2a14291a724c648b72ed54df83d426af108c4fc1103c41",
+        "frames": 10,
+        "distinctFrames": 10,
+        "durationMs": 1600,
+        "loop": 1,
+        "quality": 35
+      }
+    },
+    "grab": {
+      "png": {
+        "path": "mecha-spirit-grab.png",
+        "bytes": 13516,
+        "sha256": "4312dd3292c3676f05f1c5676f6a81c884496f35d509abd4a2d52627e789ab81"
+      },
+      "webp": {
+        "path": "mecha-spirit-grab.webp",
+        "bytes": 9978,
+        "sha256": "2c5b59f5afadc01c8bb52f28c912d2c035efca9777ad91ab0f410fa01f8974bf",
+        "frames": 6,
+        "distinctFrames": 6,
+        "durationMs": 600,
+        "loop": 0,
+        "quality": 27
+      }
+    }
+  },
+  "assetBytes": 189023,
+  "badgeInset": {
+    "top": 26,
+    "right": 23
+  }
+}
