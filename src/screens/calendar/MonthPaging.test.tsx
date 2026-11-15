@@ -143,3 +143,48 @@ describe('single-month navigation (DP-225)', () => {
     expect(cell('2026-02-16').textContent).toBe(content); expect(rows()).toBe(53);
   });
 });
+
+describe('other-month days in paged mode (DP-257)', () => {
+  const day = (key: string) => cell(key).querySelector<HTMLElement>('.cal-cell-day')!;
+
+  it('marks leading and trailing days of the neighbouring months, not the shown month', () => {
+    // November 2026 starting on Monday: 10/26–10/31 lead, 12/1–12/6 trail.
+    mount({ initialDateKey: '2026-11-15', todayKey: '2026-11-20', selectedDate: '2026-11-20', weekStartsOn: 1 });
+    for (const key of ['2026-10-26', '2026-10-31', '2026-12-01', '2026-12-06']) {
+      expect(cell(key).dataset.outside).toBe('true');
+      expect(cell(key).style.background).toBe('var(--surface-2)');
+      expect(day(key).style.color).toBe('var(--muted)');
+      expect(day(key).style.fontWeight).toBe('500');
+    }
+    for (const key of ['2026-11-02', '2026-11-30']) {
+      expect(cell(key).dataset.outside).toBeUndefined();
+      // One month per page, so no alternating-month zebra either.
+      expect(cell(key).style.background).toBe('transparent');
+      expect(day(key).style.color).toBe('var(--fg)');
+    }
+    // The first of the next month still says which month it is, but muted.
+    expect(day('2026-12-01').textContent).toBe('12月');
+    expect(day('2026-11-01').style.color).toBe('var(--accent-text)');
+  });
+
+  it('keeps today and the selection visible on an other-month day', () => {
+    mount({ initialDateKey: '2026-11-15', todayKey: '2026-12-02', selectedDate: '2026-10-27', weekStartsOn: 1 });
+    expect(cell('2026-12-02').style.background).toBe('var(--today-bg)');
+    expect(day('2026-12-02').style.color).toBe('var(--today-fg)');
+    expect(day('2026-10-27').style.color).toBe('var(--accent-text)');
+    expect(day('2026-10-27').style.fontWeight).toBe('800');
+  });
+
+  it('follows the page when it changes month', () => {
+    mount({ initialDateKey: '2026-11-15', weekStartsOn: 1 });
+    expect(cell('2026-12-01').dataset.outside).toBe('true');
+    act(() => handle.current!.page(1));
+    expect(cell('2026-12-01').dataset.outside).toBeUndefined();
+    expect(cell('2026-11-30').dataset.outside).toBe('true');
+  });
+
+  it('leaves continuous mode unmarked', () => {
+    mount({ navigation: 'continuous', initialDateKey: '2026-11-15', weekStartsOn: 1 });
+    expect(container.querySelectorAll('[data-outside]')).toHaveLength(0);
+  });
+});

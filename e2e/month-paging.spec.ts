@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { monitorBrowser } from './support';
+import { monitorBrowser, tabButton } from './support';
 import { checkMonthPaging, chooseMonthMode, seedMonthPaging, swipeMonth } from './fixtures/monthPaging';
 
 // At the fixed instant, this device is Nov 14 while the calendar is Nov 15.
@@ -56,6 +56,43 @@ test('單月左右手勢不誤點，窄螢幕淺深選項與月格可操作', as
   await expect(page.locator('.dp-storage-warning')).toContainText('這次的變更不會被保存');
   await expect(page.locator('.cal-week-row')).toHaveCount(53);
   expect(await page.evaluate(() => localStorage.getItem('daypop.month-navigation.v1'))).toBe('paged');
+  expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
+  clean();
+});
+
+test('設定頁也能切換顯示方式；單月翻頁的前後月日子看得出是別的月份（DP-256／257）', async ({ page }) => {
+  const clean = monitorBrowser(page); await seedMonthPaging(page);
+  const before = await page.evaluate(() => localStorage.getItem('daypop.user-data'));
+  await tabButton(page, '設定').click();
+  const row = page.getByRole('group', { name: '月曆顯示方式' });
+  await expect(row.getByRole('button', { name: '連續捲動', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await row.getByRole('button', { name: '單月翻頁', exact: true }).click();
+  await expect(row.getByRole('button', { name: '單月翻頁', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await tabButton(page, '日曆').click();
+  await expect(page.locator('.cal-month-paged')).toBeVisible();
+  await expect(page.getByRole('button', { name: '月曆顯示方式：單月翻頁' })).toBeVisible();
+  await expect(page.locator('h1.cal-period')).toHaveText('2026年 11月');
+  // Weeks start on Monday: Oct 26–31 lead into November, Dec 1–6 trail after it.
+  const look = (key: string) => page.locator(`[data-date-key="${key}"]`).evaluate(el => ({
+    outside: (el as HTMLElement).dataset.outside ?? null,
+    background: getComputedStyle(el).backgroundColor,
+    color: getComputedStyle(el.querySelector('.cal-cell-day')!).color,
+  }));
+  const inside = await look('2026-11-10'), lead = await look('2026-10-27'), trail = await look('2026-12-03');
+  expect(inside.outside).toBeNull();
+  for (const other of [lead, trail]) {
+    expect(other.outside).toBe('true');
+    expect(other.background, 'Other-month days get their own fill').not.toBe(inside.background);
+    expect(other.color, 'Other-month day numbers use the secondary colour').not.toBe(inside.color);
+  }
+  await swipeMonth(page, test.info().project.name === 'mobile-chrome');
+  await expect(page.locator('h1.cal-period')).toHaveText('2026年 12月');
+  expect((await look('2026-12-03')).outside).toBeNull();
+  expect((await look('2026-11-30')).outside).toBe('true');
+  // The header dialog and Settings are one setting.
+  await chooseMonthMode(page, '連續捲動');
+  await tabButton(page, '設定').click();
+  await expect(page.getByRole('group', { name: '月曆顯示方式' }).getByRole('button', { name: '連續捲動', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
   clean();
 });

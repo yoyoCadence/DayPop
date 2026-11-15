@@ -27,6 +27,7 @@ import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
 import { DataPrivacyCard } from './DataPrivacyCard';
 import { PetChoices } from './PetChoices';
+import { readMonthNavigation, saveMonthNavigation, type MonthNavigation } from './calendar/monthNavigation';
 import './screens.css';
 import './calendarManage.css';
 import './dataTransfer.css';
@@ -46,6 +47,13 @@ const MODE_OPTIONS: { mode: ThemePreference; label: string }[] = [
 const GRID_OPTIONS: { mode: CalendarGridMode; label: string }[] = [
   { mode: 'adaptive', label: '自動 4–6 列' },
   { mode: 'fixed-six', label: '固定 6 列' },
+];
+
+// Same choice as the month header's 月曆顯示方式 dialog (DP-225): one device key,
+// read again whenever the calendar screen mounts, so either place can change it.
+const MONTH_NAVIGATION_OPTIONS: { mode: MonthNavigation; label: string }[] = [
+  { mode: 'continuous', label: '連續捲動' },
+  { mode: 'paged', label: '單月翻頁' },
 ];
 
 const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
@@ -111,6 +119,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   const icsInputRef = useRef<HTMLInputElement>(null);
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
   const [editing, setEditing] = useState<string | 'new' | null>(null);
+  const [monthNavigation, setMonthNavigation] = useState(readMonthNavigation);
 
   const calendars = sortedCalendars(personalData.calendars);
   const editingCalendar =
@@ -455,6 +464,29 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               </div>
             </div>
             <div className="set-pref-row">
+              {/* DP-256: the owner asked for this in 設定 as well as the header icon. */}
+              <span className="set-pref-row-label" id="month-navigation-label">
+                月曆顯示方式
+              </span>
+              <div className="set-pref-segment" role="group" aria-labelledby="month-navigation-label">
+                {MONTH_NAVIGATION_OPTIONS.map((option) => (
+                  <button
+                    key={option.mode}
+                    className="set-pref-segment-button"
+                    type="button"
+                    aria-pressed={monthNavigation === option.mode}
+                    onClick={() => {
+                      if (option.mode === monthNavigation) return;
+                      setMonthNavigation(option.mode);
+                      saveMonthNavigation(option.mode);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="set-pref-row">
               <span className="set-pref-row-label" id="week-start-label">
                 每週起始日
               </span>
@@ -490,7 +522,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               </select>
             </div>
           </div>
-          <p className="set-pref-help">月曆頁首的顯示方式圖示可切換「連續捲動／單月翻頁」；單月模式可左右滑動換月。</p>
+          <p className="set-pref-help">「單月翻頁」一次顯示一個月，左右滑動換月；只記在這台裝置。月曆頁首的顯示方式圖示也能切換。</p>
           <ReminderSettings calendars={data.calendars} timezone={preferences.timezone} onOpenAuth={onOpenAuth} updater={updater} />
         </div>
 

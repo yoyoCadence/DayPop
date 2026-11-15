@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **設定頁也能切換月曆顯示方式；單月頁的前後月日子看得出來（DP-256／257，2026-11-15）：** 擁有者要求。設定「日曆 → 顯示與時區」的「月曆顯示方式」與頁首對話框共用 `daypop.month-navigation.v1`（裝置 UI 狀態，不進 user data／備份），`CalendarScreen` 每次掛載重讀。單月翻頁時其他月份的日子用 `--surface-2` 底色、`--muted` 數字、不加粗、`data-outside="true"`，單月頁關閉 zebra；今天與選取優先。**不要把這個底色改成更深的灰**：加深到 10–20% 會讓商務淺色的 `--muted`／`--lunar-muted` 低於 AA（已量），`--surface-2` 是兩種次要文字都驗過的組合。淺色主題的底色差異較小，主要靠數字顏色；理由見 ADR §6。設定頁「一般」列順序改為 月曆列數／月曆顯示方式／每週起始日／預設時區，`SettingsPreferences.test.tsx` 的 `generalRow()` 索引跟著改。
+
 - **0.5.2「數字和欄位對齊了」已部署、iPhone 確認（DP-254，2026-11-15）：** 沿用擁有者「可以直接佈署、發新版本」的授權。只改 release version、三條公告（數字貼在夥伴頭上、iPhone 日期／時刻欄位不再超出、提醒與待辦改日期一起修正）與生成的 version.json／sw.js，歷史公告不變，沒有 migration。#249 四 CI／同 head Codex 審查無發現後合併 4747aa4，dispatch Deploy staging #25（43663383167），從 4747aa4 六 jobs 全部成功（含 Refuse to rewrite deployed release notes 與 Publish to Pages，01:55 UTC），**0.5.2 公告自此不可回寫**。這個環境連不到 github.io，公開成品比對與線上公告畫面未做；擁有者 2026-11-15 在 iPhone 確認待辦數字位置正確（DP-251）與日期／時刻欄位已修好（DP-252），DP-254 已移 Done。
 
 - **待辦數字貼在夥伴身上；iPhone 日期／時刻欄位不再超出（DP-251／252，2026-11-15）：** 擁有者在 0.5.1 回報兩件事。(1) 數字位置改由 `petAssets.ts` 的 `PET_ART_INSET`（每款 idle 靜態圖的透明邊）決定，貼在角色本身右上角；**換圖或新增夥伴要一起更新這張表**，`petArtInset.test.ts` 會直接解碼 PNG 核對。(2) 日期／時刻欄位一律 `appearance: none`：iOS 對原生外觀的這類欄位會另外決定寬度，`min-width: 0`／`max-width` 壓不住，Chromium 與 Linux WebKit 都重現不了；`mobileDialogs.ts` 守住這條樣式。**新增任何 date／time 欄位都要比照**，否則 iPhone 上可能超出。兩項都待擁有者 iPhone 確認。

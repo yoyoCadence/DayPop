@@ -6,7 +6,7 @@ import { enableReminder, reminderDialog, reminderLogin, reminderReceipts, remind
 test('提醒須直接同意；日曆規則、換頁與停用不改個人資料', async ({ page }) => {
   const clean = monitorBrowser(page); await reminderLogin(page);
   await expect(page.getByText('左右滑動翻頁', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('月曆頁首的顯示方式圖示可切換「連續捲動／單月翻頁」；單月模式可左右滑動換月。', { exact: true })).toBeVisible();
+  await expect(page.getByText('「單月翻頁」一次顯示一個月，左右滑動換月；只記在這台裝置。月曆頁首的顯示方式圖示也能切換。', { exact: true })).toBeVisible();
   const personal = await page.evaluate(id => localStorage.getItem('daypop.account-cache.' + id), REMINDER_ACCOUNT);
   expect(await page.evaluate(() => (window as ReminderHarnessWindow).__daypopReminderHarness!.stats.consents)).toBe(0);
   await enableReminder(page);

@@ -44,3 +44,9 @@ axe 量測先等待既有彈出動畫完成，未放寬對比門檻。初次 320
 - `npm run test:e2e -- --project=webkit-smoke`
 
 PR #221 最終 `8d31ac0e215c194dfcc433e9b181910118b5f146` 的四 CI `41266688371` 全過，同 head 審查 completed 無發現且無未解決討論後合併 `3ae1adf52a54900b2c082d7861f0d86cb3784eca`。Chromium 首輪雖 303 passed／13 skipped，連同 setup 達 job 25 分鐘而取消，不算 pass；僅重跑該 job 後 303 passed／13 skipped（22.8 分鐘），未更改測試、worker／retry／timeout 或門檻。沒有 schema／Auth／版號／已發布公告／部署改動；DP-223 提醒 App／worker 由 DP-226 分段接續，父項 DP-042 尚未完成。
+
+## 2026-11-15 補充（DP-256／257）
+
+- 設定「日曆 → 顯示與時區」的「月曆顯示方式」與頁首對話框共用 `daypop.month-navigation.v1`。
+- 單月翻頁時其他月份的日子：`--surface-2` 底色、`--muted` 日期、不加粗，`data-outside="true"`；單月頁不用 zebra。理由與對比取捨見 ADR §6（DP-256／257）。
+- 回歸：`MonthPaging.test.tsx` 的 other-month 四項（移除產品修改時其中兩項失敗）、`SettingsPreferences.test.tsx` 的兩項、`e2e/month-paging.spec.ts` 的設定頁切換案例；既有的窄螢幕淺深 axe 掃描也涵蓋新樣式。

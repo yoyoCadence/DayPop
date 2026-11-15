@@ -591,7 +591,7 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
           }
         }}>
         <MonthRows weeks={weeks} rowHeight={rowHeight} todayKey={todayKey} selectedDate={selectedDate}
-          calendars={calendars} flashToday={flashToday} onSelectDate={onSelectDate} setFocusKey={setFocusKey} activeKey={activeKey} />
+          calendars={calendars} flashToday={flashToday} onSelectDate={onSelectDate} setFocusKey={setFocusKey} activeKey={activeKey} outsideOf={toDateKey(month).slice(0, 7)} />
       </div>
     </div>
   );
@@ -632,15 +632,22 @@ interface MonthRowsProps {
   weeks: ReturnType<typeof makeMonthCell>[][];
   rowHeight: number; todayKey: string; selectedDate: string; calendars: Calendar[];
   flashToday: boolean; onSelectDate(key: string): void; setFocusKey(key: string): void; activeKey: string;
+  /**
+   * Paged mode only: the shown month as `YYYY-MM`. Days of the months before
+   * and after are drawn as other-month days (DP-257) and the alternating-month
+   * zebra is off, since a page holds one month. Continuous mode omits it.
+   */
+  outsideOf?: string;
 }
 
 /** Both navigation modes draw exactly the same canonical day content. */
-function MonthRows({ weeks, rowHeight, todayKey, selectedDate, calendars, flashToday, onSelectDate, setFocusKey, activeKey }: MonthRowsProps) {
+function MonthRows({ weeks, rowHeight, todayKey, selectedDate, calendars, flashToday, onSelectDate, setFocusKey, activeKey, outsideOf }: MonthRowsProps) {
   return (<>{weeks.map((cells) => (
           <div className="cal-week-row" key={cells[0]!.key} style={{ height: `${rowHeight}px` }}>
             {cells.map((cell) => {
               const isToday = cell.key === todayKey;
               const isSelected = cell.key === selectedDate;
+              const isOutside = outsideOf !== undefined && cell.key.slice(0, 7) !== outsideOf;
               const { shown, hidden } = cellChipBudget(
                 rowHeight,
                 cell.dayEvents.length,
@@ -658,17 +665,24 @@ function MonthRows({ weeks, rowHeight, todayKey, selectedDate, calendars, flashT
                   onFocus={() => setFocusKey(cell.key)}
                   aria-pressed={isSelected}
                   aria-label={`${cell.key}，${cell.dayEvents.length} 個行程`}
-                  style={{ background: cellBackground(isToday, isSelected, cell.isZebra) }}
+                  data-outside={isOutside || undefined}
+                  style={{ background: cellBackground(isToday, isSelected, outsideOf === undefined && cell.isZebra, isOutside) }}
                 >
                   <div
                     className="cal-cell-day"
                     style={{
+                      // Other-month days use the secondary text token, which
+                      // clears AA on --surface-2 in every theme (textContrast).
                       color: isToday
                         ? 'var(--today-fg)'
-                        : isSelected || cell.isFirstOfMonth
+                        : isSelected
                           ? 'var(--accent-text)'
-                          : 'var(--fg)',
-                      fontWeight: isToday || isSelected || cell.isFirstOfMonth ? 800 : 500,
+                          : isOutside
+                            ? 'var(--muted)'
+                            : cell.isFirstOfMonth
+                              ? 'var(--accent-text)'
+                              : 'var(--fg)',
+                      fontWeight: isToday || isSelected || (cell.isFirstOfMonth && !isOutside) ? 800 : 500,
                     }}
                   >
                     {cell.isFirstOfMonth ? `${cell.date.getMonth() + 1}月` : cell.date.getDate()}
@@ -736,9 +750,11 @@ function chipLabel(entry: MonthCellEntry): string {
   return entry.isContinuation ? `${CONTINUATION_LABEL} ${entry.event.title}` : entry.event.title;
 }
 
-function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean): string {
+function cellBackground(isToday: boolean, isSelected: boolean, isZebra: boolean, isOutside = false): string {
   if (isToday) return 'var(--today-bg)';
-  if (isSelected) return 'var(--surface-2)';
+  // An other-month day in paged mode (DP-257) takes the selected fill: an
+  // opaque, already-audited background for both --muted and --lunar-muted.
+  if (isSelected || isOutside) return 'var(--surface-2)';
   return isZebra ? 'rgba(130,130,130,0.06)' : 'transparent';
 }
 
