@@ -12,6 +12,13 @@ export async function checkCollectionAssets(source, builtFiles, budget) {
     [kind, ['idle.webp', 'walk.webp', 'look.webp', 'sleep.webp', 'jump.webp', 'idle.png', 'sit.png', 'grab.png', 'sleep.png']])));
 }
 
+export async function checkDirectionAssets(source, builtFiles, budget) {
+  const poses = ['idle', 'walk', 'sit', 'sleep', 'jump', 'look', 'grab'];
+  const files = poses.flatMap(pose => [`${pose}.png`, `${pose}.webp`]);
+  const kinds = ['manga-cat', 'pixel-cat', 'mecha-spirit', 'red-panda'];
+  return checkPackageAssets(source, builtFiles, budget, Object.fromEntries(kinds.map(kind => [kind, files])));
+}
+
 async function checkPackageAssets(source, builtFiles, budget, packages) {
   const problems = [];
   const totals = {};
@@ -29,7 +36,7 @@ async function checkPackageAssets(source, builtFiles, budget, packages) {
   for (const name of expected) {
     const bytes = await readFile(join(source, name));
     const [kind, pose, extension] = /^(.+)-(idle|look|grab|sleep|jump|walk|sit)\.(webp|png)$/.exec(name).slice(1);
-    const metric = extension === 'png' ? 'maxStaticBytes' : { idle: 'maxIdleBytes', walk: 'maxLookBytes', look: 'maxLookBytes', sleep: 'maxSleepBytes', jump: 'maxJumpBytes' }[pose];
+    const metric = extension === 'png' ? 'maxStaticBytes' : { idle: 'maxIdleBytes', walk: 'maxLookBytes', sit: 'maxLookBytes', grab: 'maxLookBytes', look: 'maxLookBytes', sleep: 'maxSleepBytes', jump: 'maxJumpBytes' }[pose];
     totals[kind] = (totals[kind] ?? 0) + bytes.length;
     if (bytes.length > budget[metric]) problems.push(`${name} ${bytes.length} exceeds ${metric} ${budget[metric]} bytes`);
     const pattern = new RegExp(`^${kind}-${pose}-[A-Za-z0-9_-]+\\.${extension}$`);

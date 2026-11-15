@@ -225,6 +225,11 @@
   object-fit: contain;
 }
 
+/* Preserve the 40-cell source palette at fractional CSS scales. */
+.set-pet-choice img[src*="/pixel-cat-"] {
+  image-rendering: pixelated;
+}
+
 .set-pet-preview-placeholder {
   display: grid;
   width: 72px;

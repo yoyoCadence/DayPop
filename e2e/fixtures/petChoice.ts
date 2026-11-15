@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createEmptyUserData } from '../../src/domain/types';
+import { createEmptyUserData, NEW_PET_KINDS, type PetKind } from '../../src/domain/types';
 import { monitorBrowser, openApp, tabButton } from '../support';
 
 export async function checkPetChoice(page: Page) {
@@ -18,7 +18,8 @@ export async function checkPetChoice(page: Page) {
   const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('daypop.user-data')!));
   await expect.poll(saved).toEqual({ schemaVersion: 5, revision: 7, updatedAt: instant, data: current });
   await tabButton(page, '設定').click();
-  for (const [name, key] of [['棉花貓', 'marshmallow_cat'], ['蜂蜜熊', 'honey_bear'], ['蜜桃兔', 'peach_bunny'], ['軌道噗', 'orbit_ufo'], ['月光貓', 'moon_cat']]) {
+  for (const [name, key] of [['棉花貓', 'marshmallow_cat'], ['蜂蜜熊', 'honey_bear'], ['蜜桃兔', 'peach_bunny'], ['軌道噗', 'orbit_ufo'], ['月光貓', 'moon_cat'],
+    ['柑橘貓', 'manga_cat'], ['果粒貓', 'pixel_cat'], ['星輪精靈', 'mecha_spirit'], ['栗尾熊貓', 'red_panda']]) {
     await page.getByRole('radio', { name: name!, exact: true }).check();
     await expect.poll(async () => (await saved()).data.preferences.petKind).toBe(key);
     await expect(page.getByRole('radio', { name: name!, exact: true })).toBeChecked();
@@ -29,6 +30,18 @@ export async function checkPetChoice(page: Page) {
     await page.reload();
     await expect(pet).toBeVisible();
     await expect(pet).toHaveAttribute('src', new RegExp(key!.replaceAll('_', '-') + '-idle.*webp'));
+    if (NEW_PET_KINDS.some(kind => kind === key as PetKind)) {
+      expect(await pet.evaluate(img => [img.clientWidth, img.clientHeight])).toEqual([84, 84]);
+      await page.screenshot({ path: test.info().outputPath(`calendar-${key}.png`) });
+      try {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(pet).toHaveAttribute('src', new RegExp(key!.replaceAll('_', '-') + '-idle.*png'));
+        await expect(pet).toBeVisible();
+        if (key === 'pixel_cat') await expect(pet).toHaveCSS('image-rendering', 'pixelated');
+      } finally {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+      }
+    }
     const after = await saved();
     expect({ ...after.data, preferences: { ...after.data.preferences, petKind: 'moon_cat' } }).toEqual(current);
     await tabButton(page, '設定').click();

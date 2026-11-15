@@ -19,3 +19,13 @@ python "$pet_source/package_pets.py" manga-cat --frames "$pet_frames/manga-cat" 
 ```
 
 每款的 manifest 有編碼版本、尺寸、幀數、循環、徽章邊距、來源與成品雜湊。PNG 是 120×120 RGBA，WebP 在解碼後再逐影格檢查尺寸、透明範圍及時間。編碼器可合併連續同幀，驗證以時間軸比對原始透明通道。跨版本重建後使用新雜湊，尤其 Blender 渲染可隨架構而有細小色差。
+
+## DayPop 接線驗證
+
+設定共九款，沿原本的 v5 偏好／備份 v2 保存。新值用既有的 `pet_kind`，有獨立的資料庫 migration 候選，放寬既有五值約束及 replace RPC 的清單。原五款、預設值、RLS、舊備份補值流程、游標定位及拋棄舊版本寫入的行為由原有路徑支援。已發布的舊 App 解析新值時會走既有未知值防護。帶此功能的前端部署之前應先驗證並套用 migration。此交付不涉及正式環境。
+
+四款每態各有獨立 PNG 與動畫 WebP，共 56 檔。建置以每角色內容 SHA-256 前 12 碼做 URL 後綴；App 組合相同角色的七態 URL，驗證腳本逐檔比對輸出位元組，避免圖片內嵌。延用 84 CSS px、192 KiB／款、JS gzip 240,640 bytes。果粒貓使用瀏覽器 pixelated 渲染。
+
+Chromium 手機／桌面和 WebKit 共六個目標案例通過，涵蓋九款切換、重載、84px、PNG／WebP 解碼、reduced-motion 與真正走路影格變化。另以 production fixture 在 Chromium 手機／桌面通過四例，驗證月光貓及栗尾熊貓僅快取已使用素材、離線缺 PNG 時回 CSS，並核對保存資料。瀏覽器實際時區 Asia/Taipei。
+
+本機 PostgreSQL（PGlite）重播 23 份 migration，確認九值 owner 直寫／備份 RPC、舊 client 省略保留、非法／null 回滾、匿名及跨帳號隔離。此測試使用最小 Auth／Storage fixture，pg_cron／pg_net 跳過，由 repo 完整 Supabase CI 驗證。

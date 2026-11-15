@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { checkPetSleep } from './fixtures/petSleep';
 import { checkPetCollection } from './fixtures/petCollection';
 import { checkPetChoice } from './fixtures/petChoice';
+import { checkPetDirections } from './fixtures/petDirections';
 import { checkPetJump } from './fixtures/petJump';
 import { checkAdaptiveScroll } from './fixtures/adaptiveScroll';
 import { checkMonthPaging, swipeMonth } from './fixtures/monthPaging';
@@ -32,7 +33,7 @@ test('主畫面模式固定縮放且保留月曆手勢', async ({ page }) => {
   await checkInstalledPageGestures(page, false);
 });
 
-test('設定切換五款夥伴、重載保留，v4 其他資料不變', async ({ page }) => { await checkPetChoice(page); });
+test('設定切換九款夥伴、重載保留，v4 其他資料不變', async ({ page }) => { await checkPetChoice(page); });
 
 test('三款 Blender 七態可解碼，真正 walk 動畫有不同影格', async ({ page }) => {
   await checkPetCollection(page);
@@ -213,4 +214,8 @@ test('設定的寵物名字與每週起始日重載後維持', async ({ page }) 
   await expect(page.getByLabel('寵物名字', { exact: true })).toHaveValue('WebKit 夥伴');
   await expect(monday).toHaveAttribute('aria-pressed', 'true');
   assertCleanBrowser();
+});
+
+test('新四款七態在 84px 可解碼，走路影格實際播放', async ({ page }) => {
+  await checkPetDirections(page);
 });
