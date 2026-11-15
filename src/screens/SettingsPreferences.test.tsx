@@ -10,7 +10,7 @@ import { createEmptyUserData } from '../domain/types';
 import { readUserData, writeUserData } from '../storage/versionedStorage';
 import { SettingsScaffoldScreen } from './SettingsScaffoldScreen';
 import { zoneOffsetLabel } from './timezoneOptions';
-import { MONTH_NAVIGATION_KEY } from './calendar/monthNavigation';
+import { MONTH_NAVIGATION_KEY, MONTH_SWIPE_KEY } from './calendar/monthNavigation';
 
 /**
  * 設定的「桌寵」與「一般」兩張卡片（DP-014 這一段的搬移）。
@@ -283,6 +283,29 @@ describe('設定 一般', () => {
 
     await click([...buttons()][0]);
     expect(localStorage.getItem(MONTH_NAVIGATION_KEY)).toBe('continuous');
+  });
+
+  it('翻頁方向只在單月翻頁時出現，選擇存在裝置上（DP-259）', async () => {
+    await render();
+    // The help text mentions the direction too, so look for the row itself.
+    const directionRow = () => container.querySelector('#month-swipe-label');
+    expect(directionRow()).toBeNull();
+    await click([...generalRow(1)!.querySelectorAll('.set-pref-segment-button')][1]);
+    const row = generalRow(2)!;
+    expect(row.textContent).toContain('翻頁方向');
+    const before = JSON.stringify(readUserData());
+    const buttons = () => generalRow(2)!.querySelectorAll('.set-pref-segment-button');
+    expect(pressed(buttons())).toEqual(['左右滑動']);
+
+    await click([...buttons()][1]);
+
+    expect(pressed(buttons())).toEqual(['上下滑動']);
+    expect(localStorage.getItem(MONTH_SWIPE_KEY)).toBe('vertical');
+    expect(JSON.stringify(readUserData())).toBe(before);
+    // Back to continuous: the direction row goes away, the choice is kept.
+    await click([...generalRow(1)!.querySelectorAll('.set-pref-segment-button')][0]);
+    expect(directionRow()).toBeNull();
+    expect(localStorage.getItem(MONTH_SWIPE_KEY)).toBe('vertical');
   });
 
   it('月曆顯示方式讀取裝置上已選的單月翻頁', async () => {

@@ -1,10 +1,12 @@
 import { useRef } from 'react';
 import { useModalFocus } from '../../shell/useModalFocus';
 import { ViewportLayer } from '../../shell/ViewportLayer';
-import type { MonthNavigation } from './monthNavigation';
+import type { MonthNavigation, MonthSwipe } from './monthNavigation';
 
-export function MonthNavigationDialog({ mode, onChoose, onClose }: {
+export function MonthNavigationDialog({ mode, swipe = 'horizontal', onChoose, onClose }: {
   mode: MonthNavigation;
+  /** Only describes the paged option; the direction itself is set in 設定 (DP-259). */
+  swipe?: MonthSwipe;
   onChoose(mode: MonthNavigation): void;
   onClose(): void;
 }) {
@@ -21,7 +23,7 @@ export function MonthNavigationDialog({ mode, onChoose, onClose }: {
             <span>連續捲動</span><span>上下滑動，月份相連</span>
           </button>
           <button className="cal-scope-all cal-month-mode-choice" type="button" aria-pressed={mode === 'paged'} onClick={() => onChoose('paged')}>
-            <span>單月翻頁</span><span>一次顯示一個月，左右換月</span>
+            <span>單月翻頁</span><span>一次顯示一個月，{swipe === 'vertical' ? '上下' : '左右'}換月</span>
           </button>
           <button className="cal-scope-cancel" type="button" onClick={onClose}>取消</button>
         </div>

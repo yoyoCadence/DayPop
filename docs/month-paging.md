@@ -49,4 +49,5 @@ PR #221 最終 `8d31ac0e215c194dfcc433e9b181910118b5f146` 的四 CI `41266688371
 
 - 設定「日曆 → 顯示與時區」的「月曆顯示方式」與頁首對話框共用 `daypop.month-navigation.v1`。
 - 單月翻頁時其他月份的日子：`--surface-2` 底色、`--muted` 日期、不加粗，`data-outside="true"`；單月頁不用 zebra。理由與對比取捨見 ADR §6（DP-256／257）。
+- 翻頁方向（DP-259）：設定「翻頁方向」左右／上下，存在 `daypop.month-swipe.v1`。上下模式容器 `data-swipe="vertical"`、`touch-action: pinch-zoom`；整月放不下時改回左右。
 - 回歸：`MonthPaging.test.tsx` 的 other-month 四項（移除產品修改時其中兩項失敗）、`SettingsPreferences.test.tsx` 的兩項、`e2e/month-paging.spec.ts` 的設定頁切換案例；既有的窄螢幕淺深 axe 掃描也涵蓋新樣式。

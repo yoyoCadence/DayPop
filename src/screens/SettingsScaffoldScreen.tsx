@@ -27,7 +27,7 @@ import { timezoneOptions } from './timezoneOptions';
 import { DataImportDialog } from './DataImportDialog';
 import { DataPrivacyCard } from './DataPrivacyCard';
 import { PetChoices } from './PetChoices';
-import { readMonthNavigation, saveMonthNavigation, type MonthNavigation } from './calendar/monthNavigation';
+import { readMonthNavigation, readMonthSwipe, saveMonthNavigation, saveMonthSwipe, type MonthNavigation, type MonthSwipe } from './calendar/monthNavigation';
 import './screens.css';
 import './calendarManage.css';
 import './dataTransfer.css';
@@ -54,6 +54,12 @@ const GRID_OPTIONS: { mode: CalendarGridMode; label: string }[] = [
 const MONTH_NAVIGATION_OPTIONS: { mode: MonthNavigation; label: string }[] = [
   { mode: 'continuous', label: '連續捲動' },
   { mode: 'paged', label: '單月翻頁' },
+];
+
+// DP-259: which way a swipe turns the page in 單月翻頁.
+const MONTH_SWIPE_OPTIONS: { swipe: MonthSwipe; label: string }[] = [
+  { swipe: 'horizontal', label: '左右滑動' },
+  { swipe: 'vertical', label: '上下滑動' },
 ];
 
 const WEEK_START_OPTIONS: { value: 0 | 1; label: string }[] = [
@@ -120,6 +126,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
   /** null = closed, 'new' = creating, otherwise the calendar id being edited. */
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [monthNavigation, setMonthNavigation] = useState(readMonthNavigation);
+  const [monthSwipe, setMonthSwipe] = useState(readMonthSwipe);
 
   const calendars = sortedCalendars(personalData.calendars);
   const editingCalendar =
@@ -486,6 +493,31 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
                 ))}
               </div>
             </div>
+            {monthNavigation === 'paged' && (
+              <div className="set-pref-row">
+                {/* DP-259: only meaningful for 單月翻頁, so shown only then. */}
+                <span className="set-pref-row-label" id="month-swipe-label">
+                  翻頁方向
+                </span>
+                <div className="set-pref-segment" role="group" aria-labelledby="month-swipe-label">
+                  {MONTH_SWIPE_OPTIONS.map((option) => (
+                    <button
+                      key={option.swipe}
+                      className="set-pref-segment-button"
+                      type="button"
+                      aria-pressed={monthSwipe === option.swipe}
+                      onClick={() => {
+                        if (option.swipe === monthSwipe) return;
+                        setMonthSwipe(option.swipe);
+                        saveMonthSwipe(option.swipe);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="set-pref-row">
               <span className="set-pref-row-label" id="week-start-label">
                 每週起始日
@@ -522,7 +554,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
               </select>
             </div>
           </div>
-          <p className="set-pref-help">「單月翻頁」一次顯示一個月，左右滑動換月；只記在這台裝置。月曆頁首的顯示方式圖示也能切換。</p>
+          <p className="set-pref-help">「單月翻頁」一次顯示一個月，依翻頁方向滑動換月；整個月放不下時改為左右滑動。只記在這台裝置。月曆頁首的顯示方式圖示也能切換。</p>
           <ReminderSettings calendars={data.calendars} timezone={preferences.timezone} onOpenAuth={onOpenAuth} updater={updater} />
         </div>
 
