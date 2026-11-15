@@ -1108,6 +1108,16 @@ DP-180 PR #174 已合併為 `12280a8`，擁有者指定先做 profile，未授�
 
 ## 7. 工程治理
 
+### 決策（DP-263，2026-11-15）— 不打包 Supabase Realtime
+
+JS gzip 只剩約 4.7 KiB，下一個功能就會放不下。量 bundle 時發現 realtime-js 加 phoenix 約 18.7 KB gzip，但 DayPop 沒有任何 Realtime 訂閱：資料同步走 PostgREST，提醒 worker 用 `BroadcastChannel`。
+
+- **做法**：`vite.config.ts` 的 `resolve.alias` 把 `@supabase/realtime-js` 換成 `src/lib/realtimeDisabled.ts`。supabase-js 2.x 只會呼叫建構子、每次 token 變化的 `setAuth`，以及 `channel`／`getChannels`／`removeChannel`／`removeAllChannels`；空殼照實作這六個，`channel()` 丟錯，讓日後誤用在開發時就失敗。
+- **測試**：vitest 以 `server.deps.inline` 讓 supabase-js 經過同一個 alias；`realtimeDisabled.test.ts` 確認 `createClient()` 建出空殼、登出時 `setAuth()` 被呼叫、channel 會丟錯。拿掉 alias 時其中兩項失敗。
+- **結果**：最緊的建置 JS gzip 241,024 → 224,964（−16,060），raw −55,479；上限不變。正式設定的 production build 在瀏覽器開啟登入視窗、讀取 auth settings 正常，沒有 WebSocket，console 0。
+- **不做**：rrule 自然語言模組、auth-js 的 webauthn／admin API 也沒用到（約 6.8 KB gzip），但它們綁在類別方法或建構子裡，替換的維護成本較高，等真的需要空間再評估。
+- **代價**：升級 supabase-js 時，若它開始呼叫 realtime 的其他介面，`realtimeDisabled.test.ts` 會失敗；要用 Realtime 時移除 alias 並重新量測預算。
+
 ### 決策（DP-159，2026-10-20）— 四條 WebKit smoke 獨立執行
 
 > **DP-180／2026-10-21 補充：** Chromium 增為 264 案例後，run `39615837756` 在第 263 項通過後達到原 20 分鐘 job 上限，最後案例未完成而取消；將完整 Chromium job 額度改為 25 分鐘，個別案例 deadline、worker、retries 與四個 jobs 的完整成功要求不變。下文的 20 分鐘保留為 DP-159 當時設定。
