@@ -285,7 +285,7 @@ describe('設定 一般', () => {
     expect(localStorage.getItem(MONTH_NAVIGATION_KEY)).toBe('continuous');
   });
 
-  it('翻頁方向只在單月翻頁時出現，選擇存在裝置上（DP-259）', async () => {
+  it('翻頁方向只在單月翻頁時出現，選擇存在裝置上（DP-261）', async () => {
     await render();
     // The help text mentions the direction too, so look for the row itself.
     const directionRow = () => container.querySelector('#month-swipe-label');

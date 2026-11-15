@@ -5,7 +5,7 @@ import type { MonthNavigation, MonthSwipe } from './monthNavigation';
 
 export function MonthNavigationDialog({ mode, swipe = 'horizontal', onChoose, onClose }: {
   mode: MonthNavigation;
-  /** Only describes the paged option; the direction itself is set in 設定 (DP-259). */
+  /** Only describes the paged option; the direction itself is set in 設定 (DP-261). */
   swipe?: MonthSwipe;
   onChoose(mode: MonthNavigation): void;
   onClose(): void;

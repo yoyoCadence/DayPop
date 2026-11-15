@@ -70,7 +70,7 @@ export interface MonthViewHandle {
 export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
   navigation?: MonthNavigation;
-  /** Paged mode: which way a swipe turns the month (DP-259). */
+  /** Paged mode: which way a swipe turns the month (DP-261). */
   swipe?: MonthSwipe;
   weekStartsOn: 0 | 1;
   /** The one timezone this grid is drawn in — DP-064. */
@@ -470,7 +470,7 @@ function PagedMonthView({ ref, swipe = 'horizontal', weekStartsOn, displayTimezo
   // `across`: the finger has moved more against the paging axis than along it.
   const gesture = useRef<{ id: number; x: number; y: number; across: boolean } | null>(null);
   // Whether the whole month fits without scrolling. A vertical swipe can only
-  // turn the page when there is nothing to scroll (DP-259).
+  // turn the page when there is nothing to scroll (DP-261).
   const [fits, setFits] = useState(true);
   const suppressClickUntil = useRef(0);
   const dates = useMemo(() => buildMonthGrid(month, weekStartsOn, calendarGridMode), [month, weekStartsOn, calendarGridMode]);

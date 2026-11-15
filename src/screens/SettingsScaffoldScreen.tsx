@@ -56,7 +56,7 @@ const MONTH_NAVIGATION_OPTIONS: { mode: MonthNavigation; label: string }[] = [
   { mode: 'paged', label: '單月翻頁' },
 ];
 
-// DP-259: which way a swipe turns the page in 單月翻頁.
+// DP-261: which way a swipe turns the page in 單月翻頁.
 const MONTH_SWIPE_OPTIONS: { swipe: MonthSwipe; label: string }[] = [
   { swipe: 'horizontal', label: '左右滑動' },
   { swipe: 'vertical', label: '上下滑動' },
@@ -495,7 +495,7 @@ export function SettingsScaffoldScreen({ updater, onOpenAuth }: SettingsScaffold
             </div>
             {monthNavigation === 'paged' && (
               <div className="set-pref-row">
-                {/* DP-259: only meaningful for 單月翻頁, so shown only then. */}
+                {/* DP-261: only meaningful for 單月翻頁, so shown only then. */}
                 <span className="set-pref-row-label" id="month-swipe-label">
                   翻頁方向
                 </span>

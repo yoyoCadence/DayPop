@@ -97,7 +97,7 @@ test('設定頁也能切換顯示方式；單月翻頁的前後月日子看得�
   clean();
 });
 
-test('單月翻頁可改成上下滑動換月；整月放不下時改回左右（DP-259）', async ({ page }, info) => {
+test('單月翻頁可改成上下滑動換月；整月放不下時改回左右（DP-261）', async ({ page }, info) => {
   const clean = monitorBrowser(page); await seedMonthPaging(page);
   const before = await page.evaluate(() => localStorage.getItem('daypop.user-data'));
   const native = info.project.name === 'mobile-chrome';

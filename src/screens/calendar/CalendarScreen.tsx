@@ -120,7 +120,7 @@ export function CalendarScreen({
   const focusDay = focus?.kind === 'day' && isDateKey(focus.dateKey) ? focus.dateKey : null;
   const [view, setView] = useState<CalendarView>('month');
   const [monthNavigation, setMonthNavigation] = useState(readMonthNavigation);
-  // Chosen in 設定 only (DP-259); this screen remounts on every tab switch.
+  // Chosen in 設定 only (DP-261); this screen remounts on every tab switch.
   const [monthSwipe] = useState(readMonthSwipe);
   const [monthNavigationOpen, setMonthNavigationOpen] = useState(false);
   const [monthSeed, setMonthSeed] = useState<string | null>(null);

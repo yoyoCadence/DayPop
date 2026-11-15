@@ -189,7 +189,7 @@ describe('other-month days in paged mode (DP-257)', () => {
   });
 });
 
-describe('swipe direction in paged mode (DP-259)', () => {
+describe('swipe direction in paged mode (DP-261)', () => {
   const page = () => container.querySelector<HTMLElement>('.cal-month-paged')!;
 
   it('turns the month with up and down swipes, and ignores sideways ones', () => {

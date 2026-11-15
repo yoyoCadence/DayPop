@@ -14,7 +14,7 @@ export function saveMonthNavigation(mode: MonthNavigation): void {
 }
 
 /**
- * Which way a swipe turns the page in 單月翻頁 (DP-259). Also device UI state,
+ * Which way a swipe turns the page in 單月翻頁 (DP-261). Also device UI state,
  * outside user data; horizontal unless this device chose vertical.
  */
 export type MonthSwipe = 'horizontal' | 'vertical';

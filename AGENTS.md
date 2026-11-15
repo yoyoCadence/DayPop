@@ -26,7 +26,7 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
-- **單月翻頁可選左右或上下滑動（DP-259，2026-11-15）：** 擁有者要求。設定「翻頁方向」只在單月翻頁時出現，存在 `daypop.month-swipe.v1`（裝置 UI 狀態）。上下模式往上滑是下個月；容器 `data-swipe="vertical"` 時 `touch-action: pinch-zoom`，**改 `.cal-month-paged` 的 touch-action 時兩種方向都要測**（`e2e/month-paging.spec.ts` 用原生 CDP 觸控往上滑，`pan-y` 會讓 Chromium 取消 pointer、翻頁失效）。整月放不下（列高低於 58px）時自動改回左右，因為月內要捲動。見 ADR §6。
+- **單月翻頁可選左右或上下滑動（DP-261，2026-11-15）：** 擁有者要求。設定「翻頁方向」只在單月翻頁時出現，存在 `daypop.month-swipe.v1`（裝置 UI 狀態）。上下模式往上滑是下個月；容器 `data-swipe="vertical"` 時 `touch-action: pinch-zoom`，**改 `.cal-month-paged` 的 touch-action 時兩種方向都要測**（`e2e/month-paging.spec.ts` 用原生 CDP 觸控往上滑，`pan-y` 會讓 Chromium 取消 pointer、翻頁失效）。整月放不下（列高低於 58px）時自動改回左右，因為月內要捲動。見 ADR §6。 原暫用 DP-259，與夥伴工作流撞號後改號。**JS gzip 上限因這個功能調到 240 KiB／245,760**（main 本身只剩 131 bytes；預算是逐檔加總，拆 chunk 不會變小），下一個放不下的功能要重新決定，見 `docs/performance-budget.md`。
 
 - **開啟 App 的載入畫面（DP-258，2026-11-15）：** 參考擁有者的 4WD Carplay。`index.html` 的 `#boot` 在程式碼抵達前畫出（彈跳的日蹦圖示＋輪播文字），樣式在 `src/shell/boot.css`（**CSP 禁止內嵌 `<style>`／`<script>`，不要改成內嵌**），App 在 `state.status !== 'loading'` 時以 `dismissBoot()` 淡出並移除；日曆就緒時還會等第一次版本檢查（`releaseCheckSettled`，最多 2.5 秒），公告才會和日曆一起出現。**這 2.5 秒同時由 CSS 動畫 `dp-boot-wait` 計時，不要只留 JS 計時器**：e2e 暫停時鐘時計時器不會跑，載入畫面會永遠擋住頁面；兩邊長度由 `boot.test.ts` 核對。根錯誤畫面也會移除。**新增會建構 `AppUpdateState` 的測試要給 `releaseCheckSettled`**。12 秒後純 CSS 顯示「載入比平常久」。**e2e 的 `openApp`／`reloadApp` 會等 `#boot` 開始淡出（`bootDismissed()`）**，這時它已不攔點擊、對輔助科技隱藏；要檢查整個畫面的 spec（axe、重疊、截圖）改等 `bootGone()`。不等完 0.3 秒淡出是因為全套 e2e 約 1,000 次開頁會多約 7 分鐘，#253 第一次跑時 Chromium job 因此超過 30 分鐘被取消。自己用 `page.goto` 的 spec 若要立刻互動，也要等其中一個。dev 模式的 CSS 由 JS 注入，所以 dev 下載入畫面在 JS 前是沒有樣式的，production 才是正式外觀。見 ADR §5。
 

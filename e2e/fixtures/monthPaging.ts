@@ -83,7 +83,7 @@ export async function checkMonthPaging(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
-/** An upward swipe (DP-259): the next month when the paging direction is vertical. */
+/** An upward swipe (DP-261): the next month when the paging direction is vertical. */
 export async function swipeMonthUp(page: Page, native: boolean) {
   const scroll = page.locator('.cal-month-paged');
   const box = (await scroll.boundingBox())!;
