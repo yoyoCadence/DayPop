@@ -79,6 +79,13 @@ describe('v5 partner preference migration', () => {
     const backup = buildJsonBackup(data) as unknown as { formatVersion: number; data: { preferences: { petKind?: string } } };
     expect(backup.formatVersion).toBe(2);
     expect(planJsonImport(JSON.stringify(backup), data).command).toMatchObject({ kind: 'replace', data: { preferences: { petKind: 'honey_bear' } } });
+    for (const newKind of ['manga_cat', 'pixel_cat', 'mecha_spirit', 'red_panda'] as const) {
+      const repository = new LocalDayPopRepository(new MemoryStorage());
+      await repository.updatePreferences({ petKind: newKind });
+      const saved = await repository.load();
+      const copy = planJsonImport(JSON.stringify(buildJsonBackup(saved)), data).command;
+      expect(copy).toMatchObject({ kind: 'replace', data: { preferences: { petKind: newKind } } });
+    }
     backup.formatVersion = 1; delete backup.data.preferences.petKind;
     expect(planJsonImport(JSON.stringify(backup), data).command).toMatchObject({ kind: 'replace', data: { preferences: { petKind: 'moon_cat' } } });
     backup.formatVersion = 2;

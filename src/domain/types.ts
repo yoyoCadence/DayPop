@@ -114,7 +114,8 @@ export interface Sticker {
   updatedAt: IsoInstant;
 }
 
-export const PET_KINDS = ['moon_cat', 'orbit_ufo', 'marshmallow_cat', 'honey_bear', 'peach_bunny'] as const;
+export const NEW_PET_KINDS = ['manga_cat', 'pixel_cat', 'mecha_spirit', 'red_panda'] as const;
+export const PET_KINDS = ['moon_cat', 'orbit_ufo', 'marshmallow_cat', 'honey_bear', 'peach_bunny', ...NEW_PET_KINDS] as const;
 export type PetKind = typeof PET_KINDS[number];
 
 export interface UserPreferences {

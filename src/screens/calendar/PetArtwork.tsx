@@ -43,7 +43,7 @@ export function PetArtwork({ kind = 'moon_cat', pose, paused, hidden = false, cu
   function unavailable() {
     if (singlePlay && cue !== null) onCueDone(cue);
   }
-  return <span className="cal-pet-art" aria-hidden="true" data-paused={stopped}>
+  return <span className="cal-pet-art" data-kind={kind} aria-hidden="true" data-paused={stopped}>
     {src ? <DecodedArtwork key={`${src}:${cue ?? ''}`} kind={kind} src={src} onReady={ready} onUnavailable={unavailable} /> : <CssPet />}
   </span>;
 }

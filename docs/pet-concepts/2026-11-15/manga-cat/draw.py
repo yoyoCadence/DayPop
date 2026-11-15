@@ -74,10 +74,14 @@ def frame(source, pose, index, count):
         happy = True
 
     set_part('root', 60, 106, lean, sx=.84, sy=.84, dx=3, dy=lift * .78 - (4 if pose == 'sleep' else 0))
-    for name in ('eyes', 'eye-closed', 'eye-squint'):
-        parts[name].set('visibility', 'visible' if name == eyes else 'hidden')
-    parts['mouth'].set('visibility', 'hidden' if happy else 'visible')
-    parts['smile'].set('visibility', 'visible' if happy else 'hidden')
+    # Exclude inactive face layers from the output tree. Inkscape's CLI
+    # rasterizer can still composite children of visibility:hidden groups.
+    visible = {eyes, 'smile' if happy else 'mouth'}
+    for name in ('eyes', 'eye-closed', 'eye-squint', 'mouth', 'smile'):
+        if name in visible:
+            parts[name].attrib.pop('style', None)
+        else:
+            parts['gaze'].remove(parts[name])
     return svg
 
 

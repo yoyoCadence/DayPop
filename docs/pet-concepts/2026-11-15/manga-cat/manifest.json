@@ -13,13 +13,13 @@
   "source": [
     {
       "path": "manga-cat/character.svg",
-      "bytes": 3849,
-      "sha256": "0f3652b85a786c2c2cf87d74ddf572b329291959ae7449da0a7d32977088dafb"
+      "bytes": 3852,
+      "sha256": "3c4b5fc4606637fd99a7022a78924c3613b235128455e625100c185cd0186b77"
     },
     {
       "path": "manga-cat/draw.py",
-      "bytes": 4731,
-      "sha256": "1d11e26530ea1424ff2d8fe039b2796bcb8bad85ffcd8de78072c6a77c9c985d"
+      "bytes": 4865,
+      "sha256": "6f280545d5ff7de53120e6c6c935e060052718118e06f87a63e54a83e5448d95"
     },
     {
       "path": "motion.py",
@@ -36,13 +36,13 @@
     "idle": {
       "png": {
         "path": "manga-cat-idle.png",
-        "bytes": 8066,
-        "sha256": "5c5a58075cd04c2ec2830da25a7aa0494ba9e5aa745220ef70231fbe74afddb1"
+        "bytes": 7757,
+        "sha256": "bac5e8bb19396f44bd7d32221479326dd2449be181359bb5903cc893e6d80def"
       },
       "webp": {
         "path": "manga-cat-idle.webp",
-        "bytes": 23622,
-        "sha256": "4ce5e2f6c5bb0d4e103e7de85524d60263a6d69cec1f222ded6278bd44c06b00",
+        "bytes": 23060,
+        "sha256": "84bdfcffce351167f139a79fce8e3b097485e3ebd34f1b7e494887ec91b7d256",
         "frames": 7,
         "distinctFrames": 7,
         "durationMs": 2160,
@@ -53,13 +53,13 @@
     "walk": {
       "png": {
         "path": "manga-cat-walk.png",
-        "bytes": 8106,
-        "sha256": "b2a217963844b9180934cadcabbc789aa94d5b555cd20f4f3f3716aa127abe70"
+        "bytes": 7793,
+        "sha256": "bd07a9f5a61ef485cd08ff1463609bbeaa97824dca4af809f9bbceb4656cd8cd"
       },
       "webp": {
         "path": "manga-cat-walk.webp",
-        "bytes": 22430,
-        "sha256": "ff7fd01db73392698fa933e92d874cbc9710e4d003885ac730f90c1b9e339ca5",
+        "bytes": 22044,
+        "sha256": "d34320259d8b67acb414de2f2074e16266bac9afc68bdfce60674e431cb960a5",
         "frames": 8,
         "distinctFrames": 8,
         "durationMs": 800,
@@ -70,30 +70,30 @@
     "sit": {
       "png": {
         "path": "manga-cat-sit.png",
-        "bytes": 7795,
-        "sha256": "2d7af51c0e2686af21c96c0f74530a0498c4c3ea7e2e3427ab36752e6691abef"
+        "bytes": 7394,
+        "sha256": "37c4c1b230376c309945cc3de6ec376cb08f2458424d6b3d71d1f2d6c447b431"
       },
       "webp": {
         "path": "manga-cat-sit.webp",
-        "bytes": 10584,
-        "sha256": "8dc6b03551ccecc03b346f62cae07dac90f0081b143c1f8d764507fb28621d78",
+        "bytes": 12700,
+        "sha256": "12271b55d5f716a86e7c04810d2df1e605d222ababd52ab9d159898039fb3bee",
         "frames": 4,
-        "distinctFrames": 3,
+        "distinctFrames": 4,
         "durationMs": 1490,
         "loop": 0,
-        "quality": 75
+        "quality": 85
       }
     },
     "sleep": {
       "png": {
         "path": "manga-cat-sleep.png",
-        "bytes": 7134,
-        "sha256": "21b35fbf1702042d93e5d44c5521d9465648f71c3ea190bb6c4ca6332596fd75"
+        "bytes": 6705,
+        "sha256": "906d450a428a1678aa73ba816663ae76189639e54266963c3920f4734de6c54d"
       },
       "webp": {
         "path": "manga-cat-sleep.webp",
-        "bytes": 18658,
-        "sha256": "4cbc5b4eb1af129a5b4042b7b2e299914f98852144fd672c9181f9e505284b4a",
+        "bytes": 18306,
+        "sha256": "8e64b64ad81000619235c805324ccd37bceadb57b8c7f13268d84dc617cff650",
         "frames": 8,
         "distinctFrames": 8,
         "durationMs": 2400,
@@ -104,56 +104,56 @@
     "jump": {
       "png": {
         "path": "manga-cat-jump.png",
-        "bytes": 8246,
-        "sha256": "a3cbbd6d9afeda6f9f5b545209011747646be5282c6447b3b09aa97b37d4af7b"
+        "bytes": 8011,
+        "sha256": "76bd1f3d1da9f3f4e71a6f1ab98a4644121ff473e8a1137182305fd07631bcc9"
       },
       "webp": {
         "path": "manga-cat-jump.webp",
-        "bytes": 19906,
-        "sha256": "d876bcd2b9e8327d23e0e883ea3d88e4b9d5ef28335dbe53a07680f1d8592592",
+        "bytes": 20972,
+        "sha256": "230df5c0daf6920b2828c2625dd755c878eb25f29918858bf41147b61ad2748a",
         "frames": 10,
         "distinctFrames": 10,
         "durationMs": 1000,
         "loop": 1,
-        "quality": 27
+        "quality": 35
       }
     },
     "look": {
       "png": {
         "path": "manga-cat-look.png",
-        "bytes": 8258,
-        "sha256": "2face4407c150e93d11156c40733ec770f09b8aa9dafe0a617153d11bff2c479"
+        "bytes": 7923,
+        "sha256": "87d11ce83d2dfd0ade833e2b0efbc4b7bc0ad506d6b1780b71378663d553f212"
       },
       "webp": {
         "path": "manga-cat-look.webp",
-        "bytes": 21940,
-        "sha256": "5f43ad1293cca19b00730f70fbfc64afaa9a83700687cafda1444aacddb6e08c",
+        "bytes": 22760,
+        "sha256": "392f58b46ae567574b06fa6700ed56e658f1d1a401050ab7b34a6e2145e88414",
         "frames": 10,
         "distinctFrames": 10,
         "durationMs": 1600,
         "loop": 1,
-        "quality": 65
+        "quality": 75
       }
     },
     "grab": {
       "png": {
         "path": "manga-cat-grab.png",
-        "bytes": 8181,
-        "sha256": "a9740beab911f573558ba3f27a78eb6d4697a96fd455d3be1e56ab922fa61517"
+        "bytes": 7963,
+        "sha256": "6b3df22b9fbbbcb566f02c34f0278ecd6239ea42d9c45589020d273bf25a1077"
       },
       "webp": {
         "path": "manga-cat-grab.webp",
-        "bytes": 13546,
-        "sha256": "23316dfb865995b6c7ca7e0a461bdbe6211cc21499e2bf112132815609687c48",
+        "bytes": 14196,
+        "sha256": "7a4cdaa361d118f71b761671d691617de3ccf4a59ec61433da67993d0a4d0836",
         "frames": 6,
         "distinctFrames": 6,
         "durationMs": 600,
         "loop": 0,
-        "quality": 45
+        "quality": 55
       }
     }
   },
-  "assetBytes": 186472,
+  "assetBytes": 187584,
   "badgeInset": {
     "top": 28,
     "right": 20

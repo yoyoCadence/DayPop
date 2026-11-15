@@ -194,7 +194,7 @@ describe('設定 說明不與已有的功能矛盾', () => {
   it('能選夥伴、會走動之後，不再把它們列為還沒有的功能', async () => {
     await render();
     // The controls and behaviour exist: the partner radios are right here.
-    expect(container.querySelectorAll('input[name="pet-kind"]').length).toBe(5);
+    expect(container.querySelectorAll('input[name="pet-kind"]').length).toBe(9);
     const pending = container.querySelector('.set-pref-pending')?.textContent ?? '';
     expect(pending).not.toMatch(/走動/);
     expect(pending).toMatch(/行程建議/);
