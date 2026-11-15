@@ -107,7 +107,7 @@ Phase 2 另以第四個參數（id 清單）把二十張分成五組各跑一次
 | 16px 認得出、10px 分得出主色與輪廓、深淺背景 | **通過** | 擁有者 2026-11-14 手機實寸預覽：Phase 1 答覆「通過」，Phase 2 二十四張答覆可以 |
 | 真實月格 | **通過** | §3.1（Phase 1 一組、Phase 2 五組） |
 | 權利審核 | **審核表完成，沒有阻擋問題；授權未核准** | [`rights-review.md`](rights-review.md)；`license` 維持 `review-pending` |
-| 與既有 emoji 的相似性 | **四套開放圖集已比對，沒有發現抄襲；Apple 待擁有者** | `rights-review.md` §4.2、[`similarity/`](similarity/) |
+| 與既有 emoji 的相似性 | **四套開放圖集已比對，沒有發現抄襲；Apple 比對由擁有者負責** | `rights-review.md` §4.2、[`similarity/`](similarity/) |
 | 不影響 240 emoji、舊資料、離線、JS 預算 | 未開始（Phase 3） | 這次沒有任何產品程式變更 |
 
 擁有者只在手機上看過實寸預覽；真實月格的截圖是 agent 在 Chromium 跑的，iPhone 實機的月格要到 Phase 3 接入後才看得到。
@@ -121,7 +121,8 @@ Phase 2 另以第四個參數（id 清單）把二十張分成五組各跑一次
 - 擁有者已確認 Claude 方案是 Pro，Anthropic 的 Consumer Terms 適用 happy、hiking 與 Phase 2 二十張。
 - OpenAI 條款：另一個 agent 的查證紀錄 [`openai-terms-evidence-2026-11-14.md`](../../asset-licenses/openai-terms-evidence-2026-11-14.md)（PR #247）作為紀錄，不需擁有者再查；那不是官網原件全文。
 - 相似性：Twemoji、OpenMoji、Noto、Fluent 四套已量化＋目視比對，沒有發現抄襲（`rights-review.md` §4.2）。
-- 待擁有者：gift、cake 的 ChatGPT 方案與 prompt 摘要、用比對頁看 Apple emoji、決定貼圖的下游使用條件（repo 沒有 LICENSE 檔）、最後的簽核（`rights-review.md` §7）。
+- 2026-11-15 已完成（PR #252 與本次整合）：gift、cake 的上游使用者需求已確認（[`gift-cake-prompt-summary.md`](gift-cake-prompt-summary.md)；仍不知道的生成細節列在 `rights-review.md` §3.1）；貼圖採保留權利（[`daypop-sticker-rights-policy.md`](../../asset-licenses/daypop-sticker-rights-policy.md)）；二十四張的 SHA-256 已與 [`owner-approval-checklist.md`](owner-approval-checklist.md) 逐張核對。
+- 只剩擁有者：Apple emoji 相似性目視與正式簽核（`rights-review.md` §7）。
 - Phase 2 的 license gate 解讀為「審核表完成且沒有阻擋問題」，已滿足；把任何一張改成已核准的 gate 仍是擁有者簽核（審核表 §6）。
 
 ## 6. 圖檔放在哪裡

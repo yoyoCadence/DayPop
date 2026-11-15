@@ -9,7 +9,7 @@
 | 項目 | `happy.svg` | `gift.svg` | `cake.svg` | `hiking.svg` |
 |---|---|---|---|---|
 | 版本 | 第二輪（重繪） | 第一輪 | 第一輪 | 第二輪（重繪） |
-| 製作服務 | Claude Code（Anthropic），本 repo 的工作階段 | ChatGPT（OpenAI）；方案與模型版本，接手包沒有記錄 | 同 gift | Claude Code（Anthropic），本 repo 的工作階段 |
+| 製作服務 | Claude Code（Anthropic），本 repo 的工作階段 | ChatGPT（OpenAI）；上游使用者需求是 DP-244 規格第 1–8 節（[`gift-cake-prompt-summary.md`](gift-cake-prompt-summary.md)）；確切模型版本與 ChatGPT 方案沒有同期紀錄 | 同 gift | Claude Code（Anthropic），本 repo 的工作階段 |
 | 日期 | 2026-11-14 | 2026-11-14（接手包 `asset-provenance.md`） | 同 gift | 2026-11-14 |
 | 製作流程 | 依擁有者決策 2（臉部大特寫），由 agent 直接寫 SVG 的形狀與路徑。沒有參考圖、沒有描圖、沒有用圖像生成 | ChatGPT 輔助寫 SVG 向量程式。接手包說明這**不是**把第三方 emoji／SVG 套件改名包裝。概念海報是另一條 ChatGPT 圖像生成流程，不是這份 SVG 的來源 | 同 gift | 依擁有者決策 3（山峰為主＋日光，拿掉背包），由 agent 直接寫 SVG。沒有參考圖、沒有描圖、沒有用圖像生成 |
 | 沿用第一輪 | 沒有沿用第一輪的任何形狀 | — | — | 沒有沿用第一輪的任何形狀 |
@@ -77,7 +77,25 @@
 - Sharing & publication policy：公開時要有人類審查、清楚交代 AI 參與。
 - Usage policies：2026-11-14 適用 2025-10-29 版；**2026-11-20 起新版生效，若在那之後才接進 App 上線，要重新核對**。
 
-**界線**（照那份紀錄）：那是人工整理的中文摘要，不是官網原件全文，也沒有官網 HTML／PDF 的 SHA-256。gift、cake 的 ChatGPT 方案與模型版本、可公開的 prompt 摘要，接手包都沒有記錄（§7）。
+**界線**（照那份紀錄）：那是人工整理的中文摘要，不是官網原件全文，也沒有官網 HTML／PDF 的 SHA-256。gift、cake 的上游使用者需求與可公開的製作摘要，2026-11-15 記在 [`gift-cake-prompt-summary.md`](gift-cake-prompt-summary.md)（PR #252，§3.1）。
+
+### 3.1 gift、cake 的來源：上游需求已確認（2026-11-15）
+
+擁有者 2026-11-15 確認，並記在 [`gift-cake-prompt-summary.md`](gift-cake-prompt-summary.md)（PR #252）：
+
+- **上游使用者需求已確認，沒有遺失。** 2026-11-14 擁有者把完整的 DP-244 規格（第 1–8 節：方案、授權、漫畫風格、尺寸、檔案格式、manifest、工程整合與驗收標準）貼給 ChatGPT，接著要求「好，你給我phase1的東西」；ChatGPT 依此做出第一批四張，其中包含 gift、cake。repo 的 [`docs/sticker-asset-spec.md`](../../sticker-asset-spec.md) 保存這份規格，但後來附加過更新說明，不保證與當時貼文逐位元組相同；可核對的原文在擁有者的那段對話。
+- **之後的修改**：Claude Code 只做等比縮放與置中（長邊約 92%），沒有改形狀與配色（§1）。
+- **兩張都是 ChatGPT 協助寫 SVG 程式**，不是 ChatGPT 圖像生成功能的輸出，也不是從第三方 emoji 圖庫複製。所以 Service Terms §6（圖像功能）的限制不直接適用；Terms of Use 的輸出權利與「不保證不侵權」照樣適用。
+- 摘要檔裡逐張的圖案描述是**依上游需求與成品整理的衍生摘要**，不是當時的逐字內部指令，文件本身也這樣聲明。
+
+**仍不知道、也不補造的生成細節**（只記錄，不擋簽核）：
+
+1. 逐張 SVG 生成時模型的內部指令、tool 呼叫與中間步驟。
+2. 當時的確切模型版本。
+3. 當時使用的 ChatGPT 方案。
+4. 2026-11-14 那則規格貼文的逐位元組存檔（repo 版本後來有附加說明）。
+
+**檔案核對**：簽核對象是正式成品 gift 926 bytes（`75c8baca…5707`）、cake 1,193 bytes（`76c8e720…dd8`），第一輪初稿（867／1,134 bytes）不是簽核對象，不能用初稿的 hash 代替。2026-11-15 agent 以交給擁有者的那份二十四張重新計算 SHA-256，與 [`asset-hashes.json`](asset-hashes.json) 及 [`owner-approval-checklist.md`](owner-approval-checklist.md) 的表格**逐張一致**，`check_stickers.py --assets` 無錯誤。這是 agent 對自己保管副本的核對；擁有者仍要依簽核清單對**自己保管的最終檔**再跑一次。
 
 ## 4. 相似性檢查
 
@@ -103,9 +121,10 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 - **量測**：各圖裁到可見範圍、置中縮成 64px，算輪廓重疊（IoU）、亮度 SSIM、dHash 距離、色彩重疊，取平均為 0–1 的分數。**基準**是同一個 emoji 的四套獨立設計兩兩比較：兩個不相干的設計師畫同一題材會有多像。
 - **結果**：二十四張與任何一套的最高分都低於全部同題基準的第 95 百分位（0.727）；最高的是 pill 0.674（OpenMoji）、gift 0.649（OpenMoji）。不同題材的對照中位數是 0.363。
 - **標記與目視**：七張（cake、cart、home、money、party、pill、rainy）的最高分略高於該 emoji 四套設計彼此之間的最高分（差 0.013–0.056），依規則逐張目視。七張都是明顯不同的畫法：構圖、細節數量與配色都不同，相近來自題材本身（三角切片、膠囊兩色斜放、雲加雨滴）與 OpenMoji 同樣使用粗黑描邊的畫風。其餘十七張也全部目視過；最接近的是信用卡（藍色卡身、黑色磁條、黃色晶片，與 OpenMoji 配色相近），那是信用卡的標準元素，我們的版本是三個矩形以程式畫成。happy、sad 是有頭髮的人物，與各套的黃色笑臉差異最大（色彩重疊 0.10／0.20）。
-- **限制**：這些量測對簡單形狀很粗糙，高分不代表抄襲、低分也不保證沒問題；這不是法律查核。Apple 的比對與最終判斷仍屬擁有者（§5、§7）。
+- **限制**：這些量測對簡單形狀很粗糙，高分不代表抄襲、低分也不保證沒問題；這不是法律查核。
+- **Apple emoji 比對由擁有者負責**：比對頁把裝置本身的 emoji 放在同一列，iPhone 上即是 Apple 的設計。擁有者 2026-11-15 看過比對頁後初步答覆「OK 我看都可以接受 基本上都是自己獨有的設計元素」；正式結果由擁有者填在 [`owner-approval-checklist.md`](owner-approval-checklist.md) 的「Apple emoji 人工相似性比對」欄。agent 不代填，也不把初步答覆當成簽核。
 
-**目前判斷：二十四張沒有發現抄襲或近似特定作品的跡象。**
+**agent 的判斷：二十四張沒有發現抄襲或近似特定作品的跡象。** Apple 比對的正式結果以擁有者在簽核清單填寫的為準。
 
 ## 5. 擁有者簽核需要的證據
 
@@ -116,8 +135,10 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 | 服務名稱、日期、製作流程、修改紀錄、原檔 SHA-256 | **已完成**（§1、§1.1） |
 | Anthropic 條款頁與讀取日期 | **已完成**（§2）；擁有者確認為 Pro，適用 Consumer Terms |
 | OpenAI 條款頁與讀取日期 | **查證紀錄已完成**（§3，PR #247）；不是官網原件全文。只影響 gift、cake |
-| 第三方相似性風險，經人工核對 | **agent 已完成四套開放圖集的量化＋目視比對**（§4.2）；Apple 與最終判斷待擁有者用比對頁目視 |
-| 擁有者明確簽核：誰、何時、批准哪幾個檔案、對應哪個 SHA-256 | **待擁有者** |
+| gift、cake 的上游需求與可公開製作摘要 | **已完成**（§3.1、PR #252）；上游使用者需求已確認，仍不知道的生成細節列在 §3.1，不補造 |
+| 第三方相似性風險，經人工核對 | agent 的四套開放圖集量化＋目視比對**已完成**（§4.2）；**Apple 比對由擁有者負責**，結果填在簽核清單 |
+| 貼圖的下游使用條件 | **已決定**：保留權利（All Rights Reserved），不授與第三方一般再利用授權，[`daypop-sticker-rights-policy.md`](../../asset-licenses/daypop-sticker-rights-policy.md)（PR #252；擁有者 2026-11-15「授權的部分我要保留權利」）。不改整個 repo 的程式碼授權 |
+| 擁有者明確簽核：誰、何時、批准哪幾個檔案、對應哪個 SHA-256 | **待擁有者**，用 [`owner-approval-checklist.md`](owner-approval-checklist.md) |
 
 簽核前：manifest 維持 `review-pending`、SVG 不進 repo、App 不接這些貼圖（Phase 3／DP-247 不開始）。
 
@@ -132,12 +153,17 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 
 這樣解讀的理由：Phase 2 的新圖一樣只留在 repo 之外，不公開也不上線，在工作區多畫 20 張不會改變任何人的權利狀態。若擁有者認為開始製作也要先簽核，Phase 2 停下來即可，已畫的圖不會進 repo。
 
-## 7. 還沒完成、需要擁有者的事（2026-11-15）
+## 7. 還沒完成、需要擁有者的事（2026-11-15 更新）
 
-| 事項 | 影響 | 說明 |
+只剩擁有者自己的兩件事，其餘來源紀錄、檔案核對與文件整合已完成：
+
+| 事項 | 影響 | 狀態 |
 |---|---|---|
-| gift、cake 的 ChatGPT 方案／模型與可公開的 prompt 摘要 | gift、cake | OpenAI 查證紀錄要求逐張附上；接手包沒有記錄。只能由擁有者從自己的 ChatGPT 紀錄補，不需要貼私人對話全文。補不到時，可以改由 Claude Code 重畫這兩張（決策 1 保留了它們，重畫要擁有者同意）。 |
-| 用比對頁看 Apple emoji 並做最終相似性判斷 | 二十四張 | 比對頁私下交給擁有者，不進 repo。 |
-| 貼圖圖像的下游使用條件 | 二十四張 | repo 沒有 LICENSE 檔，`package.json` 也沒有 license 欄位；OWNER-DECISIONS 第 6 項寫的「保留原有開源授權」在 repo 裡找不到對應檔案。圖檔進公開 repo 前要決定：程式碼與貼圖各自用什麼條件，或貼圖只限本 App 使用。 |
-| 擁有者明確簽核（誰、何時、哪些檔、哪個 SHA-256） | 二十四張 | §5。簽核前 `review-pending` 不變、SVG 不進 repo、Phase 3 不開始。 |
-| 2026-11-20 之後才上線時，重新核對 OpenAI Usage policies | gift、cake | §3。 |
+| Apple emoji 相似性目視比對 | 二十四張 | **擁有者**。用私下的比對頁看，結果填在 [`owner-approval-checklist.md`](owner-approval-checklist.md)。 |
+| 正式素材簽核（誰、何時、哪些檔、哪個 SHA-256） | 二十四張 | **擁有者**。依簽核清單對自己保管的最終檔跑 `check_stickers.py --assets`，逐張或一次填寫。簽核前 `review-pending` 不變、SVG 不進 repo、Phase 3 不開始。 |
+
+已處理，不再列為待辦：
+
+- gift、cake 的上游使用者需求：已確認（§3.1）；仍不知道的生成細節只記錄、不擋簽核。
+- 貼圖下游使用條件：保留權利，[`daypop-sticker-rights-policy.md`](../../asset-licenses/daypop-sticker-rights-policy.md)。
+- OpenAI 條款：以 [`openai-terms-evidence-2026-11-14.md`](../../asset-licenses/openai-terms-evidence-2026-11-14.md) 為準，不需要擁有者再提供。2026-11-20 之後才上線時，要重新核對 Usage policies（§3）。
