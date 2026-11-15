@@ -1,0 +1,158 @@
+/*
+ * Start-up screen (DP-258). The markup is in index.html; these rules arrive
+ * with the app stylesheet that Vite links in <head>, so they apply before the
+ * first paint of a production page. Neutral paper colours: the saved theme
+ * is not readable until the app's code runs.
+ */
+.dp-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  background: #fffaf0;
+  color: #171717;
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  transition: opacity 0.3s ease;
+}
+
+.dp-boot.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dp-boot-card {
+  width: min(18rem, calc(100% - 3rem));
+  text-align: center;
+}
+
+.dp-boot-stage {
+  position: relative;
+  height: 112px;
+}
+
+.dp-boot-icon {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  transform-origin: 50% 100%;
+}
+
+.dp-boot-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 56px;
+  height: 10px;
+  margin-left: -28px;
+  border-radius: 50%;
+  background: rgb(23 23 23 / 18%);
+}
+
+.dp-boot-name {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.dp-boot-lines {
+  position: relative;
+  height: 20px;
+  margin-top: 8px;
+  color: #555555;
+  font-size: 13px;
+}
+
+.dp-boot-lines span {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.dp-boot-lines span:first-child {
+  opacity: 1;
+}
+
+.dp-boot-slow {
+  margin-top: 14px;
+  color: #555555;
+  font-size: 12px;
+  visibility: hidden;
+}
+
+/* The slow-network hint is a timed reveal (visibility only, nothing moves),
+ * so it runs whatever the motion preference: it is the one message for a page
+ * whose code never finished loading. Written per preference so the DP-168
+ * guard can still see that nothing here animates under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .dp-boot-slow { animation: dp-boot-slow 0s linear 12s forwards; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-boot-slow { animation: dp-boot-slow 0s linear 12s forwards; }
+}
+
+@keyframes dp-boot-slow {
+  to { visibility: visible; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dp-boot-icon {
+    animation: dp-boot-hop 0.9s cubic-bezier(0.3, 0, 0.4, 1) infinite;
+  }
+
+  .dp-boot-shadow {
+    animation: dp-boot-shadow 0.9s cubic-bezier(0.3, 0, 0.4, 1) infinite;
+  }
+
+  .dp-boot-lines span {
+    animation: dp-boot-line 7.2s linear infinite;
+  }
+
+  .dp-boot-lines span:nth-child(2) { animation-delay: 1.8s; }
+  .dp-boot-lines span:nth-child(3) { animation-delay: 3.6s; }
+  .dp-boot-lines span:nth-child(4) { animation-delay: 5.4s; }
+
+  .dp-boot-lines span:first-child {
+    opacity: 0;
+  }
+}
+
+/* 蹦: squash on the ground, stretch on the way up. */
+@keyframes dp-boot-hop {
+  0%, 100% { transform: translateY(0) scale(1.08, 0.9); }
+  15% { transform: translateY(-4px) scale(0.96, 1.05); }
+  50% { transform: translateY(-34px) scale(1, 1); }
+  85% { transform: translateY(-4px) scale(0.98, 1.03); }
+}
+
+@keyframes dp-boot-shadow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.6); opacity: 0.45; }
+}
+
+@keyframes dp-boot-line {
+  0% { opacity: 0; }
+  3%, 22% { opacity: 1; }
+  25%, 100% { opacity: 0; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .dp-boot {
+    background: #121212;
+    color: #f5f5f5;
+  }
+
+  .dp-boot-lines,
+  .dp-boot-slow {
+    color: #bbbbbb;
+  }
+
+  .dp-boot-shadow {
+    background: rgb(0 0 0 / 55%);
+  }
+}

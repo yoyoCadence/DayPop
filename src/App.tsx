@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
 import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
@@ -19,6 +19,7 @@ import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { SharingConfirmationDialog } from './screens/SharingConfirmationDialog';
 import { RetainedSharingDraftDialog } from './screens/RetainedSharingDraftDialog';
 import { AppShell } from './shell/AppShell';
+import { dismissBoot } from './shell/boot';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
@@ -50,6 +51,14 @@ export default function App() {
   const reminders = useReminders();
 
   const { state, refresh,personalData,confirmation,retainedSharingDrafts,discardSharingDraft } = useDayPopDataState();
+  // The start-up screen stays over "載入中…" and fades once there is a real
+  // screen: the calendar with any release notice already open beneath it, or
+  // the recovery / retry screen — DP-258. Effects run after the commit, so the
+  // notice is in the page before the cover starts to fade.
+  const settled = state.status !== 'loading';
+  useEffect(() => {
+    if (settled) dismissBoot();
+  }, [settled]);
 
   // Shown on every tab while the browser refuses to persist data — DP-017.
   const storageMode = useStorageMode();

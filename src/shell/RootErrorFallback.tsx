@@ -1,4 +1,5 @@
-import { useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { dismissBoot } from './boot';
 import { useDiagnosticsCopy } from './diagnostics';
 import type { ErrorFallbackProps } from './ErrorBoundary';
 
@@ -70,6 +71,8 @@ const manualField: CSSProperties = {
 export function RootErrorFallback({ error, onReload }: RootErrorFallbackProps) {
   const manualRef = useRef<HTMLTextAreaElement>(null);
   const diagnostics = useDiagnosticsCopy(error, '啟動', manualRef);
+  // The app never reached a screen, so the start-up cover would hide this — DP-258.
+  useEffect(() => dismissBoot(), []);
   return (
     <div role="alert" style={page}>
       <div style={{ maxWidth: 360 }}>

@@ -63,11 +63,14 @@ export async function openApp(
   }
   await page.goto(path, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.dp-viewport')).toBeVisible();
+  // The start-up cover fades once the data is ready (DP-258).
+  await expect(page.locator('#boot')).toHaveCount(0);
 }
 
 export async function reloadApp(page: Page) {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('.dp-viewport')).toBeVisible();
+  await expect(page.locator('#boot')).toHaveCount(0);
 }
 
 export async function localTodayKey(page: Page): Promise<string> {

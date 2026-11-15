@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DataProvider } from './data/DataProvider';
+import { LocalDayPopRepository } from './storage/localRepository';
 import { LegacyImportProvider } from './legacy/LegacyImportProvider';
 import { AppUpdateProvider } from './pwa/AppUpdateProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -202,5 +203,44 @@ describe('App', () => {
     expect(container.textContent).toContain('備份');
     expect(container.querySelector('.dp-tabbar')).toBeNull();
     expect(localStorage.getItem('daypop.user-data')).toBe('not-json');
+  });
+});
+
+describe('start-up screen (DP-258)', () => {
+  afterEach(() => document.getElementById('boot')?.remove());
+
+  it('keeps covering the page while the data loads, then lets go', async () => {
+    const boot = document.createElement('div');
+    boot.id = 'boot';
+    document.body.append(boot);
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    // An account-style repository: no synchronous load, so the App starts on
+    // "載入中…" until the first load resolves, as a signed-in start does.
+    const local = new LocalDayPopRepository();
+    const repository = Object.assign(Object.create(local) as LocalDayPopRepository, {
+      loadSync: undefined,
+      load: async () => { await pending; return local.load(); },
+    });
+
+    await act(async () => {
+      root.render(
+        <AppUpdateProvider>
+          <DataProvider repository={repository}>
+            <LegacyImportProvider accountId={null}>
+              <ThemeProvider>
+                <App />
+              </ThemeProvider>
+            </LegacyImportProvider>
+          </DataProvider>
+        </AppUpdateProvider>,
+      );
+    });
+    expect(container.textContent).toContain('載入中');
+    expect(boot.dataset.done).toBeUndefined();
+
+    await act(async () => { release(); await pending; });
+    expect(container.textContent).not.toContain('載入中');
+    expect(boot.dataset.done).toBe('true');
   });
 });

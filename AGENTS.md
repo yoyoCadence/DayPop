@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **開啟 App 的載入畫面（DP-258，2026-11-15）：** 參考擁有者的 4WD Carplay。`index.html` 的 `#boot` 在程式碼抵達前畫出（彈跳的日蹦圖示＋輪播文字），樣式在 `src/shell/boot.css`（**CSP 禁止內嵌 `<style>`／`<script>`，不要改成內嵌**），App 在 `state.status !== 'loading'` 時以 `dismissBoot()` 淡出並移除，根錯誤畫面也會移除。12 秒後純 CSS 顯示「載入比平常久」。**e2e 的 `openApp`／`reloadApp` 會等 `#boot` 消失**；自己用 `page.goto` 的 spec 若要立刻互動，也要等它消失。dev 模式的 CSS 由 JS 注入，所以 dev 下載入畫面在 JS 前是沒有樣式的，production 才是正式外觀。見 ADR §5。
+
 - **設定頁也能切換月曆顯示方式；單月頁的前後月日子看得出來（DP-256／257，2026-11-15）：** 擁有者要求。設定「日曆 → 顯示與時區」的「月曆顯示方式」與頁首對話框共用 `daypop.month-navigation.v1`（裝置 UI 狀態，不進 user data／備份），`CalendarScreen` 每次掛載重讀。單月翻頁時其他月份的日子用 `--surface-2` 底色、`--muted` 數字、不加粗、`data-outside="true"`，單月頁關閉 zebra；今天與選取優先。**不要把這個底色改成更深的灰**：加深到 10–20% 會讓商務淺色的 `--muted`／`--lunar-muted` 低於 AA（已量），`--surface-2` 是兩種次要文字都驗過的組合。淺色主題的底色差異較小，主要靠數字顏色；理由見 ADR §6。設定頁「一般」列順序改為 月曆列數／月曆顯示方式／每週起始日／預設時區，`SettingsPreferences.test.tsx` 的 `generalRow()` 索引跟著改。
 
 - **0.5.2「數字和欄位對齊了」已部署、iPhone 確認（DP-254，2026-11-15）：** 沿用擁有者「可以直接佈署、發新版本」的授權。只改 release version、三條公告（數字貼在夥伴頭上、iPhone 日期／時刻欄位不再超出、提醒與待辦改日期一起修正）與生成的 version.json／sw.js，歷史公告不變，沒有 migration。#249 四 CI／同 head Codex 審查無發現後合併 4747aa4，dispatch Deploy staging #25（43663383167），從 4747aa4 六 jobs 全部成功（含 Refuse to rewrite deployed release notes 與 Publish to Pages，01:55 UTC），**0.5.2 公告自此不可回寫**。這個環境連不到 github.io，公開成品比對與線上公告畫面未做；擁有者 2026-11-15 在 iPhone 確認待辦數字位置正確（DP-251）與日期／時刻欄位已修好（DP-252），DP-254 已移 Done。
