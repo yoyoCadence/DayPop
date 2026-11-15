@@ -1,0 +1,1940 @@
+{
+ "method": "similarity_check.py: mean of silhouette IoU, SSIM, 1 - dHash/64, colour overlap at 64px",
+ "size": 64,
+ "sets": [
+  "twemoji",
+  "openmoji",
+  "noto",
+  "fluent"
+ ],
+ "set_versions": {
+  "twemoji": "@twemoji/svg 15.0.0",
+  "openmoji": "openmoji 17.0.0",
+  "noto": "emoji-datasource-google 16.0.0 (64px PNG)",
+  "fluent": "@lobehub/fluent-emoji-flat 1.1.0"
+ },
+ "glyphs": {
+  "alert": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.533,
+     "ssim": 0.573,
+     "dhash_distance": 17,
+     "colour_overlap": 0.175,
+     "score": 0.504
+    },
+    "openmoji": {
+     "silhouette_iou": 0.367,
+     "ssim": 0.57,
+     "dhash_distance": 19,
+     "colour_overlap": 0.302,
+     "score": 0.486
+    },
+    "noto": {
+     "silhouette_iou": 0.582,
+     "ssim": 0.564,
+     "dhash_distance": 17,
+     "colour_overlap": 0.29,
+     "score": 0.543
+    },
+    "fluent": {
+     "silhouette_iou": 0.527,
+     "ssim": 0.574,
+     "dhash_distance": 19,
+     "colour_overlap": 0.18,
+     "score": 0.496
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.671,
+     "ssim": 0.811,
+     "dhash_distance": 2,
+     "colour_overlap": 0.39,
+     "score": 0.71
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.892,
+     "ssim": 0.901,
+     "dhash_distance": 0,
+     "colour_overlap": 0.326,
+     "score": 0.78
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.976,
+     "ssim": 0.984,
+     "dhash_distance": 2,
+     "colour_overlap": 0.367,
+     "score": 0.824
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.596,
+     "ssim": 0.754,
+     "dhash_distance": 2,
+     "colour_overlap": 0.154,
+     "score": 0.618
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.674,
+     "ssim": 0.809,
+     "dhash_distance": 0,
+     "colour_overlap": 0.213,
+     "score": 0.674
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.886,
+     "ssim": 0.903,
+     "dhash_distance": 2,
+     "colour_overlap": 0.342,
+     "score": 0.775
+    }
+   },
+   "ours_max": 0.543,
+   "independent_max": 0.824,
+   "independent_median": 0.7424999999999999,
+   "flag": false
+  },
+  "birthday": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.696,
+     "ssim": 0.103,
+     "dhash_distance": 37,
+     "colour_overlap": 0.464,
+     "score": 0.421
+    },
+    "openmoji": {
+     "silhouette_iou": 0.707,
+     "ssim": 0.177,
+     "dhash_distance": 29,
+     "colour_overlap": 0.486,
+     "score": 0.479
+    },
+    "noto": {
+     "silhouette_iou": 0.74,
+     "ssim": 0.121,
+     "dhash_distance": 29,
+     "colour_overlap": 0.449,
+     "score": 0.464
+    },
+    "fluent": {
+     "silhouette_iou": 0.719,
+     "ssim": 0.219,
+     "dhash_distance": 22,
+     "colour_overlap": 0.05,
+     "score": 0.411
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.845,
+     "ssim": 0.107,
+     "dhash_distance": 28,
+     "colour_overlap": 0.247,
+     "score": 0.441
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.735,
+     "ssim": 0.132,
+     "dhash_distance": 16,
+     "colour_overlap": 0.442,
+     "score": 0.515
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.797,
+     "ssim": 0.136,
+     "dhash_distance": 31,
+     "colour_overlap": 0.105,
+     "score": 0.388
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.708,
+     "ssim": 0.099,
+     "dhash_distance": 26,
+     "colour_overlap": 0.213,
+     "score": 0.404
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.768,
+     "ssim": 0.11,
+     "dhash_distance": 43,
+     "colour_overlap": 0.019,
+     "score": 0.306
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.645,
+     "ssim": 0.185,
+     "dhash_distance": 33,
+     "colour_overlap": 0.369,
+     "score": 0.421
+    }
+   },
+   "ours_max": 0.479,
+   "independent_max": 0.515,
+   "independent_median": 0.4125,
+   "flag": false
+  },
+  "briefcase": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.832,
+     "ssim": 0.234,
+     "dhash_distance": 31,
+     "colour_overlap": 0.102,
+     "score": 0.421
+    },
+    "openmoji": {
+     "silhouette_iou": 0.828,
+     "ssim": 0.186,
+     "dhash_distance": 30,
+     "colour_overlap": 0.272,
+     "score": 0.454
+    },
+    "noto": {
+     "silhouette_iou": 0.917,
+     "ssim": 0.351,
+     "dhash_distance": 24,
+     "colour_overlap": 0.186,
+     "score": 0.52
+    },
+    "fluent": {
+     "silhouette_iou": 0.91,
+     "ssim": 0.407,
+     "dhash_distance": 25,
+     "colour_overlap": 0.471,
+     "score": 0.599
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.871,
+     "ssim": 0.316,
+     "dhash_distance": 29,
+     "colour_overlap": 0.694,
+     "score": 0.607
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.86,
+     "ssim": 0.448,
+     "dhash_distance": 33,
+     "colour_overlap": 0.206,
+     "score": 0.499
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.85,
+     "ssim": 0.511,
+     "dhash_distance": 26,
+     "colour_overlap": 0.018,
+     "score": 0.493
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.876,
+     "ssim": 0.276,
+     "dhash_distance": 34,
+     "colour_overlap": 0.188,
+     "score": 0.452
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.883,
+     "ssim": 0.304,
+     "dhash_distance": 31,
+     "colour_overlap": 0.051,
+     "score": 0.438
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.983,
+     "ssim": 0.662,
+     "dhash_distance": 13,
+     "colour_overlap": 0.561,
+     "score": 0.751
+    }
+   },
+   "ours_max": 0.599,
+   "independent_max": 0.751,
+   "independent_median": 0.496,
+   "flag": false
+  },
+  "cake": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.847,
+     "ssim": 0.209,
+     "dhash_distance": 28,
+     "colour_overlap": 0.543,
+     "score": 0.541
+    },
+    "openmoji": {
+     "silhouette_iou": 0.814,
+     "ssim": 0.165,
+     "dhash_distance": 30,
+     "colour_overlap": 0.486,
+     "score": 0.499
+    },
+    "noto": {
+     "silhouette_iou": 0.842,
+     "ssim": 0.173,
+     "dhash_distance": 20,
+     "colour_overlap": 0.374,
+     "score": 0.519
+    },
+    "fluent": {
+     "silhouette_iou": 0.782,
+     "ssim": 0.12,
+     "dhash_distance": 26,
+     "colour_overlap": 0.063,
+     "score": 0.39
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.742,
+     "ssim": 0.109,
+     "dhash_distance": 34,
+     "colour_overlap": 0.266,
+     "score": 0.396
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.823,
+     "ssim": 0.241,
+     "dhash_distance": 24,
+     "colour_overlap": 0.445,
+     "score": 0.534
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.736,
+     "ssim": 0.267,
+     "dhash_distance": 30,
+     "colour_overlap": 0.272,
+     "score": 0.451
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.717,
+     "ssim": 0.117,
+     "dhash_distance": 34,
+     "colour_overlap": 0.248,
+     "score": 0.388
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.708,
+     "ssim": 0.081,
+     "dhash_distance": 36,
+     "colour_overlap": 0.023,
+     "score": 0.312
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.762,
+     "ssim": 0.219,
+     "dhash_distance": 24,
+     "colour_overlap": 0.134,
+     "score": 0.435
+    }
+   },
+   "ours_max": 0.541,
+   "independent_max": 0.534,
+   "independent_median": 0.4155,
+   "flag": true
+  },
+  "card": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.962,
+     "ssim": 0.301,
+     "dhash_distance": 26,
+     "colour_overlap": 0.326,
+     "score": 0.546
+    },
+    "openmoji": {
+     "silhouette_iou": 0.888,
+     "ssim": 0.341,
+     "dhash_distance": 31,
+     "colour_overlap": 0.371,
+     "score": 0.529
+    },
+    "noto": {
+     "silhouette_iou": 0.849,
+     "ssim": 0.327,
+     "dhash_distance": 24,
+     "colour_overlap": 0.15,
+     "score": 0.488
+    },
+    "fluent": {
+     "silhouette_iou": 0.887,
+     "ssim": 0.3,
+     "dhash_distance": 24,
+     "colour_overlap": 0.269,
+     "score": 0.52
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.918,
+     "ssim": 0.321,
+     "dhash_distance": 17,
+     "colour_overlap": 0.239,
+     "score": 0.553
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.877,
+     "ssim": 0.422,
+     "dhash_distance": 22,
+     "colour_overlap": 0.214,
+     "score": 0.543
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.915,
+     "ssim": 0.366,
+     "dhash_distance": 14,
+     "colour_overlap": 0.197,
+     "score": 0.565
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.956,
+     "ssim": 0.424,
+     "dhash_distance": 25,
+     "colour_overlap": 0.062,
+     "score": 0.513
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.996,
+     "ssim": 0.481,
+     "dhash_distance": 19,
+     "colour_overlap": 0.078,
+     "score": 0.565
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.954,
+     "ssim": 0.651,
+     "dhash_distance": 18,
+     "colour_overlap": 0.185,
+     "score": 0.627
+    }
+   },
+   "ours_max": 0.546,
+   "independent_max": 0.627,
+   "independent_median": 0.5589999999999999,
+   "flag": false
+  },
+  "cart": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.663,
+     "ssim": 0.202,
+     "dhash_distance": 24,
+     "colour_overlap": 0.404,
+     "score": 0.473
+    },
+    "openmoji": {
+     "silhouette_iou": 0.502,
+     "ssim": 0.064,
+     "dhash_distance": 32,
+     "colour_overlap": 0.621,
+     "score": 0.422
+    },
+    "noto": {
+     "silhouette_iou": 0.266,
+     "ssim": 0.071,
+     "dhash_distance": 39,
+     "colour_overlap": 0.307,
+     "score": 0.259
+    },
+    "fluent": {
+     "silhouette_iou": 0.415,
+     "ssim": 0.037,
+     "dhash_distance": 29,
+     "colour_overlap": 0.233,
+     "score": 0.308
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.486,
+     "ssim": 0.113,
+     "dhash_distance": 26,
+     "colour_overlap": 0.475,
+     "score": 0.417
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.269,
+     "ssim": 0.166,
+     "dhash_distance": 39,
+     "colour_overlap": 0.319,
+     "score": 0.286
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.314,
+     "ssim": 0.01,
+     "dhash_distance": 27,
+     "colour_overlap": 0.296,
+     "score": 0.3
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.403,
+     "ssim": 0.119,
+     "dhash_distance": 27,
+     "colour_overlap": 0.286,
+     "score": 0.347
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.417,
+     "ssim": 0.112,
+     "dhash_distance": 19,
+     "colour_overlap": 0.237,
+     "score": 0.367
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.3,
+     "ssim": 0.114,
+     "dhash_distance": 24,
+     "colour_overlap": 0.206,
+     "score": 0.311
+    }
+   },
+   "ours_max": 0.473,
+   "independent_max": 0.417,
+   "independent_median": 0.32899999999999996,
+   "flag": true
+  },
+  "coffee": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.62,
+     "ssim": 0.191,
+     "dhash_distance": 29,
+     "colour_overlap": 0.283,
+     "score": 0.41
+    },
+    "openmoji": {
+     "silhouette_iou": 0.664,
+     "ssim": 0.342,
+     "dhash_distance": 22,
+     "colour_overlap": 0.515,
+     "score": 0.544
+    },
+    "noto": {
+     "silhouette_iou": 0.685,
+     "ssim": 0.301,
+     "dhash_distance": 23,
+     "colour_overlap": 0.357,
+     "score": 0.496
+    },
+    "fluent": {
+     "silhouette_iou": 0.698,
+     "ssim": 0.22,
+     "dhash_distance": 20,
+     "colour_overlap": 0.291,
+     "score": 0.474
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.565,
+     "ssim": 0.175,
+     "dhash_distance": 27,
+     "colour_overlap": 0.643,
+     "score": 0.49
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.722,
+     "ssim": 0.236,
+     "dhash_distance": 26,
+     "colour_overlap": 0.656,
+     "score": 0.552
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.795,
+     "ssim": 0.264,
+     "dhash_distance": 17,
+     "colour_overlap": 0.655,
+     "score": 0.612
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.619,
+     "ssim": 0.291,
+     "dhash_distance": 27,
+     "colour_overlap": 0.691,
+     "score": 0.545
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.541,
+     "ssim": 0.176,
+     "dhash_distance": 24,
+     "colour_overlap": 0.637,
+     "score": 0.495
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.704,
+     "ssim": 0.252,
+     "dhash_distance": 17,
+     "colour_overlap": 0.638,
+     "score": 0.582
+    }
+   },
+   "ours_max": 0.544,
+   "independent_max": 0.612,
+   "independent_median": 0.5485,
+   "flag": false
+  },
+  "done": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.957,
+     "ssim": 0.277,
+     "dhash_distance": 30,
+     "colour_overlap": 0.636,
+     "score": 0.6
+    },
+    "openmoji": {
+     "silhouette_iou": 0.648,
+     "ssim": 0.187,
+     "dhash_distance": 29,
+     "colour_overlap": 0.377,
+     "score": 0.44
+    },
+    "noto": {
+     "silhouette_iou": 0.948,
+     "ssim": 0.285,
+     "dhash_distance": 26,
+     "colour_overlap": 0.652,
+     "score": 0.62
+    },
+    "fluent": {
+     "silhouette_iou": 0.964,
+     "ssim": 0.366,
+     "dhash_distance": 21,
+     "colour_overlap": 0.091,
+     "score": 0.523
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.641,
+     "ssim": 0.217,
+     "dhash_distance": 29,
+     "colour_overlap": 0.122,
+     "score": 0.382
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.983,
+     "ssim": 0.526,
+     "dhash_distance": 24,
+     "colour_overlap": 0.732,
+     "score": 0.716
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.993,
+     "ssim": 0.701,
+     "dhash_distance": 19,
+     "colour_overlap": 0.094,
+     "score": 0.623
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.63,
+     "ssim": 0.166,
+     "dhash_distance": 31,
+     "colour_overlap": 0.141,
+     "score": 0.363
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.644,
+     "ssim": 0.229,
+     "dhash_distance": 28,
+     "colour_overlap": 0.091,
+     "score": 0.382
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.977,
+     "ssim": 0.514,
+     "dhash_distance": 21,
+     "colour_overlap": 0.094,
+     "score": 0.564
+    }
+   },
+   "ours_max": 0.62,
+   "independent_max": 0.716,
+   "independent_median": 0.473,
+   "flag": false
+  },
+  "gift": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.88,
+     "ssim": 0.137,
+     "dhash_distance": 20,
+     "colour_overlap": 0.059,
+     "score": 0.441
+    },
+    "openmoji": {
+     "silhouette_iou": 0.915,
+     "ssim": 0.39,
+     "dhash_distance": 9,
+     "colour_overlap": 0.431,
+     "score": 0.649
+    },
+    "noto": {
+     "silhouette_iou": 0.849,
+     "ssim": 0.032,
+     "dhash_distance": 30,
+     "colour_overlap": 0.076,
+     "score": 0.372
+    },
+    "fluent": {
+     "silhouette_iou": 0.872,
+     "ssim": 0.126,
+     "dhash_distance": 18,
+     "colour_overlap": 0.062,
+     "score": 0.445
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.859,
+     "ssim": 0.151,
+     "dhash_distance": 17,
+     "colour_overlap": 0.029,
+     "score": 0.443
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.864,
+     "ssim": 0.182,
+     "dhash_distance": 36,
+     "colour_overlap": 0.105,
+     "score": 0.397
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.888,
+     "ssim": 0.725,
+     "dhash_distance": 2,
+     "colour_overlap": 0.324,
+     "score": 0.727
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.812,
+     "ssim": 0.011,
+     "dhash_distance": 35,
+     "colour_overlap": 0.283,
+     "score": 0.39
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.897,
+     "ssim": 0.144,
+     "dhash_distance": 17,
+     "colour_overlap": 0.504,
+     "score": 0.57
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.85,
+     "ssim": 0.164,
+     "dhash_distance": 34,
+     "colour_overlap": 0.405,
+     "score": 0.472
+    }
+   },
+   "ours_max": 0.649,
+   "independent_max": 0.727,
+   "independent_median": 0.4575,
+   "flag": false
+  },
+  "happy": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.964,
+     "ssim": 0.136,
+     "dhash_distance": 20,
+     "colour_overlap": 0.055,
+     "score": 0.461
+    },
+    "openmoji": {
+     "silhouette_iou": 0.963,
+     "ssim": 0.089,
+     "dhash_distance": 32,
+     "colour_overlap": 0.206,
+     "score": 0.44
+    },
+    "noto": {
+     "silhouette_iou": 0.946,
+     "ssim": 0.168,
+     "dhash_distance": 26,
+     "colour_overlap": 0.085,
+     "score": 0.448
+    },
+    "fluent": {
+     "silhouette_iou": 0.956,
+     "ssim": 0.145,
+     "dhash_distance": 20,
+     "colour_overlap": 0.1,
+     "score": 0.472
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.986,
+     "ssim": 0.235,
+     "dhash_distance": 24,
+     "colour_overlap": 0.042,
+     "score": 0.472
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.963,
+     "ssim": 0.557,
+     "dhash_distance": 14,
+     "colour_overlap": 0.128,
+     "score": 0.607
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.973,
+     "ssim": 0.575,
+     "dhash_distance": 8,
+     "colour_overlap": 0.099,
+     "score": 0.631
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.968,
+     "ssim": 0.445,
+     "dhash_distance": 16,
+     "colour_overlap": 0.636,
+     "score": 0.699
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.96,
+     "ssim": 0.175,
+     "dhash_distance": 28,
+     "colour_overlap": 0.064,
+     "score": 0.44
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.939,
+     "ssim": 0.388,
+     "dhash_distance": 18,
+     "colour_overlap": 0.306,
+     "score": 0.588
+    }
+   },
+   "ours_max": 0.472,
+   "independent_max": 0.699,
+   "independent_median": 0.5974999999999999,
+   "flag": false
+  },
+  "heart": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.942,
+     "ssim": 0.618,
+     "dhash_distance": 16,
+     "colour_overlap": 0.031,
+     "score": 0.585
+    },
+    "openmoji": {
+     "silhouette_iou": 0.857,
+     "ssim": 0.44,
+     "dhash_distance": 15,
+     "colour_overlap": 0.166,
+     "score": 0.557
+    },
+    "noto": {
+     "silhouette_iou": 0.902,
+     "ssim": 0.575,
+     "dhash_distance": 19,
+     "colour_overlap": 0.089,
+     "score": 0.567
+    },
+    "fluent": {
+     "silhouette_iou": 0.891,
+     "ssim": 0.53,
+     "dhash_distance": 16,
+     "colour_overlap": 0.119,
+     "score": 0.572
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.849,
+     "ssim": 0.539,
+     "dhash_distance": 17,
+     "colour_overlap": 0.0,
+     "score": 0.531
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.935,
+     "ssim": 0.717,
+     "dhash_distance": 11,
+     "colour_overlap": 0.044,
+     "score": 0.631
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.943,
+     "ssim": 0.687,
+     "dhash_distance": 10,
+     "colour_overlap": 0.205,
+     "score": 0.67
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.891,
+     "ssim": 0.543,
+     "dhash_distance": 8,
+     "colour_overlap": 0.108,
+     "score": 0.604
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.881,
+     "ssim": 0.528,
+     "dhash_distance": 13,
+     "colour_overlap": 0.704,
+     "score": 0.727
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.949,
+     "ssim": 0.683,
+     "dhash_distance": 13,
+     "colour_overlap": 0.214,
+     "score": 0.661
+    }
+   },
+   "ours_max": 0.585,
+   "independent_max": 0.727,
+   "independent_median": 0.646,
+   "flag": false
+  },
+  "hiking": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.744,
+     "ssim": 0.262,
+     "dhash_distance": 25,
+     "colour_overlap": 0.383,
+     "score": 0.499
+    },
+    "openmoji": {
+     "silhouette_iou": 0.695,
+     "ssim": 0.328,
+     "dhash_distance": 30,
+     "colour_overlap": 0.338,
+     "score": 0.473
+    },
+    "noto": {
+     "silhouette_iou": 0.673,
+     "ssim": 0.241,
+     "dhash_distance": 31,
+     "colour_overlap": 0.318,
+     "score": 0.437
+    },
+    "fluent": {
+     "silhouette_iou": 0.698,
+     "ssim": 0.173,
+     "dhash_distance": 30,
+     "colour_overlap": 0.089,
+     "score": 0.373
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.689,
+     "ssim": 0.326,
+     "dhash_distance": 27,
+     "colour_overlap": 0.337,
+     "score": 0.482
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.707,
+     "ssim": 0.288,
+     "dhash_distance": 28,
+     "colour_overlap": 0.219,
+     "score": 0.444
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.801,
+     "ssim": 0.302,
+     "dhash_distance": 31,
+     "colour_overlap": 0.021,
+     "score": 0.41
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.697,
+     "ssim": 0.344,
+     "dhash_distance": 31,
+     "colour_overlap": 0.447,
+     "score": 0.501
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.602,
+     "ssim": 0.256,
+     "dhash_distance": 28,
+     "colour_overlap": 0.037,
+     "score": 0.364
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.597,
+     "ssim": 0.215,
+     "dhash_distance": 39,
+     "colour_overlap": 0.081,
+     "score": 0.321
+    }
+   },
+   "ours_max": 0.499,
+   "independent_max": 0.501,
+   "independent_median": 0.427,
+   "flag": false
+  },
+  "home": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.86,
+     "ssim": 0.213,
+     "dhash_distance": 26,
+     "colour_overlap": 0.159,
+     "score": 0.457
+    },
+    "openmoji": {
+     "silhouette_iou": 0.844,
+     "ssim": 0.045,
+     "dhash_distance": 24,
+     "colour_overlap": 0.689,
+     "score": 0.551
+    },
+    "noto": {
+     "silhouette_iou": 0.854,
+     "ssim": 0.216,
+     "dhash_distance": 10,
+     "colour_overlap": 0.382,
+     "score": 0.574
+    },
+    "fluent": {
+     "silhouette_iou": 0.887,
+     "ssim": 0.328,
+     "dhash_distance": 18,
+     "colour_overlap": 0.14,
+     "score": 0.518
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.911,
+     "ssim": 0.192,
+     "dhash_distance": 14,
+     "colour_overlap": 0.092,
+     "score": 0.494
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.875,
+     "ssim": 0.175,
+     "dhash_distance": 26,
+     "colour_overlap": 0.201,
+     "score": 0.461
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.909,
+     "ssim": 0.394,
+     "dhash_distance": 18,
+     "colour_overlap": 0.122,
+     "score": 0.536
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.855,
+     "ssim": 0.16,
+     "dhash_distance": 24,
+     "colour_overlap": 0.49,
+     "score": 0.532
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.88,
+     "ssim": 0.224,
+     "dhash_distance": 14,
+     "colour_overlap": 0.07,
+     "score": 0.489
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.869,
+     "ssim": 0.355,
+     "dhash_distance": 18,
+     "colour_overlap": 0.195,
+     "score": 0.534
+    }
+   },
+   "ours_max": 0.574,
+   "independent_max": 0.536,
+   "independent_median": 0.513,
+   "flag": true
+  },
+  "memo": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.853,
+     "ssim": 0.028,
+     "dhash_distance": 39,
+     "colour_overlap": 0.698,
+     "score": 0.492
+    },
+    "openmoji": {
+     "silhouette_iou": 0.877,
+     "ssim": 0.042,
+     "dhash_distance": 35,
+     "colour_overlap": 0.845,
+     "score": 0.554
+    },
+    "noto": {
+     "silhouette_iou": 0.833,
+     "ssim": 0.039,
+     "dhash_distance": 28,
+     "colour_overlap": 0.584,
+     "score": 0.504
+    },
+    "fluent": {
+     "silhouette_iou": 0.897,
+     "ssim": 0.108,
+     "dhash_distance": 29,
+     "colour_overlap": 0.58,
+     "score": 0.533
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.87,
+     "ssim": 0.063,
+     "dhash_distance": 26,
+     "colour_overlap": 0.668,
+     "score": 0.549
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.944,
+     "ssim": 0.248,
+     "dhash_distance": 35,
+     "colour_overlap": 0.676,
+     "score": 0.58
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.885,
+     "ssim": 0.143,
+     "dhash_distance": 30,
+     "colour_overlap": 0.73,
+     "score": 0.572
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.896,
+     "ssim": 0.097,
+     "dhash_distance": 23,
+     "colour_overlap": 0.569,
+     "score": 0.551
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.876,
+     "ssim": 0.08,
+     "dhash_distance": 16,
+     "colour_overlap": 0.627,
+     "score": 0.583
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.859,
+     "ssim": 0.217,
+     "dhash_distance": 25,
+     "colour_overlap": 0.725,
+     "score": 0.603
+    }
+   },
+   "ours_max": 0.554,
+   "independent_max": 0.603,
+   "independent_median": 0.576,
+   "flag": false
+  },
+  "money": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.866,
+     "ssim": 0.242,
+     "dhash_distance": 17,
+     "colour_overlap": 0.085,
+     "score": 0.482
+    },
+    "openmoji": {
+     "silhouette_iou": 0.832,
+     "ssim": 0.172,
+     "dhash_distance": 26,
+     "colour_overlap": 0.334,
+     "score": 0.483
+    },
+    "noto": {
+     "silhouette_iou": 0.791,
+     "ssim": 0.283,
+     "dhash_distance": 16,
+     "colour_overlap": 0.108,
+     "score": 0.483
+    },
+    "fluent": {
+     "silhouette_iou": 0.843,
+     "ssim": 0.332,
+     "dhash_distance": 19,
+     "colour_overlap": 0.503,
+     "score": 0.595
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.777,
+     "ssim": 0.13,
+     "dhash_distance": 25,
+     "colour_overlap": 0.04,
+     "score": 0.389
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.798,
+     "ssim": 0.486,
+     "dhash_distance": 11,
+     "colour_overlap": 0.144,
+     "score": 0.564
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.875,
+     "ssim": 0.515,
+     "dhash_distance": 12,
+     "colour_overlap": 0.126,
+     "score": 0.582
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.683,
+     "ssim": 0.075,
+     "dhash_distance": 22,
+     "colour_overlap": 0.057,
+     "score": 0.368
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.76,
+     "ssim": 0.225,
+     "dhash_distance": 21,
+     "colour_overlap": 0.015,
+     "score": 0.418
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.772,
+     "ssim": 0.481,
+     "dhash_distance": 13,
+     "colour_overlap": 0.099,
+     "score": 0.537
+    }
+   },
+   "ours_max": 0.595,
+   "independent_max": 0.582,
+   "independent_median": 0.47750000000000004,
+   "flag": true
+  },
+  "music": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.708,
+     "ssim": 0.373,
+     "dhash_distance": 17,
+     "colour_overlap": 0.177,
+     "score": 0.498
+    },
+    "openmoji": {
+     "silhouette_iou": 0.468,
+     "ssim": 0.399,
+     "dhash_distance": 18,
+     "colour_overlap": 0.488,
+     "score": 0.518
+    },
+    "noto": {
+     "silhouette_iou": 0.504,
+     "ssim": 0.252,
+     "dhash_distance": 19,
+     "colour_overlap": 0.132,
+     "score": 0.398
+    },
+    "fluent": {
+     "silhouette_iou": 0.752,
+     "ssim": 0.342,
+     "dhash_distance": 14,
+     "colour_overlap": 0.097,
+     "score": 0.493
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.53,
+     "ssim": 0.414,
+     "dhash_distance": 17,
+     "colour_overlap": 0.0,
+     "score": 0.419
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.576,
+     "ssim": 0.519,
+     "dhash_distance": 14,
+     "colour_overlap": 0.043,
+     "score": 0.48
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.654,
+     "ssim": 0.375,
+     "dhash_distance": 13,
+     "colour_overlap": 0.022,
+     "score": 0.462
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.611,
+     "ssim": 0.481,
+     "dhash_distance": 9,
+     "colour_overlap": 0.22,
+     "score": 0.543
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.532,
+     "ssim": 0.391,
+     "dhash_distance": 14,
+     "colour_overlap": 0.073,
+     "score": 0.444
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.527,
+     "ssim": 0.356,
+     "dhash_distance": 13,
+     "colour_overlap": 0.093,
+     "score": 0.443
+    }
+   },
+   "ours_max": 0.518,
+   "independent_max": 0.543,
+   "independent_median": 0.453,
+   "flag": false
+  },
+  "party": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.488,
+     "ssim": 0.058,
+     "dhash_distance": 28,
+     "colour_overlap": 0.241,
+     "score": 0.337
+    },
+    "openmoji": {
+     "silhouette_iou": 0.436,
+     "ssim": 0.208,
+     "dhash_distance": 25,
+     "colour_overlap": 0.475,
+     "score": 0.432
+    },
+    "noto": {
+     "silhouette_iou": 0.524,
+     "ssim": 0.084,
+     "dhash_distance": 31,
+     "colour_overlap": 0.216,
+     "score": 0.335
+    },
+    "fluent": {
+     "silhouette_iou": 0.551,
+     "ssim": 0.177,
+     "dhash_distance": 24,
+     "colour_overlap": 0.132,
+     "score": 0.371
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.508,
+     "ssim": 0.176,
+     "dhash_distance": 27,
+     "colour_overlap": 0.13,
+     "score": 0.348
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.547,
+     "ssim": 0.137,
+     "dhash_distance": 25,
+     "colour_overlap": 0.176,
+     "score": 0.367
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.498,
+     "ssim": 0.077,
+     "dhash_distance": 32,
+     "colour_overlap": 0.099,
+     "score": 0.294
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.484,
+     "ssim": 0.136,
+     "dhash_distance": 24,
+     "colour_overlap": 0.365,
+     "score": 0.402
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.478,
+     "ssim": 0.184,
+     "dhash_distance": 21,
+     "colour_overlap": 0.197,
+     "score": 0.383
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.445,
+     "ssim": 0.02,
+     "dhash_distance": 25,
+     "colour_overlap": 0.421,
+     "score": 0.374
+    }
+   },
+   "ours_max": 0.432,
+   "independent_max": 0.402,
+   "independent_median": 0.3705,
+   "flag": true
+  },
+  "pill": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.351,
+     "ssim": 0.211,
+     "dhash_distance": 26,
+     "colour_overlap": 0.023,
+     "score": 0.295
+    },
+    "openmoji": {
+     "silhouette_iou": 0.908,
+     "ssim": 0.435,
+     "dhash_distance": 7,
+     "colour_overlap": 0.463,
+     "score": 0.674
+    },
+    "noto": {
+     "silhouette_iou": 0.324,
+     "ssim": 0.208,
+     "dhash_distance": 24,
+     "colour_overlap": 0.038,
+     "score": 0.299
+    },
+    "fluent": {
+     "silhouette_iou": 0.903,
+     "ssim": 0.429,
+     "dhash_distance": 16,
+     "colour_overlap": 0.06,
+     "score": 0.535
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.335,
+     "ssim": 0.232,
+     "dhash_distance": 27,
+     "colour_overlap": 0.039,
+     "score": 0.296
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.928,
+     "ssim": 0.734,
+     "dhash_distance": 8,
+     "colour_overlap": 0.099,
+     "score": 0.659
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.339,
+     "ssim": 0.352,
+     "dhash_distance": 28,
+     "colour_overlap": 0.135,
+     "score": 0.347
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.31,
+     "ssim": 0.226,
+     "dhash_distance": 25,
+     "colour_overlap": 0.051,
+     "score": 0.299
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.977,
+     "ssim": 0.496,
+     "dhash_distance": 19,
+     "colour_overlap": 0.088,
+     "score": 0.566
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.313,
+     "ssim": 0.325,
+     "dhash_distance": 28,
+     "colour_overlap": 0.449,
+     "score": 0.412
+    }
+   },
+   "ours_max": 0.674,
+   "independent_max": 0.659,
+   "independent_median": 0.37949999999999995,
+   "flag": true
+  },
+  "plane": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.646,
+     "ssim": 0.134,
+     "dhash_distance": 24,
+     "colour_overlap": 0.616,
+     "score": 0.505
+    },
+    "openmoji": {
+     "silhouette_iou": 0.689,
+     "ssim": 0.203,
+     "dhash_distance": 17,
+     "colour_overlap": 0.675,
+     "score": 0.575
+    },
+    "noto": {
+     "silhouette_iou": 0.564,
+     "ssim": 0.137,
+     "dhash_distance": 29,
+     "colour_overlap": 0.453,
+     "score": 0.425
+    },
+    "fluent": {
+     "silhouette_iou": 0.531,
+     "ssim": 0.092,
+     "dhash_distance": 34,
+     "colour_overlap": 0.439,
+     "score": 0.383
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.813,
+     "ssim": 0.203,
+     "dhash_distance": 17,
+     "colour_overlap": 0.354,
+     "score": 0.526
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.703,
+     "ssim": 0.432,
+     "dhash_distance": 15,
+     "colour_overlap": 0.47,
+     "score": 0.593
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.631,
+     "ssim": 0.369,
+     "dhash_distance": 20,
+     "colour_overlap": 0.498,
+     "score": 0.546
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.726,
+     "ssim": 0.153,
+     "dhash_distance": 24,
+     "colour_overlap": 0.434,
+     "score": 0.485
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.644,
+     "ssim": 0.155,
+     "dhash_distance": 29,
+     "colour_overlap": 0.32,
+     "score": 0.416
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.678,
+     "ssim": 0.347,
+     "dhash_distance": 21,
+     "colour_overlap": 0.422,
+     "score": 0.53
+    }
+   },
+   "ours_max": 0.575,
+   "independent_max": 0.593,
+   "independent_median": 0.528,
+   "flag": false
+  },
+  "rainy": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.661,
+     "ssim": 0.311,
+     "dhash_distance": 24,
+     "colour_overlap": 0.675,
+     "score": 0.568
+    },
+    "openmoji": {
+     "silhouette_iou": 0.727,
+     "ssim": 0.299,
+     "dhash_distance": 25,
+     "colour_overlap": 0.941,
+     "score": 0.644
+    },
+    "noto": {
+     "silhouette_iou": 0.635,
+     "ssim": 0.31,
+     "dhash_distance": 27,
+     "colour_overlap": 0.649,
+     "score": 0.543
+    },
+    "fluent": {
+     "silhouette_iou": 0.724,
+     "ssim": 0.252,
+     "dhash_distance": 39,
+     "colour_overlap": 0.685,
+     "score": 0.513
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.642,
+     "ssim": 0.346,
+     "dhash_distance": 33,
+     "colour_overlap": 0.655,
+     "score": 0.532
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.631,
+     "ssim": 0.479,
+     "dhash_distance": 19,
+     "colour_overlap": 0.682,
+     "score": 0.624
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.612,
+     "ssim": 0.403,
+     "dhash_distance": 33,
+     "colour_overlap": 0.766,
+     "score": 0.566
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.756,
+     "ssim": 0.343,
+     "dhash_distance": 22,
+     "colour_overlap": 0.652,
+     "score": 0.602
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.704,
+     "ssim": 0.354,
+     "dhash_distance": 32,
+     "colour_overlap": 0.686,
+     "score": 0.561
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.634,
+     "ssim": 0.333,
+     "dhash_distance": 34,
+     "colour_overlap": 0.648,
+     "score": 0.521
+    }
+   },
+   "ours_max": 0.644,
+   "independent_max": 0.624,
+   "independent_median": 0.5635,
+   "flag": true
+  },
+  "sad": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.955,
+     "ssim": 0.158,
+     "dhash_distance": 24,
+     "colour_overlap": 0.049,
+     "score": 0.447
+    },
+    "openmoji": {
+     "silhouette_iou": 0.963,
+     "ssim": 0.088,
+     "dhash_distance": 32,
+     "colour_overlap": 0.233,
+     "score": 0.446
+    },
+    "noto": {
+     "silhouette_iou": 0.946,
+     "ssim": 0.146,
+     "dhash_distance": 27,
+     "colour_overlap": 0.101,
+     "score": 0.443
+    },
+    "fluent": {
+     "silhouette_iou": 0.956,
+     "ssim": 0.064,
+     "dhash_distance": 25,
+     "colour_overlap": 0.198,
+     "score": 0.457
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.976,
+     "ssim": 0.206,
+     "dhash_distance": 26,
+     "colour_overlap": 0.05,
+     "score": 0.457
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.953,
+     "ssim": 0.525,
+     "dhash_distance": 5,
+     "colour_overlap": 0.119,
+     "score": 0.63
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.969,
+     "ssim": 0.479,
+     "dhash_distance": 15,
+     "colour_overlap": 0.109,
+     "score": 0.581
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.968,
+     "ssim": 0.291,
+     "dhash_distance": 25,
+     "colour_overlap": 0.668,
+     "score": 0.634
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.96,
+     "ssim": 0.185,
+     "dhash_distance": 31,
+     "colour_overlap": 0.072,
+     "score": 0.433
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.939,
+     "ssim": 0.403,
+     "dhash_distance": 12,
+     "colour_overlap": 0.31,
+     "score": 0.616
+    }
+   },
+   "ours_max": 0.457,
+   "independent_max": 0.634,
+   "independent_median": 0.5985,
+   "flag": false
+  },
+  "star": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.949,
+     "ssim": 0.548,
+     "dhash_distance": 16,
+     "colour_overlap": 0.039,
+     "score": 0.572
+    },
+    "openmoji": {
+     "silhouette_iou": 0.95,
+     "ssim": 0.473,
+     "dhash_distance": 11,
+     "colour_overlap": 0.301,
+     "score": 0.638
+    },
+    "noto": {
+     "silhouette_iou": 0.982,
+     "ssim": 0.495,
+     "dhash_distance": 11,
+     "colour_overlap": 0.103,
+     "score": 0.602
+    },
+    "fluent": {
+     "silhouette_iou": 0.804,
+     "ssim": 0.352,
+     "dhash_distance": 8,
+     "colour_overlap": 0.168,
+     "score": 0.55
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.923,
+     "ssim": 0.553,
+     "dhash_distance": 21,
+     "colour_overlap": 0.007,
+     "score": 0.538
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.942,
+     "ssim": 0.851,
+     "dhash_distance": 7,
+     "colour_overlap": 0.082,
+     "score": 0.691
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.776,
+     "ssim": 0.633,
+     "dhash_distance": 14,
+     "colour_overlap": 0.043,
+     "score": 0.558
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.949,
+     "ssim": 0.539,
+     "dhash_distance": 16,
+     "colour_overlap": 0.677,
+     "score": 0.729
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.774,
+     "ssim": 0.446,
+     "dhash_distance": 9,
+     "colour_overlap": 0.671,
+     "score": 0.687
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.808,
+     "ssim": 0.658,
+     "dhash_distance": 11,
+     "colour_overlap": 0.915,
+     "score": 0.802
+    }
+   },
+   "ours_max": 0.638,
+   "independent_max": 0.802,
+   "independent_median": 0.6890000000000001,
+   "flag": false
+  },
+  "sunny": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.703,
+     "ssim": 0.39,
+     "dhash_distance": 18,
+     "colour_overlap": 0.054,
+     "score": 0.466
+    },
+    "openmoji": {
+     "silhouette_iou": 0.665,
+     "ssim": 0.186,
+     "dhash_distance": 29,
+     "colour_overlap": 0.259,
+     "score": 0.414
+    },
+    "noto": {
+     "silhouette_iou": 0.557,
+     "ssim": 0.206,
+     "dhash_distance": 29,
+     "colour_overlap": 0.126,
+     "score": 0.359
+    },
+    "fluent": {
+     "silhouette_iou": 0.701,
+     "ssim": 0.177,
+     "dhash_distance": 36,
+     "colour_overlap": 0.061,
+     "score": 0.344
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.524,
+     "ssim": 0.19,
+     "dhash_distance": 47,
+     "colour_overlap": 0.013,
+     "score": 0.248
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.556,
+     "ssim": 0.436,
+     "dhash_distance": 23,
+     "colour_overlap": 0.406,
+     "score": 0.509
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.518,
+     "ssim": 0.353,
+     "dhash_distance": 20,
+     "colour_overlap": 0.382,
+     "score": 0.485
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.58,
+     "ssim": 0.26,
+     "dhash_distance": 32,
+     "colour_overlap": 0.512,
+     "score": 0.463
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.77,
+     "ssim": 0.305,
+     "dhash_distance": 29,
+     "colour_overlap": 0.58,
+     "score": 0.551
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.557,
+     "ssim": 0.267,
+     "dhash_distance": 23,
+     "colour_overlap": 0.838,
+     "score": 0.575
+    }
+   },
+   "ours_max": 0.466,
+   "independent_max": 0.575,
+   "independent_median": 0.497,
+   "flag": false
+  },
+  "tooth": {
+   "ours_vs_set": {
+    "twemoji": {
+     "silhouette_iou": 0.698,
+     "ssim": 0.359,
+     "dhash_distance": 25,
+     "colour_overlap": 0.73,
+     "score": 0.599
+    },
+    "openmoji": {
+     "silhouette_iou": 0.751,
+     "ssim": 0.296,
+     "dhash_distance": 28,
+     "colour_overlap": 0.961,
+     "score": 0.643
+    },
+    "noto": {
+     "silhouette_iou": 0.686,
+     "ssim": 0.349,
+     "dhash_distance": 25,
+     "colour_overlap": 0.711,
+     "score": 0.589
+    },
+    "fluent": {
+     "silhouette_iou": 0.773,
+     "ssim": 0.279,
+     "dhash_distance": 27,
+     "colour_overlap": 0.758,
+     "score": 0.597
+    }
+   },
+   "independent_pairs": {
+    "twemoji~openmoji": {
+     "silhouette_iou": 0.721,
+     "ssim": 0.304,
+     "dhash_distance": 33,
+     "colour_overlap": 0.746,
+     "score": 0.564
+    },
+    "twemoji~noto": {
+     "silhouette_iou": 0.865,
+     "ssim": 0.754,
+     "dhash_distance": 14,
+     "colour_overlap": 0.976,
+     "score": 0.844
+    },
+    "twemoji~fluent": {
+     "silhouette_iou": 0.662,
+     "ssim": 0.356,
+     "dhash_distance": 32,
+     "colour_overlap": 0.864,
+     "score": 0.595
+    },
+    "openmoji~noto": {
+     "silhouette_iou": 0.749,
+     "ssim": 0.301,
+     "dhash_distance": 29,
+     "colour_overlap": 0.726,
+     "score": 0.581
+    },
+    "openmoji~fluent": {
+     "silhouette_iou": 0.774,
+     "ssim": 0.231,
+     "dhash_distance": 27,
+     "colour_overlap": 0.775,
+     "score": 0.589
+    },
+    "noto~fluent": {
+     "silhouette_iou": 0.705,
+     "ssim": 0.377,
+     "dhash_distance": 28,
+     "colour_overlap": 0.844,
+     "score": 0.622
+    }
+   },
+   "ours_max": 0.643,
+   "independent_max": 0.844,
+   "independent_median": 0.592,
+   "flag": false
+  }
+ },
+ "independent_p95": 0.727,
+ "unrelated_median": 0.363
+}
