@@ -234,6 +234,8 @@ RLS 基線：私人 MVP 的 user data table 只開放 `authenticated`，`USING` 
 
 ## In Progress
 
+- [ ] **DP-254 — 0.5.2「數字和欄位對齊了」發布（2026-11-15）：** 擁有者 2026-11-14 授權「目前沒什麼使用者，可以直接佈署、發新版本」，沿用此授權。#248（DP-251／252）四 CI 43659939888／同 head Codex 審查無發現後合併 ae4b5ba，本段由此接續。只改 release version 0.5.1→0.5.2、新增三條公告並以既有 generator 產生 version.json／sw.js；十五份歷史公告不變，runtime、user-data v5、23 份 migration 與預算不變，**沒有 migration**。`check:release-notes` 以已部署的 0.5.1 version.json（a9444f2）比對通過；Pages build／check:build 過（JS gzip 239,502／240,640）；production 320×568（99..469）／390×844（268..576）公告完整可見、不需捲動，console 0，實際 Asia/Taipei。合併後 dispatch Deploy staging，**0.5.2 一經部署即不可回寫**；數字位置與 iPhone 日期欄位待擁有者實機確認，確認前不移 Done。
+
 - [ ] **DP-250 — 0.5.1「夥伴變大了」發布（2026-11-14）：** 擁有者 2026-11-14 授權「目前沒什麼使用者，可以直接佈署、發新版本」，Backlog → Next → In Progress。#242（DP-248）、#243（DP-249）各自四 CI／同 head Codex 審查無發現後合併（402fd81、406df24），本段由此接續。只改 release version 0.5.0→0.5.1、新增三條公告並以既有 generator 產生 version.json／sw.js；十四份歷史公告不變，runtime、user-data v5、23 份 migration 與預算不變，**沒有 migration，部署前不需動 Supabase**。`check:release-notes` 以已部署的 0.5.0 version.json 檔案（d514449）比對通過（這個環境連不到 github.io，部署 workflow 會對線上再比一次）；production Pages build／check:build 過；production 320×568／390×844 公告完整可見、不需捲動，console 0，實際 Asia/Taipei。#244 四 CI 43607625873／同 head Codex 審查無發現後合併 a9444f2，依擁有者授權 dispatch Deploy staging #24（43618884093），六 jobs 全部成功（含 Refuse to rewrite deployed release notes 與 Publish to Pages，17:22 UTC），**0.5.1 公告自此不可回寫**。這個環境連不到 github.io，線上公告與 iPhone 觀感待擁有者確認，確認前不移 Done。
 
 
