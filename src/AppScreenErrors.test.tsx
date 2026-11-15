@@ -44,6 +44,7 @@ vi.mock('./pwa/useAppUpdate', () => ({
     updateNow: () => Promise.resolve(),
     dismissUpdate: () => {},
     whatsNew: null,
+    releaseCheckSettled: true,
     checkResult: null,
     acknowledgeWhatsNew: () => {},
     clearCheckResult: () => {},

@@ -3,9 +3,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { DataProvider } from './data/DataProvider';
+import { LocalDayPopRepository } from './storage/localRepository';
 import { LegacyImportProvider } from './legacy/LegacyImportProvider';
 import { AppUpdateProvider } from './pwa/AppUpdateProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
+import { BOOT_RELEASE_WAIT_MS } from './shell/boot';
 
 /**
  * One end-to-end mount of the real tree.
@@ -24,6 +26,8 @@ vi.mock('./auth/authContext', () => ({
   useAuth: () => ({ user: null }),
 }));
 vi.mock('./auth/AuthDialog', () => ({ AuthDialog: () => null }));
+// Mutable per test: whether the first version check has finished (DP-258).
+const update = vi.hoisted(() => ({ releaseCheckSettled: true }));
 vi.mock('./pwa/useAppUpdate', () => ({
   useAppUpdate: () => ({
     currentVersion: '0.0.0-test',
@@ -37,6 +41,7 @@ vi.mock('./pwa/useAppUpdate', () => ({
     updateNow: () => Promise.resolve(),
     dismissUpdate: () => {},
     whatsNew: null,
+    releaseCheckSettled: update.releaseCheckSettled,
     checkResult: null,
     acknowledgeWhatsNew: () => {},
     clearCheckResult: () => {},
@@ -202,5 +207,78 @@ describe('App', () => {
     expect(container.textContent).toContain('備份');
     expect(container.querySelector('.dp-tabbar')).toBeNull();
     expect(localStorage.getItem('daypop.user-data')).toBe('not-json');
+  });
+});
+
+describe('start-up screen (DP-258)', () => {
+  afterEach(() => {
+    document.getElementById('boot')?.remove();
+    update.releaseCheckSettled = true;
+    vi.useRealTimers();
+  });
+
+  function addBoot() {
+    const boot = document.createElement('div');
+    boot.id = 'boot';
+    document.body.append(boot);
+    return boot;
+  }
+
+  it('waits for the first version check, so a release notice is already under the cover', async () => {
+    update.releaseCheckSettled = false;
+    const boot = addBoot();
+    await mount();
+    expect(container.textContent).not.toContain('載入中');
+    expect(boot.dataset.done).toBeUndefined();
+
+    update.releaseCheckSettled = true;
+    await mount();
+    expect(boot.dataset.done).toBe('true');
+  });
+
+  it('lifts anyway when the version check is slow or offline', async () => {
+    vi.useFakeTimers();
+    update.releaseCheckSettled = false;
+    const boot = addBoot();
+    await mount();
+    await act(async () => { vi.advanceTimersByTime(BOOT_RELEASE_WAIT_MS - 1); });
+    expect(boot.dataset.done).toBeUndefined();
+    await act(async () => { vi.advanceTimersByTime(1); });
+    expect(boot.dataset.done).toBe('true');
+  });
+
+  it('keeps covering the page while the data loads, then lets go', async () => {
+    const boot = document.createElement('div');
+    boot.id = 'boot';
+    document.body.append(boot);
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    // An account-style repository: no synchronous load, so the App starts on
+    // "載入中…" until the first load resolves, as a signed-in start does.
+    const local = new LocalDayPopRepository();
+    const repository = Object.assign(Object.create(local) as LocalDayPopRepository, {
+      loadSync: undefined,
+      load: async () => { await pending; return local.load(); },
+    });
+
+    await act(async () => {
+      root.render(
+        <AppUpdateProvider>
+          <DataProvider repository={repository}>
+            <LegacyImportProvider accountId={null}>
+              <ThemeProvider>
+                <App />
+              </ThemeProvider>
+            </LegacyImportProvider>
+          </DataProvider>
+        </AppUpdateProvider>,
+      );
+    });
+    expect(container.textContent).toContain('載入中');
+    expect(boot.dataset.done).toBeUndefined();
+
+    await act(async () => { release(); await pending; });
+    expect(container.textContent).not.toContain('載入中');
+    expect(boot.dataset.done).toBe('true');
   });
 });

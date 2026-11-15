@@ -21,6 +21,26 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Start-up screen (DP-258). Plain markup so it paints before any script
+      arrives; its styles ship in the head-linked bundle (src/shell/boot.css),
+      because the CSP allows no inline <style> or <script>. The App removes it
+      once the data is ready, so the calendar and a release notice appear
+      together instead of a blank page, "載入中…", then a pop-up.
+    -->
+    <div id="boot" class="dp-boot" role="status" aria-label="日蹦載入中">
+      <div class="dp-boot-card">
+        <div class="dp-boot-stage" aria-hidden="true">
+          <img class="dp-boot-icon" src="%BASE_URL%icons/daypop.svg" alt="" width="76" height="76" />
+          <div class="dp-boot-shadow"></div>
+        </div>
+        <div class="dp-boot-name">日蹦 DayPop</div>
+        <div class="dp-boot-lines" aria-hidden="true">
+          <span>翻開今天的手帳…</span><span>削好鉛筆…</span><span>貼上今天的貼圖…</span><span>叫醒夥伴…</span>
+        </div>
+        <div class="dp-boot-slow">載入比平常久，請確認網路後重新整理</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

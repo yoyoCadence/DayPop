@@ -10,6 +10,7 @@ import { createEmptyUserData } from '../domain/types';
 import { readUserData, writeUserData } from '../storage/versionedStorage';
 import { SettingsScaffoldScreen } from './SettingsScaffoldScreen';
 import { zoneOffsetLabel } from './timezoneOptions';
+import { MONTH_NAVIGATION_KEY } from './calendar/monthNavigation';
 
 /**
  * 設定的「桌寵」與「一般」兩張卡片（DP-014 這一段的搬移）。
@@ -33,6 +34,7 @@ const updater = {
   updateNow: () => Promise.resolve(),
   dismissUpdate: () => {},
   whatsNew: null,
+  releaseCheckSettled: true,
   checkResult: null,
   acknowledgeWhatsNew: () => {},
   clearCheckResult: () => {},
@@ -104,7 +106,7 @@ async function selectOption(element: Element | null | undefined, value: string) 
 const petToggle = () => container.querySelector('.set-pref-toggle');
 const petNameInput = () => container.querySelector('#pet-name') as HTMLInputElement;
 const timezoneSelect = () => container.querySelector('#default-timezone') as HTMLSelectElement;
-/** 一般卡的第 n 列（0 = 月曆列數、1 = 每週起始日、2 = 預設時區）。 */
+/** 一般卡的第 n 列（0 = 月曆列數、1 = 月曆顯示方式、2 = 每週起始日、3 = 預設時區）。 */
 const generalRow = (index: number) =>
   container.querySelectorAll('.set-pref-rows .set-pref-row')[index];
 const pressed = (buttons: NodeListOf<Element> | Element[]) =>
@@ -247,7 +249,7 @@ describe('設定 桌寵（寫入尚未回應時）', () => {
 describe('設定 一般', () => {
   it('每週起始日切換到週一並保存', async () => {
     await render();
-    const buttons = () => generalRow(1)!.querySelectorAll('.set-pref-segment-button');
+    const buttons = () => generalRow(2)!.querySelectorAll('.set-pref-segment-button');
     expect(pressed(buttons())).toEqual(['日']);
 
     await click([...buttons()][1]);
@@ -264,6 +266,29 @@ describe('設定 一般', () => {
     await click([...buttons()][1]);
 
     expect(savedPreferences().calendarGridMode).toBe('fixed-six');
+  });
+
+  it('月曆顯示方式與頁首共用同一個裝置設定，不寫進使用者資料（DP-256）', async () => {
+    await render();
+    const before = JSON.stringify(readUserData());
+    const buttons = () => generalRow(1)!.querySelectorAll('.set-pref-segment-button');
+    expect(generalRow(1)!.textContent).toContain('月曆顯示方式');
+    expect(pressed(buttons())).toEqual(['連續捲動']);
+
+    await click([...buttons()][1]);
+
+    expect(pressed(buttons())).toEqual(['單月翻頁']);
+    expect(localStorage.getItem(MONTH_NAVIGATION_KEY)).toBe('paged');
+    expect(JSON.stringify(readUserData())).toBe(before);
+
+    await click([...buttons()][0]);
+    expect(localStorage.getItem(MONTH_NAVIGATION_KEY)).toBe('continuous');
+  });
+
+  it('月曆顯示方式讀取裝置上已選的單月翻頁', async () => {
+    localStorage.setItem(MONTH_NAVIGATION_KEY, 'paged');
+    await render();
+    expect(pressed(generalRow(1)!.querySelectorAll('.set-pref-segment-button'))).toEqual(['單月翻頁']);
   });
 
   it('預設時區帶入已保存的值並保存新選擇', async () => {

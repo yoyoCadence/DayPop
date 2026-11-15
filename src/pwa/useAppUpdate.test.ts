@@ -301,6 +301,29 @@ describe('useAppUpdate release notes and manual feedback', () => {
     expect(hook.current.whatsNew).toBeNull();
   });
 
+  it('reports when the first check has finished, so the start-up cover can wait for it (DP-258)', async () => {
+    let answer!: () => void;
+    fetchSpy.mockImplementation(() => new Promise((resolve) => {
+      answer = () => resolve({ ok: true, status: 200, json: () => Promise.resolve(CURRENT) });
+    }));
+    const hook = renderHook(new MemoryStorage());
+    expect(hook.current.releaseCheckSettled).toBe(false);
+    await settle();
+    expect(hook.current.releaseCheckSettled).toBe(false);
+    await act(async () => { answer(); });
+    await settle();
+    expect(hook.current.releaseCheckSettled).toBe(true);
+    expect(hook.current.whatsNew?.version).toBe(__APP_VERSION__);
+  });
+
+  it('counts a failed first check as finished too (DP-258)', async () => {
+    fetchSpy.mockImplementation(() => Promise.reject(new Error('offline')));
+    const hook = renderHook(new MemoryStorage());
+    await settle();
+    expect(hook.current.releaseCheckSettled).toBe(true);
+    expect(hook.current.whatsNew).toBeNull();
+  });
+
   it('answers a failed manual check, and keeps a failed automatic one silent', async () => {
     fetchSpy.mockImplementation(() =>
       Promise.resolve({ ok: false, status: 503, json: () => Promise.reject(new Error('unused')) }),

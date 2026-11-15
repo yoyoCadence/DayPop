@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { createEmptyUserData, type DayPopUserData } from '../src/domain/types';
-import { monitorBrowser, openApp, reloadApp, tabButton } from './support';
+import { bootGone, monitorBrowser, openApp, reloadApp, tabButton } from './support';
 
 /**
  * The pet's speech bubble — DP-169, ported from the原檔 (`:488-530`,
@@ -65,7 +65,10 @@ test('點寵物先打招呼，再列出今日與明日待辦；新增的待辦�
 
   // Where the原檔 puts it: 12px from the left, 150px above the bottom (174px
   // since DP-249 made the pet 84px), the
-  // tail over the pet's head. Measured once the pop-in has finished.
+  // tail over the pet's head. Measured once the pop-in has finished. The boot
+  // cover has to be gone first: removing it cancels its animations, which
+  // rejects their `finished` promises (DP-258).
+  await bootGone(page);
   const geometry = await page.evaluate(async () => {
     await Promise.all(
       document

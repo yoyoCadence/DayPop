@@ -10,6 +10,7 @@ import { RootErrorFallback } from './shell/RootErrorFallback';
 import { ThemeProvider } from './theme/ThemeProvider';
 import './theme/fonts.css';
 import './styles.css';
+import './shell/boot.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

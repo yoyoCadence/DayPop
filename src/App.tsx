@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthDialog } from './auth/AuthDialog';
 import { useAuth } from './auth/authContext';
 import { useDayPopDataState } from './data/dataContext';
@@ -19,6 +19,7 @@ import { SettingsScaffoldScreen } from './screens/SettingsScaffoldScreen';
 import { SharingConfirmationDialog } from './screens/SharingConfirmationDialog';
 import { RetainedSharingDraftDialog } from './screens/RetainedSharingDraftDialog';
 import { AppShell } from './shell/AppShell';
+import { BOOT_RELEASE_WAIT_MS, dismissBoot, dismissBootAfter } from './shell/boot';
 import { ErrorBoundary } from './shell/ErrorBoundary';
 import { RemoteDataWarningBanner } from './shell/RemoteDataWarningBanner';
 import { StorageWarningBanner } from './shell/StorageWarningBanner';
@@ -50,6 +51,22 @@ export default function App() {
   const reminders = useReminders();
 
   const { state, refresh,personalData,confirmation,retainedSharingDrafts,discardSharingDraft } = useDayPopDataState();
+  // The start-up screen stays over "載入中…" and fades once there is a real
+  // screen: the calendar with any release notice already open beneath it, or
+  // the recovery / retry screen — DP-258. The notice depends on the first
+  // version check, which can land after the data, so a ready calendar waits
+  // for that check too, but never longer than BOOT_RELEASE_WAIT_MS. Effects run
+  // after the commit, so the notice is in the page before the cover fades.
+  const settled = state.status !== 'loading';
+  const releaseKnown = state.status !== 'ready' || updater.releaseCheckSettled;
+  useEffect(() => {
+    if (!settled) return;
+    if (releaseKnown) {
+      dismissBoot();
+      return;
+    }
+    return dismissBootAfter(BOOT_RELEASE_WAIT_MS);
+  }, [settled, releaseKnown]);
 
   // Shown on every tab while the browser refuses to persist data — DP-017.
   const storageMode = useStorageMode();
