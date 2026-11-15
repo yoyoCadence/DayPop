@@ -945,10 +945,12 @@
   right: 14px;
 }
 
+/* DP-251：數字貼在角色圖本身的右上角。PetLayer 依每款夥伴圖的透明邊算出位置
+   （petAssets.ts 的 PET_ART_INSET）；沒有值時退回原稿的方框角落。 */
 .cal-pet-badge {
   position: absolute;
-  top: -3px;
-  right: -4px;
+  top: var(--pet-badge-top, -3px);
+  right: var(--pet-badge-right, -4px);
   display: flex;
   min-width: 19px;
   height: 19px;
@@ -961,6 +963,12 @@
   color: var(--accent-fg);
   font-size: 11px;
   font-weight: 800;
+}
+
+/* CSS 角色撐滿整個方框（第一次載入、圖檔失敗時），數字回到原稿的方框角落。 */
+.cal-pet:has(.cal-pet-body) .cal-pet-badge {
+  top: -3px;
+  right: -4px;
 }
 
 /* ---------- day detail sheet ----------
@@ -1657,6 +1665,22 @@ button.cal-day-todo-title {
   padding: 9px 10px;
   color: var(--fg);
   font-size: 16px;
+}
+
+/* DP-252：iPhone 上原生外觀的日期／時刻欄位，寬度由系統另外決定，
+   width／min-width／max-width 都壓不住（實機截圖：行程表單的日期與結束時刻超出右邊）。
+   拿掉原生外觀就照一般欄位排版，點下去仍是系統的選擇器。拿掉後 iOS 在欄位清空時
+   會把高度縮掉，所以補上與文字欄位相同的高度。 */
+.cal-field input[type="date"],
+.cal-field input[type="time"],
+.cal-day-date-editor input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.cal-field input[type="date"],
+.cal-field input[type="time"] {
+  min-height: calc(1.25em + 18px + 2 * var(--bd));
 }
 
 /* 只在編輯自訂重複規則的行程時出現 —— DP-082。 */

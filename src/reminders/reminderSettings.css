@@ -14,4 +14,6 @@
 .reminder-rule-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
 .reminder-rule-fields:disabled { opacity: 0.65; }
 .reminder-rule-dialog .cal-manage-input { font-size: 16px; min-width: 0; max-width: 100%; }
+/* DP-252：與行程表單相同，iPhone 原生外觀的時刻欄位不吃 width，拿掉原生外觀。 */
+.reminder-rule-dialog input[type="time"].cal-manage-input { -webkit-appearance: none; appearance: none; min-height: calc(1.25em + 20px + 2 * var(--bd)); }
 .reminder-dialog-actions { justify-content: flex-end; margin-top: 16px; }

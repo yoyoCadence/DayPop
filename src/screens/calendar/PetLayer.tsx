@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { NewTodoInput } from '../../domain/mutations';
 import { petBubbleTodos } from '../../domain/petBubble';
 import type { PetKind, TodoItem } from '../../domain/types';
@@ -7,8 +7,8 @@ import { usePetPlacement } from './usePetPlacement';
 import { ViewportLayer } from '../../shell/ViewportLayer';
 import { PetArtwork } from './PetArtwork';
 import { IdlePetArtwork } from './IdlePetArtwork';
-import { PET_ASSETS } from './petAssets';
-import type { PetPoint } from './petPlacement';
+import { PET_ASSETS, petBadgeOffset } from './petAssets';
+import { PET_SIZE, type PetPoint } from './petPlacement';
 import { usePetWander } from './usePetWander';
 import type { TodoCompletionSource } from '../../data/dataContext';
 
@@ -153,7 +153,7 @@ export function PetLayer({
               setJumpCue(current => current === cue ? null : current);
             }} />}
           {lists.open > 0 && (
-            <span className="cal-pet-badge" aria-hidden="true">
+            <span className="cal-pet-badge" aria-hidden="true" style={badgeStyle(petKind)}>
               {lists.open}
             </span>
           )}
@@ -186,4 +186,14 @@ function drawnPoint(element: HTMLElement): PetPoint | null {
   if (!transform || transform === 'none' || typeof DOMMatrixReadOnly !== 'function') return null;
   const matrix = new DOMMatrixReadOnly(transform);
   return { x: matrix.m41, y: matrix.m42 };
+}
+
+/**
+ * The badge sits on the character's own top-right corner (DP-251). The values
+ * go in as custom properties so calendar.css can put it back on the box
+ * corner while the CSS stand-in, which fills the whole box, is showing.
+ */
+function badgeStyle(kind: PetKind): CSSProperties {
+  const offset = petBadgeOffset(kind, PET_SIZE);
+  return { '--pet-badge-top': `${offset.top}px`, '--pet-badge-right': `${offset.right}px` } as CSSProperties;
 }
