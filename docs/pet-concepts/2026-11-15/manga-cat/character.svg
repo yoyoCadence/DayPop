@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+<title>柑橘貓 · Citrus Cat</title>
+<desc>Editable ink, calico markings, scarf, and joint layers. The motion script sets transforms by layer ID.</desc>
+<defs>
+ <clipPath id="mask"><path d="M37 51 Q30 39 30 20 C31 13 43 20 51 28 Q57 25 65 26 L73 22 71 28 Q78 23 88 16 Q93 13 94 22 Q95 34 90 43 Q99 52 99 63 L96 65 102 70 96 73 Q96 85 78 88 Q51 92 37 81 L32 76 36 73 30 70 35 64Z"/></clipPath>
+</defs>
+<g id="root" stroke="#29212a" stroke-width="2.65" stroke-linecap="round" stroke-linejoin="round">
+ <g id="tail">
+  <path d="M50 97 C31 100 15 94 15 78 C15 68 20 62 26 63 C32 64 30 71 27 75 C23 83 31 89 44 88 L52 87Z" fill="#fff4d8"/>
+  <path d="M16 76 C17 67 21 63 26 63 C32 65 29 71 27 75 Q24 76 16 76Z" fill="#efa048" stroke="none"/>
+  <path d="M15 78 C15 68 20 62 26 63 C32 64 30 71 27 75 C23 83 31 89 44 88" fill="none"/>
+ </g>
+ <g id="torso">
+  <g id="back-foot"><path d="M73 89 Q80 87 82 96 L85 102 Q86 107 78 107 H71 Q66 107 69 100Z" fill="#efb984"/></g>
+  <path d="M45 74 Q66 69 79 80 Q88 95 76 102 L48 103 Q36 100 38 90Z" fill="#fff4d8"/>
+  <path d="M39 88 Q41 79 53 76 L65 81 Q65 94 54 95 Q46 95 39 92Z" fill="#ef9b49" stroke="none"/>
+  <g id="hind-foot"><path d="M43 90 Q48 87 53 94 L54 102 Q54 108 46 108 Q36 108 38 103Z" fill="#fff5dc"/><path d="M45 104v3" stroke-width="1.2"/></g>
+  <g id="front-foot"><path d="M63 91 Q68 87 73 92 L73 101 Q75 107 66 108 Q59 109 59 105Z" fill="#fff5dc"/><path d="M65 104v3" stroke-width="1.2"/></g>
+ </g>
+ <g id="scarf">
+  <g id="scarf-tail"><path d="M44 77 Q38 83 28 85 L34 88 29 94 Q44 93 52 83Z" fill="#d33e45"/><path d="M35 88l11-7" stroke="#922d40" stroke-width="1.2"/></g>
+  <path d="M44 78 Q63 86 84 77 L85 86 Q67 97 48 88 Q44 86 44 78Z" fill="#e84a48"/>
+  <path d="M66 85 Q72 83 77 88 L74 95 Q70 99 64 94Z" fill="#c23341"/>
+  <rect x="66.5" y="87" width="8.5" height="7" rx="2.2" fill="#ffcc69" stroke-width="1.5"/>
+  <path d="M69 89v3m3-3v3" stroke="#944835" stroke-width=".8"/>
+ </g>
+ <g id="head">
+  <path d="M37 51 Q30 39 30 20 C31 13 43 20 51 28 Q57 25 65 26 L73 22 71 28 Q78 23 88 16 Q93 13 94 22 Q95 34 90 43 Q99 52 99 63 L96 65 102 70 96 73 Q96 85 78 88 Q51 92 37 81 L32 76 36 73 30 70 35 64Z" fill="#fff6df"/>
+  <g clip-path="url(#mask)" stroke="none">
+   <path d="M22 11 H64 Q62 43 51 48 L32 54 24 45Z" fill="#f5a454"/>
+   <path d="M94 14 H73 Q72 31 82 46 L99 51 Q107 31 94 14Z" fill="#e98848"/>
+   <path d="M30 77 Q51 84 65 83 Q88 84 99 72 V91 H30Z" fill="#f7dbad"/>
+  </g>
+  <path d="M35 24 Q42 25 47 32 Q40 34 37 42Z M89 22 Q83 25 79 32 Q85 34 89 38Z" fill="#f2888a" stroke-width="1.5"/>
+  <path d="M47 33l4 5m3-7 3 5m25 2 3 4" stroke="#a75a36" stroke-width="1.5"/>
+  <g id="gaze" fill="#25202c" stroke="none">
+   <g id="eyes">
+    <ellipse cx="52" cy="59" rx="4.1" ry="6.8"/><ellipse cx="78" cy="58" rx="4.1" ry="6.8"/>
+    <path d="M50 57l1-4 2 1-1 4zM76 56l1-4 2 1-1 4z" fill="#fffaf0"/>
+   </g>
+   <g id="eye-closed" visibility="hidden" fill="none" stroke="#29212a" stroke-width="2.2">
+    <path d="M47 58q5 5 10 0m16-1q5 5 10 0"/>
+   </g>
+   <g id="eye-squint" visibility="hidden" fill="none" stroke="#29212a" stroke-width="2.2">
+    <path d="M47 54l10 5-10 3m35-9-9 5 9 3"/>
+   </g>
+   <path d="M61 65 Q65 62 69 65 Q68 69 65 69 Q62 68 61 65Z" fill="#75404c"/>
+   <path id="mouth" d="M65 68 v3 q-4 5-8 0 m8 0 q4 5 8 0" fill="none" stroke="#29212a" stroke-width="1.55"/>
+   <g id="smile" visibility="hidden"><path d="M61 71 Q65 73 72 70 Q71 79 66 80 Q62 79 61 71Z" fill="#a23648" stroke="#29212a" stroke-width="1.4"/><path d="M63 77q3-3 7-1l-2 3-3 1Z" fill="#fa8887"/></g>
+  </g>
+  <g fill="none" stroke-width="1.3">
+   <path d="M42 70l-11-3m12 7-12 1m58-7 11-5m-10 9 11-1"/>
+   <path d="M44 69l2 3m1-4 2 3m34-3 2 3m1-4 2 3" stroke="#e68683" stroke-width="2"/>
+  </g>
+ </g>
+</g>
+</svg>

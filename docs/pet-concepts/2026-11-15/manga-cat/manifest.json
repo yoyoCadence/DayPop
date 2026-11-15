@@ -1,0 +1,161 @@
+{
+  "key": "manga_cat",
+  "canvas": [
+    120,
+    120
+  ],
+  "cssPixels": 84,
+  "transparentMargin": 8,
+  "nativeTool": "Inkscape",
+  "nativeToolVersion": "Inkscape 1.4 (e7c3feb100, 2024-10-09)",
+  "encoder": "Pillow 13.0.0, libwebp 1.6.0",
+  "conceptReferenceSha256": "3822870a3ac41dd761d6821b9b4ad129b9338956fc29fa0f1eb0e9183e7e7464",
+  "source": [
+    {
+      "path": "manga-cat/character.svg",
+      "bytes": 3849,
+      "sha256": "0f3652b85a786c2c2cf87d74ddf572b329291959ae7449da0a7d32977088dafb"
+    },
+    {
+      "path": "manga-cat/draw.py",
+      "bytes": 4731,
+      "sha256": "1d11e26530ea1424ff2d8fe039b2796bcb8bad85ffcd8de78072c6a77c9c985d"
+    },
+    {
+      "path": "motion.py",
+      "bytes": 606,
+      "sha256": "ce225bdd74093140e2cd35bfdd9483027600bd9f7a64bbccca9f4f19687ec9bc"
+    },
+    {
+      "path": "package_pets.py",
+      "bytes": 8770,
+      "sha256": "88c64aa9b52f776172aa7649fc80c366fc56402b841e721e668ef4ea4b1c13f2"
+    }
+  ],
+  "poses": {
+    "idle": {
+      "png": {
+        "path": "manga-cat-idle.png",
+        "bytes": 8066,
+        "sha256": "5c5a58075cd04c2ec2830da25a7aa0494ba9e5aa745220ef70231fbe74afddb1"
+      },
+      "webp": {
+        "path": "manga-cat-idle.webp",
+        "bytes": 23622,
+        "sha256": "4ce5e2f6c5bb0d4e103e7de85524d60263a6d69cec1f222ded6278bd44c06b00",
+        "frames": 7,
+        "distinctFrames": 7,
+        "durationMs": 2160,
+        "loop": 0,
+        "quality": 85
+      }
+    },
+    "walk": {
+      "png": {
+        "path": "manga-cat-walk.png",
+        "bytes": 8106,
+        "sha256": "b2a217963844b9180934cadcabbc789aa94d5b555cd20f4f3f3716aa127abe70"
+      },
+      "webp": {
+        "path": "manga-cat-walk.webp",
+        "bytes": 22430,
+        "sha256": "ff7fd01db73392698fa933e92d874cbc9710e4d003885ac730f90c1b9e339ca5",
+        "frames": 8,
+        "distinctFrames": 8,
+        "durationMs": 800,
+        "loop": 0,
+        "quality": 75
+      }
+    },
+    "sit": {
+      "png": {
+        "path": "manga-cat-sit.png",
+        "bytes": 7795,
+        "sha256": "2d7af51c0e2686af21c96c0f74530a0498c4c3ea7e2e3427ab36752e6691abef"
+      },
+      "webp": {
+        "path": "manga-cat-sit.webp",
+        "bytes": 10584,
+        "sha256": "8dc6b03551ccecc03b346f62cae07dac90f0081b143c1f8d764507fb28621d78",
+        "frames": 4,
+        "distinctFrames": 3,
+        "durationMs": 1490,
+        "loop": 0,
+        "quality": 75
+      }
+    },
+    "sleep": {
+      "png": {
+        "path": "manga-cat-sleep.png",
+        "bytes": 7134,
+        "sha256": "21b35fbf1702042d93e5d44c5521d9465648f71c3ea190bb6c4ca6332596fd75"
+      },
+      "webp": {
+        "path": "manga-cat-sleep.webp",
+        "bytes": 18658,
+        "sha256": "4cbc5b4eb1af129a5b4042b7b2e299914f98852144fd672c9181f9e505284b4a",
+        "frames": 8,
+        "distinctFrames": 8,
+        "durationMs": 2400,
+        "loop": 0,
+        "quality": 75
+      }
+    },
+    "jump": {
+      "png": {
+        "path": "manga-cat-jump.png",
+        "bytes": 8246,
+        "sha256": "a3cbbd6d9afeda6f9f5b545209011747646be5282c6447b3b09aa97b37d4af7b"
+      },
+      "webp": {
+        "path": "manga-cat-jump.webp",
+        "bytes": 19906,
+        "sha256": "d876bcd2b9e8327d23e0e883ea3d88e4b9d5ef28335dbe53a07680f1d8592592",
+        "frames": 10,
+        "distinctFrames": 10,
+        "durationMs": 1000,
+        "loop": 1,
+        "quality": 27
+      }
+    },
+    "look": {
+      "png": {
+        "path": "manga-cat-look.png",
+        "bytes": 8258,
+        "sha256": "2face4407c150e93d11156c40733ec770f09b8aa9dafe0a617153d11bff2c479"
+      },
+      "webp": {
+        "path": "manga-cat-look.webp",
+        "bytes": 21940,
+        "sha256": "5f43ad1293cca19b00730f70fbfc64afaa9a83700687cafda1444aacddb6e08c",
+        "frames": 10,
+        "distinctFrames": 10,
+        "durationMs": 1600,
+        "loop": 1,
+        "quality": 65
+      }
+    },
+    "grab": {
+      "png": {
+        "path": "manga-cat-grab.png",
+        "bytes": 8181,
+        "sha256": "a9740beab911f573558ba3f27a78eb6d4697a96fd455d3be1e56ab922fa61517"
+      },
+      "webp": {
+        "path": "manga-cat-grab.webp",
+        "bytes": 13546,
+        "sha256": "23316dfb865995b6c7ca7e0a461bdbe6211cc21499e2bf112132815609687c48",
+        "frames": 6,
+        "distinctFrames": 6,
+        "durationMs": 600,
+        "loop": 0,
+        "quality": 45
+      }
+    }
+  },
+  "assetBytes": 186472,
+  "badgeInset": {
+    "top": 28,
+    "right": 20
+  }
+}
