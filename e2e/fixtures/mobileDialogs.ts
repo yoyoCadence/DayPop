@@ -17,12 +17,16 @@ async function fitsHorizontally(dialog: Locator) {
         return rect.left < bounds.left || rect.right > bounds.right;
       }).map(field => field.getAttribute('aria-label') ?? field.id),
       smallFields: fields.filter(field => !['checkbox', 'radio'].includes(field.type) && parseFloat(getComputedStyle(field).fontSize) < 16).map(field => field.getAttribute('aria-label') ?? field.id),
+      // DP-252: iPhone sizes native-looking date/time fields itself and they overflow there,
+      // which neither Chromium nor Linux WebKit reproduces; the guard is the style that fixes it.
+      nativeDateTime: fields.filter(field => ['date', 'time'].includes(field.type) && getComputedStyle(field).appearance !== 'none').map(field => field.getAttribute('aria-label') ?? field.id),
     };
   });
   expect(geometry.left).toBeGreaterThanOrEqual(geometry.viewportLeft);
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportRight);
   expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
   expect(geometry.outsideFields).toEqual([]);
+  expect(geometry.nativeDateTime, 'native date/time look overflows on iPhone').toEqual([]);
   expect.soft(geometry.smallFields, 'editing must not invite mobile focus zoom').toEqual([]);
   const body = dialog.locator('.cal-sheet-body');
   if (await body.count()) expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);

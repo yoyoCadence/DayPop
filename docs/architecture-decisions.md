@@ -776,6 +776,17 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 
 **驗證：** `petPlacement.test.ts` 以 84px 的可用範圍（366 − 84 = 282 寬、600 − 84 − 160 = 356 高）重算靠邊與比例；`PetPlacement.test.tsx` 的角色矩形改用 `PET_SIZE`；`petWander.test.ts` 的 FAB 與右邊界斷言改用 `PET_SIZE`。e2e 的跳躍／睡眠 fixture 要求 84×84，泡泡位置案例要求 174px 且尾巴仍在頭上。390×844、320×568、932×430 淺深色量測：角色 84×84、底邊在分頁列上方、與 FAB 不重疊、泡泡完整在畫面內且離頭頂 12px、沒有水平溢出、console 0。iPhone 真機觀感待擁有者確認。
 
+### 待辦數字貼在夥伴身上（DP-251，2026-11-15 擁有者回報）
+
+**問題：** 擁有者在 0.5.1 用蜂蜜熊時回報「提醒事項的數字離夥伴有點遠」。數字原本固定在 84px 方框的右上角（-3px／-4px，原稿的 CSS 角色撐滿方框），但圖檔角色並不撐滿：蜂蜜熊在 120×120 原圖裡右邊有 36px、上方 34px 透明，放大到 84px 後數字離熊約 25px、浮在熊的右上方空白處。月光貓的透明邊只有 22／14px，所以先前不明顯。上方 DP-249「徽章位置不變」由本段取代。
+
+**決策：**
+- `petAssets.ts` 的 `PET_ART_INSET` 記錄五款 idle 靜態圖可見部分（alpha > 24）離上緣與右緣的透明距離；`petBadgeOffset()` 依 `PET_SIZE` 換算，保留原稿 -3／-4 的外凸量，數字因此貼在角色本身的右上角。
+- 數值以 CSS 自訂屬性傳給 `.cal-pet-badge`；方框裡顯示的是 CSS 角色（第一次載入、圖檔失敗）時，`.cal-pet:has(.cal-pet-body)` 讓數字回到方框角落，不蓋住 CSS 角色的臉。
+- 只量 idle 靜態圖；坐下等姿勢上緣差幾 px，數字不跟著跳。
+
+**驗證：** `petArtInset.test.ts` 用 node:zlib 直接解碼五張真正的 PNG 量透明邊，表與圖不一致就失敗（把蜂蜜熊改回 0／0 時兩項失敗，還原後通過）；`PetLayer.test.tsx` 檢查蜂蜜熊的數字位置。430×932 Chromium 五款截圖目視，數字都在角色頭部右上角；修正前的蜂蜜熊截圖數字浮在空白處。iPhone 觀感待擁有者確認。
+
 ## 5. PWA 與發布
 
 - 安裝圖示要包含 180×180 Apple touch icon，以及 192×192、512×512 PNG；Safari 26 已支援 SVG Home Screen icon，但為了舊版 iOS 與明確的 `apple-touch-icon` 相容性，SVG 仍只作補充，不取代 PNG fallback。
@@ -796,6 +807,16 @@ DP-199 後貓只餘 5,628 bytes，先量既有 idle／sleep quality，保留 DP-
 installed 的快速新增、搜尋與設定等其他輸入也採 16px，避免單靠手勢防護仍發生 focus 縮放。
 
 擁有者追加頂部模糊及整頁位移截圖後，擴充此契約：installed 模式的 html／body／root 禁止外層捲動，body 與 App viewport 固定於視窗，safe area 由實底覆蓋；各區自己的捲動保留。viewport meta 僅在此模式加入 maximum-scale=1／user-scalable=no，回 browser 或卸載時精確還原原值（原本沒有就移除暫建元素）；上段「全域 viewport meta 保留」描述第一版，現在以此模式限定規則取代。模擬驗證焦點／轉向後外層 scrollX/Y 為 0，未涵蓋 iPhone 系統 scroll-edge 模糊與原生鍵盤，不能宣稱其真機問題已驗收。
+
+### iPhone 原生日期／時刻欄位（DP-252，2026-11-15 擁有者回報）
+
+**問題：** 擁有者在 0.5.1 的 iPhone 主畫面 App 截圖：新增行程的日期欄與結束時刻欄右邊超出表單，邊框被切掉。DP-236 已給這些欄位 `width: 100%`、`min-width: 0`、`max-width: 100%`，Chromium 與 Linux WebKit 的幾何測試也通過，但 iPhone 上仍超出。
+
+**判斷：** iOS Safari 對原生外觀的日期／時刻欄位，會在作者 CSS 之後再套一層系統尺寸調整，`min-width`／`max-width` 壓不住；Chromium 與 Linux WebKit 都沒有這一層，所以先前的測試看不到。這是依 WebKit 行為與常見做法（例如 Bootstrap 的表單欄位）推斷，這個環境沒有 iPhone，**無法實機重現或驗證**。
+
+**決策：** 行程表單的日期／時刻、日詳情的待辦換日、提醒設定的時刻欄位改為 `appearance: none`，照一般文字欄位排版；點下去仍是系統選擇器。拿掉原生外觀後 iOS 在欄位清空時會把高度縮掉（WebKit bug 198959），所以補上與文字欄位相同的最小高度。Chromium 的欄位寬高與修正前相同，日曆／時鐘圖示仍在。
+
+**驗證：** `e2e/fixtures/mobileDialogs.ts` 新增檢查：提醒與新增行程裡的日期／時刻欄位必須是 `appearance: none`；拿掉 CSS 時這項在 `reminder-date-time` 失敗，還原後通過。這只守住修正本身，不等於 iPhone 已驗收；擁有者需在 iPhone 上確認日期與結束時刻的框完整。
 
 ## 6. 資料庫與日期邊界
 

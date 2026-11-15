@@ -2,7 +2,7 @@ import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NewTodoInput } from '../../domain/mutations';
-import type { TodoItem, TodoPriority } from '../../domain/types';
+import type { PetKind, TodoItem, TodoPriority } from '../../domain/types';
 import { PetLayer, type PetLayerProps } from './PetLayer';
 
 /**
@@ -61,7 +61,7 @@ const SAMPLE = [
 type Callbacks = Pick<PetLayerProps, 'onAddTodo' | 'onToggleTodo' | 'onDeleteTodo'>;
 
 /** Holds `greeted` the way `App` does, so a session's first and later taps differ. */
-function Harness({ todos, greeted: initial = false, ...callbacks }: Callbacks & { todos: TodoItem[]; greeted?: boolean }) {
+function Harness({ todos, greeted: initial = false, petKind, ...callbacks }: Callbacks & { todos: TodoItem[]; greeted?: boolean; petKind?: PetKind }) {
   const [greeted, setGreeted] = useState(initial);
   return (
     <PetLayer
@@ -70,19 +70,20 @@ function Harness({ todos, greeted: initial = false, ...callbacks }: Callbacks & 
       todayKey={TODAY}
       greeted={greeted}
       onGreeted={() => setGreeted(true)}
+      petKind={petKind}
       {...callbacks}
     />
   );
 }
 
-function render(options: Partial<Callbacks> & { todos?: TodoItem[]; greeted?: boolean } = {}) {
+function render(options: Partial<Callbacks> & { todos?: TodoItem[]; greeted?: boolean; petKind?: PetKind } = {}) {
   const callbacks: Callbacks = {
     onAddTodo: vi.fn<(input: NewTodoInput) => Promise<void>>().mockResolvedValue(undefined),
     onToggleTodo: vi.fn(),
     onDeleteTodo: vi.fn(),
     ...options,
   };
-  act(() => root.render(<Harness todos={options.todos ?? SAMPLE} greeted={options.greeted} {...callbacks} />));
+  act(() => root.render(<Harness todos={options.todos ?? SAMPLE} greeted={options.greeted} petKind={options.petKind} {...callbacks} />));
   return callbacks;
 }
 
@@ -129,6 +130,13 @@ describe('the pet (DP-169)', () => {
     expect(container.querySelector('.cal-pet-badge')?.textContent).toBe('2');
     expect(container.querySelector('.cal-pet-layer')?.hasAttribute('aria-hidden')).toBe(false);
     expect(container.querySelector('.cal-pet-body')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('hangs the badge off the partner art, not the empty corner of the box (DP-251)', () => {
+    render({ petKind: 'honey_bear' });
+    const badge = container.querySelector<HTMLElement>('.cal-pet-badge')!;
+    expect(badge.style.getPropertyValue('--pet-badge-top')).toBe('21px');
+    expect(badge.style.getPropertyValue('--pet-badge-right')).toBe('21px');
   });
 
   it('drops the badge and says so when nothing is left today', () => {
