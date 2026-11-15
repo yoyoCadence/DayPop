@@ -1,6 +1,6 @@
-# DP-244／246｜素材權利審核表（2026-11-14）
+# DP-244／246｜素材權利審核表（2026-11-14，11-15 補充）
 
-> **結論：Phase 1 四張與 Phase 2 二十張都沒有發現阻擋問題，但這不是法律查核，也不是授權核准。** 二十四張的 `license` 全部維持 `review-pending`。能把它改成專案授權格式（例如 `owner-original`）的只有專案擁有者的簽核（§5），agent 不會自行更改。
+> **結論：Phase 1 四張與 Phase 2 二十張都沒有發現阻擋問題，但這不是法律查核，也不是授權核准。** 2026-11-15 補上 OpenAI 條款查證紀錄（§3）與四套開放 emoji 圖集的量化＋目視比對（§4.2），兩者都沒有發現阻擋問題；剩下的事項見 §7。 二十四張的 `license` 全部維持 `review-pending`。能把它改成專案授權格式（例如 `owner-original`）的只有專案擁有者的簽核（§5），agent 不會自行更改。
 >
 > 依擁有者決策 6，這些 SVG 在核准前**不提交到 repo**（公開 repo 一提交就看得到）。repo 只保存本表、manifest、SHA-256 與檢查結果；SVG 檔另交給擁有者保管，用 `asset-hashes.json` 比對是不是同一份。
 
@@ -17,7 +17,7 @@
 | bytes | 1,005 | 926 | 1,193 | 686 |
 | SHA-256 | `6e6ea33a546cab41acc1ae9c7f874b4354907743abbbb4dafd1e25db11ad883f` | `75c8baca07cf0862315c84caafbed7b625373ee44d9ea9c3ee101291d17d5707` | `76c8e72022ca95d2e1635d705119597c7cf69ad712235ba6ff2065ba67161dd8` | `e7c26921e7b220d78b25fc2842288dfc55233e693647302d9e650aad1a56440a` |
 | 適用條款 | Anthropic（§2） | OpenAI（§3） | OpenAI（§3） | Anthropic（§2） |
-| 相似性（§4） | 未發現問題 | 未發現問題 | 未發現問題 | 未發現問題 |
+| 相似性（§4、§4.2） | 未發現問題 | 未發現問題 | 未發現問題（量測標記，目視為通用畫法） | 未發現問題 |
 | `license` | `review-pending` | `review-pending` | `review-pending` | `review-pending` |
 
 這四個 hash 與 [`asset-hashes.json`](asset-hashes.json)、[`check-results.json`](check-results.json)、[`measure-results.json`](measure-results.json) 一致。`check_stickers.py --assets` 會拒絕任何 hash 不同的檔案，所以審核過的就是之後要用的那一份。
@@ -68,12 +68,16 @@
 
 ## 3. OpenAI 條款（gift、cake）
 
-**這個工作環境連不到 openai.com**（兩頁都讀取失敗），所以 agent 無法存檔或引用原文。接手包列出的連結：
+**這個工作環境連不到 openai.com**，原文由另一個可連線的 agent 在 2026-11-14 查證，紀錄是 [`docs/asset-licenses/openai-terms-evidence-2026-11-14.md`](../../asset-licenses/openai-terms-evidence-2026-11-14.md)（PR #247，2026-11-15 合併）。擁有者 2026-11-15 指示以這份作為 DP-244 的條款查證紀錄，不需要再由擁有者手動查閱。
 
-- [Terms of Use](https://openai.com/policies/terms-of-use/)（接手包寫的是 2026-01-01 版本）
-- [Service Terms](https://openai.com/policies/service-terms/)
+那份紀錄的重點，與 §2 的 Anthropic 條款結構相同：
 
-接手包的摘要是「有輸出歸屬約定，但不保證排他著作權、原創性或未侵害第三人權利」，與 Anthropic 兩份的結構相同。**這一項要由擁有者補上**：在可以連線的裝置把兩頁存成 PDF 或截圖，記下讀取日期，以及當時用的 ChatGPT 方案。
+- Terms of Use（Published／Effective 2026-01-01）：OpenAI 把它在輸出上的權利（若有）轉給使用者；**不證明不侵權、不保證原創性**；輸出不一定獨一無二，不能宣稱獨占；不得把 AI 產出說成純人工製作。
+- Service Terms（Updated 2026-11-13）§6 圖像功能的限制，不是對圖像輸出的保證。
+- Sharing & publication policy：公開時要有人類審查、清楚交代 AI 參與。
+- Usage policies：2026-11-14 適用 2025-10-29 版；**2026-11-20 起新版生效，若在那之後才接進 App 上線，要重新核對**。
+
+**界線**（照那份紀錄）：那是人工整理的中文摘要，不是官網原件全文，也沒有官網 HTML／PDF 的 SHA-256。gift、cake 的 ChatGPT 方案與模型版本、可公開的 prompt 摘要，接手包都沒有記錄（§7）。
 
 ## 4. 相似性檢查
 
@@ -91,6 +95,18 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 
 二十張都是通用題材的常見畫法：五角星、驚嘆號、打勾方框、愛心、與 happy 同一個角色的難過臉（眉毛、圓點眼、下彎嘴、藍色淚滴）、插蠟燭的整個蛋糕、拉炮與彩帶、公事包、便條紙與鉛筆、寫著 `$` 的錢袋、信用卡、膠囊、亮晶晶的牙齒、飛機俯視、馬克杯、房子、購物車、兩個連在一起的八分音符、太陽、雨雲。除了錢袋上以路徑畫出的 `$` 符號，沒有任何文字、標誌或商標。擁有者 2026-11-14 用手機看過二十四張的實寸預覽並答覆可以，那是**可讀性**驗收；與既有 emoji 圖集並排的相似性目視仍算在擁有者簽核的範圍內。
 
+### 4.2 與四套開放 emoji 圖集的量化＋目視比對（2026-11-15）
+
+§4 的「agent 沒有逐張比對實際圖檔」由本節補上。方法與程式在 [`similarity/`](similarity/)，分數在 [`similarity/similarity-results.json`](similarity/similarity-results.json)；比對用的第三方圖檔與我們的 SVG 都**不進 repo**，三支程式都會拒絕把圖寫進 repo。
+
+- **比對對象**：二十四張各自 fallback emoji 在 Twemoji（@twemoji/svg 15.0.0，CC BY 4.0）、OpenMoji（17.0.0，CC BY-SA 4.0）、Noto（emoji-datasource-google 16.0.0，Apache 2.0）、Fluent（@lobehub/fluent-emoji-flat 1.1.0，MIT）的設計，共 96 張。以 `npm pack` 下載，不執行任何安裝程式。**Apple 的 emoji 不是開放授權，沒有下載**：擁有者的比對頁把裝置自己的 emoji 放在同一列，iPhone 上看到的就是 Apple 的設計。
+- **量測**：各圖裁到可見範圍、置中縮成 64px，算輪廓重疊（IoU）、亮度 SSIM、dHash 距離、色彩重疊，取平均為 0–1 的分數。**基準**是同一個 emoji 的四套獨立設計兩兩比較：兩個不相干的設計師畫同一題材會有多像。
+- **結果**：二十四張與任何一套的最高分都低於全部同題基準的第 95 百分位（0.727）；最高的是 pill 0.674（OpenMoji）、gift 0.649（OpenMoji）。不同題材的對照中位數是 0.363。
+- **標記與目視**：七張（cake、cart、home、money、party、pill、rainy）的最高分略高於該 emoji 四套設計彼此之間的最高分（差 0.013–0.056），依規則逐張目視。七張都是明顯不同的畫法：構圖、細節數量與配色都不同，相近來自題材本身（三角切片、膠囊兩色斜放、雲加雨滴）與 OpenMoji 同樣使用粗黑描邊的畫風。其餘十七張也全部目視過；最接近的是信用卡（藍色卡身、黑色磁條、黃色晶片，與 OpenMoji 配色相近），那是信用卡的標準元素，我們的版本是三個矩形以程式畫成。happy、sad 是有頭髮的人物，與各套的黃色笑臉差異最大（色彩重疊 0.10／0.20）。
+- **限制**：這些量測對簡單形狀很粗糙，高分不代表抄襲、低分也不保證沒問題；這不是法律查核。Apple 的比對與最終判斷仍屬擁有者（§5、§7）。
+
+**目前判斷：二十四張沒有發現抄襲或近似特定作品的跡象。**
+
 ## 5. 擁有者簽核需要的證據
 
 依擁有者決策 5，`review-pending` 改成專案授權格式前要有：
@@ -99,8 +115,8 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 |---|---|
 | 服務名稱、日期、製作流程、修改紀錄、原檔 SHA-256 | **已完成**（§1、§1.1） |
 | Anthropic 條款頁與讀取日期 | **已完成**（§2）；擁有者確認為 Pro，適用 Consumer Terms |
-| OpenAI 條款頁與讀取日期 | **待擁有者**（§3，這裡連不到）；只影響 gift、cake |
-| 第三方相似性風險，經人工核對 | **agent 初查完成，待擁有者目視**（§4、§4.1） |
+| OpenAI 條款頁與讀取日期 | **查證紀錄已完成**（§3，PR #247）；不是官網原件全文。只影響 gift、cake |
+| 第三方相似性風險，經人工核對 | **agent 已完成四套開放圖集的量化＋目視比對**（§4.2）；Apple 與最終判斷待擁有者用比對頁目視 |
 | 擁有者明確簽核：誰、何時、批准哪幾個檔案、對應哪個 SHA-256 | **待擁有者** |
 
 簽核前：manifest 維持 `review-pending`、SVG 不進 repo、App 不接這些貼圖（Phase 3／DP-247 不開始）。
@@ -115,3 +131,13 @@ agent 沒有逐張比對 Apple、Google Noto、Microsoft Fluent、Twemoji、Open
 - **把任何一張改成已核准、進 repo、接 App 的 gate**：§5 的擁有者簽核。**現在未滿足。**
 
 這樣解讀的理由：Phase 2 的新圖一樣只留在 repo 之外，不公開也不上線，在工作區多畫 20 張不會改變任何人的權利狀態。若擁有者認為開始製作也要先簽核，Phase 2 停下來即可，已畫的圖不會進 repo。
+
+## 7. 還沒完成、需要擁有者的事（2026-11-15）
+
+| 事項 | 影響 | 說明 |
+|---|---|---|
+| gift、cake 的 ChatGPT 方案／模型與可公開的 prompt 摘要 | gift、cake | OpenAI 查證紀錄要求逐張附上；接手包沒有記錄。只能由擁有者從自己的 ChatGPT 紀錄補，不需要貼私人對話全文。補不到時，可以改由 Claude Code 重畫這兩張（決策 1 保留了它們，重畫要擁有者同意）。 |
+| 用比對頁看 Apple emoji 並做最終相似性判斷 | 二十四張 | 比對頁私下交給擁有者，不進 repo。 |
+| 貼圖圖像的下游使用條件 | 二十四張 | repo 沒有 LICENSE 檔，`package.json` 也沒有 license 欄位；OWNER-DECISIONS 第 6 項寫的「保留原有開源授權」在 repo 裡找不到對應檔案。圖檔進公開 repo 前要決定：程式碼與貼圖各自用什麼條件，或貼圖只限本 App 使用。 |
+| 擁有者明確簽核（誰、何時、哪些檔、哪個 SHA-256） | 二十四張 | §5。簽核前 `review-pending` 不變、SVG 不進 repo、Phase 3 不開始。 |
+| 2026-11-20 之後才上線時，重新核對 OpenAI Usage policies | gift、cake | §3。 |

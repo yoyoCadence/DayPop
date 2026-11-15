@@ -1,6 +1,6 @@
 # DP-244／246｜漫畫貼圖 Phase 1–2 驗收紀錄（2026-11-14）
 
-> **狀態：Phase 1、Phase 2 驗收通過，二十四張的授權仍是 `review-pending`。** 擁有者 2026-11-14 用手機看過第二輪四張的實寸預覽，答覆「通過」；QA、掃描、安全檢查都通過；權利審核表沒有發現阻擋問題（[`rights-review.md`](rights-review.md)）。依擁有者決策 7 接著做 Phase 2（DP-246）：補 20 張、共 24 張，擁有者同日用手機看過全部二十四張的實寸預覽，答覆可以（§2.3）。**Phase 3（DP-247，接進 App）還沒開始**：授權未核准（OpenAI 條款存檔與擁有者明確簽核仍缺），見 §5。
+> **狀態：Phase 1、Phase 2 驗收通過，二十四張的授權仍是 `review-pending`。** 擁有者 2026-11-14 用手機看過第二輪四張的實寸預覽，答覆「通過」；QA、掃描、安全檢查都通過；權利審核表沒有發現阻擋問題（[`rights-review.md`](rights-review.md)）。依擁有者決策 7 接著做 Phase 2（DP-246）：補 20 張、共 24 張，擁有者同日用手機看過全部二十四張的實寸預覽，答覆可以（§2.3）。**Phase 3（DP-247，接進 App）還沒開始**：授權未核准。2026-11-15 補上 OpenAI 條款查證紀錄與四套開放 emoji 圖集比對，都沒有發現阻擋問題；仍缺 gift／cake 的 prompt 摘要、Apple 比對、貼圖下游使用條件與擁有者簽核，見 §5 與 [`rights-review.md`](rights-review.md) §7。
 >
 > **這裡沒有任何貼圖檔。** 依擁有者決策 6，授權未核准的 SVG 不提交到公開 repo。repo 只保存 manifest、SHA-256、檢查程式與結果；SVG 與實寸預覽另交給擁有者保管，用 [`asset-hashes.json`](asset-hashes.json) 比對是不是同一份。**沒有接入 App**：沒有 registry、UI、service worker、schema、版號、公告或部署變更，DP-243 的 240 個系統 emoji 不受影響。
 >
@@ -107,6 +107,7 @@ Phase 2 另以第四個參數（id 清單）把二十張分成五組各跑一次
 | 16px 認得出、10px 分得出主色與輪廓、深淺背景 | **通過** | 擁有者 2026-11-14 手機實寸預覽：Phase 1 答覆「通過」，Phase 2 二十四張答覆可以 |
 | 真實月格 | **通過** | §3.1（Phase 1 一組、Phase 2 五組） |
 | 權利審核 | **審核表完成，沒有阻擋問題；授權未核准** | [`rights-review.md`](rights-review.md)；`license` 維持 `review-pending` |
+| 與既有 emoji 的相似性 | **四套開放圖集已比對，沒有發現抄襲；Apple 待擁有者** | `rights-review.md` §4.2、[`similarity/`](similarity/) |
 | 不影響 240 emoji、舊資料、離線、JS 預算 | 未開始（Phase 3） | 這次沒有任何產品程式變更 |
 
 擁有者只在手機上看過實寸預覽；真實月格的截圖是 agent 在 Chromium 跑的，iPhone 實機的月格要到 Phase 3 接入後才看得到。
@@ -118,7 +119,9 @@ Phase 2 另以第四個參數（id 清單）把二十張分成五組各跑一次
 - 二十四張的 `license` 都是 `review-pending`，agent 沒有、也不會改成 `owner-original`。
 - happy、hiking 由 Claude Code（Anthropic）寫出；gift、cake 由 ChatGPT（OpenAI）輔助寫出。兩家條款都把輸出權利轉給使用者，但都寫「if any」，也都不保證不侵權。
 - 擁有者已確認 Claude 方案是 Pro，Anthropic 的 Consumer Terms 適用 happy、hiking 與 Phase 2 二十張。
-- 待擁有者補：OpenAI 條款存檔（這個環境連不到 openai.com，只影響 gift、cake）、與常見 emoji 圖集目視比對、最後的簽核。
+- OpenAI 條款：另一個 agent 的查證紀錄 [`openai-terms-evidence-2026-11-14.md`](../../asset-licenses/openai-terms-evidence-2026-11-14.md)（PR #247）作為紀錄，不需擁有者再查；那不是官網原件全文。
+- 相似性：Twemoji、OpenMoji、Noto、Fluent 四套已量化＋目視比對，沒有發現抄襲（`rights-review.md` §4.2）。
+- 待擁有者：gift、cake 的 ChatGPT 方案與 prompt 摘要、用比對頁看 Apple emoji、決定貼圖的下游使用條件（repo 沒有 LICENSE 檔）、最後的簽核（`rights-review.md` §7）。
 - Phase 2 的 license gate 解讀為「審核表完成且沒有阻擋問題」，已滿足；把任何一張改成已核准的 gate 仍是擁有者簽核（審核表 §6）。
 
 ## 6. 圖檔放在哪裡
