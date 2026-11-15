@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **0.5.2「數字和欄位對齊了」發布候選（DP-254，2026-11-15）：** 沿用擁有者「可以直接佈署、發新版本」的授權。只改 release version、三條公告（數字貼在夥伴頭上、iPhone 日期／時刻欄位不再超出、提醒與待辦改日期一起修正）與生成的 version.json／sw.js，歷史公告不變，沒有 migration。合併後 dispatch Deploy staging，**0.5.2 一經部署即不可回寫**。
+
 - **待辦數字貼在夥伴身上；iPhone 日期／時刻欄位不再超出（DP-251／252，2026-11-15）：** 擁有者在 0.5.1 回報兩件事。(1) 數字位置改由 `petAssets.ts` 的 `PET_ART_INSET`（每款 idle 靜態圖的透明邊）決定，貼在角色本身右上角；**換圖或新增夥伴要一起更新這張表**，`petArtInset.test.ts` 會直接解碼 PNG 核對。(2) 日期／時刻欄位一律 `appearance: none`：iOS 對原生外觀的這類欄位會另外決定寬度，`min-width: 0`／`max-width` 壓不住，Chromium 與 Linux WebKit 都重現不了；`mobileDialogs.ts` 守住這條樣式。**新增任何 date／time 欄位都要比照**，否則 iPhone 上可能超出。兩項都待擁有者 iPhone 確認。
 
 - **0.5.1「夥伴變大了」已部署（DP-250，2026-11-14）：** 擁有者授權直接發版部署。只改 release version、三條公告（夥伴放大 1.4 倍、換動作不再閃、泡泡對準頭）與生成的 version.json／sw.js，歷史公告不變，沒有 migration。#244 四 CI 43607625873／同 head Codex 審查無發現後合併 a9444f2，dispatch Deploy staging #24（43618884093），從 a9444f2 六 jobs 全部成功（含 Refuse to rewrite deployed release notes 與 Publish to Pages，17:22 UTC），**0.5.1 公告自此不可回寫**。這個環境連不到 github.io，公開成品比對與線上公告畫面未做；84px 夥伴與不閃的觀感待擁有者 iPhone 確認，DP-250 在那之前不移 Done。
