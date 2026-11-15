@@ -26,6 +26,8 @@ This file is the shared collaboration contract for Codex, Claude Code, and human
 
 ## 0.1 Current Technical State
 
+- **不打包 Supabase Realtime（DP-263，2026-11-15）：** `vite.config.ts` 把 `@supabase/realtime-js` alias 到 `src/lib/realtimeDisabled.ts`，最緊的建置 JS gzip 241,024 → 224,964（上限 245,760 不變）。DayPop 沒有 Realtime 訂閱；**要用 `client.channel()` 前先移除 alias 並重新量測預算**，空殼的 `channel()` 會直接丟錯。vitest 以 `server.deps.inline` 讓 supabase-js 套用同一個 alias。見 ADR §7 與 `docs/performance-budget.md`。
+
 - **0.5.3「四款新夥伴來了」發布候選；部署前必須先套第 24 份 migration（DP-262，2026-11-15）：** 擁有者 11-15 明確授權四款新夥伴正式上線。只改 release version 0.5.2→0.5.3、新增四條公告（四款新夥伴可在「設定 → 夥伴」切換、單月翻頁含左右／上下滑動、前後月份變淡、開啟載入畫面）與生成的 version.json／sw.js，歷史公告不變。公告依 0.5.2 之後 main 的實際差異（#253、#254–#258、#259）撰寫；#250–#252 只有文件。**`20261115130000_add_daypop_pet_directions.sql` 套用到正式專案 `aquhcaduovkxyfhzywgc` 之前不要 dispatch Deploy staging**：部署流程不套 migration，先部署會讓登入使用者選新夥伴時存檔失敗。本 session 沒有 Supabase 權限，migration 交由擁有者指定的 agent 依既有 CLI 流程套用（dry-run 只能列這一份）。0.5.3 一經部署即不可回寫。
 
 - **單月翻頁可選左右或上下滑動（DP-261，2026-11-15）：** 擁有者要求。設定「翻頁方向」只在單月翻頁時出現，存在 `daypop.month-swipe.v1`（裝置 UI 狀態）。上下模式往上滑是下個月；容器 `data-swipe="vertical"` 時 `touch-action: pinch-zoom`，**改 `.cal-month-paged` 的 touch-action 時兩種方向都要測**（`e2e/month-paging.spec.ts` 用原生 CDP 觸控往上滑，`pan-y` 會讓 Chromium 取消 pointer、翻頁失效）。整月放不下（列高低於 58px）時自動改回左右，因為月內要捲動。見 ADR §6。 原暫用 DP-259，與夥伴工作流撞號後改號。**JS gzip 上限因這個功能調到 240 KiB／245,760**（main 本身只剩 131 bytes；預算是逐檔加總，拆 chunk 不會變小），下一個放不下的功能要重新決定，見 `docs/performance-budget.md`。

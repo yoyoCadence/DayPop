@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -123,6 +124,15 @@ export default defineConfig(({ mode, command }) => {
     // would resolve those against the domain root. See docs/deployment.md.
     base: './',
     plugins: [react(), contentSecurityPolicy(env.VITE_SUPABASE_URL), emitPetActions(petDigests)],
+    resolve: {
+      // DP-263: DayPop never uses Supabase Realtime, but supabase-js builds a
+      // RealtimeClient eagerly; the stub keeps realtime-js and phoenix out of
+      // the bundle. See src/lib/realtimeDisabled.ts before subscribing to anything.
+      alias: [{
+        find: /^@supabase\/realtime-js$/,
+        replacement: fileURLToPath(new URL('./src/lib/realtimeDisabled.ts', import.meta.url)),
+      }],
+    },
     server: {
       // DP-108: Playwright writes tens of thousands of generated files under
       // output/playwright/ (production fixture builds, reports, traces). The
@@ -140,6 +150,9 @@ export default defineConfig(({ mode, command }) => {
       globals: true,
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       setupFiles: ['./src/test/setup.ts'],
+      // DP-263: transform supabase-js through Vite so the realtime alias above
+      // applies in tests exactly as in the app bundle.
+      server: { deps: { inline: ['@supabase/supabase-js'] } },
     },
   };
 });

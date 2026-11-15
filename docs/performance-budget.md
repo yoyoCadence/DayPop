@@ -6,6 +6,8 @@ DP-231（2026-11-02）提醒 App 接線：DP-230／main `bed614a` 的 JS＋worke
 
 DP-261（2026-11-15）單月翻頁的上下滑動：合併前的 main `cc50a28`（含同日四款新夥伴）Pages build 為 JS＋worker 810,092 raw／240,509 gzip，距 235 KiB 只剩 131 bytes；加入 DP-261 後為 811,251／240,898（+1,159 raw／+389 gzip），超過上限 258 bytes，沒有新增套件。這份預算是逐檔 gzip 後加總，拆 chunk 不會變小，要放進去只能刪掉這個功能本身。擁有者先前同意上限可以調高，但要求「下一個放不下的功能應該重新決定，而不是先放寬」（ADR DP-240 預算段），所以只因這次的實際需要調整：JS gzip 從 235 KiB 調至 **240 KiB／245,760 bytes**，合併後約剩 4.8 KiB，與 DP-231 留的空間相當。JS raw 800 KiB 這次沒超（剩 7,949 bytes），維持不變；CSS、寵物上限、計法與所有守門不變。自 DP-231 以來兩週內 JS gzip 約增加 5.6 KiB，都是功能程式碼；照這個速度，下一次放不下時仍要重新決定，並先檢查新增內容。
 
+DP-263（2026-11-15）不打包 Supabase Realtime：DayPop 從不訂閱 Realtime，但 supabase-js 每次 `createClient()` 都會建構 `RealtimeClient`，把 realtime-js 與 phoenix socket 帶進 bundle。`vite.config.ts` 把 `@supabase/realtime-js` alias 到 `src/lib/realtimeDisabled.ts`：只保留 supabase-js 會呼叫的建構子、`setAuth` 與四個 channel 介面，`channel()` 直接丟錯。以線上同一組公開 Supabase 設定建置，最緊的 `./` base 從 812,141 raw／241,024 gzip 降到 **756,662／224,964**（−55,479／−16,060）；`/DayPop/` 224,880、`/` 224,852。上限不變，gzip 剩約 20.3 KiB、raw 剩約 61 KiB。日後要用 Realtime 時先移除 alias，並重新量測。
+
 DP-119 把大小上限接入既有 `npm run check:build`，由 PR／main CI 的相對、`/DayPop/` 與 `/` 三種 base 建置，以及 staging 部署閘門共同執行。配置在根目錄 `performance-budget.json`；超限、配置缺漏／無效或讀取失敗都使檢查失敗。
 
 2026-10-04，以已合併 DP-118 的 `main`（`5e0e060`）、v0.4.2、預設相對 base 的 production build 為基線：
