@@ -63,14 +63,29 @@ export async function openApp(
   }
   await page.goto(path, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.dp-viewport')).toBeVisible();
-  // The start-up cover fades once the data is ready (DP-258).
+  await bootDismissed(page);
+}
+
+/**
+ * The start-up cover (DP-258) has started to leave: from then on it takes no
+ * pointer events and is hidden from assistive tech, so the page underneath is
+ * usable. Its 0.3 s fade is not waited out here; at about 1,000 page loads a
+ * run that was most of seven minutes. A spec that inspects the whole screen
+ * (axe, overlap checks, screenshots) waits with `bootGone()` instead.
+ */
+export async function bootDismissed(page: Page) {
+  await expect(page.locator('#boot:not([data-done])')).toHaveCount(0);
+}
+
+/** The start-up cover is out of the document entirely. */
+export async function bootGone(page: Page) {
   await expect(page.locator('#boot')).toHaveCount(0);
 }
 
 export async function reloadApp(page: Page) {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('.dp-viewport')).toBeVisible();
-  await expect(page.locator('#boot')).toHaveCount(0);
+  await bootDismissed(page);
 }
 
 export async function localTodayKey(page: Page): Promise<string> {
