@@ -83,6 +83,29 @@ export async function checkMonthPaging(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
+/** An upward swipe (DP-261): the next month when the paging direction is vertical. */
+export async function swipeMonthUp(page: Page, native: boolean) {
+  const scroll = page.locator('.cal-month-paged');
+  const box = (await scroll.boundingBox())!;
+  const x = box.x + box.width / 2, y = box.y + box.height * .8;
+  if (native) {
+    const cdp = await page.context().newCDPSession(page);
+    try {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      for (let step = 1; step <= 8; step++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y - box.height * .06 * step, id: 1 }] });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } finally { await cdp.detach(); }
+  } else {
+    const props = { pointerId: 1, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y };
+    await scroll.dispatchEvent('pointerdown', props);
+    await scroll.dispatchEvent('pointermove', { ...props, clientY: y - 100 });
+    await scroll.dispatchEvent('pointerup', { ...props, clientY: y - 120 });
+  }
+}
+
 export async function swipeMonth(page: Page, native: boolean) {
   const scroll = page.locator('.cal-month-paged');
   const box = (await scroll.boundingBox())!;

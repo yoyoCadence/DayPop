@@ -188,3 +188,43 @@ describe('other-month days in paged mode (DP-257)', () => {
     expect(container.querySelectorAll('[data-outside]')).toHaveLength(0);
   });
 });
+
+describe('swipe direction in paged mode (DP-261)', () => {
+  const page = () => container.querySelector<HTMLElement>('.cal-month-paged')!;
+
+  it('turns the month with up and down swipes, and ignores sideways ones', () => {
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
+    const scroll = mount({ swipe: 'vertical' });
+    expect(page().dataset.swipe).toBe('vertical');
+    // Swipe up: the next month.
+    pointer(scroll, 'pointerdown', 200, 420); pointer(scroll, 'pointermove', 202, 300); pointer(scroll, 'pointerup', 202, 280);
+    expect(label).toHaveBeenLastCalledWith('2026年 3月');
+    expect(onSelect).not.toHaveBeenCalled();
+    // Swipe down: back again.
+    pointer(scroll, 'pointerdown', 200, 200); pointer(scroll, 'pointermove', 201, 320); pointer(scroll, 'pointerup', 201, 360);
+    expect(label).toHaveBeenLastCalledWith('2026年 2月');
+    // Sideways no longer turns pages.
+    const calls = label.mock.calls.length;
+    pointer(scroll, 'pointerdown', 260, 300); pointer(scroll, 'pointermove', 120, 302); pointer(scroll, 'pointerup', 100, 302);
+    expect(label.mock.calls.length).toBe(calls);
+  });
+
+  it('keeps sideways paging where the month is too tall to fit and has to scroll', () => {
+    // Six rows need 6 × 58 px; 200 px leaves the month scrolling inside the page.
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+    const scroll = mount({ swipe: 'vertical', initialDateKey: '2026-11-15', todayKey: '2026-11-15', selectedDate: '2026-11-15', weekStartsOn: 1 });
+    expect(page().dataset.swipe).toBe('horizontal');
+    pointer(scroll, 'pointerdown', 200, 180); pointer(scroll, 'pointermove', 201, 60); pointer(scroll, 'pointerup', 201, 40);
+    expect(label).toHaveBeenLastCalledWith('2026年 11月');
+    pointer(scroll, 'pointerdown', 260, 100); pointer(scroll, 'pointermove', 120, 102); pointer(scroll, 'pointerup', 100, 102);
+    expect(label).toHaveBeenLastCalledWith('2026年 12月');
+  });
+
+  it('stays sideways by default', () => {
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(540);
+    const scroll = mount();
+    expect(page().dataset.swipe).toBe('horizontal');
+    pointer(scroll, 'pointerdown', 200, 420); pointer(scroll, 'pointermove', 202, 300); pointer(scroll, 'pointerup', 202, 280);
+    expect(label).toHaveBeenLastCalledWith('2026年 2月');
+  });
+});

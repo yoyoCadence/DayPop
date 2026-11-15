@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { monitorBrowser, tabButton } from './support';
-import { checkMonthPaging, chooseMonthMode, seedMonthPaging, swipeMonth } from './fixtures/monthPaging';
+import { checkMonthPaging, chooseMonthMode, seedMonthPaging, swipeMonth, swipeMonthUp } from './fixtures/monthPaging';
 
 // At the fixed instant, this device is Nov 14 while the calendar is Nov 15.
 test.use({ timezoneId: 'America/New_York' });
@@ -93,6 +93,37 @@ test('設定頁也能切換顯示方式；單月翻頁的前後月日子看得�
   await chooseMonthMode(page, '連續捲動');
   await tabButton(page, '設定').click();
   await expect(page.getByRole('group', { name: '月曆顯示方式' }).getByRole('button', { name: '連續捲動', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
+  clean();
+});
+
+test('單月翻頁可改成上下滑動換月；整月放不下時改回左右（DP-261）', async ({ page }, info) => {
+  const clean = monitorBrowser(page); await seedMonthPaging(page);
+  const before = await page.evaluate(() => localStorage.getItem('daypop.user-data'));
+  const native = info.project.name === 'mobile-chrome';
+  await tabButton(page, '設定').click();
+  await page.getByRole('group', { name: '月曆顯示方式' }).getByRole('button', { name: '單月翻頁', exact: true }).click();
+  const direction = page.getByRole('group', { name: '翻頁方向' });
+  await expect(direction.getByRole('button', { name: '左右滑動', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await direction.getByRole('button', { name: '上下滑動', exact: true }).click();
+  await tabButton(page, '日曆').click();
+  const paged = page.locator('.cal-month-paged');
+  await expect(paged).toHaveAttribute('data-swipe', 'vertical');
+  expect(await paged.evaluate(el => getComputedStyle(el).touchAction)).toBe('pinch-zoom');
+  await expect(page.locator('h1.cal-period')).toHaveText('2026年 11月');
+  await swipeMonthUp(page, native);
+  await expect(page.locator('h1.cal-period'), 'Swiping up shows the next month').toHaveText('2026年 12月');
+  await expect(page.locator('.cal-day-sheet')).toHaveCount(0);
+  await swipeMonth(page, native);
+  await expect(page.locator('h1.cal-period'), 'Sideways no longer turns the page').toHaveText('2026年 12月');
+  await page.getByRole('button', { name: /^月曆顯示方式：/ }).click();
+  await expect(page.getByRole('dialog', { name: '月曆顯示方式', exact: true })).toContainText('上下換月');
+  await page.keyboard.press('Escape');
+  // A screen too short for the whole month scrolls inside it, so paging goes sideways.
+  await page.setViewportSize({ width: 667, height: 375 });
+  await expect(paged).toHaveAttribute('data-swipe', 'horizontal');
+  await swipeMonth(page, native);
+  await expect(page.locator('h1.cal-period')).toHaveText('2027年 1月');
   expect(await page.evaluate(() => localStorage.getItem('daypop.user-data'))).toBe(before);
   clean();
 });

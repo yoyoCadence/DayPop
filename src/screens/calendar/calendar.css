@@ -216,6 +216,9 @@
 }
 
 .cal-month-paged { touch-action: pan-y pinch-zoom; }
+/* DP-261: vertical paging takes the up/down drag itself. Only set while the
+ * whole month fits (MonthView falls back to sideways when it has to scroll). */
+.cal-month-paged[data-swipe='vertical'] { touch-action: pinch-zoom; }
 
 .cal-month-mode-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .cal-month-mode-choice span + span { font-size: 12px; font-weight: 500; }

@@ -34,7 +34,7 @@ import type { Calendar, CalendarEvent, CalendarGridMode, Sticker } from '../../d
 import { isDateKey } from '../../domain/validation';
 import { smoothScrollBehavior } from '../../shell/motion';
 import { cellChipBudget } from './monthCellLayout';
-import type { MonthNavigation } from './monthNavigation';
+import type { MonthNavigation, MonthSwipe } from './monthNavigation';
 import {
   centredMonthWindow, clampMonthDate, clampMonthWindowStart, monthWindowBounds,
   MONTH_SHIFT_WEEKS, MONTH_WINDOW_WEEKS,
@@ -70,6 +70,8 @@ export interface MonthViewHandle {
 export interface MonthViewProps {
   ref?: RefObject<MonthViewHandle | null>;
   navigation?: MonthNavigation;
+  /** Paged mode: which way a swipe turns the month (DP-261). */
+  swipe?: MonthSwipe;
   weekStartsOn: 0 | 1;
   /** The one timezone this grid is drawn in — DP-064. */
   displayTimezone: string;
@@ -456,7 +458,7 @@ function ContinuousMonthView({
 }
 
 /** A discrete month owns its geometry; scrolling inside it never changes month. */
-function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, resolveOccurrences, stickers, calendars,
+function PagedMonthView({ ref, swipe = 'horizontal', weekStartsOn, displayTimezone, calendarGridMode, resolveOccurrences, stickers, calendars,
   selectedDate, todayKey, initialDateKey = todayKey, flashToday, onSelectDate, onPeriodLabelChange }: MonthViewProps) {
   const [month, setMonth] = useState(() => monthOf(fromDateKey(initialDateKey)));
   const [rowHeight, setRowHeight] = useState(INITIAL_ROW_HEIGHT);
@@ -465,7 +467,11 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingFocus = useRef<string | null>(null);
   const pendingToday = useRef<string | null>(null);
-  const gesture = useRef<{ id: number; x: number; y: number; vertical: boolean } | null>(null);
+  // `across`: the finger has moved more against the paging axis than along it.
+  const gesture = useRef<{ id: number; x: number; y: number; across: boolean } | null>(null);
+  // Whether the whole month fits without scrolling. A vertical swipe can only
+  // turn the page when there is nothing to scroll (DP-261).
+  const [fits, setFits] = useState(true);
   const suppressClickUntil = useRef(0);
   const dates = useMemo(() => buildMonthGrid(month, weekStartsOn, calendarGridMode), [month, weekStartsOn, calendarGridMode]);
   const rowCount = dates.length / 7;
@@ -510,6 +516,7 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
       const next = Math.max(MIN_ROW_HEIGHT, Math.floor(element.clientHeight / rowCount));
       rowHeightRef.current = next;
       setRowHeight(next);
+      setFits(Math.floor(element.clientHeight / rowCount) >= MIN_ROW_HEIGHT);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -543,6 +550,9 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
     }
   });
 
+  // A month too tall for the screen scrolls up and down inside the page, so
+  // there a vertical swipe would fight the scroll: turn pages sideways instead.
+  const axis: MonthSwipe = swipe === 'vertical' && fits ? 'vertical' : 'horizontal';
   const inMonth = (key: string) => key.slice(0, 7) === toDateKey(month).slice(0, 7);
   const activeKey = focusKey && focusKey >= firstKey && focusKey <= lastKey ? focusKey
     : inMonth(selectedDate) ? selectedDate : inMonth(todayKey) ? todayKey : toDateKey(month);
@@ -555,7 +565,7 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
           return <div key={day} style={{ color: day === 0 || day === 6 ? 'var(--accent-text)' : 'var(--muted)' }}>{WEEKDAY_LABELS[day]}</div>;
         })}
       </div>
-      <div className="cal-month-scroll cal-month-paged" ref={scrollRef}
+      <div className="cal-month-scroll cal-month-paged" ref={scrollRef} data-swipe={axis}
         onKeyDown={event => {
           const from = (event.target as HTMLElement).dataset.dateKey;
           if (!from || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -567,23 +577,26 @@ function PagedMonthView({ ref, weekStartsOn, displayTimezone, calendarGridMode, 
         onPointerDown={event => {
           suppressClickUntil.current = 0;
           gesture.current = event.pointerType === 'touch' && event.isPrimary
-            ? { id: event.pointerId, x: event.clientX, y: event.clientY, vertical: false } : null;
+            ? { id: event.pointerId, x: event.clientX, y: event.clientY, across: false } : null;
         }}
         onPointerMove={event => {
           const start = gesture.current;
           if (!start || start.id !== event.pointerId) return;
-          const dx = Math.abs(event.clientX - start.x), dy = Math.abs(event.clientY - start.y);
-          if (dy > 12 && dy > dx) start.vertical = true;
+          const along = Math.abs(axis === 'vertical' ? event.clientY - start.y : event.clientX - start.x);
+          const across = Math.abs(axis === 'vertical' ? event.clientX - start.x : event.clientY - start.y);
+          if (across > 12 && across > along) start.across = true;
         }}
         onPointerCancel={() => { gesture.current = null; }}
         onPointerUp={event => {
           const start = gesture.current;
           gesture.current = null;
-          if (!start || start.id !== event.pointerId || start.vertical) return;
-          const dx = event.clientX - start.x, dy = Math.abs(event.clientY - start.y);
-          if (Math.abs(dx) <= 12 || Math.abs(dx) <= dy * 1.2) return;
+          if (!start || start.id !== event.pointerId || start.across) return;
+          // Up or left reveals the next month; down or right the previous one.
+          const along = axis === 'vertical' ? event.clientY - start.y : event.clientX - start.x;
+          const across = Math.abs(axis === 'vertical' ? event.clientX - start.x : event.clientY - start.y);
+          if (Math.abs(along) <= 12 || Math.abs(along) <= across * 1.2) return;
           suppressClickUntil.current = performance.now() + 500;
-          if (Math.abs(dx) >= 50) showMonth(addMonths(month, dx < 0 ? 1 : -1));
+          if (Math.abs(along) >= 50) showMonth(addMonths(month, along < 0 ? 1 : -1));
         }}
         onClickCapture={event => {
           if (event.detail !== 0 && performance.now() < suppressClickUntil.current) {

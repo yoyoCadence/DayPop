@@ -13,7 +13,7 @@ import { DayDetailSheet } from './DayDetailSheet';
 import { EventSheet, type EventDraft } from './EventSheet';
 import { MonthView, type MonthViewHandle } from './MonthView';
 import { MonthNavigationDialog } from './MonthNavigationDialog';
-import { readMonthNavigation, saveMonthNavigation, type MonthNavigation } from './monthNavigation';
+import { readMonthNavigation, readMonthSwipe, saveMonthNavigation, type MonthNavigation } from './monthNavigation';
 import { PetLayer } from './PetLayer';
 import { WeekView } from './WeekView';
 import { ScopeDialog } from './ScopeDialog';
@@ -120,6 +120,8 @@ export function CalendarScreen({
   const focusDay = focus?.kind === 'day' && isDateKey(focus.dateKey) ? focus.dateKey : null;
   const [view, setView] = useState<CalendarView>('month');
   const [monthNavigation, setMonthNavigation] = useState(readMonthNavigation);
+  // Chosen in 設定 only (DP-261); this screen remounts on every tab switch.
+  const [monthSwipe] = useState(readMonthSwipe);
   const [monthNavigationOpen, setMonthNavigationOpen] = useState(false);
   const [monthSeed, setMonthSeed] = useState<string | null>(null);
   // DP-167. Interface state like `view`: not a preference, so it resets with
@@ -435,6 +437,7 @@ export function CalendarScreen({
           <MonthView
             ref={monthRef}
             navigation={monthNavigation}
+            swipe={monthSwipe}
             weekStartsOn={weekStartsOn}
             displayTimezone={displayTimezone}
             calendarGridMode={data.preferences.calendarGridMode}
@@ -572,7 +575,7 @@ export function CalendarScreen({
         onDeleteAttachment={deleteEventAttachment}
         onOpenAttachment={createEventAttachmentUrl}
       />
-      {monthNavigationOpen && <MonthNavigationDialog mode={monthNavigation} onChoose={chooseMonthNavigation} onClose={() => setMonthNavigationOpen(false)} />}
+      {monthNavigationOpen && <MonthNavigationDialog mode={monthNavigation} swipe={monthSwipe} onChoose={chooseMonthNavigation} onClose={() => setMonthNavigationOpen(false)} />}
       <ScopeDialog
         mode={weekDrag ? 'save' : null}
         onThis={() => applyWeekDrag('this')}
